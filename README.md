@@ -35,8 +35,7 @@ Example Table Description File
 ```json
 [
   {
-    "dataset_type": "com.example.atisummaries",
-    "name": "ati-summaries",
+    "dataset_type": "ati-summaries",
     "title": "ATI Summaries",
     "datastore_table": {
       "fields": [
