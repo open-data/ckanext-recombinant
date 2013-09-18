@@ -14,11 +14,7 @@ class RecombinantException(Exception):
 
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
     p.implements(p.IConfigurer)
-    p.implements(p.IConfigurable)
-    p.implements(p.ITemplateHelpers)
     p.implements(p.IDatasetForm, inherit=True)
-
-    _schemas = None
 
     def update_config(self, config):
         # add our templates
@@ -30,10 +26,10 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         if not self._tables_url:
             raise RecombinantException("Missing configuration option "
                 "recombinant.tables")
-        assert 0, _load_tables(self._tables_url)
+        self._tables = _load_tables(self._tables_url)
 
     def package_types(self):
-        assert 0, 'shouldnt be called yet'
+        return [t['dataset_type'] for t in self._tables]
 
 
 
