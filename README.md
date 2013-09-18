@@ -42,15 +42,15 @@ Example Table Description File
       "fields": [
         {
           "id": "request_number",
-          "type": "text",
+          "type": "text"
         },
         {
           "id": "pages",
-          "type": "int",
+          "type": "int"
         }
       ],
       "primary_key": "request_number",
-      "indexes": "request_number",
+      "indexes": "request_number"
     }
   }
 ]
