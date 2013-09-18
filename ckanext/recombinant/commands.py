@@ -1,15 +1,17 @@
 from ckan.lib.cli import CkanCommand
+import ckan.plugins as p
+
 import paste.script
 
 from ckanext.recombinant.plugins import IRecombinant
 
-def get_tables():
+def _get_tables():
     """
     Find the RecombinantPlugin instance and get the
     table configuration from it
     """
     tables = []
-    for plugin in p.PluginImplementations():
+    for plugin in p.PluginImplementations(IRecombinant):
         tables.extend(plugin._tables)
     return tables
 
@@ -30,7 +32,19 @@ class TableCommand(CkanCommand):
     parser = paste.script.command.Command.standard_parser(verbose=True)
     parser.add_option('-a', '--all', action='store_true',
         dest='all', help='create all registered dataset types')
+    parser.add_option('-c', '--config', dest='config',
+        default='development.ini', help='Config file to use.')
+
 
     def command(self):
         cmd = self.args[0]
-        print cmd
+        self._load_config()
+
+        if cmd == 'show':
+            self._show()
+        else:
+            print self.__doc__
+
+    def _show(self):
+        tables = _get_tables()
+        print tables
