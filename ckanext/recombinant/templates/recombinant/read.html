@@ -1,0 +1,35 @@
+{% extends "package/read_base.html" %}
+
+{% block subtitle %}{{ pkg.title or pkg.name }}{% endblock %}
+
+{% block primary_content_inner %}
+
+  {% block package_description %}
+    <section class="module-content">
+      {% if pkg.private %}
+        <span class="dataset-private label label-inverse pull-right">
+          <i class="icon-lock"></i>
+          {{ _('Private') }}
+        </span>
+      {% endif %}
+      <h1>
+        {{ pkg.title or pkg.name }}
+        {% if pkg.state.startswith('draft') %}
+          [{{ _('Draft') }}]
+        {% endif %}
+      </h1>
+    </section>
+  {% endblock %}
+
+  {% block package_resources %}
+    <ul class="resource-list">
+      {% for resource in pkg.resources %}
+        <a href="{{ h.url_for(controller='package', action='resource_read', id=pkg.name, resource_id=resource.id) }}">
+          <i class="icon-bar-chart"></i>
+          {{ _('Preview') }}
+        </a>
+      {% endfor %}
+    </ul>
+  {% endblock %}
+
+{% endblock %}
