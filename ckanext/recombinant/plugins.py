@@ -25,7 +25,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         # add our templates
         p.toolkit.add_template_directory(config, 'templates')
 
-    def update_config(self, config):
+        # read our configuration early
         self._tables_url = config.get('recombinant.tables', ""
             ).strip()
         if not self._tables_url:
@@ -36,6 +36,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
     def package_types(self):
         return [t['dataset_type'] for t in self._tables]
 
+    def read_template(self):
+        return 'recombinant/read.html'
 
 
 
