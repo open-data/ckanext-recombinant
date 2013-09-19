@@ -24,6 +24,7 @@ class TableCommand(CkanCommand):
 
         paster table show
                      create [-a | <dataset type> [...]]
+                     destroy [-a | <dataset type> [...]]
                      load-xls <xls file> [...]
 
     Options::
@@ -49,6 +50,8 @@ class TableCommand(CkanCommand):
             self._show()
         if cmd == 'create':
             self._create(self.args[1:])
+        if cmd == 'destroy':
+            self._destroy(self.args[1:])
         else:
             print self.__doc__
 
@@ -67,7 +70,7 @@ class TableCommand(CkanCommand):
             for o in self._get_orgs():
                 print ' -', o
 
-    def _create(self, dataset_types):
+    def _get_tables_from_types(self, dataset_types):
         if self.options.all_types:
             if dataset_types:
                 print "--all-types makes no sense with dataset types listed"
@@ -79,16 +82,41 @@ class TableCommand(CkanCommand):
         else:
             dts = set(dataset_types)
             tables = [t for t in _get_tables if t['dataset_type'] in dts]
+        return tables
+
+    def _create(self, dataset_types):
+        tables = self._get_tables_from_types(dataset_types)
+        if not tables:
+            return
 
         lc = ckanapi.LocalCKAN()
         for t in tables:
             for o in self._get_orgs():
-                lc.action.package_create(
+                p = lc.action.package_create(
                     type=t['dataset_type'],
                     name='{0}-{1}'.format(t['dataset_type'], o),
                     title=t['title'],
                     owner_org=o,
                     resources=[],
                     )
+                lc.action.datastore_create(
+                    resource={'package_id': p['id']},
+                    aliases='{0}-{1}'.format(t['dataset_type'], o),
+                    fields=t['datastore_table']['fields'],
+                    primary_key=t['datastore_table']['primary_key'],
+                    indexes=t['datastore_table']['indexes'],
+                    )
 
 
+    def _destroy(self, dataset_types):
+        tables = self._get_tables_from_types(dataset_types)
+        if not tables:
+            return
+
+        from ckan.lib.cli import DatasetCmd
+        cmd = DatasetCmd('dataset')
+
+        lc = ckanapi.LocalCKAN()
+        for t in tables:
+            for o in self._get_orgs():
+                cmd.purge('{0}-{1}'.format(t['dataset_type'], o))
