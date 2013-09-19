@@ -48,9 +48,9 @@ class TableCommand(CkanCommand):
 
         if cmd == 'show':
             self._show()
-        if cmd == 'create':
+        elif cmd == 'create':
             self._create(self.args[1:])
-        if cmd == 'destroy':
+        elif cmd == 'destroy':
             self._destroy(self.args[1:])
         else:
             print self.__doc__
@@ -92,16 +92,18 @@ class TableCommand(CkanCommand):
         lc = ckanapi.LocalCKAN()
         for t in tables:
             for o in self._get_orgs():
+                name = '{0}-{1}'.format(t['dataset_type'], o)
+                print name
                 p = lc.action.package_create(
                     type=t['dataset_type'],
-                    name='{0}-{1}'.format(t['dataset_type'], o),
+                    name=name,
                     title=t['title'],
                     owner_org=o,
-                    resources=[],
+                    resources=[{'url': '_tmp'}],
                     )
                 lc.action.datastore_create(
-                    resource={'package_id': p['id']},
-                    aliases='{0}-{1}'.format(t['dataset_type'], o),
+                    resource_id=p['resources'][0]['id'],
+                    aliases=name,
                     fields=t['datastore_table']['fields'],
                     primary_key=t['datastore_table']['primary_key'],
                     indexes=t['datastore_table']['indexes'],
