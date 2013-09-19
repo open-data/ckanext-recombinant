@@ -1,7 +1,7 @@
 from ckan.lib.cli import CkanCommand
 import ckan.plugins as p
-
 import paste.script
+import ckanapi
 
 from ckanext.recombinant.plugins import IRecombinant
 
@@ -25,16 +25,21 @@ class TableCommand(CkanCommand):
         paster table show
                      create [-a | <dataset type> [...]]
                      load-xls <xls file> [...]
+
+    Options::
+
+        -a/--all-types    create all dataset types
     """
     summary = __doc__.split('\n')[0]
     usage = __doc__
 
     parser = paste.script.command.Command.standard_parser(verbose=True)
-    parser.add_option('-a', '--all', action='store_true',
-        dest='all', help='create all registered dataset types')
+    parser.add_option('-a', '--all-types', action='store_true',
+        dest='all_types', help='create all registered dataset types')
     parser.add_option('-c', '--config', dest='config',
         default='development.ini', help='Config file to use.')
 
+    _orgs = None
 
     def command(self):
         cmd = self.args[0]
@@ -42,9 +47,48 @@ class TableCommand(CkanCommand):
 
         if cmd == 'show':
             self._show()
+        if cmd == 'create':
+            self._create(self.args[1:])
         else:
             print self.__doc__
 
+    def _get_orgs(self):
+        if not self._orgs:
+            lc = ckanapi.LocalCKAN()
+            # XXX: first 5 for testing
+            self._orgs = lc.action.organization_list()[:5]
+        return self._orgs
+
     def _show(self):
-        tables = _get_tables()
-        print tables
+        lc = ckanapi.LocalCKAN()
+        for t in _get_tables():
+            print '{t[title]} ({t[dataset_type]})'.format(t=t)
+
+            for o in self._get_orgs():
+                print ' -', o
+
+    def _create(self, dataset_types):
+        if self.options.all_types:
+            if dataset_types:
+                print "--all-types makes no sense with dataset types listed"
+                return
+            tables = _get_tables()
+        elif not dataset_types:
+            print "please specify dataset types or use -a/--all-types option"
+            return
+        else:
+            dts = set(dataset_types)
+            tables = [t for t in _get_tables if t['dataset_type'] in dts]
+
+        lc = ckanapi.LocalCKAN()
+        for t in tables:
+            for o in self._get_orgs():
+                lc.action.package_create(
+                    type=t['dataset_type'],
+                    name='{0}-{1}'.format(t['dataset_type'], o),
+                    title=t['title'],
+                    owner_org=o,
+                    resources=[],
+                    )
+
+
