@@ -121,4 +121,7 @@ class TableCommand(CkanCommand):
         lc = ckanapi.LocalCKAN()
         for t in tables:
             for o in self._get_orgs():
+                name = '{0}-{1}'.format(t['dataset_type'], o)
+                p = lc.action.package_show(id=name)
+                lc.action.datastore_delete(resource_id=p['resources'][0]['id'])
                 cmd.purge('{0}-{1}'.format(t['dataset_type'], o))
