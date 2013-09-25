@@ -58,8 +58,7 @@ class TableCommand(CkanCommand):
     def _get_orgs(self):
         if not self._orgs:
             lc = ckanapi.LocalCKAN()
-            # XXX: first 5 for testing
-            self._orgs = lc.action.organization_list()[:5]
+            self._orgs = lc.action.organization_list()
         return self._orgs
 
     def _show(self):
