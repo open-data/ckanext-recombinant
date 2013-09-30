@@ -3,17 +3,19 @@ import xlrd
 
 
 # special place to look for the organization name in each XLS file
-ORG_NAME_CELL = (0, 3)
+ORG_NAME_CELL = (0, 2)
 
-def read_xls(f, sheet_name):
+def read_xls(f):
     """
-    Return a generator that opens the xls file f to sheet sheet_name
-    and then produces (org-name, row1, row2, ...)
+    Return a generator that opens the xls file f
+    and then produces ((sheet-name, org-name), row1, row2, ...)
     """
     wb = xlrd.open_workbook(f)
-    sheet = wb.sheet_by_name(sheet_name)
+    assert wb.nsheets == 1
+
+    sheet = wb.sheet_by_index(0)
     org_name_cell = sheet.cell(*ORG_NAME_CELL)
-    yield org_name_cell.value
+    yield (sheet.name, org_name_cell.value)
 
     row = sheet.horz_split_pos
     while row < sheet.nrows:

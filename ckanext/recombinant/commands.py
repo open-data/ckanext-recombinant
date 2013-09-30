@@ -53,6 +53,8 @@ class TableCommand(CkanCommand):
             self._create(self.args[1:])
         elif cmd == 'destroy':
             self._destroy(self.args[1:])
+        elif cmd == 'load-xls':
+            self._load_xls(self.args[1:])
         else:
             print self.__doc__
 
@@ -125,3 +127,8 @@ class TableCommand(CkanCommand):
                 p = lc.action.package_show(id=name)
                 lc.action.datastore_delete(resource_id=p['resources'][0]['id'])
                 cmd.purge('{0}-{1}'.format(t['dataset_type'], o))
+
+    def _load_xls(self, xls_file_names):
+        for n in xls_file_names:
+            g = read_xls(n)
+            import ipdb; ipdb.set_trace()
