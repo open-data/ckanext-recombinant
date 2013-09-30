@@ -65,7 +65,6 @@ class TableCommand(CkanCommand):
         return self._orgs
 
     def _show(self):
-        lc = ckanapi.LocalCKAN()
         for t in _get_tables():
             print '{t[title]} ({t[dataset_type]})'.format(t=t)
 
@@ -130,5 +129,23 @@ class TableCommand(CkanCommand):
 
     def _load_xls(self, xls_file_names):
         for n in xls_file_names:
-            g = read_xls(n)
-            import ipdb; ipdb.set_trace()
+            self._load_one_xls(n)
+
+    def _load_one_xls(self, n):
+        g = read_xls(n)
+        sheet_name, org_name = next(g)
+
+        for t in _get_tables():
+            if t['xls_sheet_name'] == sheet_name:
+                break
+        else:
+            print "XLS sheet name '{0}' not found in tables".format(sheet_name)
+            return
+
+        if org_name not in self._get_orgs():
+            print "Organization name '{0}' not found".format(org_name)
+
+        for row in g:
+            print row
+            break
+
