@@ -4,6 +4,7 @@ import paste.script
 import ckanapi
 
 from ckanext.recombinant.plugins import IRecombinant
+from ckanext.recombinant.read_xls import read_xls
 
 def _get_tables():
     """
