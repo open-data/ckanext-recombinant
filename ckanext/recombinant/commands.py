@@ -93,7 +93,7 @@ class TableCommand(CkanCommand):
         lc = ckanapi.LocalCKAN()
         for t in tables:
             for o in self._get_orgs():
-                name = '{0}-{1}'.format(t['dataset_type'], o)
+                name = _package_name(t['dataset_type'], o)
                 print name
                 p = lc.action.package_create(
                     type=t['dataset_type'],
@@ -122,7 +122,7 @@ class TableCommand(CkanCommand):
         lc = ckanapi.LocalCKAN()
         for t in tables:
             for o in self._get_orgs():
-                name = '{0}-{1}'.format(t['dataset_type'], o)
+                name = _package_name(t['dataset_type'], o)
                 p = lc.action.package_show(id=name)
                 lc.action.datastore_delete(resource_id=p['resources'][0]['id'])
                 cmd.purge('{0}-{1}'.format(t['dataset_type'], o))
@@ -145,7 +145,21 @@ class TableCommand(CkanCommand):
         if org_name not in self._get_orgs():
             print "Organization name '{0}' not found".format(org_name)
 
-        for row in g:
-            print row
-            break
+        lc = ckanapi.LocalCKAN()
+        name = _package_name(t['dataset_type'], org_name)
+        p = lc.action.package_show(id=name)
+        resource_id = p['resources'][0]['id']
+
+        records = []
+        fields = t['datastore_table']['fields']
+        for n, row in enumerate(g):
+            assert len(row) == len(fields), ("row {0} has {1} columns, "
+                "expecting {2}").format(n+3, len(row), len(fields))
+            records.append(dict(
+                (f['id'], v) for f, v in zip(fields, row)))
+
+        lc.action.datastore_upsert(resource_id=resource_id, records=records)
+
+def _package_name(dataset_type, org_name):
+    return '{0}-{1}'.format(dataset_type, org_name)
 
