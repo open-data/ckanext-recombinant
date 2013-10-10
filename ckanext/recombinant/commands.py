@@ -82,7 +82,7 @@ class TableCommand(CkanCommand):
             return
         else:
             dts = set(dataset_types)
-            tables = [t for t in _get_tables if t['dataset_type'] in dts]
+            tables = [t for t in _get_tables() if t['dataset_type'] in dts]
         return tables
 
     def _create(self, dataset_types):
