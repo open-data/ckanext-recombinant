@@ -123,9 +123,16 @@ class TableCommand(CkanCommand):
         for t in tables:
             for o in self._get_orgs():
                 name = _package_name(t['dataset_type'], o)
-                p = lc.action.package_show(id=name)
-                lc.action.datastore_delete(resource_id=p['resources'][0]['id'])
-                cmd.purge('{0}-{1}'.format(t['dataset_type'], o))
+                try:
+                    d = lc.action.package_show(id=name)
+                    try:
+                        lc.action.datastore_delete(
+                            resource_id=d['resources'][0]['id'])
+                    except p.toolkit.ObjectNotFound:
+                        pass
+                    cmd.purge('{0}-{1}'.format(t['dataset_type'], o))
+                except p.toolkit.ObjectNotFound:
+                    pass
 
     def _load_xls(self, xls_file_names):
         for n in xls_file_names:
