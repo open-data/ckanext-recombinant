@@ -29,6 +29,6 @@ setup(
     recombinant=ckanext.recombinant.plugins:RecombinantPlugin
 
     [paste.paster_command]
-    table=ckanext.recombinant.commands:TableCommand
+    recombinant=ckanext.recombinant.commands:TableCommand
     """,
 )

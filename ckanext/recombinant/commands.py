@@ -23,10 +23,10 @@ class TableCommand(CkanCommand):
 
     Usage::
 
-        paster table show
-                     create [-a | <dataset type> [...]]
-                     destroy [-a | <dataset type> [...]]
-                     load-xls <xls file> [...]
+        paster recombinant  show
+                            create [-a | <dataset type> [...]]
+                            destroy [-a | <dataset type> [...]]
+                            load-xls <xls file> [...]
 
     Options::
 
