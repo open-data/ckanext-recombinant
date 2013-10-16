@@ -1,9 +1,6 @@
 ckanext-recombinant
 ===================
 
-*This document describes a planned CKAN extension.
-The code here doesn't actually accomplish any of this yet.*
-
 This extension creates datasets and datastore tables for all
 organizations in a ckan instance and allows combining the
 data from all tables into a single CSV for exporting.
