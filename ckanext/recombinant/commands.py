@@ -3,7 +3,7 @@ import ckan.plugins as p
 import paste.script
 import ckanapi
 
-from ckanext.recombinant.plugins import IRecombinant
+from ckanext.recombinant.plugins import _IRecombinant
 from ckanext.recombinant.read_xls import read_xls
 
 def _get_tables():
@@ -12,7 +12,7 @@ def _get_tables():
     table configuration from it
     """
     tables = []
-    for plugin in p.PluginImplementations(IRecombinant):
+    for plugin in p.PluginImplementations(_IRecombinant):
         tables.extend(plugin._tables)
     return tables
 

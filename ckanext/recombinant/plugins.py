@@ -12,14 +12,14 @@ class RecombinantException(Exception):
     pass
 
 
-class IRecombinant(p.Interface):
+class _IRecombinant(p.Interface):
     pass
 
 
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
-    p.implements(IRecombinant)
+    p.implements(_IRecombinant)
 
     def update_config(self, config):
         # add our templates
