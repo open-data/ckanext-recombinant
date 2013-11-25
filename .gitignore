@@ -1,0 +1,3 @@
+ckan.log
+*.pyc
+*.egg-info/
