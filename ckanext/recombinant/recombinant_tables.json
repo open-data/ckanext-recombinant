@@ -1,0 +1,41 @@
+[
+  {
+    "xls_sheet_name": "ATI AI",
+    "dataset_type": "ati-summaries",
+    "title": "ATI Summaries",
+    "datastore_table": {
+      "fields": [
+        {
+          "id": "year",
+          "type": "int"
+        },
+        {
+          "id": "month",
+          "type": "int"
+        },
+        {
+          "id": "request_number",
+          "type": "text"
+        },
+        {
+          "id": "summary",
+          "type": "text"
+        },
+        {
+          "id": "summary_fra",
+          "type": "text"
+        },
+        {
+          "id": "disposition",
+          "type": "text"
+        },
+        {
+          "id": "pages",
+          "type": "int"
+        }
+      ],
+      "primary_key": "request_number",
+      "indexes": "request_number"
+    }
+  }
+]
