@@ -1,4 +1,5 @@
 from ckan.lib.cli import CkanCommand
+from ckan.logic import ValidationError
 import ckan.plugins as p
 import paste.script
 import ckanapi
@@ -27,6 +28,7 @@ class TableCommand(CkanCommand):
                             create [-a | <dataset type> [...]]
                             destroy [-a | <dataset type> [...]]
                             load-xls <xls file> [...]
+                            combine [-a | <dataset type> [...]]
 
     Options::
 
@@ -55,6 +57,8 @@ class TableCommand(CkanCommand):
             self._destroy(self.args[1:])
         elif cmd == 'load-xls':
             self._load_xls(self.args[1:])
+        elif cmd == 'combine':
+            self._create_meta_dataset(self.args[1:])
         else:
             print self.__doc__
 
@@ -166,6 +170,50 @@ class TableCommand(CkanCommand):
                 (f['id'], v) for f, v in zip(fields, row)))
 
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
+        
+    def _create_meta_dataset(self, dataset_types):
+        tables = self._get_tables_from_types(dataset_types)
+        if not tables:
+            return
+
+        lc = ckanapi.LocalCKAN()
+        for t in tables:
+            name = _package_name(t['dataset_type'], "meta-dataset")
+            print name
+            try:
+                p = lc.action.package_create(
+                    type=t['dataset_type'],
+                    name=name,
+                    title=t['title'],
+                    owner_org=None,
+                    resources=[{'url': '_tmp'}],
+                    )
+                meta_resource_id = p['resources'][0]['id']
+                lc.action.datastore_create(
+                    resource_id= meta_resource_id,
+                    aliases=name,
+                    fields=t['datastore_table']['fields'],
+                    primary_key=t['datastore_table']['primary_key'],
+                    indexes=t['datastore_table']['indexes'],
+                    )
+            except ValidationError:
+                p = lc.action.package_show(id = name)   
+                meta_resource_id = p['resources'][0]['id']      
+
+            total_records = 0
+            for package_id in lc.action.package_list():
+                package = lc.action.package_show(id = package_id)
+                if package['type'] == t['dataset_type'] and package['id'] != p['id']:
+                    for res in package['resources']:
+                        records = lc.action.datastore_search(resource_id = res['id'])['records']
+                        total_records = total_records + len(records)
+                        for record in records:
+                            record.pop('_id')
+                        lc.action.datastore_upsert(resource_id= meta_resource_id, 
+                                                records=records)
+                                                
+            print total_records
+        
 
 def _package_name(dataset_type, org_name):
     return '{0}-{1}'.format(dataset_type, org_name)
