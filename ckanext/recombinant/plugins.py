@@ -20,6 +20,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
     p.implements(_IRecombinant)
+    p.implements(p.IRoutes, inherit=True)
 
     def update_config(self, config):
         # add our templates
@@ -38,6 +39,14 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
 
     def read_template(self):
         return 'recombinant/read.html'
+        
+    def edit_template(self):
+        return 'recombinant/edit.html'
+        
+    def before_map(self, map):
+        map.connect('/dataset/{id}/upload', action='upload', conditions= dict(method=['POST']),
+            controller='ckanext.recombinant.controller:UploadController')
+        return map
 
 
 
