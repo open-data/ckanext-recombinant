@@ -2,6 +2,7 @@ from ckan.lib.base import (c, render, model, request, h, g,
     response, abort, redirect)
 from ckan.controllers.package import PackageController
 from ckanext.recombinant.read_xls import read_xls
+from ckanext.recombinant.commands import _get_tables
 from ckan.model import *
 from ckan.logic import ValidationError
 
@@ -27,6 +28,28 @@ class UploadController(PackageController):
                 msg = ('Invalid sheet for this organization. Sheet must be labeled for{0}, ' + 
                        'but you supplied a sheet for {1}').format(owner_org, org_name)
                 raise ValidationError({'xls_update': msg})
+                
+            for t in _get_tables():
+                if t['xls_sheet_name'] == sheet_name:
+                    break
+            else:
+                msg = "Sheet name '{0}' not found in list of valid tables".format(sheet_name)
+                raise ValidationError({'xls_update': msg})
+                
+            resource_id = package['resources'][0]['id']
+            
+            records = []
+            fields = t['datastore_table']['fields']
+            for n, row in enumerate(g):
+                if len(row) != len(fields): 
+                    msg = ("row {0} has {1} columns, "
+                            "expecting {2}").format(n+3, len(row), len(fields))
+                    raise ValidationError({'xls_update': msg})
+                
+                records.append(dict(
+                    (f['id'], v) for f, v in zip(fields, row)))
+
+            lc.action.datastore_upsert(resource_id=resource_id, records=records)
                 
             redirect(h.url_for(controller='package',
                                action='read', id=id))
