@@ -14,6 +14,7 @@ class UploadController(PackageController):
         try:
             if request.POST['xls_update'] == u'':
                 raise ValidationError({'xls_update': 'You must provide a valid file'})
+            
             upload_data = read_xls('', file_contents = request.POST['xls_update'].file.read())
             sheet_name, org_name = next(upload_data)
         
