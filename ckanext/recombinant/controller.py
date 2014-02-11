@@ -24,7 +24,9 @@ class UploadController(PackageController):
         
             #is this the right sheet for this organization?
             if org_name != owner_org:
-                raise ValidationError({'invalid sheet for organization': owner_org})
+                msg = ('Invalid sheet for this organization. Sheet must be labeled for{0}, ' + 
+                       'but you supplied a sheet for {1}').format(owner_org, org_name)
+                raise ValidationError({'xls_update': msg})
                 
             redirect(h.url_for(controller='package',
                                action='read', id=id))
