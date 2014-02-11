@@ -16,7 +16,6 @@
       
       <h3>{{ _('Upload an updated XLS file') }} </h3>
       <form enctype="multipart/form-data" id="dataset-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action='{% url_for controller='ckanext.recombinant.controller:UploadController', action='upload', id=pkg.name %}'>
-        {{ errors }}
         <div class="control-group dataset-form-resource-types">
           <div class="span-1 row-start">
             <label for="xls_update">{{ _('File') }}:</label>
@@ -24,6 +23,13 @@
           <div class="span-4 row-end">
             <input type="file" name="xls_update" id="xls_update" accept="application/vnd.ms-excel">
           </div>
+          {% if errors %}
+          <div class="span-2 row-start form-attention">
+            {% for error in errors.values() %}
+              <label>{{ error }}</label>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
         <div class="clear"></div>
         <div class="row">
