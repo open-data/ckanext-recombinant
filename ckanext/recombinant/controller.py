@@ -21,7 +21,7 @@ class UploadController(PackageController):
         
             lc = ckanapi.LocalCKAN(username = c.user)
             package = lc.action.package_show(id = id)
-            owner_org = lc.action.organization_show(id = package['owner_org'])['name']
+            owner_org = package['organization']['name']
         
             #is this the right sheet for this organization?
             if org_name != owner_org:
