@@ -3,8 +3,7 @@ from ckan.lib.base import (c, render, model, request, h, g,
 from ckan.controllers.package import PackageController
 from ckanext.recombinant.read_xls import read_xls
 from ckanext.recombinant.commands import _get_tables
-from ckan.model import *
-from ckan.logic import (ValidationError, get_action)
+from ckan.logic import ValidationError
 
 import ckanapi
 
