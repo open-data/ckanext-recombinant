@@ -3,6 +3,8 @@ from ckan.logic import ValidationError
 import ckan.plugins as p
 import paste.script
 import ckanapi
+import csv
+import sys
 
 from ckanext.recombinant.plugins import _IRecombinant
 from ckanext.recombinant.read_xls import read_xls
@@ -177,42 +179,22 @@ class TableCommand(CkanCommand):
             return
 
         lc = ckanapi.LocalCKAN()
-        for t in tables:
-            name = _package_name(t['dataset_type'], "meta-dataset")
-            print name
-            try:
-                p = lc.action.package_create(
-                    type=t['dataset_type'],
-                    name=name,
-                    title=t['title'],
-                    owner_org=None,
-                    resources=[{'url': '_tmp'}],
-                    )
-                meta_resource_id = p['resources'][0]['id']
-                lc.action.datastore_create(
-                    resource_id= meta_resource_id,
-                    aliases=name,
-                    fields=t['datastore_table']['fields'],
-                    primary_key=t['datastore_table']['primary_key'],
-                    indexes=t['datastore_table']['indexes'],
-                    )
-            except ValidationError:
-                p = lc.action.package_show(id = name)   
-                meta_resource_id = p['resources'][0]['id']      
-
-            total_records = 0
+        for t in tables:  
+            out = csv.writer(sys.stdout)
+            #output columns header
+            columns = [f['id'] for f in t['datastore_table']['fields']]
+            columns.append('owner_org')
+            out.writerow(columns)
+            
             for package_id in lc.action.package_list():
                 package = lc.action.package_show(id = package_id)
-                if package['type'] == t['dataset_type'] and package['id'] != p['id']:
+                if package['type'] == t['dataset_type']:
                     for res in package['resources']:
                         records = lc.action.datastore_search(resource_id = res['id'])['records']
-                        total_records = total_records + len(records)
                         for record in records:
-                            record.pop('_id')
-                        lc.action.datastore_upsert(resource_id= meta_resource_id, 
-                                                records=records)
+                            record['owner_org'] = package['organization']['name']
+                            out.writerow([unicode(record[col]).encode('utf-8') for col in columns])
                                                 
-            print total_records
         
 
 def _package_name(dataset_type, org_name):
