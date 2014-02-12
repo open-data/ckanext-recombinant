@@ -40,21 +40,22 @@ class UploadController(PackageController):
             
             records = []
             fields = t['datastore_table']['fields']
-            for n, row in enumerate(g):
+            for n, row in enumerate(upload_data):
                 if len(row) != len(fields): 
-                    msg = ("row {0} has {1} columns, "
+                    msg = ("Row {0} of this sheet has {1} columns, "
                             "expecting {2}").format(n+3, len(row), len(fields))
                     raise ValidationError({'xls_update': msg})
-                
+        
                 records.append(dict(
                     (f['id'], v) for f, v in zip(fields, row)))
-
+                    
             lc.action.datastore_upsert(resource_id=resource_id, records=records)
-                
+            
             redirect(h.url_for(controller='package',
                                action='read', id=id))
         except ValidationError, e:
-            #import pdb; pdb.set_trace()
-            vars = {'errors': e.error_dict,
-                    'error_summary': e.error_summary, 'action': 'edit'}
+            errors = []
+            for error in e.error_dict.values():
+                errors.append(str(error).decode('utf-8'))
+            vars = {'errors': errors, 'action': 'edit'}
             return render(self._edit_template(package_type), extra_vars = vars)
