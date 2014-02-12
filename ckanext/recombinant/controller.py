@@ -4,7 +4,7 @@ from ckan.controllers.package import PackageController
 from ckanext.recombinant.read_xls import read_xls
 from ckanext.recombinant.commands import _get_tables
 from ckan.model import *
-from ckan.logic import ValidationError
+from ckan.logic import (ValidationError, get_action)
 
 import ckanapi
 
@@ -58,4 +58,5 @@ class UploadController(PackageController):
             for error in e.error_dict.values():
                 errors.append(str(error).decode('utf-8'))
             vars = {'errors': errors, 'action': 'edit'}
+            c.pkg_dict = package
             return render(self._edit_template(package_type), extra_vars = vars)
