@@ -1,7 +1,10 @@
 from ckan.lib.cli import CkanCommand
+from ckan.logic import ValidationError
 import ckan.plugins as p
 import paste.script
 import ckanapi
+import csv
+import sys
 
 from ckanext.recombinant.plugins import _IRecombinant
 from ckanext.recombinant.read_xls import read_xls
@@ -27,6 +30,7 @@ class TableCommand(CkanCommand):
                             create [-a | <dataset type> [...]]
                             destroy [-a | <dataset type> [...]]
                             load-xls <xls file> [...]
+                            combine [-a | <dataset type> [...]]
 
     Options::
 
@@ -55,6 +59,8 @@ class TableCommand(CkanCommand):
             self._destroy(self.args[1:])
         elif cmd == 'load-xls':
             self._load_xls(self.args[1:])
+        elif cmd == 'combine':
+            self._create_meta_dataset(self.args[1:])
         else:
             print self.__doc__
 
@@ -166,6 +172,30 @@ class TableCommand(CkanCommand):
                 (f['id'], v) for f, v in zip(fields, row)))
 
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
+        
+    def _create_meta_dataset(self, dataset_types):
+        tables = self._get_tables_from_types(dataset_types)
+        if not tables:
+            return
+
+        lc = ckanapi.LocalCKAN()
+        for t in tables:  
+            out = csv.writer(sys.stdout)
+            #output columns header
+            columns = [f['id'] for f in t['datastore_table']['fields']]
+            columns.append('owner_org')
+            out.writerow(columns)
+            
+            for package_id in lc.action.package_list():
+                package = lc.action.package_show(id = package_id)
+                if package['type'] == t['dataset_type']:
+                    for res in package['resources']:
+                        records = lc.action.datastore_search(resource_id = res['id'])['records']
+                        for record in records:
+                            record['owner_org'] = package['organization']['name']
+                            out.writerow([unicode(record[col]).encode('utf-8') for col in columns])
+                                                
+        
 
 def _package_name(dataset_type, org_name):
     return '{0}-{1}'.format(dataset_type, org_name)
