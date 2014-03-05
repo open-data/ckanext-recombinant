@@ -110,7 +110,6 @@ class TableCommand(CkanCommand):
                     )
                 lc.action.datastore_create(
                     resource_id=p['resources'][0]['id'],
-                    aliases=name,
                     fields=t['datastore_table']['fields'],
                     primary_key=t['datastore_table']['primary_key'],
                     indexes=t['datastore_table']['indexes'],
