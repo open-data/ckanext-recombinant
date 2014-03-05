@@ -189,10 +189,11 @@ class TableCommand(CkanCommand):
                 package = lc.action.package_show(id = package_id)
                 if package['type'] == t['dataset_type']:
                     for res in package['resources']:
-                        self._write_meta_row(res, package, out)
+                        records = lc.action.datastore_search(
+                            resource_id=res['id'])['records']
+                        self._write_meta_row(records, package, columns, out)
 
-    def _write_meta_row(self, res, package, out):
-        records = lc.action.datastore_search(resource_id=res['id'])['records']
+    def _write_meta_row(self, records, package, columns, out):
         for record in records:
             record['org_name'] = package['organization']['name']
             record['org_title'] = package['organization']['title']
