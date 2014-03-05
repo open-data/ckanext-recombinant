@@ -182,17 +182,22 @@ class TableCommand(CkanCommand):
             out = csv.writer(sys.stdout)
             #output columns header
             columns = [f['id'] for f in t['datastore_table']['fields']]
-            columns.append('owner_org')
+            columns.extend(['org_name', 'org_title'])
             out.writerow(columns)
 
             for package_id in lc.action.package_list():
                 package = lc.action.package_show(id = package_id)
                 if package['type'] == t['dataset_type']:
                     for res in package['resources']:
-                        records = lc.action.datastore_search(resource_id = res['id'])['records']
-                        for record in records:
-                            record['owner_org'] = package['organization']['name']
-                            out.writerow([unicode(record[col]).encode('utf-8') for col in columns])
+                        self._write_meta_row(res, package, out)
+
+    def _write_meta_row(self, res, package, out):
+        records = lc.action.datastore_search(resource_id=res['id'])['records']
+        for record in records:
+            record['org_name'] = package['organization']['name']
+            record['org_title'] = package['organization']['title']
+            out.writerow([
+                unicode(record[col]).encode('utf-8') for col in columns])
 
 
 
