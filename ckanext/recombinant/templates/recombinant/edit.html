@@ -13,12 +13,19 @@
   <header class="module-content page-header"></header>
   <section class="module-poster">
     <div class="module-content">
-      
-      <h3>{{ _('Upload an updated XLS file') }} </h3>
+
+      <h3>{{ _('Create and update records from Excel spreadsheet') }} </h3>
       <form enctype="multipart/form-data" id="dataset-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action='{% url_for controller='ckanext.recombinant.controller:UploadController', action='upload', id=pkg.name %}'>
         <div class="control-group dataset-form-resource-types">
           <div class="span-1 row-start">
-            <label for="xls_update">{{ _('File') }}:</label>
+            <label>{{ _('Template') }}:</label>
+          </div>
+          <div class="span-4 row-end">
+              <a class="button" href="#">{{ _('Download template Excel spreadsheet') }}</a></li>
+          </div>
+        <div class="clear"></div>
+          <div class="span-1 row-start">
+            <label for="xls_update">{{ _('Upload') }}:</label>
           </div>
           <div class="span-4 row-end">
             <input required type="file" name="xls_update" id="xls_update" accept="application/vnd.ms-excel">
@@ -35,7 +42,7 @@
         <div class="row">
           <input class="button button-accent button-large" type="submit" value="{{_('Submit')}}"/>
         </div>
-        
+
       </form>
     </div>
   </section>
