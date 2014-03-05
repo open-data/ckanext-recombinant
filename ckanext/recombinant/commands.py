@@ -171,20 +171,20 @@ class TableCommand(CkanCommand):
                 (f['id'], v) for f, v in zip(fields, row)))
 
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
-        
+
     def _create_meta_dataset(self, dataset_types):
         tables = self._get_tables_from_types(dataset_types)
         if not tables:
             return
 
         lc = ckanapi.LocalCKAN()
-        for t in tables:  
+        for t in tables:
             out = csv.writer(sys.stdout)
             #output columns header
             columns = [f['id'] for f in t['datastore_table']['fields']]
             columns.append('owner_org')
             out.writerow(columns)
-            
+
             for package_id in lc.action.package_list():
                 package = lc.action.package_show(id = package_id)
                 if package['type'] == t['dataset_type']:
@@ -193,8 +193,8 @@ class TableCommand(CkanCommand):
                         for record in records:
                             record['owner_org'] = package['organization']['name']
                             out.writerow([unicode(record[col]).encode('utf-8') for col in columns])
-                                                
-        
+
+
 
 def _package_name(dataset_type, org_name):
     return '{0}-{1}'.format(dataset_type, org_name)
