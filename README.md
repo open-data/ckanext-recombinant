@@ -34,20 +34,25 @@ Example Table Description File
   {
     "dataset_type": "ati-summaries",
     "title": "ATI Summaries",
-    "datastore_table": {
-      "fields": [
-        {
-          "id": "request_number",
-          "type": "text"
-        },
-        {
-          "id": "pages",
-          "type": "int"
-        }
-      ],
-      "primary_key": "request_number",
-      "indexes": "request_number"
-    }
+    "fields": [
+      {
+        "label": "Request number",
+        "datastore_id": "request_number",
+        "datastore_type": "text",
+        "xls_column_width": 15
+      },
+      {
+        "label": "Pages",
+        "datastore_id": "pages",
+        "datastore_type": "int",
+        "xls_column_width": 6
+      }
+    ],
+    "datastore_primary_key": "request_number",
+    "datastore_indexes": "request_number",
+    "xls_organization_info": ["title", "name"],
+    "xls_organization_style": "pattern: pattern solid, fore_color gray25;",
+    "xls_header_style": "font: bold on; pattern: pattern solid, fore_color light_green;"
   }
 ]
 ```
