@@ -1,24 +1,12 @@
 from ckan.lib.cli import CkanCommand
 from ckan.logic import ValidationError
-import ckan.plugins as p
 import paste.script
 import ckanapi
 import csv
 import sys
 
-from ckanext.recombinant.plugins import _IRecombinant
+from ckanext.recombinant.plugins import _get_tables
 from ckanext.recombinant.read_xls import read_xls
-
-def _get_tables():
-    """
-    Find the RecombinantPlugin instance and get the
-    table configuration from it
-    """
-    tables = []
-    for plugin in p.PluginImplementations(_IRecombinant):
-        tables.extend(plugin._tables)
-    return tables
-
 
 class TableCommand(CkanCommand):
     """

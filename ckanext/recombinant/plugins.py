@@ -16,6 +16,19 @@ class _IRecombinant(p.Interface):
     pass
 
 
+def _get_tables():
+    """
+    Find the RecombinantPlugin instance and get the
+    table configuration from it
+    """
+    tables = []
+    for plugin in p.PluginImplementations(_IRecombinant):
+        tables.extend(plugin._tables)
+    return tables
+
+
+
+
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
