@@ -2,10 +2,14 @@ from ckan.lib.base import (c, render, model, request, h, g,
     response, abort, redirect)
 from ckan.controllers.package import PackageController
 from ckanext.recombinant.read_xls import read_xls
+from ckanext.recombinant.write_xls import xls_template
 from ckanext.recombinant.commands import _get_tables
 from ckan.logic import ValidationError
 
+from cStringIO import StringIO
+
 import ckanapi
+
 
 class UploadController(PackageController):
 
@@ -59,3 +63,16 @@ class UploadController(PackageController):
             vars = {'errors': errors, 'action': 'edit'}
             c.pkg_dict = package
             return render(self._edit_template(package_type), extra_vars = vars)
+
+    def template(self, id):
+        lc = ckanapi.LocalCKAN(username = c.user)
+        dataset = lc.action.package_show(id=id)
+        org = lc.action.organization_show(id=dataset['owner_org'],
+            include_datasets=False)
+
+        book = xls_template(dataset['type'], org)
+        blob = StringIO()
+        book.save(blob)
+        response.headers['Content-Type'] = 'application/vnd.ms-excel'
+        return blob.getvalue()
+

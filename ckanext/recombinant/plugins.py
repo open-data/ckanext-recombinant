@@ -52,12 +52,15 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
 
     def read_template(self):
         return 'recombinant/read.html'
-        
+
     def edit_template(self):
         return 'recombinant/edit.html'
-        
+
     def before_map(self, map):
-        map.connect('/dataset/{id}/upload', action='upload', conditions= dict(method=['POST']),
+        map.connect('/recombinant/upload/{id}', action='upload',
+            conditions=dict(method=['POST']),
+            controller='ckanext.recombinant.controller:UploadController')
+        map.connect('/recombinant/template/{id}', action='template',
             controller='ckanext.recombinant.controller:UploadController')
         return map
 
