@@ -42,15 +42,19 @@ class UploadController(PackageController):
             resource_id = package['resources'][0]['id']
 
             records = []
-            fields = t['datastore_table']['fields']
+            fields = t['fields']
             for n, row in enumerate(upload_data):
                 if len(row) != len(fields):
                     msg = ("Row {0} of this sheet has {1} columns, "
                             "expecting {2}").format(n+3, len(row), len(fields))
                     raise ValidationError({'xls_update': msg})
 
-                records.append(dict(
-                    (f['id'], v) for f, v in zip(fields, row)))
+                record = {}
+                for f, v in zip(fields, row):
+                    if f['datastore_type'] == 'text':
+                        v = unicode(v)
+                    record[f['datastore_id']] = v
+                records.append(record)
 
             lc.action.datastore_upsert(resource_id=resource_id, records=records)
 
