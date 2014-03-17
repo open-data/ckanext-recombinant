@@ -7,6 +7,7 @@ from paste.deploy.converters import asbool
 import importlib
 import os
 import json
+import uuid
 
 class RecombinantException(Exception):
     pass
@@ -56,6 +57,14 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
     def edit_template(self):
         return 'recombinant/edit.html'
 
+    def create_package_schema(self):
+        schema = super(RecombinantPlugin, self).create_package_schema()
+        schema['id'] = [generate_uuid]
+        schema['name'] = [value_from_id]
+        schema['resources']['url'] = [p.toolkit.get_validator('ignore_missing')]
+
+        return schema
+
     def before_map(self, map):
         map.connect('/recombinant/upload/{id}', action='upload',
             conditions=dict(method=['POST']),
@@ -63,6 +72,19 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         map.connect('/recombinant/template/{id}', action='template',
             controller='ckanext.recombinant.controller:UploadController')
         return map
+
+
+def generate_uuid(value):
+    """
+    Create an id for this dataset earlier than normal.
+    """
+    return str(uuid.uuid4())
+
+def value_from_id(key, converted_data, errors, context):
+    """
+    Copy the 'id' value from converted_data
+    """
+    converted_data[key] = converted_data[('id',)]
 
 
 

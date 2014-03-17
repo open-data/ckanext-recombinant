@@ -87,20 +87,21 @@ class TableCommand(CkanCommand):
         lc = ckanapi.LocalCKAN()
         for t in tables:
             for o in self._get_orgs():
-                name = _package_name(t['dataset_type'], o)
-                print name
-                p = lc.action.package_create(
+                print t['dataset_type'], o
+                dataset = lc.action.package_create(
                     type=t['dataset_type'],
-                    name=name,
                     title=t['title'],
                     owner_org=o,
-                    resources=[{'url': '_tmp'}],
+                    resources=[{'name':'data'}],
                     )
                 lc.action.datastore_create(
-                    resource_id=p['resources'][0]['id'],
-                    fields=t['datastore_table']['fields'],
-                    primary_key=t['datastore_table']['primary_key'],
-                    indexes=t['datastore_table']['indexes'],
+                    resource_id=dataset['resources'][0]['id'],
+                    fields=[{
+                        'id': f['datastore_id'],
+                        'type': f['datastore_type'],
+                        } for f in t['fields']],
+                    primary_key=t['datastore_primary_key'],
+                    indexes=t['datastore_indexes'],
                     )
 
 
@@ -121,10 +122,10 @@ class TableCommand(CkanCommand):
                     try:
                         lc.action.datastore_delete(
                             resource_id=d['resources'][0]['id'])
-                    except p.toolkit.ObjectNotFound:
+                    except ckanapi.ObjectNotFound:
                         pass
                     cmd.purge('{0}-{1}'.format(t['dataset_type'], o))
-                except p.toolkit.ObjectNotFound:
+                except ckanapi.ObjectNotFound:
                     pass
 
     def _load_xls(self, xls_file_names):
