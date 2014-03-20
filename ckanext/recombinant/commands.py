@@ -122,10 +122,10 @@ class TableCommand(CkanCommand):
                     try:
                         lc.action.datastore_delete(
                             resource_id=d['resources'][0]['id'])
-                    except ckanapi.ObjectNotFound:
+                    except ckanapi.NotFound:
                         pass
                     cmd.purge('{0}-{1}'.format(t['dataset_type'], o))
-                except ckanapi.ObjectNotFound:
+                except ckanapi.NotFound:
                     pass
 
     def _load_xls(self, xls_file_names):
