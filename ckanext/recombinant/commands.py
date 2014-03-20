@@ -115,20 +115,22 @@ class TableCommand(CkanCommand):
         from ckan.lib.cli import DatasetCmd
         cmd = DatasetCmd('dataset')
 
+        orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
         for t in tables:
-            for o in self._get_orgs():
-                name = _package_name(t['dataset_type'], o)
-                try:
-                    d = lc.action.package_show(id=name)
+            packages = lc.action.package_search(
+                q="type:%s" % t['dataset_type'],
+                rows=1000)['results']
+            if len(packages) != len(orgs):
+                logging.warn('expected %d packages, received %d' %
+                    (len(orgs), len(packages)))
+            for package in packages:
+                for r in package['resources']:
                     try:
-                        lc.action.datastore_delete(
-                            resource_id=d['resources'][0]['id'])
+                        lc.action.datastore_delete(id=r['id'])
                     except ckanapi.NotFound:
                         pass
-                    cmd.purge('{0}-{1}'.format(t['dataset_type'], o))
-                except ckanapi.NotFound:
-                    pass
+                cmd.purge(package['name'])
 
     def _load_xls(self, xls_file_names):
         for n in xls_file_names:
