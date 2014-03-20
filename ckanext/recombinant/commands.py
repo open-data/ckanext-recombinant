@@ -149,24 +149,32 @@ class TableCommand(CkanCommand):
             if t['xls_sheet_name'] == sheet_name:
                 break
         else:
-            print "XLS sheet name '{0}' not found in tables".format(sheet_name)
+            logging.warn("XLS sheet name '{0}' not found in tables".format(
+                sheet_name))
             return
 
         if org_name not in self._get_orgs():
-            print "Organization name '{0}' not found".format(org_name)
+            logging.warn("Organization name '{0}' not found".format(org_name))
+            return
 
         lc = ckanapi.LocalCKAN()
-        name = _package_name(t['dataset_type'], org_name)
-        p = lc.action.package_show(id=name)
+        org = lc.action.organization_show(id=org_name, include_datsets=False)
+        packages = lc.action.package_search(
+            q="type:%s AND owner_org:%s" % (t['dataset_type'], org['id']),
+            rows=10)['results']
+        if len(packages) != 1:
+            logging.warn('expected %d packages, received %d' %
+                (1, len(packages)))
+        p = packages[0]
         resource_id = p['resources'][0]['id']
 
         records = []
-        fields = t['datastore_table']['fields']
+        fields = t['fields']
         for n, row in enumerate(g):
             assert len(row) == len(fields), ("row {0} has {1} columns, "
                 "expecting {2}").format(n+3, len(row), len(fields))
             records.append(dict(
-                (f['id'], v) for f, v in zip(fields, row)))
+                (f['datastore_id'], v) for f, v in zip(fields, row)))
 
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
 
