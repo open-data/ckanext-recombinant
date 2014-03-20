@@ -4,9 +4,11 @@ import paste.script
 import ckanapi
 import csv
 import sys
+import logging
 
 from ckanext.recombinant.plugins import _get_tables
 from ckanext.recombinant.read_xls import read_xls
+
 
 class TableCommand(CkanCommand):
     """
@@ -166,21 +168,30 @@ class TableCommand(CkanCommand):
         if not tables:
             return
 
+        orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
         for t in tables:
             out = csv.writer(sys.stdout)
             #output columns header
-            columns = [f['id'] for f in t['datastore_table']['fields']]
-            columns.extend(['org_name', 'org_title'])
+            columns = [f['label'] for f in t['fields']]
+            columns.extend(['Org id', 'Org'])
             out.writerow(columns)
 
-            for package_id in lc.action.package_list():
-                package = lc.action.package_show(id = package_id)
-                if package['type'] == t['dataset_type']:
-                    for res in package['resources']:
+            packages = lc.action.package_search(
+                q="type:%s" % t['dataset_type'],
+                rows=1000)['results']
+            if len(packages) != len(orgs):
+                logging.warn('expected %d packages, received %d' %
+                    (len(orgs), len(packages)))
+
+            for package in packages:
+                for res in package['resources']:
+                    try:
                         records = lc.action.datastore_search(
                             resource_id=res['id'])['records']
                         self._write_meta_row(records, package, columns, out)
+                    except ckanapi.NotFound:
+                        logging.warn('resource %s not found' % res['id'])
 
     def _write_meta_row(self, records, package, columns, out):
         for record in records:
