@@ -192,6 +192,7 @@ class TableCommand(CkanCommand):
             out.writerow(columns)
 
             column_ids = [f['datastore_id'] for f in t['fields']]
+            column_ids.extend(['org_name', 'org_title'])
 
             for package in self._get_packages(t['dataset_type']):
                 for res in package['resources']:
