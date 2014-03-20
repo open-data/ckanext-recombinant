@@ -60,6 +60,17 @@ class TableCommand(CkanCommand):
             self._orgs = lc.action.organization_list()
         return self._orgs
 
+    def _get_packages(self, dataset_type):
+        lc = ckanapi.LocalCKAN()
+        orgs = self._get_orgs()
+        packages = lc.action.package_search(
+            q="type:%s" % dataset_type,
+            rows=1000)['results']
+        if len(packages) != len(orgs):
+            logging.warn('expected %d packages, received %d' %
+                (len(orgs), len(packages)))
+        return packages
+
     def _show(self):
         for t in _get_tables():
             print '{t[title]} ({t[dataset_type]})'.format(t=t)
@@ -118,13 +129,7 @@ class TableCommand(CkanCommand):
         orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
         for t in tables:
-            packages = lc.action.package_search(
-                q="type:%s" % t['dataset_type'],
-                rows=1000)['results']
-            if len(packages) != len(orgs):
-                logging.warn('expected %d packages, received %d' %
-                    (len(orgs), len(packages)))
-            for package in packages:
+            for package in self._get_packages(t['dataset_type']):
                 for r in package['resources']:
                     try:
                         lc.action.datastore_delete(id=r['id'])
@@ -170,7 +175,6 @@ class TableCommand(CkanCommand):
         if not tables:
             return
 
-        orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
         for t in tables:
             out = csv.writer(sys.stdout)
@@ -179,19 +183,14 @@ class TableCommand(CkanCommand):
             columns.extend(['Org id', 'Org'])
             out.writerow(columns)
 
-            packages = lc.action.package_search(
-                q="type:%s" % t['dataset_type'],
-                rows=1000)['results']
-            if len(packages) != len(orgs):
-                logging.warn('expected %d packages, received %d' %
-                    (len(orgs), len(packages)))
+            column_ids = [f['datastore_id'] for f in t['fields']]
 
-            for package in packages:
+            for package in self._get_packages(t['dataset_type']):
                 for res in package['resources']:
                     try:
                         records = lc.action.datastore_search(
                             resource_id=res['id'])['records']
-                        self._write_meta_row(records, package, columns, out)
+                        self._write_meta_row(records, package, column_ids, out)
                     except ckanapi.NotFound:
                         logging.warn('resource %s not found' % res['id'])
 
@@ -203,7 +202,4 @@ class TableCommand(CkanCommand):
                 unicode(record[col]).encode('utf-8') for col in columns])
 
 
-
-def _package_name(dataset_type, org_name):
-    return '{0}-{1}'.format(dataset_type, org_name)
 
