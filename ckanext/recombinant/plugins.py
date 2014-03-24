@@ -52,7 +52,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         return [t['dataset_type'] for t in self._tables]
 
     def read_template(self):
-        return 'recombinant/read.html'
+        return 'recombinant/edit.html'
 
     def edit_template(self):
         return 'recombinant/edit.html'
