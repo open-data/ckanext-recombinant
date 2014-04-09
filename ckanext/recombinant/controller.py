@@ -28,7 +28,7 @@ class UploadController(PackageController):
 
             #is this the right sheet for this organization?
             if org_name != owner_org:
-                msg = ('Invalid sheet for this organization. Sheet must be labeled for{0}, ' +
+                msg = ('Invalid sheet for this organization. Sheet must be labeled for {0}, ' +
                        'but you supplied a sheet for {1}').format(owner_org, org_name)
                 raise ValidationError({'xls_update': msg})
 
