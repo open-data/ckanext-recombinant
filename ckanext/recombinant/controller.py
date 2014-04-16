@@ -44,6 +44,10 @@ class UploadController(PackageController):
             records = []
             fields = t['fields']
             for n, row in enumerate(upload_data):
+                # trailing cells might be empty, trim them before checking length
+                while row and not row[-1]:
+                    row.pop()
+
                 if len(row) != len(fields):
                     msg = ("Row {0} of this sheet has {1} columns, "
                             "expecting {2}").format(n+3, len(row), len(fields))
