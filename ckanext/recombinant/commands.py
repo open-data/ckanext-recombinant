@@ -9,6 +9,7 @@ import logging
 from ckanext.recombinant.plugins import _get_tables
 from ckanext.recombinant.read_xls import read_xls
 
+RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 
 class TableCommand(CkanCommand):
     """
@@ -198,7 +199,9 @@ class TableCommand(CkanCommand):
                 for res in package['resources']:
                     try:
                         records = lc.action.datastore_search(
-                            resource_id=res['id'])['records']
+                            limit=RECORDS_PER_ORGANIZATION,
+                            resource_id=res['id'],
+                            )['records']
                         self._write_meta_row(records, package, column_ids, out)
                     except ckanapi.NotFound:
                         logging.warn('resource %s not found' % res['id'])
