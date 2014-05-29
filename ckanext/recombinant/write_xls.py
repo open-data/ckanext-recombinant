@@ -22,7 +22,12 @@ def xls_template(dataset_type, org):
     sheet = book.add_sheet(t['xls_sheet_name'])
     org_xf = xlwt.easyxf(t['xls_organization_style'])
     for n, key in enumerate(t['xls_organization_info']):
-        sheet.write(0, n, org.get(key, ''), org_xf)
+        for e in org['extras']:
+            if e['key'] == key:
+                sheet.write(0, n, e['value'], org_xf)
+                break
+        else:
+            sheet.write(0, n, org.get(key, ''), org_xf)
     header_xf = xlwt.easyxf(t['xls_header_style'])
     for n, field in enumerate(t['fields']):
         sheet.write(1, n, field['label'], header_xf)
