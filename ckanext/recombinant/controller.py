@@ -1,3 +1,5 @@
+from pylons.i18n import _
+
 from ckan.lib.base import (c, render, model, request, h, g,
     response, abort, redirect)
 from ckan.controllers.package import PackageController
@@ -61,6 +63,10 @@ class UploadController(PackageController):
                 records.append(record)
 
             lc.action.datastore_upsert(resource_id=resource_id, records=records)
+
+            h.flash_success(_(
+                "Your file was successfully uploaded into the central system."
+                ))
 
             redirect(h.url_for(controller='package',
                                action='read', id=id))
