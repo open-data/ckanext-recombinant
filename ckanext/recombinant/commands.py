@@ -5,6 +5,7 @@ import ckanapi
 import csv
 import sys
 import logging
+import unicodecsv
 
 from ckanext.recombinant.plugins import _get_tables
 from ckanext.recombinant.read_xls import read_xls
@@ -186,7 +187,7 @@ class TableCommand(CkanCommand):
 
         lc = ckanapi.LocalCKAN()
         for t in tables:
-            out = csv.writer(sys.stdout)
+            out = unicodecsv.writer(sys.stdout)
             #output columns header
             columns = [f['label'] for f in t['fields']]
             columns.extend(['Org id', 'Org'])
