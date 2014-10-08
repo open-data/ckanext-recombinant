@@ -1,6 +1,6 @@
 import xlwt
 
-from ckanext.recombinant.plugins import _get_tables
+from ckanext.recombinant.plugins import get_table
 from ckanext.recombinant.errors import RecombinantException
 
 XLS_0_WIDTH = 256  # width of '0' character in default font
@@ -10,13 +10,7 @@ def xls_template(dataset_type, org):
     return an xlwn.Workbook object containing the sheet and header fields
     for passed dataset_type and org.
     """
-    tables = _get_tables()
-    for t in tables:
-        if t['dataset_type'] == dataset_type:
-            break
-    else:
-        raise RecombinantException('dataset_type "%s" not found'
-            % dataset_type)
+    t = get_table(dataset_type)
 
     book = xlwt.Workbook()
     sheet = book.add_sheet(t['xls_sheet_name'])

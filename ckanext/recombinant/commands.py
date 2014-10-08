@@ -77,9 +77,6 @@ class TableCommand(CkanCommand):
         for t in _get_tables():
             print '{t[title]} ({t[dataset_type]})'.format(t=t)
 
-            for o in self._get_orgs():
-                print ' -', o
-
     def _get_tables_from_types(self, dataset_types):
         if self.options.all_types:
             if dataset_types:

@@ -28,6 +28,15 @@ def _get_tables():
     return tables
 
 
+def get_table(dataset_type):
+    tables = _get_tables()
+    for t in tables:
+        if t['dataset_type'] == dataset_type:
+            break
+    else:
+        raise RecombinantException('dataset_type "%s" not found'
+            % dataset_type)
+    return t
 
 
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
