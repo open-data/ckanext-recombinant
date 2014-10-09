@@ -1,3 +1,18 @@
+"""
+ckanext-recombinant table management commands
+
+Usage:
+  paster recombinant show
+  paster recombinant create (-a | DATASET_TYPE ...)
+  paster recombinant destroy (-a | DATASET_TYPE ...)
+  paster recombinant load-xls XLS_FILE ...
+  paster recombinant combine (-a | DATASET_TYPE ...)
+  paster recombinant -h
+
+Options:
+  -h --help         show this screen
+  -a --all-types    create all dataset types
+"""
 from ckan.lib.cli import CkanCommand
 from ckan.logic import ValidationError
 import paste.script
@@ -6,6 +21,7 @@ import csv
 import sys
 import logging
 import unicodecsv
+from docopt import docopt
 
 from ckanext.recombinant.plugins import _get_tables
 from ckanext.recombinant.read_xls import read_xls
@@ -13,21 +29,6 @@ from ckanext.recombinant.read_xls import read_xls
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 
 class TableCommand(CkanCommand):
-    """
-    ckanext-recombinant table management commands
-
-    Usage::
-
-        paster recombinant  show
-                            create [-a | <dataset type> [...]]
-                            destroy [-a | <dataset type> [...]]
-                            load-xls <xls file> [...]
-                            combine [-a | <dataset type> [...]]
-
-    Options::
-
-        -a/--all-types    create all dataset types
-    """
     summary = __doc__.split('\n')[0]
     usage = __doc__
 
@@ -40,21 +41,21 @@ class TableCommand(CkanCommand):
     _orgs = None
 
     def command(self):
-        cmd = self.args[0]
+        opts = docopt(__doc__)
         self._load_config()
 
-        if cmd == 'show':
+        if opts['show']:
             self._show()
-        elif cmd == 'create':
-            self._create(self.args[1:])
-        elif cmd == 'destroy':
-            self._destroy(self.args[1:])
-        elif cmd == 'load-xls':
-            self._load_xls(self.args[1:])
-        elif cmd == 'combine':
-            self._create_meta_dataset(self.args[1:])
+        elif opts['create']:
+            self._create(opts['DATASET_TYPE'])
+        elif opts['destroy']:
+            self._destroy(opts['DATASET_TYPE'])
+        elif opts['load-xls']:
+            self._load_xls(opts['DATASET_TYPE'])
+        elif opts['combine']:
+            self._create_meta_dataset(opts['DATASET_TYPE'])
         else:
-            print self.__doc__
+            print opts
 
     def _get_orgs(self):
         if not self._orgs:
