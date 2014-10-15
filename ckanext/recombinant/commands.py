@@ -2,16 +2,17 @@
 ckanext-recombinant table management commands
 
 Usage:
-  paster recombinant show
-  paster recombinant create (-a | DATASET_TYPE ...)
-  paster recombinant destroy (-a | DATASET_TYPE ...)
-  paster recombinant load-xls XLS_FILE ...
-  paster recombinant combine (-a | DATASET_TYPE ...)
+  paster recombinant show [-c CONFIG]
+  paster recombinant create (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant destroy (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant load-xls XLS_FILE ... [-c CONFIG]
+  paster recombinant combine (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant -h
 
 Options:
-  -h --help         show this screen
-  -a --all-types    create all dataset types
+  -h --help           show this screen
+  -a --all-types      create all dataset types
+  -c --config=CONFIG  CKAN configuration file
 """
 from ckan.lib.cli import CkanCommand
 from ckan.logic import ValidationError
