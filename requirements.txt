@@ -2,3 +2,4 @@ importlib==1.0.2
 unicodecsv
 xlwt
 xlrd
+docopt
