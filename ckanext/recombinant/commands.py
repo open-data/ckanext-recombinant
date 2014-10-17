@@ -52,7 +52,7 @@ class TableCommand(CkanCommand):
         elif opts['destroy']:
             self._destroy(opts['DATASET_TYPE'])
         elif opts['load-xls']:
-            self._load_xls(opts['DATASET_TYPE'])
+            self._load_xls(opts['XLS_FILE'])
         elif opts['combine']:
             self._create_meta_dataset(opts['DATASET_TYPE'])
         else:
