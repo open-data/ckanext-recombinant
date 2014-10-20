@@ -166,6 +166,11 @@ class TableCommand(CkanCommand):
         if len(packages) != 1:
             logging.warn('expected %d packages, received %d' %
                 (1, len(packages)))
+
+        if not packages:
+            print ("No recombinant tables for '%s' found. "
+                "Try creating them first") % t['dataset_type']
+            return
         p = packages[0]
         resource_id = p['resources'][0]['id']
 
