@@ -142,8 +142,8 @@ class TableCommand(CkanCommand):
         for n in xls_file_names:
             self._load_one_xls(n)
 
-    def _load_one_xls(self, n):
-        g = read_xls(n)
+    def _load_one_xls(self, name):
+        g = read_xls(name)
         sheet_name, org_name = next(g)
 
         for t in _get_tables():
@@ -166,6 +166,11 @@ class TableCommand(CkanCommand):
         if len(packages) != 1:
             logging.warn('expected %d packages, received %d' %
                 (1, len(packages)))
+
+        if not packages:
+            logging.warn(("No recombinant tables for '%s' found. "
+                "Try creating them first") % t['dataset_type'])
+            return
         p = packages[0]
         resource_id = p['resources'][0]['id']
 
@@ -177,6 +182,7 @@ class TableCommand(CkanCommand):
             records.append(dict(
                 (f['datastore_id'], v) for f, v in zip(fields, row)))
 
+        print name, len(records)
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
 
     def _create_meta_dataset(self, dataset_types):
