@@ -66,18 +66,21 @@ class TableCommand(CkanCommand):
 
     def _get_packages(self, dataset_type):
         lc = ckanapi.LocalCKAN()
-        orgs = self._get_orgs()
         packages = lc.action.package_search(
             q="type:%s" % dataset_type,
             rows=1000)['results']
-        if len(packages) != len(orgs):
-            logging.warn('expected %d packages, received %d' %
-                (len(orgs), len(packages)))
         return packages
 
     def _show(self):
+        orgs = self._get_orgs()
         for t in _get_tables():
             print '{t[title]} ({t[dataset_type]})'.format(t=t)
+            packages =  self._get_packages(t['dataset_type'])
+            if len(packages) != len(orgs):
+                print (' - %d orgs but %d records found' %
+                    (len(orgs), len(packages)))
+            else:
+                print (' - %d records found' % (len(packages),))
 
     def _get_tables_from_types(self, dataset_types):
         if self.options.all_types:
@@ -100,7 +103,11 @@ class TableCommand(CkanCommand):
 
         lc = ckanapi.LocalCKAN()
         for t in tables:
+            existing = dict((p['organization']['name'], p)
+                for p in self._get_packages(t['dataset_type']))
             for o in self._get_orgs():
+                if o in existing:
+                    continue
                 print t['dataset_type'], o
                 dataset = lc.action.package_create(
                     type=t['dataset_type'],
