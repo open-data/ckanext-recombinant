@@ -103,7 +103,11 @@ class TableCommand(CkanCommand):
 
         lc = ckanapi.LocalCKAN()
         for t in tables:
+            existing = dict((p['organization']['name'], p)
+                for p in self._get_packages(t['dataset_type']))
             for o in self._get_orgs():
+                if o in existing:
+                    continue
                 print t['dataset_type'], o
                 dataset = lc.action.package_create(
                     type=t['dataset_type'],
