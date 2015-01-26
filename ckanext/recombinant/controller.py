@@ -47,7 +47,7 @@ class UploadController(PackageController):
             fields = t['fields']
             for n, row in enumerate(upload_data):
                 # trailing cells might be empty, trim them before checking length
-                while row and not row[-1]:
+                while row and row[-1] is None:
                     row.pop()
 
                 if len(row) != len(fields):
