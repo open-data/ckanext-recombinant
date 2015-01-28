@@ -113,7 +113,7 @@ class TableCommand(CkanCommand):
                     type=t['dataset_type'],
                     title=t['title'],
                     owner_org=o,
-                    resources=[{'name':'data'}],
+                    resources=[{'name':'data', 'url':''}],
                     )
                 lc.action.datastore_create(
                     resource_id=dataset['resources'][0]['id'],
