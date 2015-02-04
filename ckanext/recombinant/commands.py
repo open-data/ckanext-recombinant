@@ -2,7 +2,7 @@
 ckanext-recombinant table management commands
 
 Usage:
-  paster recombinant show [-c CONFIG]
+  paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
   paster recombinant create (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant destroy (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-xls XLS_FILE ... [-c CONFIG]
@@ -46,7 +46,10 @@ class TableCommand(CkanCommand):
         self._load_config()
 
         if opts['show']:
-            self._show()
+            dataset_type = None
+            if opts['DATASET_TYPE']:
+                dataset_type = opts['DATASET_TYPE'][0]
+            self._show(dataset_type, opts['ORG_NAME'])
         elif opts['create']:
             self._create(opts['DATASET_TYPE'])
         elif opts['destroy']:
@@ -71,11 +74,20 @@ class TableCommand(CkanCommand):
             rows=1000)['results']
         return packages
 
-    def _show(self):
+    def _show(self, dataset_type, org_name):
         orgs = self._get_orgs()
         for t in _get_tables():
+            if dataset_type and t['dataset_type'] != dataset_type:
+                continue
             print '{t[title]} ({t[dataset_type]})'.format(t=t)
             packages =  self._get_packages(t['dataset_type'])
+            if dataset_type:
+                for p in packages:
+                    if org_name and org_name != p['organization']['name']:
+                        continue
+                    print p['organization']['name'],
+                    print "resource_id =",
+                    print p['resources'][0]['id']
             if len(packages) != len(orgs):
                 print (' - %d orgs but %d records found' %
                     (len(orgs), len(packages)))
