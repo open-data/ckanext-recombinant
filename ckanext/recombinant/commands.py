@@ -25,7 +25,8 @@ import unicodecsv
 from docopt import docopt
 
 from ckanext.recombinant.plugins import _get_tables
-from ckanext.recombinant.read_xls import read_xls
+from ckanext.recombinant.read_xls import read_xls, get_records
+from ckanext.recombinant.datatypes import data_store_type
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 
@@ -131,12 +132,14 @@ class TableCommand(CkanCommand):
                     resource_id=dataset['resources'][0]['id'],
                     fields=[{
                         'id': f['datastore_id'],
-                        'type': f['datastore_type'],
+                        'type':
+                            'int' if data_store_type[
+                                f['datastore_type']].numeric
+                            else 'text',
                         } for f in t['fields']],
                     primary_key=t['datastore_primary_key'],
                     indexes=t['datastore_indexes'],
                     )
-
 
     def _destroy(self, dataset_types):
         tables = self._get_tables_from_types(dataset_types)
@@ -163,7 +166,7 @@ class TableCommand(CkanCommand):
 
     def _load_one_xls(self, name):
         g = read_xls(name)
-        sheet_name, org_name = next(g)
+        sheet_name, org_name, date_mode = next(g)
 
         for t in _get_tables():
             if t['xls_sheet_name'] == sheet_name:
@@ -192,14 +195,7 @@ class TableCommand(CkanCommand):
             return
         p = packages[0]
         resource_id = p['resources'][0]['id']
-
-        records = []
-        fields = t['fields']
-        for n, row in enumerate(g):
-            assert len(row) == len(fields), ("row {0} has {1} columns, "
-                "expecting {2}").format(n+3, len(row), len(fields))
-            records.append(dict(
-                (f['datastore_id'], v) for f, v in zip(fields, row)))
+        records = get_records(g, t['fields'], date_mode)
 
         print name, len(records)
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
@@ -212,7 +208,7 @@ class TableCommand(CkanCommand):
         lc = ckanapi.LocalCKAN()
         for t in tables:
             out = unicodecsv.writer(sys.stdout)
-            #output columns header
+            # output columns header
             columns = [f['label'] for f in t['fields']]
             columns.extend(['Org id', 'Org'])
             out.writerow(columns)

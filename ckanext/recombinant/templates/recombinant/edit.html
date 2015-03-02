@@ -13,9 +13,13 @@
   <header class="module-content page-header"></header>
   <section class="module-poster">
     <div class="module-content">
-
-    {% snippet "recombinant/snippets/xls_upload.html", pkg=pkg, errors=errors %}
+      {% if h.check_access('package_update', {'id': pkg.id }) %}
+        {% snippet "recombinant/snippets/xls_upload.html",
+          pkg=pkg, errors=errors %}
+      {% else %}
+        {% snippet "recombinant/snippets/xls_download.html",
+          pkg=pkg, errors=errors %}
+      {% endif %}
     </div>
   </section>
 {% endblock %}
-
