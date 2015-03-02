@@ -196,7 +196,6 @@ class TableCommand(CkanCommand):
 
         records = []
         fields = t['fields']
-
         for n, row in enumerate(g):
             assert len(row) == len(fields), ("row {0} has {1} columns, "
                 "expecting {2}").format(n+3, len(row), len(fields))
@@ -209,15 +208,23 @@ class TableCommand(CkanCommand):
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
 
     def _clean_num(self, dirty):
-        if dirty == '':
-            return dirty
-        elif isinstance(dirty, float):
+        if isinstance(dirty, float):
             return dirty
         elif isinstance(dirty, int):
             return float(dirty)
-        clean = re.sub(r'\.0$', '', str(dirty))
-        clean = re.sub(r'[^0-9]', '', clean)
-        return float(clean)
+        elif 'strip' in dir(dirty) and dirty.strip() == '':
+            return dirty.strip()
+
+        clean = re.sub(r'[^0-9]', '', re.sub(r'\.0$', '', str(dirty)))
+        # clean = re.sub(r'[^0-9]', '', clean)
+        try:
+            return float(clean)
+        except:
+            logging.warn(
+                'Bad integer input [{0}], using best-guess [{1}]'.format(
+                    dirty,
+                    clean))
+            return clean
 
     def _create_meta_dataset(self, dataset_types):
         tables = self._get_tables_from_types(dataset_types)
