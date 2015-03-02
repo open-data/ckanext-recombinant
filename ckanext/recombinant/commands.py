@@ -19,6 +19,7 @@ from ckan.logic import ValidationError
 import paste.script
 import ckanapi
 import csv
+import re
 import sys
 import logging
 import unicodecsv
@@ -195,14 +196,30 @@ class TableCommand(CkanCommand):
 
         records = []
         fields = t['fields']
+
         for n, row in enumerate(g):
+            print "row:\n\t" + str(row)
+            sys.stdin.readline()
             assert len(row) == len(fields), ("row {0} has {1} columns, "
                 "expecting {2}").format(n+3, len(row), len(fields))
-            records.append(dict(
-                (f['datastore_id'], v) for f, v in zip(fields, row)))
+            records.append(dict((
+                f['datastore_id'],
+                self._clean_num(v) if f['datastore_type'] == 'int' else v)
+                for f, v in zip(fields, row)))
 
         print name, len(records)
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
+
+    def _clean_num(self, dirty):
+        if dirty == '':
+            return dirty
+        elif isinstance(dirty, float):
+            return dirty
+        elif isinstance(dirty, int):
+            return float(dirty)
+        clean = re.sub(r'\.0$', '', str(dirty))
+        clean = re.sub(r'[^0-9]', '', clean)
+        return float(clean)
 
     def _create_meta_dataset(self, dataset_types):
         tables = self._get_tables_from_types(dataset_types)

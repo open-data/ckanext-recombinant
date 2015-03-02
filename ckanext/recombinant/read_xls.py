@@ -22,7 +22,16 @@ def read_xls(f, file_contents = None):
 
     row = sheet.horz_split_pos
     while row < sheet.nrows:
-        yield [c.value for c in sheet.row(row)]
+        # return next non-empty row
+        if not all(_is_bumf(c.value) for c in sheet.row(row)):
+            yield [c.value for c in sheet.row(row)]
         row += 1
 
+def _is_bumf(value):
+    """
+    Return true if this value is filler, en route to skipping over empty lines
+    """
+    if type(value) in (unicode, str):
+        return (value.strip() == '')
+    return (value is None)
 
