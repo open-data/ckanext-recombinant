@@ -2,12 +2,13 @@ import xlwt
 
 from ckanext.recombinant.plugins import get_table
 from ckanext.recombinant.errors import RecombinantException
+from datatypes import data_store_type
 
 XLS_0_WIDTH = 256  # width of '0' character in default font
 
 def xls_template(dataset_type, org):
     """
-    return an xlwn.Workbook object containing the sheet and header fields
+    return an xlwt.Workbook object containing the sheet and header fields
     for passed dataset_type and org.
     """
     t = get_table(dataset_type)
@@ -26,6 +27,9 @@ def xls_template(dataset_type, org):
     for n, field in enumerate(t['fields']):
         sheet.write(1, n, field['label'], header_xf)
         sheet.col(n).width = field['xls_column_width'] * XLS_0_WIDTH
+        sheet.col(n).set_style(
+            xlwt.easyxf(num_format_str=data_store_type[
+                field['datastore_type']].xl_format))
 
     sheet.set_panes_frozen(True)  # frozen headings instead of split panes
     sheet.set_horz_split_pos(2)  # in general, freeze after last heading row
