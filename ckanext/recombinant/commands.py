@@ -198,8 +198,6 @@ class TableCommand(CkanCommand):
         fields = t['fields']
 
         for n, row in enumerate(g):
-            print "row:\n\t" + str(row)
-            sys.stdin.readline()
             assert len(row) == len(fields), ("row {0} has {1} columns, "
                 "expecting {2}").format(n+3, len(row), len(fields))
             records.append(dict((
