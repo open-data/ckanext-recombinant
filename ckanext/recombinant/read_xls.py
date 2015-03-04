@@ -35,3 +35,21 @@ def _is_bumf(value):
         return (value.strip() == '')
     return (value is None)
 
+def clean_num(dirty):
+    if isinstance(dirty, float):
+        return dirty
+    elif isinstance(dirty, int):
+        return float(dirty)
+    elif 'strip' in dir(dirty) and dirty.strip() == '':
+        return dirty.strip()
+
+    clean = re.sub(r'[^0-9]', '', re.sub(r'\.0$', '', str(dirty)))
+    # clean = re.sub(r'[^0-9]', '', clean)
+    try:
+        return float(clean)
+    except:
+        logging.warn(
+            'Bad integer input [{0}], using best-guess [{1}]'.format(
+                dirty,
+                clean))
+        return clean

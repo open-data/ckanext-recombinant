@@ -3,7 +3,7 @@ from pylons.i18n import _
 from ckan.lib.base import (c, render, model, request, h, g,
     response, abort, redirect)
 from ckan.controllers.package import PackageController
-from ckanext.recombinant.read_xls import read_xls
+from ckanext.recombinant.read_xls import read_xls, clean_num
 from ckanext.recombinant.write_xls import xls_template
 from ckanext.recombinant.commands import _get_tables
 from ckan.logic import ValidationError
@@ -18,14 +18,19 @@ class UploadController(PackageController):
     def upload(self, id):
         package_type = self._get_package_type(id)
         try:
+            lc = ckanapi.LocalCKAN(username = c.user)
+            package = lc.action.package_show(id = id)
+
+            if (c.user is None) or (c.user == ''):
+                raise ValidationError(
+                    {'xls_update': 'Login required to upload'})
+
             if request.POST['xls_update'] == u'':
                 raise ValidationError({'xls_update': 'You must provide a valid file'})
 
             upload_data = read_xls('', file_contents = request.POST['xls_update'].file.read())
             sheet_name, org_name = next(upload_data)
 
-            lc = ckanapi.LocalCKAN(username = c.user)
-            package = lc.action.package_show(id = id)
             owner_org = package['organization']['name']
 
             #is this the right sheet for this organization?
@@ -59,7 +64,10 @@ class UploadController(PackageController):
                 for f, v in zip(fields, row):
                     if f['datastore_type'] == 'text':
                         v = unicode(v)
-                    record[f['datastore_id']] = v
+                    if f['datastore_type'] == 'int':
+                        record[f['datastore_id']] = clean_num(v)
+                    else:
+                        record[f['datastore_id']] = v
                 records.append(record)
 
             lc.action.datastore_upsert(resource_id=resource_id, records=records)
