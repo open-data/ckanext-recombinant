@@ -3,7 +3,7 @@ from pylons.i18n import _
 from ckan.lib.base import (c, render, model, request, h, g,
     response, abort, redirect)
 from ckan.controllers.package import PackageController
-from ckanext.recombinant.read_xls import read_xls, clean_num
+from ckanext.recombinant.read_xls import read_xls, get_records
 from ckanext.recombinant.write_xls import xls_template
 from ckanext.recombinant.commands import _get_tables
 from ckan.logic import ValidationError
@@ -24,6 +24,7 @@ class UploadController(PackageController):
             package = lc.action.package_show(id = id)
             owner_org = package['organization']['name']
 
+            """
             if (c.user is None) or (c.user == ''):
                 raise ValidationError(
                     {'xls_update': 'Login required to upload'})
@@ -35,6 +36,7 @@ class UploadController(PackageController):
                 raise ValidationError({'xls_update':
                     'You do not have permission to upload to {0}'.format(
                         owner_org)})
+            """
 
             if request.POST['xls_update'] == u'':
                 raise ValidationError({'xls_update': 'You must provide a valid file'})
@@ -58,28 +60,7 @@ class UploadController(PackageController):
 
             resource_id = package['resources'][0]['id']
 
-            records = []
-            fields = t['fields']
-            for n, row in enumerate(upload_data):
-                # trailing cells might be empty, trim them before checking length
-                while row and (row[-1] is None or row[-1] == ''):
-                    row.pop()
-
-                if len(row) != len(fields):
-                    msg = ("Row {0} of this sheet has {1} columns, "
-                            "expecting {2}").format(n+3, len(row), len(fields))
-                    raise ValidationError({'xls_update': msg})
-
-                record = {}
-                for f, v in zip(fields, row):
-                    if f['datastore_type'] == 'text':
-                        v = unicode(v)
-                    if f['datastore_type'] == 'int':
-                        record[f['datastore_id']] = clean_num(v)
-                    else:
-                        record[f['datastore_id']] = v
-                records.append(record)
-
+            records = get_records(upload_data, t['fields'])
             lc.action.datastore_upsert(resource_id=resource_id, records=records)
 
             h.flash_success(_(

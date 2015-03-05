@@ -1,0 +1,14 @@
+<h3>{% block title %}{% endblock %}</h3>
+{% block form %}
+{% endblock %}
+  <div class="control-group dataset-form-resource-types">
+    <div class="span-1 row-start">
+      <label>{{ _('Template') }}:</label>
+    </div>
+    <div class="span-4 row-end">
+        <a class="button" href="{% url_for controller='ckanext.recombinant.controller:UploadController', action='template', id=pkg.name %}">{{ _('Download template Excel spreadsheet') }}</a></li>
+    </div>
+  {% block upload_submit %}
+  {% endblock %}
+
+</form>

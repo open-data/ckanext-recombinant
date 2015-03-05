@@ -1,6 +1,6 @@
 
+import re
 import xlrd
-
 
 # special place to look for the organization name in each XLS file
 ORG_NAME_CELL = (0, 2)
@@ -35,21 +35,60 @@ def _is_bumf(value):
         return (value.strip() == '')
     return (value is None)
 
-def clean_num(dirty):
-    if isinstance(dirty, float):
-        return dirty
-    elif isinstance(dirty, int):
-        return float(dirty)
-    elif 'strip' in dir(dirty) and dirty.strip() == '':
-        return dirty.strip()
+def _canonicalize(dirty, dstore_type):
+    """
+    Fix and return dirty input to align with recombinant.json datastore type,
+    'int' or 'text'.
 
-    clean = re.sub(r'[^0-9]', '', re.sub(r'\.0$', '', str(dirty)))
-    # clean = re.sub(r'[^0-9]', '', clean)
+    The xlrd software interprets a purely numeric excel field as float,
+    and anything other as unicode, independent of recombinant.json
+    datastore type specification.
+    """
+    if dirty is None:
+        return 0.0 if dstore_type == 'int' else u''
+    elif isinstance(dirty, float) or isinstance(dirty, int):
+        if dstore_type == 'text':
+            if int(dirty) == dirty:
+                return unicode(int(dirty))
+            else:
+                return unicode(dirty)
+        return float(dirty)
+    elif (('strip' in dir(dirty)) and
+            (dirty.strip() == '') and
+            (dstore_type == 'int')):
+        return 0.0
+    elif dstore_type == 'text':
+        return unicode(dirty)
+
+    # dirty should be numeric: truncate trailing decimal digits, retain int part
+    canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', str(dirty)))
     try:
-        return float(clean)
+        return float(canon)
     except:
         logging.warn(
             'Bad integer input [{0}], using best-guess [{1}]'.format(
                 dirty,
-                clean))
-        return clean
+                unicode(canon)))
+        return unicode(canon)
+
+def get_records(upload_data, fields):
+    """
+    Truncate/pad empty/missing records to expected row length, canonicalize
+    cell content, and return resulting record list.
+    """
+    records = []
+    for n, row in enumerate(upload_data):
+        # trailing cells might be empty: trim row to fit
+        while (row and
+                (len(row) > len(fields)) and
+                (row[-1] is None or row[-1] == '')):
+            row.pop()
+        while row and (len(row) < len(fields)):
+            row.append(None) # placeholder: canonicalize once only, below
+
+        records.append(dict((
+                f['datastore_id'],
+                _canonicalize(v, f['datastore_type']))
+            for f, v in zip(fields, row)))
+
+    return records
