@@ -7,6 +7,8 @@ from ckanext.recombinant.read_xls import read_xls, clean_num
 from ckanext.recombinant.write_xls import xls_template
 from ckanext.recombinant.commands import _get_tables
 from ckan.logic import ValidationError
+from ckan.logic.action.get import organization_list_for_user as olist
+import ckan.model
 
 from cStringIO import StringIO
 
@@ -20,10 +22,19 @@ class UploadController(PackageController):
         try:
             lc = ckanapi.LocalCKAN(username = c.user)
             package = lc.action.package_show(id = id)
+            owner_org = package['organization']['name']
 
             if (c.user is None) or (c.user == ''):
                 raise ValidationError(
                     {'xls_update': 'Login required to upload'})
+
+            user_orgs_ok = [org['name'] for org in olist(
+                {'model': ckan.model, 'user': c.user},
+                {'permission':'read'})]
+            if owner_org not in user_orgs_ok:
+                raise ValidationError({'xls_update':
+                    'You do not have permission to upload to {0}'.format(
+                        owner_org)})
 
             if request.POST['xls_update'] == u'':
                 raise ValidationError({'xls_update': 'You must provide a valid file'})
@@ -31,7 +42,6 @@ class UploadController(PackageController):
             upload_data = read_xls('', file_contents = request.POST['xls_update'].file.read())
             sheet_name, org_name = next(upload_data)
 
-            owner_org = package['organization']['name']
 
             #is this the right sheet for this organization?
             if org_name != owner_org:
