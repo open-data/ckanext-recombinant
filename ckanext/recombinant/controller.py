@@ -7,7 +7,6 @@ from ckanext.recombinant.read_xls import read_xls, get_records
 from ckanext.recombinant.write_xls import xls_template
 from ckanext.recombinant.commands import _get_tables
 from ckan.logic import ValidationError
-from ckan.logic.action.get import organization_list_for_user as olist
 import ckan.model
 
 from cStringIO import StringIO
@@ -24,38 +23,36 @@ class UploadController(PackageController):
             package = lc.action.package_show(id = id)
             owner_org = package['organization']['name']
 
-            """
-            if (c.user is None) or (c.user == ''):
-                raise ValidationError(
-                    {'xls_update': 'Login required to upload'})
-
-            user_orgs_ok = [org['name'] for org in olist(
-                {'model': ckan.model, 'user': c.user},
-                {'permission':'read'})]
-            if owner_org not in user_orgs_ok:
+            if not (h.check_access('package_update', {'id': id})):
                 raise ValidationError({'xls_update':
-                    'You do not have permission to upload to {0}'.format(
+                    _('You do not have permission to upload to {0}').format(
                         owner_org)})
-            """
 
             if request.POST['xls_update'] == u'':
-                raise ValidationError({'xls_update': 'You must provide a valid file'})
+                raise ValidationError(
+                    {'xls_update': _('You must provide a valid file')})
 
-            upload_data = read_xls('', file_contents = request.POST['xls_update'].file.read())
+            upload_data = read_xls(
+                '',
+                file_contents = request.POST['xls_update'].file.read())
             sheet_name, org_name = next(upload_data)
 
 
             #is this the right sheet for this organization?
             if org_name != owner_org:
-                msg = ('Invalid sheet for this organization. Sheet must be labeled for {0}, ' +
-                       'but you supplied a sheet for {1}').format(owner_org, org_name)
+                msg = _('Invalid sheet for this organization. ' +
+                    'Sheet must be labeled for {0}, ' +
+                    'but you supplied a sheet for {1}').format(
+                        owner_org,
+                        org_name)
                 raise ValidationError({'xls_update': msg})
 
             for t in _get_tables():
                 if t['xls_sheet_name'] == sheet_name:
                     break
             else:
-                msg = "Sheet name '{0}' not found in list of valid tables".format(sheet_name)
+                msg = _("Sheet name '{0}' not found in list of valid tables"
+                    ).format(sheet_name)
                 raise ValidationError({'xls_update': msg})
 
             resource_id = package['resources'][0]['id']

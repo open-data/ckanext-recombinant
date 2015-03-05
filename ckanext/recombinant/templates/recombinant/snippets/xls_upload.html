@@ -1,4 +1,4 @@
-{% extends 'package/snippets/xls_base.html' %}
+{% extends 'recombinant/snippets/xls_base.html' %}
 
 {% block title %}{{_('Create and update records from Excel spreadsheet')}}{% endblock %}
 
@@ -12,7 +12,11 @@
     <label for="xls_update">{{ _('Upload') }}:</label>
   </div>
   <div class="span-4 row-end">
-    <input required type="file" name="xls_update" id="xls_update" accept="application/vnd.ms-excel">
+    <input required
+      type="file"
+      name="xls_update"
+      id="xls_update"
+      accept="application/vnd.ms-excel">
   </div>
   {% if errors %}
     <div class="span-3 form-attention">
