@@ -25,7 +25,7 @@ import unicodecsv
 from docopt import docopt
 
 from ckanext.recombinant.plugins import _get_tables
-from ckanext.recombinant.read_xls import read_xls
+from ckanext.recombinant.read_xls import read_xls, get_records
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 
@@ -192,14 +192,7 @@ class TableCommand(CkanCommand):
             return
         p = packages[0]
         resource_id = p['resources'][0]['id']
-
-        records = []
-        fields = t['fields']
-        for n, row in enumerate(g):
-            assert len(row) == len(fields), ("row {0} has {1} columns, "
-                "expecting {2}").format(n+3, len(row), len(fields))
-            records.append(dict(
-                (f['datastore_id'], v) for f, v in zip(fields, row)))
+        records = get_records(g, t['fields'])
 
         print name, len(records)
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
