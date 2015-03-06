@@ -7,7 +7,6 @@ from ckanext.recombinant.read_xls import read_xls, get_records
 from ckanext.recombinant.write_xls import xls_template
 from ckanext.recombinant.commands import _get_tables
 from ckan.logic import ValidationError
-import ckan.model
 
 from cStringIO import StringIO
 
