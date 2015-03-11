@@ -24,8 +24,8 @@ class UploadController(PackageController):
             owner_org = package['organization']['name']
 
             if request.POST['xls_update'] == u'':
-                msg = 'You must provide a valid file'
-                raise ValidationError({'xls_update': {msg: ()}})
+                msg = _('You must provide a valid file')
+                raise ValidationError({'xls_update': msg})
 
             upload_data = read_xls(
                 '',
@@ -35,22 +35,24 @@ class UploadController(PackageController):
                 sheet_name, org_name = next(upload_data)
             except XLRDError, xerr:
                 msg = xerr.message
-                raise ValidationError({'xls_update': {msg: ()}})
+                raise ValidationError({'xls_update': msg})
 
-            #is this the right sheet for this organization?
+            # is this the right sheet for this organization?
             if org_name != owner_org:
-                msg = ('Invalid sheet for this organization. ' +
+                msg = _('Invalid sheet for this organization. ' +
                     'Sheet must be labeled for {0}, ' +
-                    'but you supplied a sheet for {1}')
+                    'but you supplied a sheet for {1}').format(
+                        owner_org, org_name)
                 raise ValidationError(
-                    {'xls_update': {msg: (owner_org, org_name)}})
+                    {'xls_update': msg})
 
             for t in _get_tables():
                 if t['xls_sheet_name'] == sheet_name:
                     break
             else:
-                msg = "Sheet name '{0}' not found in list of valid tables"
-                raise ValidationError({'xls_update': {msg: (sheet_name,)}})
+                msg = _("Sheet name '{0}' " +
+                    "not found in list of valid tables").format(sheet_name)
+                raise ValidationError({'xls_update': msg})
 
             resource_id = package['resources'][0]['id']
 
@@ -60,8 +62,8 @@ class UploadController(PackageController):
                     resource_id=resource_id,
                     records=records)
             except NotAuthorized, na:
-                msg = 'You do not have permission to upload to {0}'
-                raise ValidationError({'xls_update': {msg: (owner_org,)}})
+                msg = _('You do not have permission to upload to {0}').format(owner_org)
+                raise ValidationError({'xls_update': msg})
 
             h.flash_success(_(
                 "Your file was successfully uploaded into the central system."
@@ -71,11 +73,7 @@ class UploadController(PackageController):
         except ValidationError, e:
             errors = []
             for error in e.error_dict.values():
-                if isinstance(error, dict):
-                    errors.append(error)
-                else:
-                    errors.append(
-                        {str(error).decode('utf-8').replace('\n', '<br>'): ()})
+                errors.append(error)
             vars = {'errors': errors, 'action': 'edit'}
             c.pkg_dict = package
             return render(self._edit_template(package_type), extra_vars=vars)
