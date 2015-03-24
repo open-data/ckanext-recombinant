@@ -29,6 +29,9 @@ def _get_tables():
 
 
 def get_table(dataset_type):
+    """
+    Get the table configured with the input dataset type
+    """
     tables = _get_tables()
     for t in tables:
         if t['dataset_type'] == dataset_type:
@@ -37,6 +40,26 @@ def get_table(dataset_type):
         raise RecombinantException('dataset_type "%s" not found'
             % dataset_type)
     return t
+
+
+def get_target_datasets():
+    """
+    Find the RecombinantPlugin instance and get its
+    configured target datasets (e.g., ['ati', 'pd', ...])
+    """
+    tables = _get_tables()
+    return list(set((t['target_dataset'] for t in tables)))
+
+
+def get_dataset_types(target_dataset):
+    """
+    Find the RecombinantPlugin instance and get its
+    configured dataset types for the input target dataset
+    """
+    tables = _get_tables()
+    return (
+        t['dataset_type'] for t in tables
+            if t['target_dataset'] == target_dataset)
 
 
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
