@@ -7,6 +7,8 @@ Usage:
   paster recombinant destroy (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-xls XLS_FILE ... [-c CONFIG]
   paster recombinant combine (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant target-datasets [-c CONFIG]
+  paster recombinant dataset-types [TARGET_DATASET ...] [-c CONFIG]
   paster recombinant -h
 
 Options:
@@ -24,7 +26,10 @@ import logging
 import unicodecsv
 from docopt import docopt
 
-from ckanext.recombinant.plugins import _get_tables
+from ckanext.recombinant.plugins import (
+    _get_tables,
+    get_target_datasets,
+    get_dataset_types)
 from ckanext.recombinant.read_xls import read_xls, get_records
 from ckanext.recombinant.datatypes import data_store_type
 
@@ -59,6 +64,10 @@ class TableCommand(CkanCommand):
             self._load_xls(opts['XLS_FILE'])
         elif opts['combine']:
             self._create_meta_dataset(opts['DATASET_TYPE'])
+        elif opts['target-datasets']:
+            self._target_datasets()
+        elif opts['dataset-types']:
+            self._dataset_types(opts['TARGET_DATASET'])
         else:
             print opts
 
@@ -234,3 +243,11 @@ class TableCommand(CkanCommand):
             out.writerow([
                 unicode(record[col]).encode('utf-8') for col in columns])
 
+    def _target_datasets(self):
+        print ' '.join(get_target_datasets())
+
+    def _dataset_types(self, target_datasets):
+        if len(target_datasets) == 0:
+            target_datasets = get_target_datasets()
+        for target_ds in target_datasets:
+            print target_ds + ': ' + ' '.join(get_dataset_types(target_ds))
