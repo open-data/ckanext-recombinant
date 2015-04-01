@@ -2,4 +2,3 @@ unicodecsv
 xlwt
 xlrd
 docopt
-importlib==1.0.2
