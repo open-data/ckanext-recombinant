@@ -104,6 +104,8 @@ def _canonicalize(dirty, dstore_tag, date_mode):
 
     # dirty is numeric: truncate trailing decimal digits, retain int part
     canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', str(dirty)))
+    if not canon:
+        return 0
     return float(canon)
 
 
