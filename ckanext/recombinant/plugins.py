@@ -9,6 +9,11 @@ import os
 import json
 import uuid
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
 class RecombinantException(Exception):
     pass
 
@@ -142,8 +147,8 @@ def _load_tables_module_path(url):
     p = m.__path__[0]
     p = os.path.join(p, file_name)
     if os.path.exists(p):
-        return json.load(open(p))
-        
+        return load(open(p))
+
 def _load_tables_url(url):
     import urllib2
     try:
@@ -151,7 +156,20 @@ def _load_tables_url(url):
         tables = res.read()
     except urllib2.URLError:
         raise RecombinantException("Could not find recombinant.tables json config file: %s" % url )
-        
-    return json.loads(tables)
+
+    return loads(tables, url)
 
 
+def load(f):
+    if is_yaml(f.name):
+        return yaml.load(f)
+    return json.load(f)
+
+def loads(s, url):
+    if is_yaml(url):
+        return yaml.load(s)
+    return json.loads(s)
+
+
+def is_yaml(n):
+    return n[-5:].lower() == '.yaml' or n[-4:] == '.yml'
