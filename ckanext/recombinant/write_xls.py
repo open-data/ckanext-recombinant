@@ -47,6 +47,9 @@ def xls_template(dataset_type, org):
                 allow_blank=False)
             sheet.add_data_validation(v)
             v.ranges.append(validation_range)
+            c = openpyxl.comments.Comment('\n'.join((key + ": " + value)
+                for key, value in field['choices'].iteritems()), '')
+            sheet.cell(row=2, column=n + 1).comment = c
     apply_styles(t['excel_header_style'], sheet.row_dimensions[2])
 
     sheet.freeze_panes = sheet['A3']
