@@ -37,8 +37,16 @@ def xls_template(dataset_type, org):
         col.width = field['xls_column_width']
         # FIXME: format only below header
         col.number_format = data_store_type[field['datastore_type']].xl_format
+        validation_range = '{0}3:{0}1003'.format(col_letter)
         if field['datastore_type'] == 'boolean':
-            boolean_validator.ranges.append('{0}3:{0}1003'.format(col_letter))
+            boolean_validator.ranges.append(validation_range)
+        elif 'choices' in field:
+            v = openpyxl.worksheet.datavalidation.DataValidation(
+                type="list",
+                formula1='"' + ','.join(field['choices']) + '"',
+                allow_blank=False)
+            sheet.add_data_validation(v)
+            v.ranges.append(validation_range)
     apply_styles(t['excel_header_style'], sheet.row_dimensions[2])
 
     sheet.freeze_panes = sheet['A3']
