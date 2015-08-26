@@ -1,41 +1,38 @@
 import re
-import xlrd
+import openpyxl
 from datetime import datetime, date
 from datatypes import  data_store_type
 
 # special place to look for the organization name in each XLS file
-ORG_NAME_CELL = (0, 2)
+# FIXME: read this from the config instead
+ORG_NAME_CELL = 2
 
 
 def read_xls(f, file_contents=None):
     """
-    Return a generator that opens the xls file f
-    and then produces ((sheet-name, org-name, date-mode), row1, row2, ...)
-    :param: f: file name
-    :type f: string
-    :param: file_contents: content of workbook
-    :type file_contents: string
+    Return a generator that opens the xlsx file f (name or file object)
+    and then produces ((sheet-name, org-name), row1, row2, ...)
+    :param: f: file name or xlsx file object
 
     :return: Generator that opens the xls file f
-    and then produces ((sheet-name, org-name, date-mode), row1, row2, ...)
+    and then produces ((sheet-name, org-name), row1, row2, ...)
     :rtype: generator
     """
-    if file_contents is not None:
-        wb = xlrd.open_workbook(file_contents= file_contents)
-    else:
-        wb = xlrd.open_workbook(f)
-    assert wb.nsheets == 1
+    wb = openpyxl.load_workbook(f, read_only=True)
 
-    sheet = wb.sheet_by_index(0)
-    org_name_cell = sheet.cell(*ORG_NAME_CELL)
-    yield (sheet.name, org_name_cell.value, wb.datemode)
+    sheet = wb[wb.sheetnames[0]]
+    rowiter = sheet.rows
+    organization_row = next(rowiter)
+    yield (sheet.title, organization_row[ORG_NAME_CELL].value)
 
-    row = sheet.horz_split_pos
-    while row < sheet.nrows:
+    header_row = next(rowiter)
+    # FIXME: reject if not matching current headers?
+
+    for row in rowiter:
+        values = [c.value for c in row]
         # return next non-empty row
-        if not all(_is_bumf(c.value) for c in sheet.row(row)):
-            yield [c.value for c in sheet.row(row)]
-        row += 1
+        if not all(_is_bumf(v) for v in values):
+            yield values
 
 
 def _is_bumf(value):
@@ -53,20 +50,15 @@ def _is_bumf(value):
     return value is None
 
 
-def _canonicalize(dirty, dstore_tag, date_mode):
+def _canonicalize(dirty, dstore_tag):
     """
     Canonicalize dirty input from xlrd to align with
     recombinant.json datastore type specified in dstore_tag.
-
-    The date_mode adheres to the xlrd Excel workbook; it has value 1
-    if the workbook originates on Excel for Macinstosh and 0 otherwise.
 
     :param dirty: dirty cell content as read through xlrd
     :type dirty: object
     :param dstore_tag: datastore_type specifier in (JSON) schema for cell
     :type dstore_tag: str
-    :param date_mode: Excel workbook date mode attribute
-    :type date_mode: integer
 
     :return: Canonicalized cell input
     :rtype: float or unicode
@@ -77,10 +69,6 @@ def _canonicalize(dirty, dstore_tag, date_mode):
     elif isinstance(dirty, float) or isinstance(dirty, int):
         if dtype.numeric:
             return float(dirty)
-        elif dtype.tag == 'date':
-            # excel returns dates as floats - convert back
-            dt = datetime(*xlrd.xldate_as_tuple(dirty, date_mode))
-            return unicode(dt.date())
         else:
             # JSON specifies text or money: content of origin is numeric string.
             # If xlrd has added .0 to present content as a float,
@@ -100,6 +88,8 @@ def _canonicalize(dirty, dstore_tag, date_mode):
             # part, and cast as numeric string.
             canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', str(dirty)))
             return unicode(canon)
+        elif dtype.tag == 'date' and isinstance(dirty, datetime):
+            return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
         return unicode(dirty)
 
     # dirty is numeric: truncate trailing decimal digits, retain int part
@@ -109,7 +99,7 @@ def _canonicalize(dirty, dstore_tag, date_mode):
     return float(canon)
 
 
-def get_records(upload_data, fields, date_mode):
+def get_records(upload_data, fields):
     """
     Truncate/pad empty/missing records to expected row length, canonicalize
     cell content, and return resulting record list.
@@ -118,8 +108,6 @@ def get_records(upload_data, fields, date_mode):
     :type upload_data: generator
     :param fields: collection of fields specified in JSON schema
     :type fields: list or tuple
-    :param date_mode: Excel workbook date mode attribute
-    :type date_mode: int
 
     :return: canonicalized records of specified upload data
     :rtype: tuple of dicts
@@ -137,7 +125,7 @@ def get_records(upload_data, fields, date_mode):
         records.append(
             dict((
                 f['datastore_id'],
-                _canonicalize(v, f['datastore_type'], date_mode))
+                _canonicalize(v, f['datastore_type']))
             for f, v in zip(fields, row)))
 
     return records

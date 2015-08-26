@@ -31,12 +31,10 @@ class UploadController(PackageController):
                 msg = _('You must provide a valid file')
                 raise ValidationError({'xls_update': msg})
 
-            upload_data = read_xls(
-                '',
-                file_contents=request.POST['xls_update'].file.read())
-            sheet_name, org_name, date_mode = None, None, None
+            upload_data = read_xls(request.POST['xls_update'].file)
+            sheet_name, org_name = None, None
             try:
-                sheet_name, org_name, date_mode = next(upload_data)
+                sheet_name, org_name = next(upload_data)
             except XLRDError, xerr:
                 msg = xerr.message
                 raise ValidationError({'xls_update': msg})
@@ -62,7 +60,7 @@ class UploadController(PackageController):
 
             resource_id = package['resources'][0]['id']
 
-            records = get_records(upload_data, t['fields'], date_mode)
+            records = get_records(upload_data, t['fields'])
             try:
                 lc.action.datastore_upsert(
                     resource_id=resource_id,
