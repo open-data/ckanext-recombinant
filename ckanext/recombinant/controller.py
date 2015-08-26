@@ -95,7 +95,7 @@ class UploadController(PackageController):
         book.save(blob)
         response.headers['Content-Type'] = 'application/vnd.ms-excel'
         response.headers['Content-Disposition'] = (
-            'inline; filename="{0}.{1}.xls"'.format(
+            'inline; filename="{0}.{1}.xlsx"'.format(
                 dataset['organization']['name'],
                 dataset['type']))
         return blob.getvalue()
