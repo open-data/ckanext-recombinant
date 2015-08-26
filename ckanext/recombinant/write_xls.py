@@ -21,7 +21,7 @@ def xls_template(dataset_type, org):
                 break
         else:
             sheet.cell(row=1, column=n + 1).value = org.get(key, '')
-    apply_styles(t['xls_organization_style'], sheet.row_dimensions[1])
+    apply_styles(t['excel_organization_style'], sheet.row_dimensions[1])
 
     for n, field in enumerate(t['fields']):
         sheet.cell(row=2, column=n + 1).value = field['label']
@@ -30,7 +30,7 @@ def xls_template(dataset_type, org):
         col.width = field['xls_column_width']
         # FIXME: format only below header
         col.number_format = data_store_type[field['datastore_type']].xl_format
-    apply_styles(t['xls_header_style'], sheet.row_dimensions[2])
+    apply_styles(t['excel_header_style'], sheet.row_dimensions[2])
 
     sheet.freeze_panes = sheet['A3']
     return book
