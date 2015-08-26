@@ -4,6 +4,9 @@ from ckanext.recombinant.plugins import get_table
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import data_store_type
 
+boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
+    type="list", formula1='"FALSE,TRUE"', allow_blank=False)
+
 def xls_template(dataset_type, org):
     """
     return an openpyxl.Workbook object containing the sheet and header fields
@@ -14,6 +17,9 @@ def xls_template(dataset_type, org):
     book = openpyxl.Workbook()
     sheet = book.active
     sheet.title = t['xls_sheet_name']
+
+    sheet.add_data_validation(boolean_validator)
+
     for n, key in enumerate(t['xls_organization_info']):
         for e in org['extras']:
             if e['key'] == key:
@@ -26,10 +32,13 @@ def xls_template(dataset_type, org):
     for n, field in enumerate(t['fields']):
         sheet.cell(row=2, column=n + 1).value = field['label']
         # jumping through openpyxl hoops:
-        col = sheet.column_dimensions[openpyxl.cell.get_column_letter(n + 1)]
+        col_letter = openpyxl.cell.get_column_letter(n + 1)
+        col = sheet.column_dimensions[col_letter]
         col.width = field['xls_column_width']
         # FIXME: format only below header
         col.number_format = data_store_type[field['datastore_type']].xl_format
+        if field['datastore_type'] == 'boolean':
+            boolean_validator.ranges.append('{0}3:{0}1003'.format(col_letter))
     apply_styles(t['excel_header_style'], sheet.row_dimensions[2])
 
     sheet.freeze_panes = sheet['A3']
