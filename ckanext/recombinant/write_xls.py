@@ -4,9 +4,6 @@ from ckanext.recombinant.plugins import get_table
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import data_store_type
 
-EXCEL_MAX_ERROR = 255
-TRIM_ERROR_LINES = 20
-
 boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
     type="list", formula1='"FALSE,TRUE"', allow_blank=True)
 
