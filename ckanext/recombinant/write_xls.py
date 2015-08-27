@@ -53,7 +53,7 @@ def xls_template(dataset_type, org):
         elif 'choices' in field:
             v = openpyxl.worksheet.datavalidation.DataValidation(
                 type="list",
-                formula1='"' + ','.join(field['choices']) + '"',
+                formula1='"' + ','.join(sorted(field['choices'])) + '"',
                 allow_blank=True)
             sheet.add_data_validation(v)
             v.ranges.append(validation_range)
