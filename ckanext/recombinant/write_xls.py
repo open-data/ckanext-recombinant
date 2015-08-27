@@ -52,6 +52,10 @@ def xls_template(dataset_type, org):
                 type="list",
                 formula1='"' + ','.join(sorted(field['choices'])) + '"',
                 allow_blank=True)
+            v.errorTitle = u'Invalid choice'
+            v.error = u'Please enter one of the following codes:\n' + u', '.join(
+                sorted(field['choices'])
+                ) + '\n\nSheet "reference" shows code values.'
             sheet.add_data_validation(v)
             v.ranges.append(validation_range)
 
