@@ -21,6 +21,9 @@ def xls_template(dataset_type, org):
     sheet = book.active
     sheet.title = t['xls_sheet_name']
 
+    ref = book.create_sheet(title='reference')
+    ref.append([u'field', u'key', u'value'])
+
     sheet.add_data_validation(boolean_validator)
 
     for n, key in enumerate(t['xls_organization_info']):
@@ -48,13 +51,13 @@ def xls_template(dataset_type, org):
                 type="list",
                 formula1='"' + ','.join(field['choices']) + '"',
                 allow_blank=True)
-            v.error = u'\n'.join(
-                (key + u": " + value)[:TRIM_ERROR_LINES]
-                for key, value in sorted(field['choices'].iteritems())
-                )[:EXCEL_MAX_ERROR]
-            v.errorTitle = u'Please select one of the following'
             sheet.add_data_validation(v)
             v.ranges.append(validation_range)
+
+            ref.append([field['label']])
+            for key, value in sorted(field['choices'].iteritems()):
+                ref.append([None, key, value])
+            ref.append([])
     apply_styles(t['excel_header_style'], sheet.row_dimensions[2])
 
     sheet.freeze_panes = sheet['A3']
