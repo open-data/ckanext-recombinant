@@ -5,7 +5,7 @@ from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import data_store_type
 
 boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
-    type="list", formula1='"FALSE,TRUE"', allow_blank=False)
+    type="list", formula1='"FALSE,TRUE"', allow_blank=True)
 
 def xls_template(dataset_type, org):
     """
@@ -18,19 +18,26 @@ def xls_template(dataset_type, org):
     sheet = book.active
     sheet.title = t['xls_sheet_name']
 
+    ref = book.create_sheet(title='reference')
+    ref.append([u'field', u'key', u'value'])
+
     sheet.add_data_validation(boolean_validator)
 
     for n, key in enumerate(t['xls_organization_info']):
+        c = sheet.cell(row=1, column=n + 1)
         for e in org['extras']:
             if e['key'] == key:
-                sheet.cell(row=1, column=n + 1).value = e['value']
+                c.value = e['value']
                 break
         else:
-            sheet.cell(row=1, column=n + 1).value = org.get(key, '')
+            c.value = org.get(key, '')
+        apply_styles(t['excel_organization_style'], c)
     apply_styles(t['excel_organization_style'], sheet.row_dimensions[1])
 
     for n, field in enumerate(t['fields']):
-        sheet.cell(row=2, column=n + 1).value = field['label']
+        c = sheet.cell(row=2, column=n + 1)
+        c.value = field['label']
+        apply_styles(t['excel_header_style'], c)
         # jumping through openpyxl hoops:
         col_letter = openpyxl.cell.get_column_letter(n + 1)
         col = sheet.column_dimensions[col_letter]
@@ -43,13 +50,19 @@ def xls_template(dataset_type, org):
         elif 'choices' in field:
             v = openpyxl.worksheet.datavalidation.DataValidation(
                 type="list",
-                formula1='"' + ','.join(field['choices']) + '"',
-                allow_blank=False)
+                formula1='"' + ','.join(sorted(field['choices'])) + '"',
+                allow_blank=True)
+            v.errorTitle = u'Invalid choice'
+            v.error = u'Please enter one of the following codes:\n' + u', '.join(
+                sorted(field['choices'])
+                ) + '\n\nSheet "reference" shows code values.'
             sheet.add_data_validation(v)
             v.ranges.append(validation_range)
-            c = openpyxl.comments.Comment('\n'.join((key + ": " + value)
-                for key, value in field['choices'].iteritems()), '')
-            sheet.cell(row=2, column=n + 1).comment = c
+
+            ref.append([field['label']])
+            for key, value in sorted(field['choices'].iteritems()):
+                ref.append([None, key, value])
+            ref.append([])
     apply_styles(t['excel_header_style'], sheet.row_dimensions[2])
 
     sheet.freeze_panes = sheet['A3']
