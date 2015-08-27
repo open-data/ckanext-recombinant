@@ -4,8 +4,11 @@ from ckanext.recombinant.plugins import get_table
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import data_store_type
 
+EXCEL_MAX_ERROR = 255
+TRIM_ERROR_LINES = 20
+
 boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
-    type="list", formula1='"FALSE,TRUE"', allow_blank=False)
+    type="list", formula1='"FALSE,TRUE"', allow_blank=True)
 
 def xls_template(dataset_type, org):
     """
@@ -44,12 +47,14 @@ def xls_template(dataset_type, org):
             v = openpyxl.worksheet.datavalidation.DataValidation(
                 type="list",
                 formula1='"' + ','.join(field['choices']) + '"',
-                allow_blank=False)
+                allow_blank=True)
+            v.error = u'\n'.join(
+                (key + u": " + value)[:TRIM_ERROR_LINES]
+                for key, value in sorted(field['choices'].iteritems())
+                )[:EXCEL_MAX_ERROR]
+            v.errorTitle = u'Please select one of the following'
             sheet.add_data_validation(v)
             v.ranges.append(validation_range)
-            c = openpyxl.comments.Comment('\n'.join((key + ": " + value)
-                for key, value in field['choices'].iteritems()), '')
-            sheet.cell(row=2, column=n + 1).comment = c
     apply_styles(t['excel_header_style'], sheet.row_dimensions[2])
 
     sheet.freeze_panes = sheet['A3']
