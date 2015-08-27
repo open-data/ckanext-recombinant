@@ -27,16 +27,20 @@ def xls_template(dataset_type, org):
     sheet.add_data_validation(boolean_validator)
 
     for n, key in enumerate(t['xls_organization_info']):
+        c = sheet.cell(row=1, column=n + 1)
         for e in org['extras']:
             if e['key'] == key:
-                sheet.cell(row=1, column=n + 1).value = e['value']
+                c.value = e['value']
                 break
         else:
-            sheet.cell(row=1, column=n + 1).value = org.get(key, '')
+            c.value = org.get(key, '')
+        apply_styles(t['excel_organization_style'], c)
     apply_styles(t['excel_organization_style'], sheet.row_dimensions[1])
 
     for n, field in enumerate(t['fields']):
-        sheet.cell(row=2, column=n + 1).value = field['label']
+        c = sheet.cell(row=2, column=n + 1)
+        c.value = field['label']
+        apply_styles(t['excel_header_style'], c)
         # jumping through openpyxl hoops:
         col_letter = openpyxl.cell.get_column_letter(n + 1)
         col = sheet.column_dimensions[col_letter]
