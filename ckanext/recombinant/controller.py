@@ -1,4 +1,6 @@
 from pylons.i18n import _
+from pylons import config
+from paste.deploy.converters import asbool
 
 from ckan.lib.base import (c, render, model, request, h, g,
     response, abort, redirect)
@@ -9,7 +11,6 @@ from ckanext.recombinant.commands import _get_tables
 from ckan.logic import ValidationError, NotAuthorized
 
 from cStringIO import StringIO
-from xlrd import XLRDError
 
 import ckanapi
 
@@ -31,15 +32,23 @@ class UploadController(PackageController):
                 msg = _('You must provide a valid file')
                 raise ValidationError({'xls_update': msg})
 
-            upload_data = read_xls(
-                '',
-                file_contents=request.POST['xls_update'].file.read())
             sheet_name, org_name, date_mode = None, None, None
             try:
+                upload_data = read_xls(
+                    '',
+                    file_contents=request.POST['xls_update'].file.read())
                 sheet_name, org_name, date_mode = next(upload_data)
-            except XLRDError, xerr:
-                msg = xerr.message
-                raise ValidationError({'xls_update': msg})
+            except:
+                # XXX bare except because this can fail in all sorts of ways
+                if asbool(config.get('debug', False)):
+                    # on debug we want the real error
+                    raise
+                raise ValidationError({'xls_update':
+                    _("The server encountered a problem processing the file "
+                    "uploaded. Please try copying your data into the latest "
+                    "version of the template and uploading again. If this "
+                    "problem continues, send your Excel file to "
+                    "open-ouvert@tbs-sct.gc.ca so we may investigate.")})
 
             # is this the right sheet for this organization?
             if org_name != owner_org:
