@@ -100,7 +100,7 @@ class UploadController(PackageController):
         book = xls_template(dataset['type'], org)
         blob = StringIO()
         book.save(blob)
-        response.headers['Content-Type'] = 'application/vnd.ms-excel'
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response.headers['Content-Disposition'] = (
             'inline; filename="{0}.{1}.xlsx"'.format(
                 dataset['organization']['name'],
