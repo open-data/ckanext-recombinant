@@ -7,6 +7,9 @@ from ckanext.recombinant.datatypes import data_store_type
 boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
     type="list", formula1='"FALSE,TRUE"', allow_blank=True)
 
+red_fill = openpyxl.styles.PatternFill(start_color='FFEE1111',
+    end_color='FFEE1111', fill_type='solid')
+
 def xls_template(dataset_type, org):
     """
     return an openpyxl.Workbook object containing the sheet and header fields
@@ -58,6 +61,16 @@ def xls_template(dataset_type, org):
                 ) + '\n\nSheet "reference" shows code values.'
             sheet.add_data_validation(v)
             v.ranges.append(validation_range)
+
+            # hilight header if bad values pasted below
+            sheet.conditional_formatting.add("{0}2".format(col_letter),
+                openpyxl.formatting.FormulaRule([(
+                    'COUNTIF({0},"<>"&"") - ' + # all non-blank cells
+                    ' - '.join(
+                        'COUNTIF({0},"=' + x + '")'
+                        for x in set(field['choices'])) +
+                    ' > 0').format(validation_range)],
+                    stopIfTrue=True, fill=red_fill))
 
             ref.append([field['label']])
             for key, value in sorted(field['choices'].iteritems()):
