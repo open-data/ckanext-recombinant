@@ -146,8 +146,8 @@ class TableCommand(CkanCommand):
                                 f['datastore_type']].numeric
                             else 'text',
                         } for f in t['fields']],
-                    primary_key=t['datastore_primary_key'],
-                    indexes=t['datastore_indexes'],
+                    primary_key=t.get('datastore_primary_key', []),
+                    indexes=t.get('datastore_indexes', ""),
                     )
 
     def _destroy(self, dataset_types):
