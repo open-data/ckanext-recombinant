@@ -72,8 +72,11 @@ class UploadController(PackageController):
             resource_id = package['resources'][0]['id']
 
             records = get_records(upload_data, t['fields'], date_mode)
+
+            method = 'upsert' if t.get('datastore_primary_key') else 'insert'
             try:
                 lc.action.datastore_upsert(
+                    method=method,
                     resource_id=resource_id,
                     records=records)
             except NotAuthorized, na:
