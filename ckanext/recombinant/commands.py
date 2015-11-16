@@ -89,7 +89,7 @@ class TableCommand(CkanCommand):
         for t in _get_tables():
             if dataset_type and t['dataset_type'] != dataset_type:
                 continue
-            print '{t[title]} ({t[dataset_type]})'.format(t=t)
+            print u'{t[title]} ({t[dataset_type]})'.format(t=t).encode('utf-8')
             packages =  self._get_packages(t['dataset_type'])
             if dataset_type:
                 for p in packages:
