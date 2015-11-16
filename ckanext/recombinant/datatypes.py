@@ -25,6 +25,6 @@ data_store_type = {
         False,
         u'',
         '[<1000]$##0;[<1000000]$### ##0;$### ### ##0'),
-    'text': DataStoreType('text', False, u'', None),
-    'boolean': DataStoreType('boolean', False, u'', None),
+    'text': DataStoreType('text', False, u'', '@'),
+    'boolean': DataStoreType('boolean', False, u'', 'General'),
 }

@@ -22,4 +22,20 @@
       {% endif %}
     </div>
   </section>
+  {% if pkg.resources %}
+    {% set resource_id = pkg.resources[0].id %}
+    <details>
+      <summary>{{ _("API Access") }}</summary>
+      <p>{% trans %}Access this data through the
+        <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api">datastore API</a>
+        with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}
+      </p>
+      <p>
+        <h4>{{ _("Example:") }}</h4>
+        <code>
+          curl {{ g.site_url }}/api/action/datastore_search -d '{"resource_id":"{{ resource_id }}"}'
+        </code>
+      </p>
+    </details>
+  {% endif %}
 {% endblock %}

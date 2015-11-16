@@ -1,4 +1,3 @@
 unicodecsv
-xlwt
-xlrd
+openpyxl==2.2.5
 docopt

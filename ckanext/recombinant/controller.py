@@ -32,12 +32,10 @@ class UploadController(PackageController):
                 msg = _('You must provide a valid file')
                 raise ValidationError({'xls_update': msg})
 
-            sheet_name, org_name, date_mode = None, None, None
+            upload_data = read_xls(request.POST['xls_update'].file)
+            sheet_name, org_name = None, None
             try:
-                upload_data = read_xls(
-                    '',
-                    file_contents=request.POST['xls_update'].file.read())
-                sheet_name, org_name, date_mode = next(upload_data)
+                sheet_name, org_name = next(upload_data)
             except:
                 # XXX bare except because this can fail in all sorts of ways
                 if asbool(config.get('debug', False)):
@@ -71,7 +69,7 @@ class UploadController(PackageController):
 
             resource_id = package['resources'][0]['id']
 
-            records = get_records(upload_data, t['fields'], date_mode)
+            records = get_records(upload_data, t['fields'])
 
             method = 'upsert' if t.get('datastore_primary_key') else 'insert'
             try:
@@ -105,9 +103,9 @@ class UploadController(PackageController):
         book = xls_template(dataset['type'], org)
         blob = StringIO()
         book.save(blob)
-        response.headers['Content-Type'] = 'application/vnd.ms-excel'
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response.headers['Content-Disposition'] = (
-            'inline; filename="{0}.{1}.xls"'.format(
+            'inline; filename="{0}.{1}.xlsx"'.format(
                 dataset['organization']['name'],
                 dataset['type']))
         return blob.getvalue()
