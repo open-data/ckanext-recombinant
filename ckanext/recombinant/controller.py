@@ -23,6 +23,11 @@ class UploadController(PackageController):
 
     def upload(self, id):
         package_type = self._get_package_type(id)
+        for t in _get_tables():
+            if t['dataset_type'] == package_type:
+                break
+        expected_sheet_name = t['xls_sheet_name']
+
         try:
             lc = ckanapi.LocalCKAN(username=c.user)
             package = lc.action.package_show(id=id)
@@ -48,6 +53,13 @@ class UploadController(PackageController):
                     "problem continues, send your Excel file to "
                     "open-ouvert@tbs-sct.gc.ca so we may investigate.")})
 
+            if expected_sheet_name != sheet_name:
+                raise ValidationError({'xls_update':
+                    _('Invalid file for this data type. ' +
+                    'Sheet must be labeled "{0}", ' +
+                    'but you supplied a sheet labeled "{1}"').format(
+                        expected_sheet_name, sheet_name)})
+
             # is this the right sheet for this organization?
             if org_name != owner_org:
                 msg = _(
@@ -57,15 +69,6 @@ class UploadController(PackageController):
                         owner_org, org_name)
                 raise ValidationError(
                     {'xls_update': msg})
-
-            for t in _get_tables():
-                if t['xls_sheet_name'] == sheet_name:
-                    break
-            else:
-                msg = _(
-                    "Sheet name '{0}' " +
-                    "not found in list of valid tables").format(sheet_name)
-                raise ValidationError({'xls_update': msg})
 
             resource_id = package['resources'][0]['id']
 
