@@ -8,10 +8,11 @@
       <label for="{{ field.datastore_id }}">{% block field_label scoped %}{{ field.label }}:{% endblock %}</label>
     </div>
     <div class="span-4 row-end">
-      <input required
+      <input
         type="input"
         name="{{ field.datastore_id }}"
-        id="{{ field.datastore_id }}">
+        id="{{ field.datastore_id }}"
+        {% if filters %}value="{{ filters.get(field.datastore_id, '') }}"{% endif %}>
     </div>
   {% endfor %}
   <div>

@@ -14,7 +14,7 @@
   <section class="module-poster">
     <div class="wb-tabs">
       <div class="tabpanels">
-        <details open>
+        <details {% if not delete_errors %}open{% endif %}>
           <summary>{{ _("Update") }}</summary>
 
           <div class="module-content">
@@ -30,10 +30,10 @@
         {% if pkg.resources %}
           {% if h.check_access('package_update', {'id': pkg.id }) %}
             
-            <details>
+            <details {% if delete_errors %}open{% endif %}>
               <summary>{{ _("Delete") }}</summary>
               {% snippet "recombinant/snippets/delete.html",
-                pkg=pkg, errors=delete_errors %}
+                pkg=pkg, errors=delete_errors, filters=filters %}
             </details>
           {% endif %}
           {% set resource_id = pkg.resources[0].id %}

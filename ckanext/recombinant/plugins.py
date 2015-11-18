@@ -115,8 +115,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         return map
 
     def get_helpers(self):
-        return {'recombinant_primary_key_fields':
-            recombinant_primary_key_fields}
+        return {'recombinant_primary_key_fields': primary_key_fields}
 
 
 def generate_uuid(value):
@@ -183,7 +182,7 @@ def is_yaml(n):
     return n[-5:].lower() == '.yaml' or n[-4:] == '.yml'
 
 
-def recombinant_primary_key_fields(dataset_type):
+def primary_key_fields(dataset_type):
     t = get_table(dataset_type)
     return [
         f for f in t['fields']
