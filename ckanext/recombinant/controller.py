@@ -7,7 +7,7 @@ from ckan.lib.base import (c, render, model, request, h, g,
 from ckan.controllers.package import PackageController
 from ckanext.recombinant.read_xls import read_xls, get_records
 from ckanext.recombinant.write_xls import xls_template
-from ckanext.recombinant.commands import _get_tables
+from ckanext.recombinant.plugins import get_table, primary_key_fields
 from ckan.logic import ValidationError, NotAuthorized
 
 from cStringIO import StringIO
@@ -23,9 +23,7 @@ class UploadController(PackageController):
 
     def upload(self, id):
         package_type = self._get_package_type(id)
-        for t in _get_tables():
-            if t['dataset_type'] == package_type:
-                break
+        t = get_table(package_type)
         expected_sheet_name = t['xls_sheet_name']
 
         try:
@@ -95,6 +93,43 @@ class UploadController(PackageController):
             x_vars = {'errors': e.error_dict.values(), 'action': 'edit'}
             c.pkg_dict = package
             return render(self._edit_template(package_type), extra_vars=x_vars)
+
+    def delete_record(self, id):
+        lc = ckanapi.LocalCKAN(username=c.user)
+        filters = {}
+        package_type = self._get_package_type(id)
+        for f in primary_key_fields(package_type):
+           filters[f['datastore_id']] = request.POST.get(f['datastore_id'], '')
+
+        package = lc.action.package_show(id=id)
+        result = lc.action.datastore_search(
+            resource_id=package['resources'][0]['id'],
+            filters=filters,
+            rows=2)  # only need two to know if there are multiple matches
+        records = result['records']
+
+        x_vars = {'filters': filters, 'action': 'edit'}
+        if not records:
+            x_vars['delete_errors'] = [_('No matching records found')]
+        elif len(records) > 1:
+            x_vars['delete_errors'] = [_('Multiple matching records found')]
+
+        if 'delete_errors' in x_vars:
+            c.pkg_dict = package
+            return render(self._edit_template(package_type), extra_vars=x_vars)
+
+        # XXX: can't avoid the race here with the existing datastore API.
+        # datastore_delete doesn't support _id filters
+        lc.action.datastore_delete(
+            resource_id=package['resources'][0]['id'],
+            filters=filters,
+            )
+        h.flash_success(_(
+            "Record deleted."
+            ))
+
+        redirect(h.url_for(controller='package', action='read', id=id))
+
 
     def template(self, id):
         lc = ckanapi.LocalCKAN(username=c.user)
