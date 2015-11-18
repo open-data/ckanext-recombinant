@@ -72,6 +72,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
     p.implements(p.IDatasetForm, inherit=True)
     p.implements(_IRecombinant)
     p.implements(p.IRoutes, inherit=True)
+    p.implements(p.ITemplateHelpers, inherit=True)
 
     def update_config(self, config):
         # add our templates
@@ -106,9 +107,16 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         map.connect('/recombinant/upload/{id}', action='upload',
             conditions=dict(method=['POST']),
             controller='ckanext.recombinant.controller:UploadController')
+        map.connect('/recombinant/delete/{id}', action='delete_record',
+            conditions=dict(method=['POST']),
+            controller='ckanext.recombinant.controller:UploadController')
         map.connect('/recombinant/template/{id}', action='template',
             controller='ckanext.recombinant.controller:UploadController')
         return map
+
+    def get_helpers(self):
+        return {'recombinant_primary_key_fields':
+            recombinant_primary_key_fields}
 
 
 def generate_uuid(value):
@@ -173,3 +181,11 @@ def loads(s, url):
 
 def is_yaml(n):
     return n[-5:].lower() == '.yaml' or n[-4:] == '.yml'
+
+
+def recombinant_primary_key_fields(dataset_type):
+    t = get_table(dataset_type)
+    return [
+        f for f in t['fields']
+        if f['datastore_id'] in t['datastore_primary_key']
+        ]

@@ -96,6 +96,9 @@ class UploadController(PackageController):
             c.pkg_dict = package
             return render(self._edit_template(package_type), extra_vars=x_vars)
 
+    def delete_record(self):
+        pass
+
     def template(self, id):
         lc = ckanapi.LocalCKAN(username=c.user)
         dataset = lc.action.package_show(id=id)

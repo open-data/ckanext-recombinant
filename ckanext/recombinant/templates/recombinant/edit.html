@@ -12,30 +12,46 @@
 {% block primary_content %}
   <header class="module-content page-header"></header>
   <section class="module-poster">
-    <div class="module-content">
-      {% if h.check_access('package_update', {'id': pkg.id }) %}
-        {% snippet "recombinant/snippets/xls_upload.html",
-          pkg=pkg, errors=errors %}
-      {% else %}
-        {% snippet "recombinant/snippets/xls_download.html",
-          pkg=pkg, errors=errors %}
-      {% endif %}
+    <div class="wb-tabs">
+      <div class="tabpanels">
+        <details open>
+          <summary>{{ _("Update") }}</summary>
+
+          <div class="module-content">
+            {% if h.check_access('package_update', {'id': pkg.id }) %}
+              {% snippet "recombinant/snippets/xls_upload.html",
+                pkg=pkg, errors=errors %}
+            {% else %}
+              {% snippet "recombinant/snippets/xls_download.html",
+                pkg=pkg, errors=errors %}
+            {% endif %}
+          </div>
+        </details>
+        {% if pkg.resources %}
+          {% if h.check_access('package_update', {'id': pkg.id }) %}
+            
+            <details>
+              <summary>{{ _("Delete") }}</summary>
+              {% snippet "recombinant/snippets/delete.html",
+                pkg=pkg, errors=delete_errors %}
+            </details>
+          {% endif %}
+          {% set resource_id = pkg.resources[0].id %}
+          <details>
+            <summary>{{ _("API Access") }}</summary>
+            <p>{% trans %}Access this data through the
+              <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api">datastore API</a>
+              with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}
+            </p>
+            <p>
+              <h4>{{ _("Example:") }}</h4>
+              <code>
+                curl {{ g.site_url }}/api/action/datastore_search -d '{"resource_id":"{{ resource_id }}"}'
+              </code>
+            </p>
+          </details>
+        {% endif %}
+      </div>
     </div>
   </section>
-  {% if pkg.resources %}
-    {% set resource_id = pkg.resources[0].id %}
-    <details>
-      <summary>{{ _("API Access") }}</summary>
-      <p>{% trans %}Access this data through the
-        <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api">datastore API</a>
-        with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}
-      </p>
-      <p>
-        <h4>{{ _("Example:") }}</h4>
-        <code>
-          curl {{ g.site_url }}/api/action/datastore_search -d '{"resource_id":"{{ resource_id }}"}'
-        </code>
-      </p>
-    </details>
-  {% endif %}
 {% endblock %}
