@@ -77,11 +77,15 @@ class TableCommand(CkanCommand):
             self._orgs = lc.action.organization_list()
         return self._orgs
 
-    def _get_packages(self, dataset_type):
+    def _get_packages(self, dataset_type, orgs):
         lc = ckanapi.LocalCKAN()
-        packages = lc.action.package_search(
-            q="type:%s" % dataset_type,
-            rows=1000)['results']
+        packages = []
+        for o in orgs:
+            result = lc.action.package_search(
+                q="type:%s organization:%s" % (dataset_type, o),
+            rows=2)['results']
+            if result:
+                packages.append(result[0])
         return packages
 
     def _show(self, dataset_type, org_name):
@@ -90,7 +94,7 @@ class TableCommand(CkanCommand):
             if dataset_type and t['dataset_type'] != dataset_type:
                 continue
             print u'{t[title]} ({t[dataset_type]})'.format(t=t).encode('utf-8')
-            packages =  self._get_packages(t['dataset_type'])
+            packages =  self._get_packages(t['dataset_type'], orgs)
             if dataset_type:
                 for p in packages:
                     if org_name and org_name != p['organization']['name']:
@@ -122,12 +126,12 @@ class TableCommand(CkanCommand):
         tables = self._get_tables_from_types(dataset_types)
         if not tables:
             return
-
+        orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
         for t in tables:
             existing = dict((p['organization']['name'], p)
-                for p in self._get_packages(t['dataset_type']))
-            for o in self._get_orgs():
+                for p in self._get_packages(t['dataset_type'], orgs))
+            for o in orgs:
                 if o in existing:
                     continue
                 print t['dataset_type'], o
@@ -161,7 +165,7 @@ class TableCommand(CkanCommand):
         orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
         for t in tables:
-            for package in self._get_packages(t['dataset_type']):
+            for package in self._get_packages(t['dataset_type'], orgs):
                 for r in package['resources']:
                     try:
                         lc.action.datastore_delete(id=r['id'])
@@ -214,6 +218,7 @@ class TableCommand(CkanCommand):
         if not tables:
             return
 
+        orgs = self.get_orgs()
         lc = ckanapi.LocalCKAN()
         for t in tables:
             out = unicodecsv.writer(sys.stdout)
@@ -225,7 +230,7 @@ class TableCommand(CkanCommand):
             column_ids = [f['datastore_id'] for f in t['fields']]
             column_ids.extend(['org_name', 'org_title'])
 
-            for package in self._get_packages(t['dataset_type']):
+            for package in self._get_packages(t['dataset_type'], orgs):
                 for res in package['resources']:
                     try:
                         records = lc.action.datastore_search(
