@@ -218,7 +218,7 @@ class TableCommand(CkanCommand):
         if not tables:
             return
 
-        orgs = self.get_orgs()
+        orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
         for t in tables:
             out = unicodecsv.writer(sys.stdout)
