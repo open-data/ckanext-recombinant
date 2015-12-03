@@ -242,11 +242,14 @@ class TableCommand(CkanCommand):
                         logging.warn('resource %s not found' % res['id'])
 
     def _write_meta_row(self, records, package, columns, out):
-        for record in records:
-            record['org_name'] = package['organization']['name']
-            record['org_title'] = package['organization']['title']
-            out.writerow([
-                unicode(record[col]).encode('utf-8') for col in columns])
+        try:
+            for record in records:
+                record['org_name'] = package['organization']['name']
+                record['org_title'] = package['organization']['title']
+                out.writerow([
+                    unicode(record[col]).encode('utf-8') for col in columns])
+        except KeyError:
+            pass  # don't include data missing any columns
 
     def _target_datasets(self):
         print ' '.join(get_target_datasets())
