@@ -14,7 +14,7 @@
   <section class="module-poster">
     <div class="wb-tabs">
       <div class="tabpanels">
-        <details {% if not delete_errors %}open{% endif %}>
+        <details {#{% if not delete_errors %}open{% endif %}#}>
           <summary>{{ _("Update") }}</summary>
 
           <div class="module-content">
@@ -37,21 +37,51 @@
             </details>
           {% endif %}
           {% set resource_id = pkg.resources[0].id %}
-          <details>
+          {% set profile_url = h.url_for(controller='user', action='read', id=c.userobj.name) %}
+          <details open{# #}>
             <summary>{{ _("API Access") }}</summary>
+            <h4>{{ _("Resource ID") }}</h4>
             <p>{% trans %}Access this data through the
-              <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api">datastore API</a>
+              <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api"
+              >CKAN Datastore API</a>
               with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}
             </p>
-            <p>
-              <h4>{{ _("Example:") }}</h4>
-              <code>
-                curl {{ g.site_url }}/api/action/datastore_search -d '{"resource_id":"{{ resource_id }}"}'
-              </code>
-            </p>
+            <p>{% trans %}The CKAN API uses a JSON-RPC style, where you post a JSON object and receive another
+            JSON object in response.{% endtrans %}</p>
+            <h5>{{ _("Example:") }}</h4>
+            <h6>curl</h4>
+            <pre><code class="bash"
+>curl {{ g.site_url }}/api/action/datastore_search -d '{"resource_id":"{{ resource_id }}"}'</code></pre>
+            <h6>Python</h4>
+            <pre><code class="python"
+>import ckanapi
+from pprint import pprint
+ckan = ckanapi.RemoteCKAN('{{ g.site_url }}')
+result = ckan.action.datastore_search(resource_id="{{ resource_id }}")
+pprint(result['records'])</code></pre>
+            <h4>{{ _("Your API Key") }}</h4>
+            <p>{% trans %}Updating records requires an API key. Your API key is shown on your
+            <a href="{{ profile_url }}">profile page</a>. Please do not include
+            your API key in any code shared with other people. Use a configuration file or environment
+            variable to let each user input their own key when they use your tool.{% endtrans %}</p>
+            <p>{% trans %}Your API key is <em>equivalent to your password</em> and may be used to
+            perform any action your user can on this site. All actions made with your API key will be
+            logged as actions you performed.{% endtrans %}</p>
+            <p>{% trans %} 
           </details>
         {% endif %}
       </div>
     </div>
   </section>
 {% endblock %}
+
+{% block links %}
+{{ super() }}
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/styles/docco.min.css">
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+{% endblock %}
+
