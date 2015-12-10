@@ -33,7 +33,7 @@ class UploadController(PackageController):
 
             if request.POST['xls_update'] == u'':
                 msg = _('You must provide a valid file')
-                raise ValidationError({'xls_update': msg})
+                raise ValidationError({'xls_update': [msg]})
 
             upload_data = read_xls(request.POST['xls_update'].file)
             sheet_name, org_name = None, None
@@ -45,18 +45,18 @@ class UploadController(PackageController):
                     # on debug we want the real error
                     raise
                 raise ValidationError({'xls_update':
-                    _("The server encountered a problem processing the file "
+                    [_("The server encountered a problem processing the file "
                     "uploaded. Please try copying your data into the latest "
                     "version of the template and uploading again. If this "
                     "problem continues, send your Excel file to "
-                    "open-ouvert@tbs-sct.gc.ca so we may investigate.")})
+                    "open-ouvert@tbs-sct.gc.ca so we may investigate.")]})
 
             if expected_sheet_name != sheet_name:
                 raise ValidationError({'xls_update':
-                    _('Invalid file for this data type. ' +
+                    [_('Invalid file for this data type. ' +
                     'Sheet must be labeled "{0}", ' +
                     'but you supplied a sheet labeled "{1}"').format(
-                        expected_sheet_name, sheet_name)})
+                        expected_sheet_name, sheet_name)]})
 
             # is this the right sheet for this organization?
             if org_name != owner_org:
@@ -65,8 +65,7 @@ class UploadController(PackageController):
                     'Sheet must be labeled for {0}, ' +
                     'but you supplied a sheet for {1}').format(
                         owner_org, org_name)
-                raise ValidationError(
-                    {'xls_update': msg})
+                raise ValidationError({'xls_update': [msg]})
 
             resource_id = package['resources'][0]['id']
 
@@ -77,12 +76,12 @@ class UploadController(PackageController):
                 lc.action.datastore_upsert(
                     method=method,
                     resource_id=resource_id,
-                    records=records)
+                    records=[{'comments_en': 'wha'}])
             except NotAuthorized, na:
                 msg = _(
                     'You do not have permission to upload to {0}').format(
                         owner_org)
-                raise ValidationError({'xls_update': msg})
+                raise ValidationError({'xls_update': [msg]})
 
             h.flash_success(_(
                 "Your file was successfully uploaded into the central system."
@@ -90,7 +89,10 @@ class UploadController(PackageController):
 
             redirect(h.url_for(controller='package', action='read', id=id))
         except ValidationError, e:
-            x_vars = {'errors': e.error_dict.values(), 'action': 'edit'}
+            errors_list = []
+            for ev in e.error_dict.values():
+                errors_list.extend(ev)
+            x_vars = {'errors': errors_list, 'action': 'edit'}
             c.pkg_dict = package
             return render(self._edit_template(package_type), extra_vars=x_vars)
 
