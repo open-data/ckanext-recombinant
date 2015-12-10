@@ -115,7 +115,10 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         return map
 
     def get_helpers(self):
-        return {'recombinant_primary_key_fields': primary_key_fields}
+        return {
+            'recombinant_primary_key_fields': primary_key_fields,
+            'recombinant_get_table': recombinant_get_table,
+            }
 
 
 def generate_uuid(value):
@@ -188,3 +191,9 @@ def primary_key_fields(dataset_type):
         f for f in t['fields']
         if f['datastore_id'] in t['datastore_primary_key']
         ]
+
+def recombinant_get_table(dataset_type):
+    try:
+        return get_table(dataset_type)
+    except RecombinantError:
+        return
