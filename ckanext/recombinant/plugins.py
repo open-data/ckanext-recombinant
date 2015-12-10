@@ -2,6 +2,7 @@ from pylons.i18n import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm
 
+from paste.reloader import watch_file
 from paste.deploy.converters import asbool
 
 import importlib
@@ -157,6 +158,7 @@ def _load_tables_module_path(url):
     p = m.__path__[0]
     p = os.path.join(p, file_name)
     if os.path.exists(p):
+        watch_file(p)
         return load(open(p))
 
 def _load_tables_url(url):
