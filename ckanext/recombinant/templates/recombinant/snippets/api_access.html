@@ -1,29 +1,78 @@
 {% set resource_id = pkg.resources[0].id %}
 {% set profile_url = h.url_for(controller='user', action='read', id=username) %}
-<h4>{{ _("Resource ID") }}</h4>
+<h3>{{ _("API Access") }}</h3>
+<h4>{{ _("Retrieving records") }}</h4>
 <p>{% trans %}Access this data through the
   <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api"
   >CKAN Datastore API</a>
   with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}
 </p>
 <p>{% trans %}The CKAN API uses a JSON-RPC style, where you post a JSON object and receive another
-JSON object in response.{% endtrans %}</p>
-<h5>{{ _("Example:") }}</h4>
-<h6>curl</h4>
+  JSON object in response.{% endtrans %}</p>
+
+<h5>{{ _("Example:") }}</h5>
+<h6>curl</h6>
 <pre><code class="bash"
->curl {{ g.site_url }}/api/action/datastore_search -d '{"resource_id":"{{ resource_id }}"}'</code></pre>
-<h6>Python</h4>
+>curl {{ g.site_url }}/api/action/datastore_search -d '
+{
+  "resource_id": "{{ resource_id }}",
+  "sort": {{ h.recombinant_example(pkg.type, 'sort') }},
+  "limit": 10,
+  "filter": {
+{{ h.recombinant_example(pkg.type, 'filter', indent=4) }}
+  }
+}'
+</code></pre>
+<h6>Python</h6>
 <pre><code class="python"
->import ckanapi
+>from ckanapi import RemoteCKAN
 from pprint import pprint
-ckan = ckanapi.RemoteCKAN('{{ g.site_url }}')
-result = ckan.action.datastore_search(resource_id="{{ resource_id }}")
+ckan = RemoteCKAN('{{ g.site_url }}')
+result = ckan.action.datastore_search(
+    resource_id="{{ resource_id }}",
+    sort={{ h.recombinant_example(pkg.type, 'sort') }},
+    limit=10,
+    filter={
+{{ h.recombinant_example(pkg.type, 'filter', indent=8) }}
+    }
+)
 pprint(result['records'])</code></pre>
-<h4>{{ _("Your API Key") }}</h4>
-<p>{% trans %}Updating records requires an API key. Your API key is shown on your
-<a href="{{ profile_url }}">profile page</a>. Please do not include
-your API key in any code shared with other people. Use a configuration file or environment
-variable to let each user input their own key when they use your tool.{% endtrans %}</p>
-<p>{% trans %}Your API key is <em>equivalent to your password</em> and may be used to
-perform any action your user can on this site. All actions made with your API key will be
-logged as actions you performed.{% endtrans %}</p>
+
+<h4>{{ _("Creating and Updating Records") }}</h4>
+<p>{% trans %}Modifying records requires an API key. Your API key is shown on your
+  <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
+</p>
+
+<p>{% trans %}Do not include
+  your API key in any code shared with other people. Use a configuration file or environment
+  variable to let each user input their own key when they use your tool.
+  Your API key is <em>equivalent to your password</em> and may be used to
+  perform any action your user can on this site. All actions made with your API key will be
+  logged as actions you performed.{% endtrans %}
+</p>
+
+<p>{% trans %}Create and update records with the "datastore_usert" endpoint.
+  Your API key must be send as an "Authorization" header.{% endtrans %}</p>
+
+<h5>{{ _("Example:") }}</h5>
+<h6>curl</h6>
+<pre><code class="bash"
+>curl {{ g.site_url }}/api/action/datastore_upsert \
+  -H"Authorization:$API_KEY" -d '
+{
+  "resource_id": "{{ resource_id }}",
+  "records": [{
+{{ h.recombinant_example(pkg.type, 'record', indent=4) }}
+  }]
+}'</code></pre>
+<h6>Python</h6>
+<pre><code class="python"
+>from ckanapi import RemoteCKAN
+ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
+result = ckan.action.datastore_upsert(
+    resource_id="{{ resource_id }}",
+    records=[{
+{{ h.recombinant_example(pkg.type, 'record', indent=8) }}
+    }]
+)</code></pre>
+
