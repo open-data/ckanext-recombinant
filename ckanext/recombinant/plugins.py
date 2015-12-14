@@ -232,5 +232,5 @@ def recombinant_example(dataset_type, doc_type, indent=2, lang='json'):
             "%s%s=%s" % (left, k, json.dumps(data[k]))
             for k in sorted(data))
 
-    out = json.dumps(data, indent=2)
+    out = json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False)
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
