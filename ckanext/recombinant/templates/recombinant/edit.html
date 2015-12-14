@@ -13,15 +13,15 @@
   <header class="module-content page-header"></header>
     <div class="wet-boew-tabbedinterface tabs-style-3 auto-height-none">
       <ul class="tabs">
-        <li><a href="#tabs_update">{{ _("Update") }}</a></li>
+        <li {% if not delete_errors %}class="default"{% endif %}><a href="#tabs_update">{{ _("Update") }}</a></li>
         {% if pkg.resources and h.check_access('package_update', {'id': pkg.id }) %}
-          <li><a href="#tabs_delete">{{ _("Delete") }}</a></li>
+          <li {% if delete_errors %}class="default"{% endif %}><a href="#tabs_delete">{{ _("Delete") }}</a></li>
         {% endif %}
-        <li class="default"><a href="#tabs_api_curl">{{ _("API Access") }}: curl</a></li>
+        <li><a href="#tabs_api_curl">{{ _("API Access") }}: curl</a></li>
         <li><a href="#tabs_api_python">{{ _("API Access") }}: Python</a></li>
       </ul>
       <div class="tabs-panel">
-        <div id="tabs_update" style="padding: 1px 10px"> {#{% if not delete_errors %}open{% endif %}#}
+        <div id="tabs_update" style="padding: 1px 10px">
           <div class="module-content">
             {% if h.check_access('package_update', {'id': pkg.id }) %}
               {% snippet "recombinant/snippets/xls_upload.html",
