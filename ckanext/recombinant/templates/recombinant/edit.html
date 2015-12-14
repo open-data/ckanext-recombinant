@@ -19,8 +19,8 @@
         {% endif %}
         <li class="default"><a href="#tabs_api">{{ _("API Access") }}</a></li>
       </ul>
-      <div class="tabs-panel" style="padding: 1px 10px">
-        <div id="tabs_update"> {#{% if not delete_errors %}open{% endif %}#}
+      <div class="tabs-panel">
+        <div id="tabs_update" style="padding: 1px 10px"> {#{% if not delete_errors %}open{% endif %}#}
           <div class="module-content">
             {% if h.check_access('package_update', {'id': pkg.id }) %}
               {% snippet "recombinant/snippets/xls_upload.html",
@@ -33,13 +33,15 @@
         </div>
         {% if pkg.resources %}
           {% if h.check_access('package_update', {'id': pkg.id }) %}
-            <div id="tabs_delete">
+            <div id="tabs_delete" style="padding: 1px 10px">
               {% snippet "recombinant/snippets/delete.html",
                 pkg=pkg, errors=delete_errors, filters=filters %}
             </div>
           {% endif %}
-          {% snippet "recombinant/snippets/api_access.html",
-            pkg=pkg, username=c.userobj.name %}
+          <div id="tabs_api" style="padding: 1px 10px">
+            {% snippet "recombinant/snippets/api_access.html",
+              pkg=pkg, username=c.userobj.name %}
+          </div>
         {% endif %}
       </div>
     </div>
