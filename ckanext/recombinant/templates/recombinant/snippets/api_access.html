@@ -1,7 +1,7 @@
 {% set resource_id = pkg.resources[0].id %}
 {% set profile_url = h.url_for(controller='user', action='read', id=username) %}
 <h3>{{ _("API Access") }}</h3>
-<h4>{{ _("Retrieving records") }}</h4>
+<h4>{{ _("Retrieve Records") }}</h4>
 <p>{% trans %}Access this data through the
   <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api"
   >CKAN Datastore API</a>
@@ -38,7 +38,7 @@ result = ckan.action.datastore_search(
 )
 pprint(result['records'])</code></pre>
 
-<h4>{{ _("Creating and Updating Records") }}</h4>
+<h4>{{ _("Create and Update Records") }}</h4>
 <p>{% trans %}Modifying records requires an API key. Your API key is shown on your
   <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
 </p>
@@ -76,3 +76,37 @@ result = ckan.action.datastore_upsert(
     }]
 )</code></pre>
 
+<h4>{{ _("Delete Records") }}</h4>
+<p>{% trans %}Deleting records requires an API key. Your API key is shown on your
+  <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
+</p>
+<p>{% trans %}First verify that the record you would like to remove is present with
+the "datastore_search" endpoint{% endtrans %}<p>
+
+<h5>{{ _("Example:") }}</h5>
+<h6>curl</h6>
+<pre><code class="bash"
+>curl {{ g.site_url }}/api/action/datastore_search \
+ -H"Authorization:$API_KEY" -d '
+{
+  "resource_id": "{{ resource_id }}",
+  "filter": {
+{{ h.recombinant_example(pkg.type, 'filter_one', indent=4) }}
+  }
+}'
+</code></pre>
+<h6>Python</h6>
+<pre><code class="python"
+>from ckanapi import RemoteCKAN
+from pprint import pprint
+ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
+result = ckan.action.datastore_search(
+    resource_id="{{ resource_id }}",
+    filter={
+{{ h.recombinant_example(pkg.type, 'filter_one', indent=8) }}
+    }
+)
+pprint(result['records'])</code></pre>
+
+<p>{% trans %}Remove the record returned by passing the same parameters
+to the "datastore_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
