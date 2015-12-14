@@ -113,3 +113,25 @@ pprint(result['records'])</code></pre>
 
 <p>{% trans %}Remove the record returned by passing the same parameters
 to the "datastore_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
+
+<h5>{{ _("Example:") }}</h5>
+{% if examples=='curl' %}
+<pre><code class="bash"
+>curl {{ g.site_url }}/api/action/datastore_delete \
+ -H"Authorization:$API_KEY" -d '
+{
+  "resource_id": "{{ resource_id }}",
+  "filters": {
+{{ h.recombinant_example(pkg.type, 'filter_one', indent=4) }}
+  }
+}'
+</code></pre>
+{% elif examples=='python' %}
+<pre><code class="python"
+>ckan.action.datastore_delete(
+    resource_id="{{ resource_id }}",
+    filters={
+{{ h.recombinant_example(pkg.type, 'filter_one', indent=8) }}
+    }
+)</code></pre>
+{% endif %}
