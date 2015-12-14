@@ -17,7 +17,8 @@
         {% if pkg.resources and h.check_access('package_update', {'id': pkg.id }) %}
           <li><a href="#tabs_delete">{{ _("Delete") }}</a></li>
         {% endif %}
-        <li class="default"><a href="#tabs_api">{{ _("API Access") }}</a></li>
+        <li class="default"><a href="#tabs_api_curl">{{ _("API Access") }}: curl</a></li>
+        <li><a href="#tabs_api_python">{{ _("API Access") }}: Python</a></li>
       </ul>
       <div class="tabs-panel">
         <div id="tabs_update" style="padding: 1px 10px"> {#{% if not delete_errors %}open{% endif %}#}
@@ -38,9 +39,13 @@
                 pkg=pkg, errors=delete_errors, filters=filters %}
             </div>
           {% endif %}
-          <div id="tabs_api" style="padding: 1px 10px">
+          <div id="tabs_api_curl" style="padding: 1px 10px">
             {% snippet "recombinant/snippets/api_access.html",
-              pkg=pkg, username=c.userobj.name %}
+              pkg=pkg, username=c.userobj.name, examples='curl' %}
+          </div>
+          <div id="tabs_api_python" style="padding: 1px 10px">
+            {% snippet "recombinant/snippets/api_access.html",
+              pkg=pkg, username=c.userobj.name, examples='python' %}
           </div>
         {% endif %}
       </div>

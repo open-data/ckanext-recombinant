@@ -11,7 +11,7 @@
   JSON object in response.{% endtrans %}</p>
 
 <h5>{{ _("Example:") }}</h5>
-<h6>curl</h6>
+{% if examples=='curl' %}
 <pre><code class="bash"
 >curl {{ g.site_url }}/api/action/datastore_search -d '
 {
@@ -23,7 +23,7 @@
   }
 }'
 </code></pre>
-<h6>Python</h6>
+{% elif examples=='python' %}
 <pre><code class="python"
 >from ckanapi import RemoteCKAN
 from pprint import pprint
@@ -37,6 +37,7 @@ result = ckan.action.datastore_search(
     }
 )
 pprint(result['records'])</code></pre>
+{% endif %}
 
 <h4>{{ _("Create and Update Records") }}</h4>
 <p>{% trans %}Modifying records requires an API key. Your API key is shown on your
@@ -55,7 +56,7 @@ pprint(result['records'])</code></pre>
   Your API key must be sent as an "Authorization" header.{% endtrans %}</p>
 
 <h5>{{ _("Example:") }}</h5>
-<h6>curl</h6>
+{% if examples=='curl' %}
 <pre><code class="bash"
 >curl {{ g.site_url }}/api/action/datastore_upsert \
   -H"Authorization:$API_KEY" -d '
@@ -65,7 +66,7 @@ pprint(result['records'])</code></pre>
 {{ h.recombinant_example(pkg.type, 'record', indent=4) }}
   }]
 }'</code></pre>
-<h6>Python</h6>
+{% elif examples=='python' %}
 <pre><code class="python"
 >from ckanapi import RemoteCKAN
 ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
@@ -75,6 +76,7 @@ result = ckan.action.datastore_upsert(
 {{ h.recombinant_example(pkg.type, 'record', indent=8) }}
     }]
 )</code></pre>
+{% endif %}
 
 <h4>{{ _("Delete Records") }}</h4>
 <p>{% trans %}Deleting records requires an API key. Your API key is shown on your
@@ -84,7 +86,7 @@ result = ckan.action.datastore_upsert(
 the "datastore_search" endpoint{% endtrans %}<p>
 
 <h5>{{ _("Example:") }}</h5>
-<h6>curl</h6>
+{% if examples=='curl' %}
 <pre><code class="bash"
 >curl {{ g.site_url }}/api/action/datastore_search \
  -H"Authorization:$API_KEY" -d '
@@ -95,7 +97,7 @@ the "datastore_search" endpoint{% endtrans %}<p>
   }
 }'
 </code></pre>
-<h6>Python</h6>
+{% elif examples=='python' %}
 <pre><code class="python"
 >from ckanapi import RemoteCKAN
 from pprint import pprint
@@ -107,6 +109,7 @@ result = ckan.action.datastore_search(
     }
 )
 pprint(result['records'])</code></pre>
+{% endif %}
 
 <p>{% trans %}Remove the record returned by passing the same parameters
 to the "datastore_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
