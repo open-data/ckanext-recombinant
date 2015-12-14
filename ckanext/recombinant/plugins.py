@@ -210,7 +210,7 @@ def recombinant_example(dataset_type, doc_type, indent=2, lang='json'):
         data = t['examples'][doc_type]
     elif doc_type == 'sort':
         data = "request_date desc, file_number asc"
-    elif doc_type == 'filter':
+    elif doc_type == 'filters':
         data = {"resource": "doc", "priority": "high"}
     elif doc_type == 'filter_one':
         data = {"file_number": "86086"}

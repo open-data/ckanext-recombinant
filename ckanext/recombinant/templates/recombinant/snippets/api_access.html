@@ -18,8 +18,8 @@
   "resource_id": "{{ resource_id }}",
   "sort": {{ h.recombinant_example(pkg.type, 'sort') }},
   "limit": 10,
-  "filter": {
-{{ h.recombinant_example(pkg.type, 'filter', indent=4) }}
+  "filters": {
+{{ h.recombinant_example(pkg.type, 'filters', indent=4) }}
   }
 }'
 </code></pre>
@@ -32,8 +32,8 @@ result = ckan.action.datastore_search(
     resource_id="{{ resource_id }}",
     sort={{ h.recombinant_example(pkg.type, 'sort') }},
     limit=10,
-    filter={
-{{ h.recombinant_example(pkg.type, 'filter', indent=8) }}
+    filters={
+{{ h.recombinant_example(pkg.type, 'filters', indent=8) }}
     }
 )
 pprint(result['records'])</code></pre>
@@ -92,7 +92,7 @@ the "datastore_search" endpoint{% endtrans %}<p>
  -H"Authorization:$API_KEY" -d '
 {
   "resource_id": "{{ resource_id }}",
-  "filter": {
+  "filters": {
 {{ h.recombinant_example(pkg.type, 'filter_one', indent=4) }}
   }
 }'
@@ -104,7 +104,7 @@ from pprint import pprint
 ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
 result = ckan.action.datastore_search(
     resource_id="{{ resource_id }}",
-    filter={
+    filters={
 {{ h.recombinant_example(pkg.type, 'filter_one', indent=8) }}
     }
 )
