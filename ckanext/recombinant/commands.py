@@ -27,7 +27,7 @@ import unicodecsv
 from docopt import docopt
 
 from ckanext.recombinant.plugins import (
-    _get_tables,
+    _get_tables, get_table,
     get_target_datasets,
     get_dataset_types)
 from ckanext.recombinant.read_xls import read_xls, get_records
@@ -88,6 +88,25 @@ class TableCommand(CkanCommand):
                 packages.append(result[0])
         return packages
 
+    def _check_table_columns(self, res_id, dataset_type):
+        """
+        return a list of columns in the res_id if they don't match the
+        columns that would be created for this type.
+        """
+        lc = ckanapi.LocalCKAN()
+        t = get_table(dataset_type)
+        try:
+            result = lc.action.datastore_search(resource_id=res_id, rows=0)
+        except ckanapi.NotFound:
+            return "table missing!"
+        fields = result['fields'][1:] # remove '_id'
+        if len(fields) != len(t['fields']):
+            return "wrong number of columns!"
+        for df, tf in zip(fields, t['fields']):
+            if df['id'] != tf['datastore_id']:
+                return "columns don't match: %s" % ' '.join(
+                    f['id'] for f in fields)
+
     def _show(self, dataset_type, org_name):
         orgs = self._get_orgs()
         for t in _get_tables():
@@ -99,9 +118,11 @@ class TableCommand(CkanCommand):
                 for p in packages:
                     if org_name and org_name != p['organization']['name']:
                         continue
-                    print p['organization']['name'],
-                    print "resource_id =",
-                    print p['resources'][0]['id']
+                    res_id = p['resources'][0]['id']
+                    bad_cols = self._check_table_columns(res_id, dataset_type)
+                    print p['organization']['name'], "resource_id =", res_id
+                    if bad_cols:
+                        print '  *** error checking columns: ', bad_cols
             if len(packages) != len(orgs):
                 print (' - %d orgs but %d records found' %
                     (len(orgs), len(packages)))
