@@ -76,7 +76,7 @@ class UploadController(PackageController):
                 lc.action.datastore_upsert(
                     method=method,
                     resource_id=resource_id,
-                    records=[{'comments_en': 'wha'}])
+                    records=records)
             except NotAuthorized, na:
                 msg = _(
                     'You do not have permission to upload to {0}').format(
