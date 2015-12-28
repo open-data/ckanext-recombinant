@@ -198,7 +198,7 @@ def primary_key_fields(dataset_type):
 def recombinant_get_table(dataset_type):
     try:
         return get_table(dataset_type)
-    except RecombinantError:
+    except RecombinantException:
         return
 
 def recombinant_example(dataset_type, doc_type, indent=2, lang='json'):
