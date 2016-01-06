@@ -7,7 +7,7 @@
       <label>{{ _('Template') }}:</label>
     </div>
     <div class="span-4 row-end">
-        <a class="button" href="{% url_for controller='ckanext.recombinant.controller:UploadController', action='template', id=pkg.name %}">{{ _('Download template Excel spreadsheet') }}</a></li>
+      <a class="button" href="{% url_for controller='ckanext.recombinant.controller:UploadController', action='template', id=pkg.name %}">{{ _('Download template Excel spreadsheet') }}</a>
     </div>
   {% block upload_submit %}
   {% endblock %}
