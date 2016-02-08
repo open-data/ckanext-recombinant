@@ -34,16 +34,16 @@ def _get_tables():
     return tables
 
 
-def get_table(dataset_type):
+def get_table(sheet_name):
     """
     Get the table configured with the input dataset type
     """
     tables = _get_tables()
     for t in tables:
-        if t['dataset_type'] == dataset_type:
+        if t['sheet_name'] == sheet_name:
             break
     else:
-        raise RecombinantException('dataset_type "%s" not found'
+        raise RecombinantException('sheet_name "%s" not found'
             % dataset_type)
     return t
 
@@ -57,15 +57,14 @@ def get_target_datasets():
     return list(set((t['target_dataset'] for t in tables)))
 
 
-def get_dataset_types(target_dataset):
+def get_sheet_names(target_dataset):
     """
     Find the RecombinantPlugin instance and get its
-    configured dataset types for the input target dataset
+    configured sheet names for the input target dataset
     """
     tables = _get_tables()
-    return (
-        t['dataset_type'] for t in tables
-            if t['target_dataset'] == target_dataset)
+    return [t['sheet_name'] for t in tables
+        if t['target_dataset'] == target_dataset]
 
 
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
@@ -80,15 +79,15 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         p.toolkit.add_template_directory(config, 'templates')
 
         # read our configuration early
-        self._tables_url = config.get('recombinant.tables', ""
-            ).strip()
-        if not self._tables_url:
+        self._tables_urls = config.get('recombinant.tables', ""
+            ).split()
+        if not self._tables_urls:
             raise RecombinantException("Missing configuration option "
                 "recombinant.tables")
-        self._tables = _load_tables(self._tables_url)
+        self._tables = _load_tables(self._tables_urls)
 
     def package_types(self):
-        return [t['dataset_type'] for t in self._tables]
+        return list(set(t['dataset_type'] for t in self._tables))
 
     def read_template(self):
         return 'recombinant/edit.html'
@@ -129,6 +128,7 @@ def generate_uuid(value):
     """
     return str(uuid.uuid4())
 
+
 def value_from_id(key, converted_data, errors, context):
     """
     Copy the 'id' value from converted_data
@@ -136,11 +136,18 @@ def value_from_id(key, converted_data, errors, context):
     converted_data[key] = converted_data[('id',)]
 
 
+def _load_tables(urls):
+    tables = []
+    for url in urls:
+        t = _load_tables_module_path(url)
+        if not t:
+            t = _load_tables_url(url)
 
-def _load_tables(url):
-    tables = _load_tables_module_path(url)
-    if not tables:
-        tables = _load_tables_url(url)
+        for r in t['resources']:
+            r['dataset_type'] = t['dataset_type']
+            r['target_dataset'] = t['target_dataset']
+            tables.append(r)
+
     return tables
 
 
@@ -162,6 +169,7 @@ def _load_tables_module_path(url):
         watch_file(p)
         return load(open(p))
 
+
 def _load_tables_url(url):
     import urllib2
     try:
@@ -178,6 +186,7 @@ def load(f):
         return yaml.load(f)
     return json.load(f)
 
+
 def loads(s, url):
     if is_yaml(url):
         return yaml.load(s)
@@ -185,7 +194,8 @@ def loads(s, url):
 
 
 def is_yaml(n):
-    return n[-5:].lower() == '.yaml' or n[-4:] == '.yml'
+    # import pyyaml only if necessary
+    return n.endswith(('.yaml', '.yml'))
 
 
 def primary_key_fields(dataset_type):
@@ -195,17 +205,17 @@ def primary_key_fields(dataset_type):
         if f['datastore_id'] in t['datastore_primary_key']
         ]
 
-def recombinant_get_table(dataset_type):
+def recombinant_get_table(sheet_name):
     try:
-        return get_table(dataset_type)
+        return get_table(sheet_name)
     except RecombinantException:
         return
 
-def recombinant_example(dataset_type, doc_type, indent=2, lang='json'):
+def recombinant_example(sheet_name, doc_type, indent=2, lang='json'):
     """
     Return example data formatted for use in API documentation
     """
-    t = recombinant_get_table(dataset_type)
+    t = recombinant_get_table(sheet_name)
     if t and doc_type in t.get('examples', {}):
         data = t['examples'][doc_type]
     elif doc_type == 'sort':
