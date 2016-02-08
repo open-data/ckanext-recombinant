@@ -11,46 +11,45 @@
 
 {% block primary_content %}
   <header class="module-content page-header"></header>
-    <div class="wet-boew-tabbedinterface tabs-style-3 auto-height-none">
-      <ul class="tabs">
-        <li {% if not delete_errors %}class="default"{% endif %}><a href="#tabs_update">{{ _("Update") }}</a></li>
-        {% if pkg.resources and h.check_access('package_update', {'id': pkg.id }) %}
-          <li {% if delete_errors %}class="default"{% endif %}><a href="#tabs_delete">{{ _("Delete") }}</a></li>
-        {% endif %}
-        <li><a href="#tabs_api_curl">{{ _("API Access") }}: curl</a></li>
-        <li><a href="#tabs_api_python">{{ _("API Access") }}: Python</a></li>
-      </ul>
-      <div class="tabs-panel">
-        <div id="tabs_update">
-          <div class="module-content">
-            {% if h.check_access('package_update', {'id': pkg.id }) %}
-              {% snippet "recombinant/snippets/xls_upload.html",
-                pkg=pkg, errors=errors %}
-            {% else %}
-              {% snippet "recombinant/snippets/xls_download.html",
-                pkg=pkg, errors=errors %}
-            {% endif %}
-          </div>
-        </div>
-        {% if pkg.resources %}
+  <div class="wet-boew-tabbedinterface tabs-style-3 auto-height-none">
+    <ul class="tabs">
+      <li {% if not delete_errors %}class="default"{% endif %}><a href="#tabs_update">{{ _("Update") }}</a></li>
+      {% if pkg.resources and h.check_access('package_update', {'id': pkg.id }) %}
+        <li {% if delete_errors %}class="default"{% endif %}><a href="#tabs_delete">{{ _("Delete") }}</a></li>
+      {% endif %}
+      <li><a href="#tabs_api_curl">{{ _("API Access") }}: curl</a></li>
+      <li><a href="#tabs_api_python">{{ _("API Access") }}: Python</a></li>
+    </ul>
+    <div class="tabs-panel">
+      <div id="tabs_update">
+        <div class="module-content">
           {% if h.check_access('package_update', {'id': pkg.id }) %}
-            <div id="tabs_delete">
-              {% snippet "recombinant/snippets/delete.html",
-                pkg=pkg, errors=delete_errors, filters=filters %}
-            </div>
+            {% snippet "recombinant/snippets/xls_upload.html",
+              pkg=pkg, errors=errors %}
+          {% else %}
+            {% snippet "recombinant/snippets/xls_download.html",
+              pkg=pkg, errors=errors %}
           {% endif %}
-          <div id="tabs_api_curl">
-            {% snippet "recombinant/snippets/api_access.html",
-              pkg=pkg, username=c.userobj.name, examples='curl' %}
-          </div>
-          <div id="tabs_api_python">
-            {% snippet "recombinant/snippets/api_access.html",
-              pkg=pkg, username=c.userobj.name, examples='python' %}
+        </div>
+      </div>
+      {% if pkg.resources %}
+        {% if h.check_access('package_update', {'id': pkg.id }) %}
+          <div id="tabs_delete">
+            {% snippet "recombinant/snippets/delete.html",
+              pkg=pkg, errors=delete_errors, filters=filters %}
           </div>
         {% endif %}
-      </div>
+        <div id="tabs_api_curl">
+          {% snippet "recombinant/snippets/api_access.html",
+            pkg=pkg, username=c.userobj.name, examples='curl' %}
+        </div>
+        <div id="tabs_api_python">
+          {% snippet "recombinant/snippets/api_access.html",
+            pkg=pkg, username=c.userobj.name, examples='python' %}
+        </div>
+      {% endif %}
     </div>
-  </section>
+  </div>
 {% endblock %}
 
 {# syntax hilighting for API docs above #}
