@@ -1,14 +1,15 @@
-from pylons.i18n import _
-import ckan.plugins as p
-from ckan.lib.plugins import DefaultDatasetForm
-
-from paste.reloader import watch_file
-from paste.deploy.converters import asbool
-
 import importlib
 import os
 import json
 import uuid
+
+from paste.reloader import watch_file
+from paste.deploy.converters import asbool
+from pylons.i18n import _
+import ckan.plugins as p
+from ckan.lib.plugins import DefaultDatasetForm
+
+from ckanext.recombinant import logic, tables
 
 try:
     import yaml
@@ -19,60 +20,13 @@ class RecombinantException(Exception):
     pass
 
 
-class _IRecombinant(p.Interface):
-    pass
-
-
-def _get_tables():
-    """
-    Find the RecombinantPlugin instance and get the
-    table configuration from it
-    """
-    tables = []
-    for plugin in p.PluginImplementations(_IRecombinant):
-        tables.extend(plugin._tables)
-    return tables
-
-
-def get_table(sheet_name):
-    """
-    Get the table configured with the input dataset type
-    """
-    tables = _get_tables()
-    for t in tables:
-        if t['sheet_name'] == sheet_name:
-            break
-    else:
-        raise RecombinantException('sheet_name "%s" not found'
-            % dataset_type)
-    return t
-
-
-def get_target_datasets():
-    """
-    Find the RecombinantPlugin instance and get its
-    configured target datasets (e.g., ['ati', 'pd', ...])
-    """
-    tables = _get_tables()
-    return list(set((t['target_dataset'] for t in tables)))
-
-
-def get_sheet_names(target_dataset):
-    """
-    Find the RecombinantPlugin instance and get its
-    configured sheet names for the input target dataset
-    """
-    tables = _get_tables()
-    return [t['sheet_name'] for t in tables
-        if t['target_dataset'] == target_dataset]
-
-
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
+    p.implements(tables.IRecombinant)
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
-    p.implements(_IRecombinant)
     p.implements(p.IRoutes, inherit=True)
     p.implements(p.ITemplateHelpers, inherit=True)
+    p.implements(p.IActions)
 
     def update_config(self, config):
         # add our templates
@@ -119,6 +73,12 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
             'recombinant_primary_key_fields': primary_key_fields,
             'recombinant_get_table': recombinant_get_table,
             'recombinant_example': recombinant_example,
+            }
+
+    def get_actions(self):
+        return {
+            'recombinant_create': logic.recombinant_create,
+            'recombinant_update': logic.recombinant_update,
             }
 
 
