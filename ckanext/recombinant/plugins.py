@@ -81,6 +81,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         return {
             'recombinant_create': logic.recombinant_create,
             'recombinant_update': logic.recombinant_update,
+            'recombinant_show': logic.recombinant_show,
             }
 
 
