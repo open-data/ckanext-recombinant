@@ -1,52 +1,50 @@
+import ckan.plugins as p
+
+from ckanext.recombinant.errors import RecombinantException
+
 
 class IRecombinant(p.Interface):
     pass
 
-def _get_tables():
+
+def _get_plugin():
     """
-    Find the RecombinantPlugin instance and get the
-    table configuration from it
+    Find the RecombinantPlugin instance
     """
     for plugin in p.PluginImplementations(IRecombinant):
-        return plugin._tables
+        return plugin
+    raise RecombinantException(
+        'Recombinant plugin not found. Have you enabled the plugin?')
 
-def _get_dataset_types():
-    for plugin in p.PluginImplementations(_IRecombinant):
-        return plugin._dataset_types
-    
 
 def get_table(sheet_name):
     """
-    Get the table configured with the input dataset type
+    Get the table for the given sheet
     """
-    tables = _get_tables()
-    for t in tables:
-        if t['sheet_name'] == sheet_name:
-            break
-    else:
+    tables = _get_plugin()._tables
+    try:
+        return tables[sheet_name]
+    except KeyError:
         raise RecombinantException('sheet_name "%s" not found'
-            % dataset_type)
-    return t
+            % sheet_name)
 
-def get_dataset_type(sheet_name):
+def get_dataset_type(dataset_type):
     """
-    Get the table configured with the input dataset type
+    Get the config for the given dataset type
     """
-    tables = _get_tables()
-    for t in tables:
-        if t['sheet_name'] == sheet_name:
-            break
-    else:
-        raise RecombinantException('sheet_name "%s" not found'
+    dataset_types = _get_plugin()._dataset_types
+    try:
+        return dataset_types[dataset_type]
+    except KeyError:
+        raise RecombinantException('dataset_type "%s" not found'
             % dataset_type)
-    return t
 
 def get_target_datasets():
     """
     Find the RecombinantPlugin instance and get its
     configured target datasets (e.g., ['ati', 'pd', ...])
     """
-    tables = _get_tables()
+    tables = _get_plugin()._dataset_types
     return list(set((t['target_dataset'] for t in tables)))
 
 
@@ -55,8 +53,10 @@ def get_sheet_names(target_dataset):
     Find the RecombinantPlugin instance and get its
     configured sheet names for the input target dataset
     """
-    tables = _get_tables()
-    return [t['sheet_name'] for t in tables
+    tables = _get_plugin()._dataset_types
+    return [r['sheet_name']
+        for t in tables
+        for r in t['resources']
         if t['target_dataset'] == target_dataset]
 
 

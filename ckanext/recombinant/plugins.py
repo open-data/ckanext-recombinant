@@ -9,7 +9,7 @@ from pylons.i18n import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm
 
-from ckanext.recombinant import logic, tables
+from ckanext.recombinant import logic, tables, helpers
 
 try:
     import yaml
@@ -38,7 +38,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         if not self._tables_urls:
             raise RecombinantException("Missing configuration option "
                 "recombinant.tables")
-        self._tables = _load_tables(self._tables_urls)
+        self._tables, self._dataset_types = (
+            _load_tables_and_dataset_types(self._tables_urls))
 
     def package_types(self):
         return list(set(t['dataset_type'] for t in self._tables))
@@ -70,9 +71,10 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
 
     def get_helpers(self):
         return {
-            'recombinant_primary_key_fields': primary_key_fields,
-            'recombinant_get_table': recombinant_get_table,
-            'recombinant_example': recombinant_example,
+            'recombinant_primary_key_fields':
+                helpers.recombinant_primary_key_fields,
+            'recombinant_get_table': helpers.recombinant_get_table,
+            'recombinant_example': helpers.recombinant_example,
             }
 
     def get_actions(self):
@@ -96,19 +98,22 @@ def value_from_id(key, converted_data, errors, context):
     converted_data[key] = converted_data[('id',)]
 
 
-def _load_tables(urls):
-    tables = []
+def _load_tables_and_dataset_types(urls):
+    tables = {}
+    dataset_types = {}
     for url in urls:
         t = _load_tables_module_path(url)
         if not t:
             t = _load_tables_url(url)
 
+        dataset_types[t['dataset_type']] = t
+
         for r in t['resources']:
             r['dataset_type'] = t['dataset_type']
             r['target_dataset'] = t['target_dataset']
-            tables.append(r)
+            tables[r['sheet_name']] = r
 
-    return tables
+    return tables, dataset_types
 
 
 def _load_tables_module_path(url):
@@ -156,51 +161,3 @@ def loads(s, url):
 def is_yaml(n):
     # import pyyaml only if necessary
     return n.endswith(('.yaml', '.yml'))
-
-
-def primary_key_fields(dataset_type):
-    t = get_table(dataset_type)
-    return [
-        f for f in t['fields']
-        if f['datastore_id'] in t['datastore_primary_key']
-        ]
-
-def recombinant_get_table(sheet_name):
-    try:
-        return get_table(sheet_name)
-    except RecombinantException:
-        return
-
-def recombinant_example(sheet_name, doc_type, indent=2, lang='json'):
-    """
-    Return example data formatted for use in API documentation
-    """
-    t = recombinant_get_table(sheet_name)
-    if t and doc_type in t.get('examples', {}):
-        data = t['examples'][doc_type]
-    elif doc_type == 'sort':
-        data = "request_date desc, file_number asc"
-    elif doc_type == 'filters':
-        data = {"resource": "doc", "priority": "high"}
-    elif doc_type == 'filter_one':
-        data = {"file_number": "86086"}
-    else:
-        data = {
-            "request_date": "2016-01-01",
-            "file_number": "42042",
-            "resource": "doc",
-            "prioroty": "low",
-        }
-
-    if not isinstance(data, (list, dict)):
-        return json.dumps(data)
-
-    left = ' ' * indent
-
-    if lang == 'pythonargs':
-        return ',\n'.join(
-            "%s%s=%s" % (left, k, json.dumps(data[k]))
-            for k in sorted(data))
-
-    out = json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False)
-    return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
