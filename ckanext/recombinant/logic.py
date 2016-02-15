@@ -4,6 +4,7 @@ from ckanext.recombinant.tables import get_dataset_type
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
 
+
 def recombinant_create(context, data_dict):
     '''
     Create a dataset with datastore table(s) for an organization and
@@ -12,25 +13,9 @@ def recombinant_create(context, data_dict):
     :param dataset_type: recombinant dataset type
     :param owner_org: organization name or id
     '''
-    dataset_type = get_or_bust(data_dict, 'dataset_type')
-    owner_org = get_or_bust(data_dict, 'owner_org')
+    lc, dt, results = _action_find_dataset(context, data_dict)
 
-    try:
-        dt = get_dataset_type(dataset_type)
-    except RecombinantException:
-        raise ValidationError({'dataset_type':
-            _("Recombinant dataset type not found")})
-
-    lc = LocalCKAN(username=context['user'])
-    try:
-        org = lc.action.organization_show(id=owner_org)
-    except NotFound:
-        raise ValidationError({'owner_org': _("Organization not found")})
-
-    result = lc.action.package_search(
-        q="type:%s organization:%" % (dataset_type, org['name'],
-        rows=1)
-    if result:
+    if results:
         raise ValidationError({'owner_org':
             _("dataset type %s already exists for this organization")
             % dataset_type})
@@ -56,6 +41,31 @@ def recombinant_update(context, data_dict):
     :param owner_org: organization name or id
     :param delete_resources: True to delete extra resources found
     '''
+    lc, dt, dataset = _action_get_dataset(context, data_dict)
+
+    dataset = _update_dataset(
+        lc, dt, result[0],
+        delete_resources=asbool(data_dict.get('delete_resources', False)))
+    _update_datastore(lc, dt, dataset)
+
+
+def recombinant_show(context, data_dict):
+    '''
+    Return the status of a recombinant dataset including all its tables
+    and checking that its metadata is up to date.
+
+    :param dataset_type: recombinant dataset type
+    :param owner_org: organization name or id
+    '''
+    lc, dt, dataset = _action_get_dataset(context, data_dict)
+
+
+
+def _action_find_dataset(context, data_dict):
+    '''
+    common code for actions that need to check for a dataset based on
+    the dataset type and organization name or id
+    '''
     dataset_type = get_or_bust(data_dict, 'dataset_type')
     owner_org = get_or_bust(data_dict, 'owner_org')
 
@@ -74,16 +84,23 @@ def recombinant_update(context, data_dict):
     result = lc.action.package_search(
         q="type:%s organization:%" % (dataset_type, org['name'],
         rows=2)
+    return lc, dt, result['results']
+
+
+def _action_get_dataset(context, data_dict):
+    '''
+    common code for actions that need to retrieve a dataset based on
+    the dataset type and organization name or id
+    '''
+    lc, dt, results = _action_find_dataset(context, data_dict)
+
     if not result:
         raise NotFound()
     if len(results) > 1:
         raise ValidationError({'owner_org':
             _("Multiple datasets exist for type %s") % dataset_type})
 
-    dataset = _update_dataset(
-        lc, dt, result[0],
-        delete_resources=asbool(data_dict.get('delete_resources', False)))
-    _update_datastore(lc, dt, dataset)
+    return lc, dt, dataset
 
 
 def _update_dataset(lc, dt, dataset, delete_resources=False):
