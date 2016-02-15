@@ -120,24 +120,26 @@ class TableCommand(CkanCommand):
                                 print '   ! metadata needs to be updated'
 
             if len(packages) != len(orgs):
-                print (' - %d orgs but %d records found' %
+                print (' > %d orgs but %d records found' %
                     (len(orgs), len(packages)))
             else:
-                print (' - %d datasets found' % (len(packages),))
+                print (' > %d datasets found' % (len(packages),))
+            need_update = sum(1 for p in packages if not p['all_correct'])
+            if need_update:
+                print (' --> %d need to be updated' % need_update)
 
     def _get_tables_from_types(self, dataset_types):
         if self.options.all_types:
             if dataset_types:
                 print "--all-types makes no sense with dataset types listed"
                 return
-            tables = _get_tables()
+            types = get_dataset_types()
         elif not dataset_types:
             print "please specify dataset types or use -a/--all-types option"
             return
         else:
-            dts = set(dataset_types)
-            tables = [t for t in _get_tables() if t['dataset_type'] in dts]
-        return tables
+            types = set(dataset_types)
+        return [get_dataset_type(t) for t in types]
 
     def _create(self, dataset_types):
         tables = self._get_tables_from_types(dataset_types)

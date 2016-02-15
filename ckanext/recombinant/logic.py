@@ -63,6 +63,8 @@ def recombinant_show(context, data_dict):
     tables = dict((r['sheet_name'], r) for r in dt['resources'])
 
     resources = []
+    resources_correct = True
+    metadata_correct = _dataset_match(dt, dataset)
 
     for resource in dataset['resources']:
         out = {'id': resource['id'], 'name': resource['name']}
@@ -80,17 +82,21 @@ def recombinant_show(context, data_dict):
             continue
 
         r = tables[resource['name']]
-        out['metadata_correct'] = metadata_correct and _resource_match(r, resource)
+        metadata_correct = metadata_correct and _resource_match(r, resource)
+        resources_correct = resources_correct and metadata_correct
+        out['metadata_correct'] = metadata_correct
 
         try:
             ds = lc.action.datastore_search(
                 resource_id=resource['id'],
                 limit=1)
-            out['datastore_correct'] = _datastore_match(
-                r['fields'], ds['fields'])
+            datastore_correct = _datastore_match(r['fields'], ds['fields'])
+            out['datastore_correct'] = datastore_correct
+            resources_correct = resources_correct and datastore_correct
             out['datastore_rows'] = ds.get('total', 0)
         except NotFound:
             out['error'] = 'datastore table missing'
+            resources_correct = False
 
         resources.append(out)
 
@@ -98,7 +104,8 @@ def recombinant_show(context, data_dict):
         'dataset_type': dataset['type'],
         'owner_org': dataset['organization']['name'],
         'id': dataset['id'],
-        'metadata_correct': _dataset_match(dt, dataset),
+        'metadata_correct': metadata_correct,
+        'all_correct': metadata_correct and resources_correct,
         'resources': resources,
         }
 
