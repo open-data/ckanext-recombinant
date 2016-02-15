@@ -209,16 +209,23 @@ def _update_datastore(lc, dt, dataset):
             "dataset missing resource for sheet",
             r['sheet_name'], dataset['id'])
         resource_id = resource_ids[r['sheet_name']]
+        fields = _datastore_fields(r['fields'])
         try:
             ds = lc.action.datastore_search(resource_id=resource_id, limit=0)
-            if _datastore_match(r['fields'], ds['fields']):
-                continue
         except NotFound:
             pass
+        else:
+            if _datastore_match(r['fields'], ds['fields']):
+                continue
+            # extra work here to maintain existing fields+ordering
+            # datastore_create rejects our list otherwise
+            fields = ds['fields'][1:] # trim _id field
+            seen = set(f['id'] for f in fields)
+            for f in _datastore_fields(r['fields']):
+                if f['id'] not in seen:
+                    fields.append(f)
 
-        lc.action.datastore_create(
-            resource_id=resource_id,
-            fields=_datastore_fields(r['fields']))
+        lc.action.datastore_create(resource_id=resource_id, fields=fields)
 
 
 def _dataset_fields(dt):
@@ -253,7 +260,7 @@ def _column_type(t):
     """
     return postgres column type for field type t
     """
-    return 'bigint' if datastore_type[f['datastore_type']].numeric else 'text'
+    return 'bigint' if datastore_type[t].numeric else 'text'
 
 
 def _datastore_fields(fs):
