@@ -2,6 +2,7 @@ from ckanapi import LocalCKAN, NotFound, ValidationError
 
 from ckanext.recombinant.tables import get_dataset_type
 from ckanext.recombinant.errors import RecombinantException
+from ckanext.recombinant.datatypes import datastore_type
 
 def recombinant_create(context, data_dict):
     '''
@@ -86,6 +87,10 @@ def recombinant_update(context, data_dict):
 
 
 def _update_dataset(lc, dt, dataset, delete_resources=False):
+    """
+    call lc.action.package_update on dataset if necessary to make its
+    metadata match the dataset type dt
+    """
     package_update_required = False
     if not _dataset_match(dt, dataset):
         dataset.update(_dataset_fields(dt))
@@ -129,6 +134,31 @@ def _update_dataset(lc, dt, dataset, delete_resources=False):
     return dataset
 
 
+def _update_datastore(lc, dt, dataset):
+    """
+    call lc.action.datastore_create to create tables or add
+    columns to existing datastore tables based on dataset type
+    dt for existing dataset.
+    """
+    resource_ids = dict((r['name'], r['id']) for r in dataset['resources'])
+
+    for r in dt['resources']:
+        assert r['sheet_name'] in resource_ids, (
+            "dataset missing resource for sheet",
+            r['sheet_name'], dataset['id'])
+        resource_id = resource_ids[r['sheet_name']]
+        try:
+            ds = lc.action.datastore_search(resource_id=resource_id, limit=0)
+            if _datastore_match(r['fields'], ds['fields'])
+                continue
+        except NotFound:
+            pass
+
+        lc.action.datastore_create(
+            resource_id=resource_id,
+            fields=_datastore_fields(r['fields']))
+
+
 def _dataset_fields(dt):
     """
     return the dataset metadata fields created for dataset type dt
@@ -156,3 +186,29 @@ def _resource_match(r, resource):
     """
     return all(resource[k] == v for (k, v) in _resource_fields(r).items())
 
+
+def _column_type(t):
+    """
+    return postgres column type for field type t
+    """
+    return 'bigint' if datastore_type[f['datastore_type']].numeric else 'text'
+
+
+def _datastore_fields(fs):
+    """
+    return the datastore field definitions for fields fs
+    """
+    return [{
+        'id': f['datastore_id'],
+        'type': _column_type(f['datastore_type'])}
+        for f in fs]
+
+
+def _datastore_match(fs, fields):
+    """
+    return True if existing datastore column fields include fields
+    defined in fs.
+    """
+    # XXX: does not check types or extra columns at this time
+    existing = set(c['id'] for c in fields)
+    return all(f['datastore_id'] in existing for f in fs)
