@@ -63,15 +63,24 @@ def recombinant_show(context, data_dict):
     tables = dict((r['sheet_name'], r) for r in dt['resources'])
 
     resources = []
+
     for resource in dataset['resources']:
-        out = { 'id': resource['id'], 'name': resource['name']}
+        out = {'id': resource['id'], 'name': resource['name']}
+
+        # migration below will update this
+        metadata_correct = True
+        if (len(tables) == 1 and len(dataset['resources']) == 1
+                and resource['name'] == 'data'):
+            resource['name'] = dt['resources'][0]['sheet_name']
+            metadata_correct = False
+
         if resource['name'] not in tables:
             out['error'] = 'unknown sheet name'
             resources.append(out)
             continue
 
         r = tables[resource['name']]
-        out['metadata_correct'] = _resource_match(r, resource)
+        out['metadata_correct'] = metadata_correct and _resource_match(r, resource)
 
         try:
             ds = lc.action.datastore_search(
@@ -145,7 +154,7 @@ def _update_dataset(lc, dt, dataset, delete_resources=False):
 
     # migrate recombinant1 datasets which had no resource
     # name to identify resource
-    if (len(tables) == 1 and len(dt['resources']) == 1
+    if (len(tables) == 1 and len(dataset['resources']) == 1
             and dataset['resources'][0]['name'] == 'data'):
         dataset['resources'][0]['name'] = dt['resources'][0]['sheet_name']
         package_update_required = True
