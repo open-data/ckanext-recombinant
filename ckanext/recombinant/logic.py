@@ -65,7 +65,6 @@ def recombinant_show(context, data_dict):
 
     resources = []
     resources_correct = True
-    metadata_correct = _dataset_match(dt, dataset)
 
     for resource in dataset['resources']:
         out = {'id': resource['id'], 'name': resource['name']}
@@ -101,6 +100,7 @@ def recombinant_show(context, data_dict):
 
         resources.append(out)
 
+    metadata_correct = _dataset_match(dt, dataset)
     return {
         'dataset_type': dataset['type'],
         'owner_org': dataset['organization']['name'],
@@ -239,7 +239,7 @@ def _resource_fields(r):
     """
     return the resource metadata fields create for sheet r
     """
-    return {'name': r['sheet_name'], 'description': r['title'], 'url': 'NA'}
+    return {'name': r['sheet_name'], 'description': r['title'], 'url': 'http://'}
 
 
 def _resource_match(r, resource):
