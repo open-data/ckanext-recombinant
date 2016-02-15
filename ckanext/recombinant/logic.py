@@ -42,7 +42,8 @@ def recombinant_create(context, data_dict):
         resources=resources,
         **_dataset_fields(dt))
 
-    return _update_tables(lc, dt, dataset)
+    dataset = _update_tables(lc, dt, dataset)
+    return _update_datastore(lc, dt, dataset)
 
 
 def recombinant_update(context, data_dict):
@@ -77,26 +78,55 @@ def recombinant_update(context, data_dict):
     if len(results) > 1:
         raise ValidationError({'owner_org':
             _("Multiple datasets exist for type %s") % dataset_type})
-    
-    return _update_tables(
+
+    dataset = _update_dataset(
         lc, dt, result[0],
         delete_resources=asbool(data_dict.get('delete_resources', False)))
+    _update_datastore(lc, dt, dataset)
 
 
-def _update_tables(lc, dt, dataset, delete_resources=False):
+def _update_dataset(lc, dt, dataset, delete_resources=False):
+    package_update_required = False
     if not _dataset_match(dt, dataset):
         dataset.update(_dataset_fields(dt))
-        lc.call_action('package_update', dataset)
+        package_update_required = True
 
     tables = dict((r['sheet_name'], r) for r in dt['resources'])
 
+    # migrate recombinant1 datasets which had no resource
+    # name to identify resource
+    if (len(tables) == 1 and len(dt['resources']) == 1
+            and not dataset['resources'][0]['name']):
+        dataset['resources'][0]['name'] = dt['resources'][0]['sheet_name']
+        package_update_required = True
+
+    # collect updated resources
+    out_resources = []
     for resource in dataset['resources']:
         if resource['name'] not in tables:
-            if delete_resources:
-                lc.action.resource_delete(id=resource['id'])
+            if not delete_resources:
+                out_resources.append(resource)
             continue
 
         r = tables.pop(resource['name'])
+
+        if not _resource_match(r, resource):
+            resource.update(_resource_fields(r))
+            package_update_required = True
+
+        out_resources.append(resource)
+
+    # missing resources
+    if tables:
+        out_resources.extend(_resource_fields[r] for r in tables)
+        package_update_required = True
+
+    if (package_update_required or
+            len(out_resources) != len(dataset['resources'])):
+        dataset['resources'] = out_resources
+        dataset = lc.call_action('package_update', dataset)
+
+    return dataset
 
 
 def _dataset_fields(dt):
@@ -126,6 +156,3 @@ def _resource_match(r, resource):
     """
     return all(resource[k] == v for (k, v) in _resource_fields(r).items())
 
-
-def _datastore_match(t, fields):
-    "return True if 
