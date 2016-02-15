@@ -1,3 +1,5 @@
+import json
+
 from ckanext.recombinant.tables import get_table, get_dataset_type
 from ckanext.recombinant.errors import RecombinantException
 
@@ -15,7 +17,7 @@ def recombinant_get_dataset_type(dataset_type):
 
 def recombinant_primary_key_fields(sheet_name):
     try:
-        t = get_table(dataset_type)
+        t = get_table(sheet_name)
     except RecombinantException:
         return []
     return [
