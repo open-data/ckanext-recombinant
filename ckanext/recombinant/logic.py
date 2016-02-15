@@ -59,6 +59,36 @@ def recombinant_show(context, data_dict):
     '''
     lc, dt, dataset = _action_get_dataset(context, data_dict)
 
+    tables = dict((r['sheet_name'], r) for r in dt['resources'])
+
+    resources = []
+    for resource in dataset['resources']:
+        out = { 'id': resource['id'], 'name': resource['name']}
+        if resource['name'] not in tables:
+            out['error'] = 'unknown sheet name'
+            resources.append(out)
+            continue
+
+        r = tables[resource['name']]
+        out['metadata_correct'] = _resource_match(r, resource)
+
+        try:
+            ds = lc.action.datastore_search(
+                resource_id=resource['id'],
+                limit=1)
+            out['datastore_correct'] = _datastore_match(
+                r['fields'], ds['fields'])
+            out['datastore_rows'] = ds.get('total', 0)
+        except NotFound:
+            out['error'] = 'datastore table missing'
+
+        resources.append(out)
+
+    return {
+        'id': dataset['id'],
+        'metadata_correct': _dataset_match(dt, dataset),
+        'resources': resources,
+        }
 
 
 def _action_find_dataset(context, data_dict):
