@@ -34,8 +34,7 @@ def recombinant_create(context, data_dict):
             _("dataset type %s already exists for this organization")
             % dataset_type})
 
-    resources = [{'name': r['sheet_name'], 'url': 'none'}
-        for r in dt['resources']]
+    resources = [_resource_fields(r) for r in dt['resources']]
 
     dataset = lc.action.package_create(
         type=dataset_type.
@@ -91,13 +90,13 @@ def _update_tables(lc, dt, dataset, delete_resources=False):
 
     tables = dict((r['sheet_name'], r) for r in dt['resources'])
 
-    for r in dataset['resources']:
-        if r['name'] not in tables:
+    for resource in dataset['resources']:
+        if resource['name'] not in tables:
             if delete_resources:
-                lc.action.resource_delete(id=r['id'])
+                lc.action.resource_delete(id=resource['id'])
             continue
 
-        t = tables.pop(r['name'])
+        r = tables.pop(resource['name'])
 
 
 def _dataset_fields(dt):
@@ -112,6 +111,20 @@ def _dataset_match(dt, dataset):
     return True if dataset metadata matches expected fields for dataset type dt
     """
     return all(dataset[k] == v for (k, v) in _dataset_fields(dt).items())
+
+
+def _resource_fields(r):
+    """
+    return the resource metadata fields create for sheet r
+    """
+    return {'name': r['sheet_name'], 'description': r['title'], 'url': 'NA'}
+
+
+def _resource_match(r, resource):
+    """
+    return True if resource metadatas matches expected fields for sheet r
+    """
+    return all(resource[k] == v for (k, v) in _resource_fields(r).items())
 
 
 def _datastore_match(t, fields):
