@@ -28,6 +28,7 @@ def get_table(sheet_name):
         raise RecombinantException('sheet_name "%s" not found'
             % sheet_name)
 
+
 def get_dataset_type(dataset_type):
     """
     Get the config for the given dataset type
@@ -38,6 +39,14 @@ def get_dataset_type(dataset_type):
     except KeyError:
         raise RecombinantException('dataset_type "%s" not found'
             % dataset_type)
+
+
+def get_dataset_types():
+    """
+    Get a list of recombinant dataset types
+    """
+    return sorted(_get_plugin()._dataset_types)
+
 
 def get_target_datasets():
     """

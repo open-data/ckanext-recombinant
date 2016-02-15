@@ -23,7 +23,7 @@ def recombinant_create(context, data_dict):
     resources = [_resource_fields(r) for r in dt['resources']]
 
     dataset = lc.action.package_create(
-        type=dataset_type.
+        type=dataset_type,
         owner_org=org['id'],
         resources=resources,
         **_dataset_fields(dt))
@@ -85,6 +85,8 @@ def recombinant_show(context, data_dict):
         resources.append(out)
 
     return {
+        'dataset_type': dataset['type'],
+        'owner_org': dataset['organization']['name'],
         'id': dataset['id'],
         'metadata_correct': _dataset_match(dt, dataset),
         'resources': resources,
@@ -112,7 +114,7 @@ def _action_find_dataset(context, data_dict):
         raise ValidationError({'owner_org': _("Organization not found")})
 
     result = lc.action.package_search(
-        q="type:%s organization:%" % (dataset_type, org['name'],
+        q="type:%s organization:%" % (dataset_type, org['name']),
         rows=2)
     return lc, dt, result['results']
 
@@ -196,7 +198,7 @@ def _update_datastore(lc, dt, dataset):
         resource_id = resource_ids[r['sheet_name']]
         try:
             ds = lc.action.datastore_search(resource_id=resource_id, limit=0)
-            if _datastore_match(r['fields'], ds['fields'])
+            if _datastore_match(r['fields'], ds['fields']):
                 continue
         except NotFound:
             pass

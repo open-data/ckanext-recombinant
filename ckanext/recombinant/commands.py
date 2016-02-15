@@ -26,12 +26,10 @@ import logging
 import unicodecsv
 from docopt import docopt
 
-from ckanext.recombinant.plugins import (
-    _get_tables, get_table,
-    get_target_datasets,
-    get_dataset_types)
+from ckanext.recombinant.tables import (
+    get_dataset_types, get_table,
+    get_target_datasets)
 from ckanext.recombinant.read_xls import read_xls, get_records
-from ckanext.recombinant.datatypes import data_store_type
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 
@@ -81,53 +79,44 @@ class TableCommand(CkanCommand):
         lc = ckanapi.LocalCKAN()
         packages = []
         for o in orgs:
-            result = lc.action.package_search(
-                q="type:%s organization:%s" % (dataset_type, o),
-            rows=2)['results']
-            if result:
-                packages.append(result[0])
+            try:
+                result = lc.action.recombinant_show(
+                    dataset_type=dataset_type,
+                    owner_org=o)
+                packages.append(result)
+            except NotFound:
+                continue
         return packages
 
-    def _check_table_columns(self, res_id, dataset_type):
-        """
-        return a list of columns in the res_id if they don't match the
-        columns that would be created for this type.
-        """
-        lc = ckanapi.LocalCKAN()
-        t = get_table(dataset_type)
-        try:
-            result = lc.action.datastore_search(resource_id=res_id, rows=0)
-        except ckanapi.NotFound:
-            return "table missing!"
-        fields = result['fields'][1:] # remove '_id'
-        if len(fields) != len(t['fields']):
-            return "wrong number of columns!"
-        for df, tf in zip(fields, t['fields']):
-            if df['id'] != tf['datastore_id']:
-                return "columns don't match: %s" % ' '.join(
-                    f['id'] for f in fields)
-
     def _show(self, dataset_type, org_name):
-        orgs = self._get_orgs()
-        for t in _get_tables():
-            if dataset_type and t['dataset_type'] != dataset_type:
-                continue
-            print u'{t[title]} ({t[dataset_type]})'.format(t=t).encode('utf-8')
-            packages =  self._get_packages(t['dataset_type'], orgs)
+        """
+        Display some information about the status of recombinant datasets
+        """
+        orgs = [org_name] if org_name else self._get_orgs()
+        types = [dataset_type] if dataset_type else get_dataset_types()
+
+        for dtype in types:
+            dt = get_dataset_type(dtype)
+            print u'{dt[title]} ({dt[dataset_type]})'.format(
+                dt=dt).encode('utf-8')
+
+            packages = self._get_packages(dtype, orgs)
             if dataset_type:
                 for p in packages:
-                    if org_name and org_name != p['organization']['name']:
-                        continue
-                    res_id = p['resources'][0]['id']
-                    bad_cols = self._check_table_columns(res_id, dataset_type)
-                    print p['organization']['name'], "resource_id =", res_id
-                    if bad_cols:
-                        print '  *** error checking columns: ', bad_cols
+                    print p['owner_org']
+                    if 'error' in p:
+                        print '  *** {p[error]}'.format(p=p)
+                    for r in p['resources']:
+                        print (' - id:{r[id]} {r[name]} '
+                            'rows:{r[datastore_rows]}').format(r=r)
+                        if 'error' in r:
+                            print '    *** {r[error]}'.format(r=r)
+
             if len(packages) != len(orgs):
                 print (' - %d orgs but %d records found' %
                     (len(orgs), len(packages)))
             else:
-                print (' - %d records found' % (len(packages),))
+                print (' - %d datasets found' % (len(packages),))
 
     def _get_tables_from_types(self, dataset_types):
         if self.options.all_types:

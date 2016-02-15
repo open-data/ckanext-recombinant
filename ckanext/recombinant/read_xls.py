@@ -1,7 +1,7 @@
 import re
 import openpyxl
 from datetime import datetime, date
-from datatypes import  data_store_type
+from datatypes import datastore_type
 
 # special place to look for the organization name in each XLS file
 # FIXME: read this from the config instead
@@ -63,7 +63,7 @@ def _canonicalize(dirty, dstore_tag):
     :return: Canonicalized cell input
     :rtype: float or unicode
     """
-    dtype = data_store_type[dstore_tag]
+    dtype = datastore_type[dstore_tag]
     if dirty is None:
         return dtype.default
     elif isinstance(dirty, float) or isinstance(dirty, int):
