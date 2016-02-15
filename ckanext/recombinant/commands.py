@@ -27,7 +27,7 @@ import unicodecsv
 from docopt import docopt
 
 from ckanext.recombinant.tables import (
-    get_dataset_types, get_table,
+    get_dataset_types, get_table, get_dataset_type,
     get_target_datasets)
 from ckanext.recombinant.read_xls import read_xls, get_records
 
@@ -84,7 +84,7 @@ class TableCommand(CkanCommand):
                     dataset_type=dataset_type,
                     owner_org=o)
                 packages.append(result)
-            except NotFound:
+            except ckanapi.NotFound:
                 continue
         return packages
 

@@ -42,7 +42,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
             _load_tables_and_dataset_types(self._tables_urls))
 
     def package_types(self):
-        return list(set(t['dataset_type'] for t in self._tables))
+        return tables.get_dataset_types()
 
     def read_template(self):
         return 'recombinant/edit.html'

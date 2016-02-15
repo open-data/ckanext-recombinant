@@ -1,4 +1,5 @@
 from ckanapi import LocalCKAN, NotFound, ValidationError
+from ckan.logic import get_or_bust
 
 from ckanext.recombinant.tables import get_dataset_type
 from ckanext.recombinant.errors import RecombinantException
@@ -108,13 +109,8 @@ def _action_find_dataset(context, data_dict):
             _("Recombinant dataset type not found")})
 
     lc = LocalCKAN(username=context['user'])
-    try:
-        org = lc.action.organization_show(id=owner_org)
-    except NotFound:
-        raise ValidationError({'owner_org': _("Organization not found")})
-
     result = lc.action.package_search(
-        q="type:%s organization:%" % (dataset_type, org['name']),
+        q="type:%s organization:%s" % (dataset_type, owner_org),
         rows=2)
     return lc, dt, result['results']
 
@@ -126,13 +122,13 @@ def _action_get_dataset(context, data_dict):
     '''
     lc, dt, results = _action_find_dataset(context, data_dict)
 
-    if not result:
+    if not results:
         raise NotFound()
     if len(results) > 1:
         raise ValidationError({'owner_org':
             _("Multiple datasets exist for type %s") % dataset_type})
 
-    return lc, dt, dataset
+    return lc, dt, results[0]
 
 
 def _update_dataset(lc, dt, dataset, delete_resources=False):
