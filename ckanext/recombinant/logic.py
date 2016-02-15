@@ -40,10 +40,8 @@ def recombinant_create(context, data_dict):
     dataset = lc.action.package_create(
         type=dataset_type.
         owner_org=org['id'],
-        title=dt['title'],
-        notes=dt.get('notes',''),
         resources=resources,
-        )
+        **_dataset_fields(dt))
 
     return _update_tables(lc, dt, dataset)
 
@@ -88,8 +86,7 @@ def recombinant_update(context, data_dict):
 
 def _update_tables(lc, dt, dataset, delete_resources=False):
     if not _dataset_match(dt, dataset):
-        dataset['title'] = dt['title']
-        dataset['notes'] = dt.get('notes', '')
+        dataset.update(_dataset_fields(dt))
         lc.call_action('package_update', dataset)
 
     tables = dict((r['sheet_name'], r) for r in dt['resources'])
@@ -103,10 +100,19 @@ def _update_tables(lc, dt, dataset, delete_resources=False):
         t = tables.pop(r['name'])
 
 
+def _dataset_fields(dt):
+    """
+    return the dataset metadata fields created for dataset type dt
+    """
+    return {'title': dt['title'], 'notes': dt.get('notes', '')}
+
+
 def _dataset_match(dt, dataset):
-    "return True if dataset metadata matches"
-    return (dt['title'] == dataset['title']
-        and dt.get('notes', '') == dataset['notes'])
+    """
+    return True if dataset metadata matches expected fields for dataset type dt
+    """
+    return all(dataset[k] == v for (k, v) in _dataset_fields(dt).items())
+
 
 def _datastore_match(t, fields):
     "return True if 
