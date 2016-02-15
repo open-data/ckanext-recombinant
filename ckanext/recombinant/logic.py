@@ -146,7 +146,7 @@ def _update_dataset(lc, dt, dataset, delete_resources=False):
     # migrate recombinant1 datasets which had no resource
     # name to identify resource
     if (len(tables) == 1 and len(dt['resources']) == 1
-            and not dataset['resources'][0]['name']):
+            and dataset['resources'][0]['name'] == 'data'):
         dataset['resources'][0]['name'] = dt['resources'][0]['sheet_name']
         package_update_required = True
 

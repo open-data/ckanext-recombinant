@@ -106,11 +106,18 @@ class TableCommand(CkanCommand):
                     print p['owner_org']
                     if 'error' in p:
                         print '  *** {p[error]}'.format(p=p)
+                    elif not p['metadata_correct']:
+                        print '  ! metadata needs to be updated'
                     for r in p['resources']:
-                        print (' - id:{r[id]} {r[name]} '
-                            'rows:{r[datastore_rows]}').format(r=r)
+                        print ' - id:{r[id]} {r[name]}'.format(r=r),
                         if 'error' in r:
                             print '    *** {r[error]}'.format(r=r)
+                        else:
+                            print 'rows:{r[datastore_rows]}'.format(r=r)
+                            if not r['datastore_correct']:
+                                print '   ! datastore needs to be updated'
+                            if not r['metadata_correct']:
+                                print '   ! metadata needs to be updated'
 
             if len(packages) != len(orgs):
                 print (' - %d orgs but %d records found' %
