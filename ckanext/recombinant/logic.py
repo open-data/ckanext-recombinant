@@ -1,5 +1,6 @@
 from ckanapi import LocalCKAN, NotFound, ValidationError
 from ckan.logic import get_or_bust
+from paste.deploy.converters import asbool
 
 from ckanext.recombinant.tables import get_dataset_type
 from ckanext.recombinant.errors import RecombinantException
@@ -45,7 +46,7 @@ def recombinant_update(context, data_dict):
     lc, dt, dataset = _action_get_dataset(context, data_dict)
 
     dataset = _update_dataset(
-        lc, dt, result[0],
+        lc, dt, dataset,
         delete_resources=asbool(data_dict.get('delete_resources', False)))
     _update_datastore(lc, dt, dataset)
 

@@ -128,50 +128,37 @@ class TableCommand(CkanCommand):
             if need_update:
                 print (' --> %d need to be updated' % need_update)
 
-    def _get_tables_from_types(self, dataset_types):
+    def _expand_dataset_types(self, dataset_types):
         if self.options.all_types:
             if dataset_types:
                 print "--all-types makes no sense with dataset types listed"
                 return
-            types = get_dataset_types()
-        elif not dataset_types:
+            return get_dataset_types()
+        if not dataset_types:
             print "please specify dataset types or use -a/--all-types option"
             return
-        else:
-            types = set(dataset_types)
-        return [get_dataset_type(t) for t in types]
+        return dataset_types
 
     def _create(self, dataset_types):
-        tables = self._get_tables_from_types(dataset_types)
-        if not tables:
-            return
+        """
+        Create and update recombinant datasets
+        """
         orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
-        for t in tables:
-            existing = dict((p['organization']['name'], p)
-                for p in self._get_packages(t['dataset_type'], orgs))
+        for dtype in self._expand_dataset_types(dataset_types):
+            dt = get_dataset_type(dtype)
+            packages = self._get_packages(dtype, orgs)
+            existing = dict((p['owner_org'], p) for p in packages)
             for o in orgs:
                 if o in existing:
-                    continue
-                print t['dataset_type'], o
-                dataset = lc.action.package_create(
-                    type=t['dataset_type'],
-                    title=t['title'],
-                    owner_org=o,
-                    resources=[{'name':'data', 'url':''}],
-                    )
-                lc.action.datastore_create(
-                    resource_id=dataset['resources'][0]['id'],
-                    fields=[{
-                        'id': f['datastore_id'],
-                        'type':
-                            'int' if data_store_type[
-                                f['datastore_type']].numeric
-                            else 'text',
-                        } for f in t['fields']],
-                    primary_key=t.get('datastore_primary_key', []),
-                    indexes=t.get('datastore_indexes', ""),
-                    )
+                    if existing[o]['all_correct']:
+                        continue
+                    print dtype, o, 'updating'
+                    lc.action.recombinant_update(owner_org=o, dataset_type=dtype)
+                else:
+                    print t['dataset_type'], o
+                    lc.action.recombinant_create(owner_org=o, dataset_type=dtype)
+
 
     def _destroy(self, dataset_types):
         tables = self._get_tables_from_types(dataset_types)
