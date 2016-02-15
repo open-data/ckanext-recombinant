@@ -25,12 +25,12 @@ def recombinant_create(context, data_dict):
     resources = [_resource_fields(r) for r in dt['resources']]
 
     dataset = lc.action.package_create(
-        type=dataset_type,
-        owner_org=org['id'],
+        type=data_dict['dataset_type'],
+        owner_org=data_dict['owner_org'],
         resources=resources,
         **_dataset_fields(dt))
 
-    dataset = _update_tables(lc, dt, dataset)
+    dataset = _update_dataset(lc, dt, dataset)
     return _update_datastore(lc, dt, dataset)
 
 

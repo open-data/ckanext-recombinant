@@ -156,7 +156,7 @@ class TableCommand(CkanCommand):
                     print dtype, o, 'updating'
                     lc.action.recombinant_update(owner_org=o, dataset_type=dtype)
                 else:
-                    print t['dataset_type'], o
+                    print dtype, o
                     lc.action.recombinant_create(owner_org=o, dataset_type=dtype)
 
 
