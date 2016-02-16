@@ -167,24 +167,23 @@ class TableCommand(CkanCommand):
                     lc.action.recombinant_create(owner_org=o, dataset_type=dtype)
 
 
-    def _destroy(self, dataset_types):
-        tables = self._get_tables_from_types(dataset_types)
-        if not tables:
-            return
-
-        from ckan.lib.cli import DatasetCmd
-        cmd = DatasetCmd('dataset')
-
+    def _delete(self, dataset_types):
+        """
+        delete recombinant datasets and all their data
+        """
         orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
-        for t in tables:
-            for package in self._get_packages(t['dataset_type'], orgs):
-                for r in package['resources']:
+        for dtype in self._expand_dataset_types(dataset_types):
+            dt = get_dataset_type(dtype)
+            packages = self._get_packages(dtype, orgs)
+            for p in packages:
+                print 'deleting %s %s' % (dtype, p['owner_org'])
+                for r in p['resources']:
                     try:
-                        lc.action.datastore_delete(id=r['id'])
-                    except ckanapi.NotFound:
+                        lc.action.datastore_delete(resource_id=r['id'])
+                    except NotFound:
                         pass
-                cmd.purge(package['name'])
+                lc.action.package_delete(id=p['id'])
 
     def _load_xls(self, xls_file_names):
         for n in xls_file_names:
