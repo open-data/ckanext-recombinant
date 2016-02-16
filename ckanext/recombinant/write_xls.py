@@ -1,8 +1,8 @@
 import openpyxl
 
-from ckanext.recombinant.plugins import get_table
+from ckanext.recombinant.tables import get_table
 from ckanext.recombinant.errors import RecombinantException
-from ckanext.recombinant.datatypes import data_store_type
+from ckanext.recombinant.datatypes import datastore_type
 
 boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
     type="list", formula1='"FALSE,TRUE"', allow_blank=True)
@@ -46,7 +46,7 @@ def xls_template(dataset_type, org):
         col = sheet.column_dimensions[col_letter]
         col.width = field['xls_column_width']
         # FIXME: format only below header
-        col.number_format = data_store_type[field['datastore_type']].xl_format
+        col.number_format = datastore_type[field['datastore_type']].xl_format
         validation_range = '{0}3:{0}1003'.format(col_letter)
         if field['datastore_type'] == 'boolean':
             boolean_validator.ranges.append(validation_range)

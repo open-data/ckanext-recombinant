@@ -5,10 +5,13 @@ from paste.deploy.converters import asbool
 from ckan.lib.base import (c, render, model, request, h, g,
     response, abort, redirect)
 from ckan.controllers.package import PackageController
+from ckan.logic import ValidationError, NotAuthorized
+
+from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.read_xls import read_xls, get_records
 from ckanext.recombinant.write_xls import xls_template
-from ckanext.recombinant.plugins import get_table, primary_key_fields
-from ckan.logic import ValidationError, NotAuthorized
+from ckanext.recombinant.tables import get_table, get_dataset_type
+from ckanext.recombinant.helpers import recombinant_primary_key_fields
 
 from cStringIO import StringIO
 
@@ -100,7 +103,7 @@ class UploadController(PackageController):
         lc = ckanapi.LocalCKAN(username=c.user)
         filters = {}
         package_type = self._get_package_type(id)
-        for f in primary_key_fields(package_type):
+        for f in recombinant_primary_key_fields(package_type):
            filters[f['datastore_id']] = request.POST.get(f['datastore_id'], '')
 
         package = lc.action.package_show(id=id)
@@ -155,22 +158,19 @@ class PreviewController(PackageController):
 
     def preview_table(self, id, resource_id):
         lc = ckanapi.LocalCKAN(username=c.user)
-        pkg = lc.action.package_show(id=id)
+        dataset = lc.action.package_show(id=id)
         try:
-            dt = get_dataset_type(pkg['type'])
+            dt = get_dataset_type(dataset['type'])
         except RecombinantException:
             abort(404, _('Recombinant type not found'))
 
-        for r in pkg['resources']:
+        for r in dataset['resources']:
             if r['id'] == resource_id:
                 break
         else:
             abort(404, _('Resource not found'))
 
-        table = get_table(r['name'])
-
         return render('recombinant/resource_edit.html', extra_vars={
-            'pkg': pkg,
-            'table': table,
+            'dataset': dataset,
             'resource': r,
             })
