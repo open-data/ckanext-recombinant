@@ -150,3 +150,27 @@ class UploadController(PackageController):
                 dataset['type']))
         return blob.getvalue()
 
+
+class PreviewController(PackageController):
+
+    def preview_table(self, id, resource_id):
+        lc = ckanapi.LocalCKAN(username=c.user)
+        pkg = lc.action.package_show(id=id)
+        try:
+            dt = get_dataset_type(pkg['type'])
+        except RecombinantException:
+            abort(404, _('Recombinant type not found'))
+
+        for r in pkg['resources']:
+            if r['id'] == resource_id:
+                break
+        else:
+            abort(404, _('Resource not found'))
+
+        table = get_table(r['name'])
+
+        return render('recombinant/resource_edit.html', extra_vars={
+            'pkg': pkg,
+            'table': table,
+            'resource': r,
+            })

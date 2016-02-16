@@ -1,5 +1,8 @@
 import json
 
+from pylons import c
+import ckanapi
+
 from ckanext.recombinant.tables import get_table, get_dataset_type
 from ckanext.recombinant.errors import RecombinantException
 
@@ -58,3 +61,12 @@ def recombinant_example(sheet_name, doc_type, indent=2, lang='json'):
 
     out = json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False)
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
+
+def recombinant_show_package(pkg):
+    """
+    return recombinant_show results for pkg
+    """
+    lc = ckanapi.LocalCKAN(username=c.user)
+    return lc.action.recombinant_show(
+        dataset_type=pkg['type'],
+        owner_org=pkg['organization']['name'])

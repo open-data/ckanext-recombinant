@@ -70,7 +70,11 @@ def recombinant_show(context, data_dict):
     resources_correct = True
 
     for resource in dataset['resources']:
-        out = {'id': resource['id'], 'name': resource['name']}
+        out = {
+            'id': resource['id'],
+            'name': resource['name'],
+            'description': resource['description'],
+            }
 
         # migration below will update this
         metadata_correct = True
