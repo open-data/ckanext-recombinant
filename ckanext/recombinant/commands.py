@@ -4,7 +4,7 @@ ckanext-recombinant table management commands
 Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
   paster recombinant create [-f] (-a | DATASET_TYPE ...) [-c CONFIG]
-  paster recombinant destroy (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-xls XLS_FILE ... [-c CONFIG]
   paster recombinant combine (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
@@ -60,8 +60,8 @@ class TableCommand(CkanCommand):
             self._show(dataset_type, opts['ORG_NAME'])
         elif opts['create']:
             self._create(opts['DATASET_TYPE'])
-        elif opts['destroy']:
-            self._destroy(opts['DATASET_TYPE'])
+        elif opts['delete']:
+            self._delete(opts['DATASET_TYPE'])
         elif opts['load-xls']:
             self._load_xls(opts['XLS_FILE'])
         elif opts['combine']:
@@ -271,4 +271,4 @@ class TableCommand(CkanCommand):
         if len(target_datasets) == 0:
             target_datasets = get_target_datasets()
         for target_ds in target_datasets:
-            print target_ds + ': ' + ' '.join(get_dataset_types(target_ds))
+            print target_ds

@@ -54,7 +54,7 @@ def get_target_datasets():
     configured target datasets (e.g., ['ati', 'pd', ...])
     """
     tables = _get_plugin()._dataset_types
-    return list(set((t['target_dataset'] for t in tables)))
+    return sorted((t['target_dataset'] for t in tables.values()))
 
 
 def get_sheet_names(target_dataset):
