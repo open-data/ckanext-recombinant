@@ -5,8 +5,10 @@
 {% block breadcrumb_content_selected %}{% endblock %}
 
 {% block breadcrumb_content %}
-  {{ super() }}
-  <li class="active">{% link_for _('Edit'), controller='package', action='edit', id=pkg.name %}</li>
+  {% set organization = pkg.organization.title or pkg.organization.name %}
+  <li>{% link_for _('Organizations'), controller='organization', action='index' %}</li>
+  <li>{% link_for organization|truncate(30), controller='organization', action='read', id=pkg.organization.name %}
+  <li class="active">{% link_for _('Update') ~ ' ' ~ _(pkg.title), controller='package', action='edit', id=pkg.name %}</li>
 {% endblock %}
 
 {% block primary_content %}

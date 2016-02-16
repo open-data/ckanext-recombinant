@@ -3,7 +3,9 @@
 {% block breadcrumb_content_selected %}{% endblock %}
 
 {% block breadcrumb_content %}
-  {{ super() }}
+  {% set organization = dataset.organization.title or dataset.organization.name %}
+  <li>{% link_for _('Organizations'), controller='organization', action='index' %}</li>
+  <li>{% link_for organization|truncate(30), controller='organization', action='read', id=dataset.organization.name %}
   <li>{% link_for _('Update') ~ ' ' ~ _(dataset.title), controller='package', action='edit', id=dataset.name %}</li>
   <li class="active">{{ _('Preview') }} {{ _(resource.description) }} </li>
 {% endblock %}
