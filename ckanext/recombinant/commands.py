@@ -3,7 +3,7 @@ ckanext-recombinant table management commands
 
 Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
-  paster recombinant create (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant create [-f] (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant destroy (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-xls XLS_FILE ... [-c CONFIG]
   paster recombinant combine (-a | DATASET_TYPE ...) [-c CONFIG]
@@ -15,6 +15,8 @@ Options:
   -h --help           show this screen
   -a --all-types      create all dataset types
   -c --config=CONFIG  CKAN configuration file
+  -f --force-update   Force update of tables (required for changes
+                      to only primary keys/indexes)
 """
 from ckan.lib.cli import CkanCommand
 from ckan.logic import ValidationError
@@ -42,6 +44,8 @@ class TableCommand(CkanCommand):
         dest='all_types', help='create all registered dataset types')
     parser.add_option('-c', '--config', dest='config',
         default='development.ini', help='Config file to use.')
+    parser.add_option('-f', '--force-update', action='store_true',
+        dest='force_update', help='force update of tables')
 
     _orgs = None
 
@@ -152,9 +156,12 @@ class TableCommand(CkanCommand):
             for o in orgs:
                 if o in existing:
                     if existing[o]['all_correct']:
-                        continue
+                        if not self.options.force_update:
+                            continue
                     print dtype, o, 'updating'
-                    lc.action.recombinant_update(owner_org=o, dataset_type=dtype)
+                    lc.action.recombinant_update(
+                        owner_org=o, dataset_type=dtype,
+                        force_update=self.options.force_update)
                 else:
                     print dtype, o
                     lc.action.recombinant_create(owner_org=o, dataset_type=dtype)

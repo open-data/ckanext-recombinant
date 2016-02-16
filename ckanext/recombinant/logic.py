@@ -42,13 +42,16 @@ def recombinant_update(context, data_dict):
     :param dataset_type: recombinant dataset type
     :param owner_org: organization name or id
     :param delete_resources: True to delete extra resources found
+    :param force_update: True to force updating of datastore tables
     '''
     lc, dt, dataset = _action_get_dataset(context, data_dict)
 
     dataset = _update_dataset(
         lc, dt, dataset,
         delete_resources=asbool(data_dict.get('delete_resources', False)))
-    _update_datastore(lc, dt, dataset)
+    _update_datastore(
+        lc, dt, dataset,
+        force_update=asbool(data_dict.get('force_update', False)))
 
 
 def recombinant_show(context, data_dict):
@@ -196,7 +199,7 @@ def _update_dataset(lc, dt, dataset, delete_resources=False):
     return dataset
 
 
-def _update_datastore(lc, dt, dataset):
+def _update_datastore(lc, dt, dataset, force_update=False):
     """
     call lc.action.datastore_create to create tables or add
     columns to existing datastore tables based on dataset type
@@ -215,7 +218,7 @@ def _update_datastore(lc, dt, dataset):
         except NotFound:
             pass
         else:
-            if _datastore_match(r['fields'], ds['fields']):
+            if not force_update and _datastore_match(r['fields'], ds['fields']):
                 continue
             # extra work here to maintain existing fields+ordering
             # datastore_create rejects our list otherwise
@@ -225,7 +228,11 @@ def _update_datastore(lc, dt, dataset):
                 if f['id'] not in seen:
                     fields.append(f)
 
-        lc.action.datastore_create(resource_id=resource_id, fields=fields)
+        lc.action.datastore_create(
+            resource_id=resource_id,
+            fields=fields,
+            primary_key=r.get('datastore_primary_key', []),
+            indexes=r.get('datastore_indexes', []))
 
 
 def _dataset_fields(dt):
