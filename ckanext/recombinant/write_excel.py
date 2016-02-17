@@ -1,6 +1,6 @@
 import openpyxl
 
-from ckanext.recombinant.tables import get_table
+from ckanext.recombinant.tables import get_dataset_type
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
 
@@ -10,12 +10,12 @@ boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
 red_fill = openpyxl.styles.PatternFill(start_color='FFEE1111',
     end_color='FFEE1111', fill_type='solid')
 
-def xls_template(dataset_type, org):
+def excel_template(dataset_type, org):
     """
     return an openpyxl.Workbook object containing the sheet and header fields
     for passed dataset_type and org.
     """
-    t = get_table(dataset_type)
+    dt = get_dataset_type(dataset_type)
 
     book = openpyxl.Workbook()
     sheet = book.active

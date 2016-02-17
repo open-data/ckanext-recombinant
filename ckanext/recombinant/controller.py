@@ -9,7 +9,7 @@ from ckan.logic import ValidationError, NotAuthorized
 
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.read_xls import read_xls, get_records
-from ckanext.recombinant.write_xls import xls_template
+from ckanext.recombinant.write_excel import excel_template
 from ckanext.recombinant.tables import get_table, get_dataset_type
 from ckanext.recombinant.helpers import recombinant_primary_key_fields
 
