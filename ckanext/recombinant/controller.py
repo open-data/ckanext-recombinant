@@ -10,7 +10,7 @@ from ckan.logic import ValidationError, NotAuthorized
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.read_xls import read_xls, get_records
 from ckanext.recombinant.write_excel import excel_template
-from ckanext.recombinant.tables import get_table, get_dataset_type
+from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import recombinant_primary_key_fields
 
 from cStringIO import StringIO
@@ -26,7 +26,7 @@ class UploadController(PackageController):
 
     def upload(self, id):
         package_type = self._get_package_type(id)
-        t = get_table(package_type)
+        chromo = get_chromo(package_type)
         expected_sheet_name = t['xls_sheet_name']
 
         try:
@@ -160,9 +160,9 @@ class PreviewController(PackageController):
         lc = ckanapi.LocalCKAN(username=c.user)
         dataset = lc.action.package_show(id=id)
         try:
-            dt = get_dataset_type(dataset['type'])
+            get_geno(dataset['type'])
         except RecombinantException:
-            abort(404, _('Recombinant type not found'))
+            abort(404, _('Recombinant dataset_type not found'))
 
         for r in dataset['resources']:
             if r['id'] == resource_id:

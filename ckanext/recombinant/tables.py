@@ -1,3 +1,10 @@
+"""
+Dataset Definitions (chromo) and Resource Definitions (geno) are loaded
+from files specified in the recombinant_tables ini setting.
+
+This module provides access to those definitions.
+"""
+
 import ckan.plugins as p
 
 from ckanext.recombinant.errors import RecombinantException
@@ -17,25 +24,25 @@ def _get_plugin():
         'Recombinant plugin not found. Have you enabled the plugin?')
 
 
-def get_table(sheet_name):
+def get_chromo(resource_name):
     """
-    Get the table for the given sheet
+    Get the resource definition (chromo) for the given resource name
     """
-    tables = _get_plugin()._tables
+    chromos = _get_plugin()._chromos
     try:
-        return tables[sheet_name]
+        return chromos[resource_name]
     except KeyError:
-        raise RecombinantException('sheet_name "%s" not found'
+        raise RecombinantException('resource_name "%s" not found'
             % sheet_name)
 
 
-def get_dataset_type(dataset_type):
+def get_geno(dataset_type):
     """
-    Get the config for the given dataset type
+    Get the dataset definition (geno) for the given dataset type
     """
-    dataset_types = _get_plugin()._dataset_types
+    genos = _get_plugin()._genos
     try:
-        return dataset_types[dataset_type]
+        return genos[dataset_type]
     except KeyError:
         raise RecombinantException('dataset_type "%s" not found'
             % dataset_type)
@@ -45,7 +52,7 @@ def get_dataset_types():
     """
     Get a list of recombinant dataset types
     """
-    return sorted(_get_plugin()._dataset_types)
+    return sorted(_get_plugin()._genos)
 
 
 def get_target_datasets():
@@ -53,19 +60,5 @@ def get_target_datasets():
     Find the RecombinantPlugin instance and get its
     configured target datasets (e.g., ['ati', 'pd', ...])
     """
-    tables = _get_plugin()._dataset_types
-    return sorted((t['target_dataset'] for t in tables.values()))
-
-
-def get_sheet_names(target_dataset):
-    """
-    Find the RecombinantPlugin instance and get its
-    configured sheet names for the input target dataset
-    """
-    tables = _get_plugin()._dataset_types
-    return [r['sheet_name']
-        for t in tables
-        for r in t['resources']
-        if t['target_dataset'] == target_dataset]
-
-
+    genos = _get_plugin()._genos
+    return sorted((t['target_dataset'] for t in genos.values()))

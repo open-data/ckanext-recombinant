@@ -38,8 +38,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         if not self._tables_urls:
             raise RecombinantException("Missing configuration option "
                 "recombinant.tables")
-        self._tables, self._dataset_types = (
-            _load_tables_and_dataset_types(self._tables_urls))
+        self._chromos, self._genos = (
+            _load_table_definitions(self._tables_urls))
 
     def package_types(self):
         return tables.get_dataset_types()
@@ -76,7 +76,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         return {
             'recombinant_primary_key_fields':
                 helpers.recombinant_primary_key_fields,
-            'recombinant_get_table': helpers.recombinant_get_table,
+            'recombinant_get_chromo': helpers.recombinant_get_chromo,
+            'recombinant_get_geno': helpers.recombinant_get_geno,
             'recombinant_example': helpers.recombinant_example,
             'recombinant_show_package': helpers.recombinant_show_package,
             }
@@ -103,22 +104,22 @@ def value_from_id(key, converted_data, errors, context):
     converted_data[key] = converted_data[('id',)]
 
 
-def _load_tables_and_dataset_types(urls):
-    tables = {}
-    dataset_types = {}
+def _load_table_definitions(urls):
+    chromos = {}
+    genos = {}
     for url in urls:
         t = _load_tables_module_path(url)
         if not t:
             t = _load_tables_url(url)
 
-        dataset_types[t['dataset_type']] = t
+        genos[t['dataset_type']] = t
 
-        for r in t['resources']:
-            r['dataset_type'] = t['dataset_type']
-            r['target_dataset'] = t['target_dataset']
-            tables[r['sheet_name']] = r
+        for chromo in t['resources']:
+            chromo['dataset_type'] = t['dataset_type']
+            chromo['target_dataset'] = t['target_dataset']
+            chromos[chromo['resource_name']] = chromo
 
-    return tables, dataset_types
+    return chromos, genos
 
 
 def _load_tables_module_path(url):

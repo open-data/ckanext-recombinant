@@ -2,7 +2,7 @@ from ckanapi import LocalCKAN, NotFound, ValidationError
 from ckan.logic import get_or_bust
 from paste.deploy.converters import asbool
 
-from ckanext.recombinant.tables import get_dataset_type
+from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
 
@@ -15,23 +15,23 @@ def recombinant_create(context, data_dict):
     :param dataset_type: recombinant dataset type
     :param owner_org: organization name or id
     '''
-    lc, dt, results = _action_find_dataset(context, data_dict)
+    lc, geno, results = _action_find_dataset(context, data_dict)
 
     if results:
         raise ValidationError({'owner_org':
             _("dataset type %s already exists for this organization")
             % dataset_type})
 
-    resources = [_resource_fields(r) for r in dt['resources']]
+    resources = [_resource_fields(chromo) for chromo in geno['resources']]
 
     dataset = lc.action.package_create(
         type=data_dict['dataset_type'],
         owner_org=data_dict['owner_org'],
         resources=resources,
-        **_dataset_fields(dt))
+        **_dataset_fields(geno))
 
-    dataset = _update_dataset(lc, dt, dataset)
-    return _update_datastore(lc, dt, dataset)
+    dataset = _update_dataset(lc, geno, dataset)
+    return _update_datastore(lc, geno, dataset)
 
 
 def recombinant_update(context, data_dict):
@@ -44,13 +44,13 @@ def recombinant_update(context, data_dict):
     :param delete_resources: True to delete extra resources found
     :param force_update: True to force updating of datastore tables
     '''
-    lc, dt, dataset = _action_get_dataset(context, data_dict)
+    lc, geno, dataset = _action_get_dataset(context, data_dict)
 
     dataset = _update_dataset(
-        lc, dt, dataset,
+        lc, geno, dataset,
         delete_resources=asbool(data_dict.get('delete_resources', False)))
     _update_datastore(
-        lc, dt, dataset,
+        lc, geno, dataset,
         force_update=asbool(data_dict.get('force_update', False)))
 
 
@@ -62,9 +62,10 @@ def recombinant_show(context, data_dict):
     :param dataset_type: recombinant dataset type
     :param owner_org: organization name or id
     '''
-    lc, dt, dataset = _action_get_dataset(context, data_dict)
+    lc, geno, dataset = _action_get_dataset(context, data_dict)
 
-    tables = dict((r['sheet_name'], r) for r in dt['resources'])
+    chromos = dict(
+        (chromo['resource_name'], chromo) for chromo in geno['resources'])
 
     resources = []
     resources_correct = True
@@ -78,17 +79,17 @@ def recombinant_show(context, data_dict):
 
         # migration below will update this
         metadata_correct = True
-        if (len(tables) == 1 and len(dataset['resources']) == 1
+        if (len(chromos) == 1 and len(dataset['resources']) == 1
                 and resource['name'] == 'data'):
-            resource['name'] = dt['resources'][0]['sheet_name']
+            resource['name'] = geno['resources'][0]['resource_name']
             metadata_correct = False
 
-        if resource['name'] not in tables:
-            out['error'] = 'unknown sheet name'
+        if resource['name'] not in chromos:
+            out['error'] = 'unknown resource name'
             resources.append(out)
             continue
 
-        r = tables[resource['name']]
+        r = chromos[resource['name']]
         metadata_correct = metadata_correct and _resource_match(r, resource)
         resources_correct = resources_correct and metadata_correct
         out['metadata_correct'] = metadata_correct
@@ -107,7 +108,7 @@ def recombinant_show(context, data_dict):
 
         resources.append(out)
 
-    metadata_correct = _dataset_match(dt, dataset)
+    metadata_correct = _dataset_match(geno, dataset)
     return {
         'dataset_type': dataset['type'],
         'owner_org': dataset['organization']['name'],
@@ -127,7 +128,7 @@ def _action_find_dataset(context, data_dict):
     owner_org = get_or_bust(data_dict, 'owner_org')
 
     try:
-        dt = get_dataset_type(dataset_type)
+        geno = get_geno(dataset_type)
     except RecombinantException:
         raise ValidationError({'dataset_type':
             _("Recombinant dataset type not found")})
@@ -136,7 +137,7 @@ def _action_find_dataset(context, data_dict):
     result = lc.action.package_search(
         q="type:%s organization:%s" % (dataset_type, owner_org),
         rows=2)
-    return lc, dt, result['results']
+    return lc, geno, result['results']
 
 
 def _action_get_dataset(context, data_dict):
@@ -144,7 +145,7 @@ def _action_get_dataset(context, data_dict):
     common code for actions that need to retrieve a dataset based on
     the dataset type and organization name or id
     '''
-    lc, dt, results = _action_find_dataset(context, data_dict)
+    lc, geno, results = _action_find_dataset(context, data_dict)
 
     if not results:
         raise NotFound()
@@ -152,37 +153,38 @@ def _action_get_dataset(context, data_dict):
         raise ValidationError({'owner_org':
             _("Multiple datasets exist for type %s") % dataset_type})
 
-    return lc, dt, results[0]
+    return lc, geno, results[0]
 
 
-def _update_dataset(lc, dt, dataset, delete_resources=False):
+def _update_dataset(lc, geno, dataset, delete_resources=False):
     """
     call lc.action.package_update on dataset if necessary to make its
-    metadata match the dataset type dt
+    metadata match the dataset definition geno
     """
     package_update_required = False
-    if not _dataset_match(dt, dataset):
-        dataset.update(_dataset_fields(dt))
+    if not _dataset_match(geno, dataset):
+        dataset.update(_dataset_fields(geno))
         package_update_required = True
 
-    tables = dict((r['sheet_name'], r) for r in dt['resources'])
+    chromos = dict(
+        (chromo['resource_name'], chromo) for chromo in geno['resources'])
 
     # migrate recombinant1 datasets which had no resource
     # name to identify resource
-    if (len(tables) == 1 and len(dataset['resources']) == 1
+    if (len(chromos) == 1 and len(dataset['resources']) == 1
             and dataset['resources'][0]['name'] == 'data'):
-        dataset['resources'][0]['name'] = dt['resources'][0]['sheet_name']
+        dataset['resources'][0]['name'] = geno['resources'][0]['resource_name']
         package_update_required = True
 
     # collect updated resources
     out_resources = []
     for resource in dataset['resources']:
-        if resource['name'] not in tables:
+        if resource['name'] not in chromos:
             if not delete_resources:
                 out_resources.append(resource)
             continue
 
-        r = tables.pop(resource['name'])
+        r = chromos.pop(resource['name'])
 
         if not _resource_match(r, resource):
             resource.update(_resource_fields(r))
@@ -191,8 +193,8 @@ def _update_dataset(lc, dt, dataset, delete_resources=False):
         out_resources.append(resource)
 
     # missing resources
-    if tables:
-        out_resources.extend(_resource_fields[r] for r in tables)
+    if chromos:
+        out_resources.extend(_resource_fields[chromo] for chromo in chromos)
         package_update_required = True
 
     if (package_update_required or
@@ -203,68 +205,73 @@ def _update_dataset(lc, dt, dataset, delete_resources=False):
     return dataset
 
 
-def _update_datastore(lc, dt, dataset, force_update=False):
+def _update_datastore(lc, geno, dataset, force_update=False):
     """
     call lc.action.datastore_create to create tables or add
-    columns to existing datastore tables based on dataset type
-    dt for existing dataset.
+    columns to existing datastore tables based on dataset definition
+    geno for existing dataset.
     """
     resource_ids = dict((r['name'], r['id']) for r in dataset['resources'])
 
-    for r in dt['resources']:
-        assert r['sheet_name'] in resource_ids, (
-            "dataset missing resource for sheet",
-            r['sheet_name'], dataset['id'])
-        resource_id = resource_ids[r['sheet_name']]
-        fields = _datastore_fields(r['fields'])
+    for chromo in geno['resources']:
+        assert chromo['resource_name'] in resource_ids, (
+            "dataset missing resource for resource name",
+            chromo['resource_name'], dataset['id'])
+        resource_id = resource_ids[chromo['resource_name']]
+        fields = _datastore_fields(chromo['fields'])
         try:
             ds = lc.action.datastore_search(resource_id=resource_id, limit=0)
         except NotFound:
             pass
         else:
-            if not force_update and _datastore_match(r['fields'], ds['fields']):
+            if not force_update and _datastore_match(
+                    chromo['fields'], ds['fields']):
                 continue
             # extra work here to maintain existing fields+ordering
             # datastore_create rejects our list otherwise
             fields = ds['fields'][1:] # trim _id field
             seen = set(f['id'] for f in fields)
-            for f in _datastore_fields(r['fields']):
+            for f in _datastore_fields(chromo['fields']):
                 if f['id'] not in seen:
                     fields.append(f)
 
         lc.action.datastore_create(
             resource_id=resource_id,
             fields=fields,
-            primary_key=r.get('datastore_primary_key', []),
-            indexes=r.get('datastore_indexes', []))
+            primary_key=chromo.get('datastore_primary_key', []),
+            indexes=chromo.get('datastore_indexes', []))
 
 
-def _dataset_fields(dt):
+def _dataset_fields(geno):
     """
-    return the dataset metadata fields created for dataset type dt
+    return the dataset metadata fields created for dataset definition geno
     """
-    return {'title': dt['title'], 'notes': dt.get('notes', '')}
+    return {'title': geno['title'], 'notes': geno.get('notes', '')}
 
 
-def _dataset_match(dt, dataset):
+def _dataset_match(geno, dataset):
     """
     return True if dataset metadata matches expected fields for dataset type dt
     """
-    return all(dataset[k] == v for (k, v) in _dataset_fields(dt).items())
+    return all(dataset[k] == v for (k, v) in _dataset_fields(geno).items())
 
 
-def _resource_fields(r):
+def _resource_fields(chromo):
     """
-    return the resource metadata fields create for sheet r
+    return the resource metadata fields created for resource definition chromo
     """
-    return {'name': r['sheet_name'], 'description': r['title'], 'url': 'http://'}
+    return {
+        'name': chromo['resource_name'],
+        'description': chromo['title'],
+        'url': 'http://',
+        }
 
 
-def _resource_match(r, resource):
+def _resource_match(chromo, resource):
     """
     return True if resource metadatas matches expected fields for sheet r
     """
-    return all(resource[k] == v for (k, v) in _resource_fields(r).items())
+    return all(resource[k] == v for (k, v) in _resource_fields(chromo).items())
 
 
 def _column_type(t):

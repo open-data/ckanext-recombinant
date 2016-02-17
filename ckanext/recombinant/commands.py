@@ -29,8 +29,7 @@ import unicodecsv
 from docopt import docopt
 
 from ckanext.recombinant.tables import (
-    get_dataset_types, get_table, get_dataset_type,
-    get_target_datasets)
+    get_dataset_types, get_geno, get_target_datasets)
 from ckanext.recombinant.read_xls import read_xls, get_records
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
@@ -100,9 +99,8 @@ class TableCommand(CkanCommand):
         types = [dataset_type] if dataset_type else get_dataset_types()
 
         for dtype in types:
-            dt = get_dataset_type(dtype)
-            print u'{dt[title]} ({dt[dataset_type]})'.format(
-                dt=dt).encode('utf-8')
+            print u'{geno[title]} ({dtype})'.format(
+                geno=get_geno(dtype), dtype=dtype).encode('utf-8')
 
             packages = self._get_packages(dtype, orgs)
             if dataset_type:
@@ -150,7 +148,6 @@ class TableCommand(CkanCommand):
         orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
         for dtype in self._expand_dataset_types(dataset_types):
-            dt = get_dataset_type(dtype)
             packages = self._get_packages(dtype, orgs)
             existing = dict((p['owner_org'], p) for p in packages)
             for o in orgs:
@@ -174,7 +171,6 @@ class TableCommand(CkanCommand):
         orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
         for dtype in self._expand_dataset_types(dataset_types):
-            dt = get_dataset_type(dtype)
             packages = self._get_packages(dtype, orgs)
             for p in packages:
                 print 'deleting %s %s' % (dtype, p['owner_org'])

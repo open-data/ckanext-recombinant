@@ -3,28 +3,34 @@ import json
 from pylons import c
 import ckanapi
 
-from ckanext.recombinant.tables import get_table, get_dataset_type
+from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.errors import RecombinantException
 
-def recombinant_get_table(sheet_name):
+def recombinant_get_chromo(resource_name):
+    """
+    Get the resource definition (chromo) for the given resource name
+    """
     try:
-        return get_table(sheet_name)
+        return get_chromo(resource_name)
     except RecombinantException:
         return
 
-def recombinant_get_dataset_type(dataset_type):
+def recombinant_get_geno(dataset_type):
+    """
+    Get the dataset definition (geno) for thr given dataset type
+    """
     try:
-        return get_dataset_type(dataset_type)
+        return get_geno(dataset_type)
     except RecombinantException:
         return
 
-def recombinant_primary_key_fields(sheet_name):
+def recombinant_primary_key_fields(resource_name):
     try:
-        t = get_table(sheet_name)
+        chromo = get_chromo(resource_name)
     except RecombinantException:
         return []
     return [
-        f for f in t['fields']
+        f for f in chromo['fields']
         if f['datastore_id'] in t['datastore_primary_key']
         ]
 
@@ -32,9 +38,9 @@ def recombinant_example(sheet_name, doc_type, indent=2, lang='json'):
     """
     Return example data formatted for use in API documentation
     """
-    t = recombinant_get_table(sheet_name)
-    if t and doc_type in t.get('examples', {}):
-        data = t['examples'][doc_type]
+    chromo = recombinant_get_chromo(resource_name)
+    if chromo and doc_type in chromo.get('examples', {}):
+        data = chromo['examples'][doc_type]
     elif doc_type == 'sort':
         data = "request_date desc, file_number asc"
     elif doc_type == 'filters':
