@@ -1,6 +1,7 @@
 import openpyxl
+from pylons.i18n import _
 
-from ckanext.recombinant.tables import get_dataset_type
+from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
 
@@ -15,39 +16,55 @@ def excel_template(dataset_type, org):
     return an openpyxl.Workbook object containing the sheet and header fields
     for passed dataset_type and org.
     """
-    dt = get_dataset_type(dataset_type)
+    geno = get_geno(dataset_type)
 
     book = openpyxl.Workbook()
     sheet = book.active
-    sheet.title = t['xls_sheet_name']
+    refs = []
+    for chromo in geno['resources']:
+        refs.extend(_populate_excel_sheet(sheet, chromo, org))
+        sheet = book.create_sheet()
 
-    ref = book.create_sheet(title='reference')
+    ref = sheet
+    ref.title = 'reference'
     ref.append([u'field', u'key', u'value'])
+    for ref_line in refs:
+        ref.append(ref_line)
+    return book
 
+
+def _populate_excel_sheet(sheet, chromo, org):
+    """
+    Format openpyxl sheet for the resource definition chromo and org.
+
+    returns field information for reference sheet
+    """
+    refs = []
     sheet.add_data_validation(boolean_validator)
 
-    for n, key in enumerate(t['xls_organization_info']):
-        c = sheet.cell(row=1, column=n + 1)
-        for e in org['extras']:
-            if e['key'] == key:
-                c.value = e['value']
-                break
-        else:
-            c.value = org.get(key, '')
-        apply_styles(t['excel_organization_style'], c)
-    apply_styles(t['excel_organization_style'], sheet.row_dimensions[1])
+    sheet.title = chromo['resource_name']
 
-    for n, field in enumerate(t['fields']):
-        c = sheet.cell(row=2, column=n + 1)
-        c.value = field['label']
-        apply_styles(t['excel_header_style'], c)
+    def fill_cell(row, column, value, styles):
+        c = sheet.cell(row=row, column=column)
+        c.value = value
+        apply_styles(styles, c)
+
+    org_style = chromo['excel_organization_style']
+    fill_cell(1, 1, org['name'], org_style)
+    fill_cell(1, 2, org['title'], org_style)
+    apply_styles(org_style, sheet.row_dimensions[1])
+
+    header_style = chromo['excel_header_style']
+    for n, field in enumerate(chromo['fields'], 1):
+        fill_cell(2, n, _(field['label']), header_style)
+        fill_cell(3, n, field['datastore_id'], header_style)
         # jumping through openpyxl hoops:
-        col_letter = openpyxl.cell.get_column_letter(n + 1)
+        col_letter = openpyxl.cell.get_column_letter(n)
         col = sheet.column_dimensions[col_letter]
-        col.width = field['xls_column_width']
+        col.width = field['excel_column_width']
         # FIXME: format only below header
         col.number_format = datastore_type[field['datastore_type']].xl_format
-        validation_range = '{0}3:{0}1003'.format(col_letter)
+        validation_range = '{0}4:{0}1004'.format(col_letter)
         if field['datastore_type'] == 'boolean':
             boolean_validator.ranges.append(validation_range)
         elif 'choices' in field:
@@ -72,14 +89,16 @@ def excel_template(dataset_type, org):
                     ' > 0').format(validation_range)],
                     stopIfTrue=True, fill=red_fill))
 
-            ref.append([field['label']])
+            refs.append([_(field['label'])])
             for key, value in sorted(field['choices'].iteritems()):
-                ref.append([None, key, value])
-            ref.append([])
-    apply_styles(t['excel_header_style'], sheet.row_dimensions[2])
+                refs.append([None, key, value])
+            refs.append([])
+    apply_styles(header_style, sheet.row_dimensions[2])
+    apply_styles(header_style, sheet.row_dimensions[3])
+    sheet.row_dimensions[3].hidden = True
 
-    sheet.freeze_panes = sheet['A3']
-    return book
+    sheet.freeze_panes = sheet['A4']
+    return refs
 
 
 def apply_styles(config, target):

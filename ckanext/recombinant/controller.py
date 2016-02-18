@@ -143,7 +143,7 @@ class UploadController(PackageController):
             id=dataset['owner_org'],
             include_datasets=False)
 
-        book = xls_template(dataset['type'], org)
+        book = excel_template(dataset['type'], org)
         blob = StringIO()
         book.save(blob)
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
