@@ -5,7 +5,7 @@ Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
   paster recombinant create [-f] (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
-  paster recombinant load-xls XLS_FILE ... [-c CONFIG]
+  paster recombinant load-excel EXCEL_FILE ... [-c CONFIG]
   paster recombinant combine (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
   paster recombinant dataset-types [TARGET_DATASET ...] [-c CONFIG]
@@ -30,7 +30,7 @@ from docopt import docopt
 
 from ckanext.recombinant.tables import (
     get_dataset_types, get_geno, get_target_datasets)
-from ckanext.recombinant.read_xls import read_xls, get_records
+from ckanext.recombinant.read_excel import read_excel, get_records
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 
@@ -61,8 +61,8 @@ class TableCommand(CkanCommand):
             self._create(opts['DATASET_TYPE'])
         elif opts['delete']:
             self._delete(opts['DATASET_TYPE'])
-        elif opts['load-xls']:
-            self._load_xls(opts['XLS_FILE'])
+        elif opts['load-excel']:
+            self._load_excel_files(opts['EXCEL_FILE'])
         elif opts['combine']:
             self._create_meta_dataset(opts['DATASET_TYPE'])
         elif opts['target-datasets']:
@@ -181,16 +181,16 @@ class TableCommand(CkanCommand):
                         pass
                 lc.action.package_delete(id=p['id'])
 
-    def _load_xls(self, xls_file_names):
-        for n in xls_file_names:
-            self._load_one_xls(n)
+    def _load_excel_files(self, excel_file_names):
+        for n in excel_file_names:
+            self._load_one_excel(n)
 
-    def _load_one_xls(self, name):
-        g = read_xls(name)
+    def _load_one_excel_file(self, name):
+        g = read_excel(name)
         sheet_name, org_name, date_mode = next(g)
 
         for t in _get_tables():
-            if t['xls_sheet_name'] == sheet_name:
+            if t['excel_sheet_name'] == sheet_name:
                 break
         else:
             logging.warn("XLS sheet name '{0}' not found in tables".format(
