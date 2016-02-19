@@ -74,6 +74,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
 
     def get_helpers(self):
         return {
+            'recombinant_language_text': helpers.recombinant_language_text,
             'recombinant_primary_key_fields':
                 helpers.recombinant_primary_key_fields,
             'recombinant_get_chromo': helpers.recombinant_get_chromo,

@@ -4,6 +4,7 @@ from pylons.i18n import _
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
+from ckanext.recombinant.helpers import recombinant_language_text
 
 boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
     type="list", formula1='"FALSE,TRUE"', allow_blank=True)
@@ -91,7 +92,7 @@ def _populate_excel_sheet(sheet, chromo, org):
 
             refs.append([_(field['label'])])
             for key, value in sorted(field['choices'].iteritems()):
-                refs.append([None, key, value])
+                refs.append([None, key, recombinant_language_text(value)])
             refs.append([])
     apply_styles(header_style, sheet.row_dimensions[2])
     apply_styles(header_style, sheet.row_dimensions[3])
