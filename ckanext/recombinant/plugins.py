@@ -80,6 +80,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
             'recombinant_get_chromo': helpers.recombinant_get_chromo,
             'recombinant_get_geno': helpers.recombinant_get_geno,
             'recombinant_example': helpers.recombinant_example,
+            'recombinant_choice_fields': helpers.recombinant_choice_fields,
             'recombinant_show_package': helpers.recombinant_show_package,
             }
 

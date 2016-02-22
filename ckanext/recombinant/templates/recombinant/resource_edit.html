@@ -11,12 +11,17 @@
 {% endblock %}
 
 {% block primary_content %}
+  {% set refs = h.recombinant_choice_fields(resource.name) %}
   <header class="module-content page-header"></header>
   <div class="wet-boew-tabbedinterface tabs-style-3 auto-height-none">
     <ul class="tabs">
       {% if h.check_access('package_update', {'id': dataset.id }) %}
         <li {% if delete_errors %}class="default"{% endif %}><a href="#tabs_delete">{{ _("Delete") }}</a></li>
       {% endif %}
+      {% for f in refs %}
+        <li><a href="#tabs_ref_{{ f.datastore_id }}">{{
+           _("Reference") }}: {{ f.label }}</a></li>
+      {% endfor %}
       <li><a href="#tabs_api_curl">{{ _("API Access") }}: curl</a></li>
       <li><a href="#tabs_api_python">{{ _("API Access") }}: Python</a></li>
     </ul>
@@ -27,6 +32,11 @@
             pkg=dataset, errors=delete_errors, filters=filters %}
         </div>
       {% endif %}
+      {% for f in refs %}
+        <div id="tabs_ref_{{ f.datastore_id }}">
+          {% snippet "recombinant/snippets/choices_reference.html", f=f %}
+        </div>
+      {% endfor %}
       <div id="tabs_api_curl">
         {% snippet "recombinant/snippets/api_access.html",
           pkg=dataset, username=c.userobj.name, examples='curl' %}

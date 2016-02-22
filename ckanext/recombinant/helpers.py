@@ -110,6 +110,29 @@ def recombinant_example(resource_name, doc_type, indent=2, lang='json'):
     out = json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False)
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
 
+
+def recombinant_choice_fields(resource_name):
+    """
+    Return a list of fields from the resource definition
+    that contain lists of choices, with labels pre-translated
+    """
+    out = []
+    chromo = recombinant_get_chromo(resource_name)
+    if not chromo:
+        return []
+    for f in chromo['fields']:
+        if 'choices' not in f:
+            continue
+        out.append({
+            'datastore_id': f['datastore_id'],
+            'label': gettext(f['label']).decode('utf-8'),
+            'choices': [
+                (v, recombinant_language_text(f['choices'][v]))
+                for v in sorted(f['choices'])],
+            })
+    return out
+
+
 def recombinant_show_package(pkg):
     """
     return recombinant_show results for pkg
