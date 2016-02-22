@@ -1,6 +1,6 @@
 """
 Dataset Definitions (chromo) and Resource Definitions (geno) are loaded
-from files specified in the recombinant_tables ini setting.
+from files specified in the recombinant.definitions ini setting.
 
 This module provides access to those definitions.
 """

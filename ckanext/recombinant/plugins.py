@@ -33,11 +33,11 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         p.toolkit.add_template_directory(config, 'templates')
 
         # read our configuration early
-        self._tables_urls = config.get('recombinant.tables', ""
+        self._tables_urls = config.get('recombinant.definitions', ""
             ).split()
         if not self._tables_urls:
             raise RecombinantException("Missing configuration option "
-                "recombinant.tables")
+                "recombinant.definitions")
         self._chromos, self._genos = (
             _load_table_definitions(self._tables_urls))
 

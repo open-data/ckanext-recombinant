@@ -15,13 +15,13 @@ table description file:
 ```ini
 ckan.plugins = datastore recombinant
 
-recombinant.tables = file:///.../mytables.yaml ...
+recombinant.definitions = file:///.../type1.yaml ...
 
 #   module-path:file name may also be used, e.g:
 #
-# recombinant.tables = ckanext.atisummaries:recombinant_tables.json
+# recombinant.definitions = ckanext.atisummaries:ati.yaml
 #
-#   will try to load "recombinant_tables.json" from the directory
+#   will try to load "ati.yaml" from the directory
 #   containing the ckanext.atisummaries module
 ```
 
