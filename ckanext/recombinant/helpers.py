@@ -73,10 +73,10 @@ def recombinant_primary_key_fields(resource_name):
         return []
     return [
         f for f in chromo['fields']
-        if f['datastore_id'] in t['datastore_primary_key']
+        if f['datastore_id'] in chromo['datastore_primary_key']
         ]
 
-def recombinant_example(sheet_name, doc_type, indent=2, lang='json'):
+def recombinant_example(resource_name, doc_type, indent=2, lang='json'):
     """
     Return example data formatted for use in API documentation
     """
