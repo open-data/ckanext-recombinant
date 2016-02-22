@@ -3,14 +3,41 @@ ckanext-recombinant
 
 This extension creates datasets and datastore tables for all
 organizations in a ckan instance and allows combining the
-data from all tables into a single CSV for exporting.
+data from all tables into CSVs for exporting.
 
 This lets us use CKAN's authentication to restrict users to
 update only their organizations' tables but have all values
 available as a single dataset for our public site.
 
-Add this plugin to your CKAN configuration and link to the
-table description file:
+Recombinant provides template excel files for end users
+to bulk import or update data. It also provides a form to
+delete individual rows that have been imported.
+
+
+Datasets and Recombinant Definitions
+------------------------------------
+
+![Recombinant Overview](images/recombinant_overview.png)
+
+Recombinant definitions control the behaviour of this extension.
+Dataset types are registered using an IDatasetForm plugin and
+must be unique across the CKAN instance.
+
+The `paster recombinant create` command will create or update
+datasets for every organization to match the definition
+for its type, including updating fields, resources and
+creating or updating datastore table fields, primary keys and
+indexes.
+
+Examples provided will be used to generate API documentation
+for end users.
+
+
+Installation
+------------
+
+Add this plugin to your CKAN configuration and link to your
+recombinant definition files:
 
 ```ini
 ckan.plugins = datastore recombinant
@@ -25,11 +52,6 @@ recombinant.definitions = file:///.../type1.yaml ...
 #   containing the ckanext.atisummaries module
 ```
 
-
-Datasets and Dataset Definitions
---------------------------------
-
-![Recombinant Overview](images/recombinant_overview.png)
 
 Supported Datastore Types
 -------------------------
