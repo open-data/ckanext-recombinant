@@ -15,7 +15,7 @@ table description file:
 ```ini
 ckan.plugins = datastore recombinant
 
-recombinant.tables = file:///.../mytables.json
+recombinant.tables = file:///.../mytables.yaml ...
 
 #   module-path:file name may also be used, e.g:
 #
@@ -26,37 +26,10 @@ recombinant.tables = file:///.../mytables.json
 ```
 
 
-Example Table Description File
-------------------------------
+Datasets and Dataset Definitions
+--------------------------------
 
-```json
-[
-  {
-    "dataset_type": "ati-summaries",
-    "title": "ATI Summaries",
-    "fields": [
-      {
-        "label": "Request number",
-        "datastore_id": "request_number",
-        "datastore_type": "text",
-        "xls_column_width": 15
-      },
-      {
-        "label": "Pages",
-        "datastore_id": "pages",
-        "datastore_type": "int",
-        "xls_column_width": 6
-      }
-    ],
-    "datastore_primary_key": "request_number",
-    "datastore_indexes": "request_number",
-    "xls_organization_info": ["title", "name"],
-    "xls_organization_style": "pattern: pattern solid, fore_color gray25;",
-    "xls_header_style": "font: bold on; pattern: pattern solid, fore_color light_green;"
-  }
-]
-```
-
+![Recombinant Overview](images/recombinant_overview.png)
 
 Supported Datastore Types
 -------------------------
