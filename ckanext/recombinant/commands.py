@@ -6,7 +6,7 @@ Usage:
   paster recombinant create [-f] (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-excel EXCEL_FILE ... [-c CONFIG]
-  paster recombinant combine (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant combine DIR (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
   paster recombinant dataset-types [TARGET_DATASET ...] [-c CONFIG]
   paster recombinant -h
@@ -18,13 +18,15 @@ Options:
   -f --force-update   Force update of tables (required for changes
                       to only primary keys/indexes)
 """
+import os
+import csv
+import sys
+import logging
+
 from ckan.lib.cli import CkanCommand
 from ckan.logic import ValidationError
 import paste.script
 import ckanapi
-import csv
-import sys
-import logging
 import unicodecsv
 from docopt import docopt
 
@@ -56,21 +58,22 @@ class TableCommand(CkanCommand):
             dataset_type = None
             if opts['DATASET_TYPE']:
                 dataset_type = opts['DATASET_TYPE'][0]
-            self._show(dataset_type, opts['ORG_NAME'])
+            return self._show(dataset_type, opts['ORG_NAME'])
         elif opts['create']:
-            self._create(opts['DATASET_TYPE'])
+            return self._create(opts['DATASET_TYPE'])
         elif opts['delete']:
-            self._delete(opts['DATASET_TYPE'])
+            return self._delete(opts['DATASET_TYPE'])
         elif opts['load-excel']:
-            self._load_excel_files(opts['EXCEL_FILE'])
+            return self._load_excel_files(opts['EXCEL_FILE'])
         elif opts['combine']:
-            self._create_meta_dataset(opts['DATASET_TYPE'])
+            return self._combine_csv(opts['DIR'], opts['DATASET_TYPE'])
         elif opts['target-datasets']:
-            self._target_datasets()
+            return self._target_datasets()
         elif opts['dataset-types']:
-            self._dataset_types(opts['TARGET_DATASET'])
+            return self._dataset_types(opts['TARGET_DATASET'])
         else:
             print opts
+            return -1
 
     def _get_orgs(self):
         if not self._orgs:
@@ -221,43 +224,54 @@ class TableCommand(CkanCommand):
         print name, len(records)
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
 
-    def _create_meta_dataset(self, dataset_types):
-        tables = self._get_tables_from_types(dataset_types)
-        if not tables:
-            return
+    def _combine_csv(self, target_dir, dataset_types):
+        if not os.path.isdir(target_dir):
+            print '"{0}" is not a directory'.format(target_dir)
+            return 1
 
         orgs = self._get_orgs()
         lc = ckanapi.LocalCKAN()
-        for t in tables:
-            out = unicodecsv.writer(sys.stdout)
-            # output columns header
-            columns = [f['label'] for f in t['fields']]
-            columns.extend(['Org id', 'Org'])
-            out.writerow(columns)
+        for dtype in self._expand_dataset_types(dataset_types):
+            for pkg in self._get_packages(dtype, orgs):
+                for chromo in get_geno(dtype)['resources']:
+                    self._write_one_csv(lc, pkg, chromo, target_dir)
 
-            column_ids = [f['datastore_id'] for f in t['fields']]
-            column_ids.extend(['org_name', 'org_title'])
+    def _write_one_csv(self, lc, pkg, chromo, target_dir):
+        for res in pkg['resources']:
+            if res['name'] == chromo['resource_name']:
+                break
+        else:
+            print 'resource {0} not found for {1}'.format(
+                chromo['resource_name'], pkg['organization']['name'])
+            return
 
-            for package in self._get_packages(t['dataset_type'], orgs):
-                for res in package['resources']:
-                    try:
-                        records = lc.action.datastore_search(
-                            limit=RECORDS_PER_ORGANIZATION,
-                            resource_id=res['id'],
-                            )['records']
-                        self._write_meta_row(records, package, column_ids, out)
-                    except ckanapi.NotFound:
-                        logging.warn('resource %s not found' % res['id'])
+        with open(os.path.join(
+                target_dir, res['name'] + '.csv'), 'wb') as outfile:
+            out = unicodecsv.writer(outfile)
+            column_ids = [f['datastore_id'] for f in chromo['fields']
+                ] + ['owner_org', 'owner_org_title']
+            out.writerow(column_ids)
 
-    def _write_meta_row(self, records, package, columns, out):
-        try:
+            try:
+                records = lc.action.datastore_search(
+                    limit=RECORDS_PER_ORGANIZATION,
+                    resource_id=res['id'],
+                    )['records']
+            except ckanapi.NotFound:
+                print 'resource {0} table missing for {1}'.format(
+                    chromo['resource_name'], pkg['organization']['name'])
+                return
+
             for record in records:
-                record['org_name'] = package['organization']['name']
-                record['org_title'] = package['organization']['title']
-                out.writerow([
-                    unicode(record[col]).encode('utf-8') for col in columns])
-        except KeyError:
-            pass  # don't include data missing any columns
+                record['owner_org'] = pkg['organization']['name']
+                record['owner_org_title'] = pkg['organization']['title']
+                try:
+                    out.writerow([
+                        unicode(record[col]).encode('utf-8') for col in columns])
+                except KeyError:
+                    print 'resource {0} table missing keys for {1}'.format(
+                        chromo['resource_name'], pkg['organization']['name'])
+                    return
 
     def _target_datasets(self):
         print ' '.join(get_target_datasets())
