@@ -23,6 +23,11 @@ Recombinant definitions control the behaviour of this extension.
 Dataset types are registered using an IDatasetForm plugin and
 must be unique across the CKAN instance.
 
+Resource names are used to identify Excel sheets being imported
+and must be unique across the CKAN instance. Resource names
+are often the same as the dataset type when only a single resource
+is present in a definition.
+
 The `paster recombinant create` command will create or update
 datasets for every organization to match the definition
 for its type, including updating fields, resources and
