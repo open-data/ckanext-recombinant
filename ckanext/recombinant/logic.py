@@ -1,3 +1,5 @@
+from pylons.i18n import _
+
 from ckanapi import LocalCKAN, NotFound, ValidationError
 from ckan.logic import get_or_bust
 from paste.deploy.converters import asbool
@@ -20,7 +22,7 @@ def recombinant_create(context, data_dict):
     if results:
         raise ValidationError({'owner_org':
             _("dataset type %s already exists for this organization")
-            % dataset_type})
+            % data_dict['dataset_type']})
 
     resources = [_resource_fields(chromo) for chromo in geno['resources']]
 
@@ -151,7 +153,7 @@ def _action_get_dataset(context, data_dict):
         raise NotFound()
     if len(results) > 1:
         raise ValidationError({'owner_org':
-            _("Multiple datasets exist for type %s") % dataset_type})
+            _("Multiple datasets exist for type %s") % data_dict['dataset_type']})
 
     return lc, geno, results[0]
 

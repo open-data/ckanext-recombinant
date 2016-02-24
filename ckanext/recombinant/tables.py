@@ -33,7 +33,7 @@ def get_chromo(resource_name):
         return chromos[resource_name]
     except KeyError:
         raise RecombinantException('resource_name "%s" not found'
-            % sheet_name)
+            % resource_name)
 
 
 def get_geno(dataset_type):
