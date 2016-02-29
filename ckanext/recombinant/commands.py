@@ -6,6 +6,7 @@ Usage:
   paster recombinant create [-f] (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-excel EXCEL_FILE ... [-c CONFIG]
+  paster recombinant load-csv CSV_FILE ... [-c CONFIG]
   paster recombinant combine DIR (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
   paster recombinant dataset-types [TARGET_DATASET ...] [-c CONFIG]
@@ -35,6 +36,7 @@ from ckanext.recombinant.tables import (
 from ckanext.recombinant.read_excel import read_excel, get_records
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
+RECORDS_PER_UPSERT = 1000
 
 class TableCommand(CkanCommand):
     summary = __doc__.split('\n')[0]
@@ -65,6 +67,8 @@ class TableCommand(CkanCommand):
             return self._delete(opts['DATASET_TYPE'])
         elif opts['load-excel']:
             return self._load_excel_files(opts['EXCEL_FILE'])
+        elif opts['load-csv']:
+            return self._load_csv_files(opts['CSV_FILE'])
         elif opts['combine']:
             return self._combine_csv(opts['DIR'], opts['DATASET_TYPE'])
         elif opts['target-datasets']:
@@ -223,6 +227,28 @@ class TableCommand(CkanCommand):
 
         print name, len(records)
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
+
+    def _load_csv_files(self, csv_file_names):
+        for n in csv_file_names:
+            self._load_one_csv_file(n)
+
+    def _load_one_csv_file(self, name):
+        path, csv_name = os.path.split(name)
+        assert csv_name.endswith('.csv'), csv_name
+        resource_name = csv_name[:-4]
+        print resource_name
+        chromo = get_chromo(resource_name)
+        expected_columns = [f['datastore_id'] for f in chromo['fields']
+            ] + ['owner_org', 'owner_org_title']
+        with open(name, 'rb') as infile:
+            r = unicodecsv.reader(infile)
+            columns_names = r.next()
+            if column_names != expected_columns:
+                print ("The columns headings sent {0} are different than what "
+                "was expected: {1}. ").format(
+                ','.join(column_names), ','.join(expected_columns))
+                return
+            RECORDS_PER_UPSERT
 
     def _combine_csv(self, target_dir, dataset_types):
         if not os.path.isdir(target_dir):
