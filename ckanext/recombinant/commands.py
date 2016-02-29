@@ -34,6 +34,7 @@ from docopt import docopt
 from ckanext.recombinant.tables import (
     get_dataset_types, get_geno, get_target_datasets)
 from ckanext.recombinant.read_excel import read_excel, get_records
+from ckanext.recombinant.read_csv import csv_data_batch
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 RECORDS_PER_UPSERT = 1000
@@ -229,8 +230,10 @@ class TableCommand(CkanCommand):
         lc.action.datastore_upsert(resource_id=resource_id, records=records)
 
     def _load_csv_files(self, csv_file_names):
+        errs = 0
         for n in csv_file_names:
-            self._load_one_csv_file(n)
+            errs |= self._load_one_csv_file(n)
+        return errs
 
     def _load_one_csv_file(self, name):
         path, csv_name = os.path.split(name)
@@ -238,17 +241,34 @@ class TableCommand(CkanCommand):
         resource_name = csv_name[:-4]
         print resource_name
         chromo = get_chromo(resource_name)
-        expected_columns = [f['datastore_id'] for f in chromo['fields']
-            ] + ['owner_org', 'owner_org_title']
-        with open(name, 'rb') as infile:
-            r = unicodecsv.reader(infile)
-            columns_names = r.next()
-            if column_names != expected_columns:
-                print ("The columns headings sent {0} are different than what "
-                "was expected: {1}. ").format(
-                ','.join(column_names), ','.join(expected_columns))
-                return
-            RECORDS_PER_UPSERT
+        dataset_type = chromo['dataset_type']
+        method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
+        lc = LocalCKAN()
+
+        for org_name, records in csv_data_batch(name):
+            results = lc.action.package_search(
+                q='type:%s organization:%s' % (dataset_type, org_name),
+                rows=2)['results']
+            if not results:
+                print 'type:%s organization:%s not found!' % (
+                    dataset_type, org_name)
+                return 1
+            if len(results) > 1:
+                print 'type:%s organization:%s multiple found!' % (
+                    dataset_type, org_name)
+                return 1
+            for r in results[0]['resources']:
+                if r['name'] == resource_name:
+                    break
+            else:
+                print 'type:%s organization:%s missing resource:%s' % (
+                    dataset_type, org_name, resource_name)
+                return 1
+
+            lc.action.datastore_upsert(
+                method=method,
+                resource_id=r['id'],
+                records=records)
 
     def _combine_csv(self, target_dir, dataset_types):
         if not os.path.isdir(target_dir):

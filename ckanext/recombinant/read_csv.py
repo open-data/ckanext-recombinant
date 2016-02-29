@@ -1,8 +1,11 @@
-def csv_data_batch(csv_path, target_dataset):
+from unicodecsv import DictReader
+
+def csv_data_batch(csv_path, chromo):
     """
     Generator of dataset records from csv file
 
     :param csv_path: file to parse
+    :param chromo: recombinant resource definition
 
     :return a batch of records for at most one organization
     :rtype: dict mapping at most one org-id to
@@ -11,18 +14,14 @@ def csv_data_batch(csv_path, target_dataset):
     records = []
     current_owner_org = None
 
-    firstpart, filename = os.path.split(csv_path)
-    assert filename.endswith('.csv')
-
-    chromo = get_chromo(filename[:-4])
-
-    with open(csv_path) as f:
+    with open(csv_path, 'rb') as f:
         csv_in = DictReader(f)
         cols = csv_in.unicode_fieldnames
 
-        expected = [f['datastore_id'] for f in chromo['resources']]
-        assert cols[:-2] == expected, 'column mismatch:\n{0}\n{1}'.format(
-            cols[:-2], expected)
+        expected = [f['datastore_id'] for f in chromo['fields']
+            ] + ['owner_org', 'owner_org_title']
+        assert cols == expected, 'column mismatch:\n{0}\n{1}'.format(
+            cols, expected)
 
         for row_dict in csv_in:
             owner_org = row_dict.pop('owner_org')
