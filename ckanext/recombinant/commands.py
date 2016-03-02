@@ -27,12 +27,12 @@ import logging
 from ckan.lib.cli import CkanCommand
 from ckan.logic import ValidationError
 import paste.script
-import ckanapi
+from ckanapi import LocalCKAN, NotFound
 import unicodecsv
 from docopt import docopt
 
 from ckanext.recombinant.tables import (
-    get_dataset_types, get_geno, get_target_datasets)
+    get_dataset_types, get_chromo, get_geno, get_target_datasets)
 from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.read_csv import csv_data_batch
 
@@ -82,12 +82,12 @@ class TableCommand(CkanCommand):
 
     def _get_orgs(self):
         if not self._orgs:
-            lc = ckanapi.LocalCKAN()
+            lc = LocalCKAN()
             self._orgs = lc.action.organization_list()
         return self._orgs
 
     def _get_packages(self, dataset_type, orgs):
-        lc = ckanapi.LocalCKAN()
+        lc = LocalCKAN()
         packages = []
         for o in orgs:
             try:
@@ -95,7 +95,7 @@ class TableCommand(CkanCommand):
                     dataset_type=dataset_type,
                     owner_org=o)
                 packages.append(result)
-            except ckanapi.NotFound:
+            except NotFound:
                 continue
         return packages
 
@@ -154,7 +154,7 @@ class TableCommand(CkanCommand):
         Create and update recombinant datasets
         """
         orgs = self._get_orgs()
-        lc = ckanapi.LocalCKAN()
+        lc = LocalCKAN()
         for dtype in self._expand_dataset_types(dataset_types):
             packages = self._get_packages(dtype, orgs)
             existing = dict((p['owner_org'], p) for p in packages)
@@ -177,7 +177,7 @@ class TableCommand(CkanCommand):
         delete recombinant datasets and all their data
         """
         orgs = self._get_orgs()
-        lc = ckanapi.LocalCKAN()
+        lc = LocalCKAN()
         for dtype in self._expand_dataset_types(dataset_types):
             packages = self._get_packages(dtype, orgs)
             for p in packages:
@@ -209,7 +209,7 @@ class TableCommand(CkanCommand):
             logging.warn("Organization name '{0}' not found".format(org_name))
             return
 
-        lc = ckanapi.LocalCKAN()
+        lc = LocalCKAN()
         org = lc.action.organization_show(id=org_name, include_datsets=False)
         packages = lc.action.package_search(
             q="type:%s AND owner_org:%s" % (t['dataset_type'], org['id']),
@@ -245,7 +245,7 @@ class TableCommand(CkanCommand):
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
         lc = LocalCKAN()
 
-        for org_name, records in csv_data_batch(name):
+        for org_name, records in csv_data_batch(name, chromo):
             results = lc.action.package_search(
                 q='type:%s organization:%s' % (dataset_type, org_name),
                 rows=2)['results']
@@ -265,10 +265,12 @@ class TableCommand(CkanCommand):
                     dataset_type, org_name, resource_name)
                 return 1
 
+            print '-', org_name, len(records)
             lc.action.datastore_upsert(
                 method=method,
                 resource_id=r['id'],
                 records=records)
+        return 0
 
     def _combine_csv(self, target_dir, dataset_types):
         if not os.path.isdir(target_dir):
@@ -276,7 +278,7 @@ class TableCommand(CkanCommand):
             return 1
 
         orgs = self._get_orgs()
-        lc = ckanapi.LocalCKAN()
+        lc = LocalCKAN()
         for dtype in self._expand_dataset_types(dataset_types):
             for pkg in self._get_packages(dtype, orgs):
                 for chromo in get_geno(dtype)['resources']:
@@ -303,7 +305,7 @@ class TableCommand(CkanCommand):
                     limit=RECORDS_PER_ORGANIZATION,
                     resource_id=res['id'],
                     )['records']
-            except ckanapi.NotFound:
+            except NotFound:
                 print 'resource {0} table missing for {1}'.format(
                     chromo['resource_name'], pkg['organization']['name'])
                 return

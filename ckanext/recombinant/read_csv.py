@@ -1,5 +1,7 @@
 from unicodecsv import DictReader
 
+BATCH_SIZE = 1000
+
 def csv_data_batch(csv_path, chromo):
     """
     Generator of dataset records from csv file
@@ -32,9 +34,9 @@ def csv_data_batch(csv_path, chromo):
                 records = []
                 current_owner_org = owner_org
 
-            row_dict = dict((k, safe_for_solr(v)) for k, v in row_dict.items())
             records.append(row_dict)
             if len(records) >= BATCH_SIZE:
                 yield (current_owner_org, records)
                 records = []
-    yield records
+    if records:
+        yield (current_owner_org, records)
