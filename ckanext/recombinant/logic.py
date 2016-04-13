@@ -241,7 +241,8 @@ def _update_datastore(lc, geno, dataset, force_update=False):
             resource_id=resource_id,
             fields=fields,
             primary_key=chromo.get('datastore_primary_key', []),
-            indexes=chromo.get('datastore_indexes', []))
+            indexes=chromo.get('datastore_indexes', []),
+            force=True)
 
 
 def _dataset_fields(geno):
