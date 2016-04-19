@@ -1,14 +1,12 @@
 <h3>{{_('Delete existing record')}}</h3>
-
+<div class="col-md-12">
 <form id="delete-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action='{% url_for controller='ckanext.recombinant.controller:UploadController', action='delete_record', id=pkg.name %}'>
 
-  <div class="clear"></div>
   {% for field in h.recombinant_primary_key_fields(pkg.type) %}
-    <div class="span-1 row-start">
+    <div class="form-group control-medium">
       <label for="{{ field.datastore_id }}">{% block field_label scoped %}{{ field.label }}:{% endblock %}</label>
-    </div>
-    <div class="span-4 row-end">
       <input
+        class="form-control"
         type="input"
         name="{{ field.datastore_id }}"
         id="{{ field.datastore_id }}"
@@ -24,8 +22,8 @@
     </div>
   {% endif %}
   </div>
-  <div class="clear"></div>
-  <div class="row">
-    <input class="button button-accent button-large" type="submit" value="{{_('Delete')}}"/>
+  <div class="form-actions form-group">
+    <input class="btn btn-primary" type="submit" value="{{_('Delete')}}"/>
   </div>
 </form>
+</div>
