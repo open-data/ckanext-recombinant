@@ -67,7 +67,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
             controller='ckanext.recombinant.controller:UploadController')
         map.connect('/recombinant/template/{id}', action='template',
             controller='ckanext.recombinant.controller:UploadController')
-        map.connect('/recombinant/preview/{id}/{resource_id}',
+        map.connect('recombinant_resource', 
+            '/recombinant/preview/{id}/{resource_id}',
             action='preview_table',
             controller='ckanext.recombinant.controller:PreviewController')
         return map

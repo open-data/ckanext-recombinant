@@ -12,6 +12,8 @@
 {% endblock %}
 
 {% block primary_content %}
+{{ h.redirect_to('recombinant_resource', id=pkg.id,
+  resource_id=pkg.resources.0.id) }}
   <ul class="col-md-9">
     {% for r in h.recombinant_show_package(pkg).resources %}
       <li class="form-control form-group">{% link_for _(r.description),
