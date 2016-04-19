@@ -1,16 +1,18 @@
+<div class="col-md-12">
 <h3>{% block title %}{% endblock %}</h3>
 {% block form %}
 <form>
 {% endblock %}
-  <div class="control-group dataset-form-resource-types">
-    <div class="span-1 row-start">
+  <div class="col-md-9">
+    <div class="form-group control-medium">
       <label>{{ _('Template') }}:</label>
-    </div>
-    <div class="span-4 row-end">
-      <a class="button" href="{% url_for controller='ckanext.recombinant.controller:UploadController', action='template', id=pkg.name %}">{{ _('Download template Excel spreadsheet') }}</a>
+      <div class="form-control">
+        <a class="button" href="{% url_for controller='ckanext.recombinant.controller:UploadController', action='template', id=pkg.name %}">{{ _('Download template Excel spreadsheet') }}</a>
+      </div>
     </div>
   {% block upload_submit %}
   {% endblock %}
   </div>
 
 </form>
+</div>
