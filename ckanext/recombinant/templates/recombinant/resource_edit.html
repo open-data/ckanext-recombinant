@@ -11,21 +11,19 @@
 
 {% block primary_content %}
 
-  <div class="col-md-9 mrgn-bttm-sm">
-    <ul class="nav nav-pills">
-      {% for r in h.recombinant_show_package(dataset).resources %}
-        <li {% if r.id == resource.id %}class="active"{% endif %}>{%
-          link_for _(r.description) ~ ': ' ~ 
-            ngettext("%(num)d row", "%(num)d rows", r.datastore_rows)
-            |format(num=r.datastore_rows),
-          named_route='recombinant_resource',
-          id=dataset.id, resource_id=r.id %}</li>
-      {% endfor %}
-    </ul>
-  </div>
+<div class="col-md-9">
+  <ul class="nav nav-pills mrgn-bttm-sm">
+    {% for r in h.recombinant_show_package(dataset).resources %}
+      <li {% if r.id == resource.id %}class="active"{% endif %}>{%
+        link_for _(r.description) ~ ': ' ~ 
+          ngettext("%(num)d row", "%(num)d rows", r.datastore_rows)
+          |format(num=r.datastore_rows),
+        named_route='recombinant_resource',
+        id=dataset.id, resource_id=r.id %}</li>
+    {% endfor %}
+  </ul>
 
   {% set refs = h.recombinant_choice_fields(resource.name) %}
-  <div class="col-md-12">
   <div class="wb-tabs">
     <div class="tabpanels">
       <details>
@@ -66,7 +64,9 @@
       </details>
     </div>
   </div>
-  </div>
+</div>
+{% block inner_secondary_content %}
+{% endblock %}
 {% endblock %}
 
 {# syntax hilighting for API docs above #}
