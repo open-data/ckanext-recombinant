@@ -6,23 +6,50 @@
   {% set organization = dataset.organization.title or dataset.organization.name %}
   <li>{% link_for _('Organizations'), controller='organization', action='index' %}</li>
   <li>{% link_for organization|truncate(30), controller='organization', action='read', id=dataset.organization.name %}
-  <li>{% link_for _('Update') ~ ' ' ~ _(dataset.title), controller='package', action='edit', id=dataset.name %}</li>
-  <li class="active">{{ _('Preview') }} {{ _(resource.description) }} </li>
+  <li class="active">{{ _(resource.description) }} </li>
 {% endblock %}
 
 {% block primary_content %}
+
+  <div class="col-md-12 mrgn-bttm-sm">
+    <ul class="nav nav-pills">
+      {% for r in h.recombinant_show_package(dataset).resources %}
+        <li {% if r.id == resource.id %}class="active"{% endif %}>{%
+          link_for _(r.description) ~ ': ' ~ 
+            ngettext("%(num)d row", "%(num)d rows", r.datastore_rows)
+            |format(num=r.datastore_rows),
+          named_route='recombinant_resource',
+          id=dataset.id, resource_id=r.id %}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
   {% set refs = h.recombinant_choice_fields(resource.name) %}
+  <div class="col-md-12">
   <div class="wb-tabs">
     <div class="tabpanels">
+      <details>
+        <summary><span class="glyphicon glyphicon-plus-sign"></span>
+          {{ _("Update") }}
+        </summary>
+        {% if h.check_access('package_update', {'id': dataset.id }) %}
+          {% snippet "recombinant/snippets/xls_upload.html",
+            pkg=dataset, errors=errors %}
+        {% else %}
+          {% snippet "recombinant/snippets/xls_download.html",
+            pkg=dataset, errors=errors %}
+        {% endif %}
+      </details>
       {% if h.check_access('package_update', {'id': dataset.id }) %}
         <details {% if delete_errors %}open="open"{% endif %}>
-          <summary>{{ _("Delete") }}</summary>
+          <summary><span class="glyphicon glyphicon-minus-sign"></span>
+            {{ _("Delete") }}</summary>
           {% snippet "recombinant/snippets/delete.html",
             pkg=dataset, errors=delete_errors, filters=filters %}
         </details>
       {% endif %}
       {% for f in refs %}
-        <details><summary>{{ _("Reference") }}: {{ f.label }}</summary>
+        <details><summary><span class="glyphicon glyphicon-th-list"></a>{{ _("Reference") }}: {{ f.label }}</summary>
           {% snippet "recombinant/snippets/choices_reference.html", f=f %}
         </details>
       {% endfor %}
@@ -35,6 +62,7 @@
           pkg=dataset, username=c.userobj.name, examples='python' %}
       </details>
     </div>
+  </div>
   </div>
 {% endblock %}
 
