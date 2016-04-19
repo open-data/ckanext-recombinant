@@ -48,11 +48,21 @@
             pkg=dataset, errors=delete_errors, filters=filters %}
         </details>
       {% endif %}
-      {% for f in refs %}
-        <details><summary><span class="glyphicon glyphicon-th-list"></a>{{ _("Reference") }}: {{ f.label }}</summary>
-          {% snippet "recombinant/snippets/choices_reference.html", f=f %}
+      {% if refs %}
+        <details>
+          <summary><span class="glyphicon glyphicon-th-list"></span>
+            {{ _("Reference") }}
+          </summary>
+          <div class="tabpanels">
+            {% for f in refs %}
+              <details><summary>{{ f.label }}</summary>
+                {% snippet "recombinant/snippets/choices_reference.html",
+                  f=f %}
+              </details>
+            {% endfor %}
+          </div>
         </details>
-      {% endfor %}
+      {% endif %}
       <details><summary>{{ _("API Access") }}: curl</summary>
         {% snippet "recombinant/snippets/api_access.html",
           pkg=dataset, username=c.userobj.name, examples='curl' %}
