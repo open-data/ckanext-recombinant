@@ -2,9 +2,8 @@
 {% block form %}
 <form>
 {% endblock %}
-  <div class="col-md-9">
+  <div class="col-md-6">
     <div class="form-group control-medium">
-      <label>{{ _('Template') }}:</label>
       <div class="form-control">
         <a class="button" href="{% url_for named_route='recombinant_template',
           id=pkg.name %}"><span class="glyphicon glyphicon-download-alt"></span>
