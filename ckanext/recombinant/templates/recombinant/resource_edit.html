@@ -11,7 +11,7 @@
 
 {% block primary_content %}
 
-  <div class="col-md-12 mrgn-bttm-sm">
+  <div class="col-md-9 mrgn-bttm-sm">
     <ul class="nav nav-pills">
       {% for r in h.recombinant_show_package(dataset).resources %}
         <li {% if r.id == resource.id %}class="active"{% endif %}>{%
@@ -53,14 +53,7 @@
           <summary><span class="glyphicon glyphicon-th-list"></span>
             {{ _("Reference") }}
           </summary>
-          <div class="tabpanels">
-            {% for f in refs %}
-              <details><summary>{{ f.label }}</summary>
-                {% snippet "recombinant/snippets/choices_reference.html",
-                  f=f %}
-              </details>
-            {% endfor %}
-          </div>
+          {% snippet "recombinant/snippets/choices_reference.html", refs=refs %}
         </details>
       {% endif %}
       <details><summary>{{ _("API Access") }}: curl</summary>

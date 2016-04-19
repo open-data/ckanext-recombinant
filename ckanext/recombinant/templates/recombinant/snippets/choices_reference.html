@@ -1,6 +1,14 @@
-<dl class="mrgn-tp-md mrgn-bttm-0">
-  {% for value, label in f.choices %}
-    <dt>{{ value }}</dt>
-    <dd>{{ label }}</dd>
+<h3>{{ _("Controlled List Reference") }}</h3>
+
+<div class="tabpanels mrgn-bttm-md">
+  {% for f in refs %}
+    <details><summary>{{ f.label }}</summary>
+      <dl class="mrgn-tp-md mrgn-bttm-0">
+        {% for value, label in f.choices %}
+          <dt>{{ value }}</dt>
+          <dd>{{ label }}</dd>
+        {% endfor %}
+      </dl>
+    </details>
   {% endfor %}
-</dl>
+</div>
