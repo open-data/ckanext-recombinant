@@ -54,13 +54,12 @@
           {% snippet "recombinant/snippets/choices_reference.html", refs=refs %}
         </details>
       {% endif %}
-      <details><summary>{{ _("API Access") }}: curl</summary>
+      <details>
+        <summary><span class="glyphicon glyphicon-wrench"></span>
+          {{ _("API Access") }}
+        </summary>
         {% snippet "recombinant/snippets/api_access.html",
-          pkg=dataset, username=c.userobj.name, examples='curl' %}
-      </details>
-      <details><summary>{{ _("API Access") }}: Python</summary>
-        {% snippet "recombinant/snippets/api_access.html",
-          pkg=dataset, username=c.userobj.name, examples='python' %}
+          pkg=dataset, username=c.userobj.name, resource=resource %}
       </details>
     </div>
   </div>
