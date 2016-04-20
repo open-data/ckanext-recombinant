@@ -1,22 +1,22 @@
 {% set resource_id = resource.id %}
 {% set profile_url = h.url_for(controller='user', action='read', id=username) %}
 <h3>{{ _("API access examples") }}</h3>
-<div class="wb-tabs">
-  <div class="tabpanels">
-    {% for examples in 'curl', 'python' %}
-      <details><summary>{{ examples }}</summary>
-        <h4>{{ _("Retrieve Records") }}</h4>
-        <p>{% trans %}Access this data through the
-          <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api"
-          >CKAN Datastore API</a>
-          with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}
-        </p>
-        <p>{% trans %}The CKAN API uses a JSON-RPC style, where you post a JSON object and receive another
-          JSON object in response.{% endtrans %}</p>
+<div>
+  <button type="button" class="btn btn-default btn-code-lang lang-curl active" onclick="langBtnFn.apply(this)"><span class="sr-only">Show </span>curl<span class="sr-only"> Examples</span></button>
+  <button type="button" class="btn btn-default btn-code-lang lang-python" onclick="langBtnFn.apply(this)"><span class="sr-only">Show </span>python<span class="sr-only"> Examples</span></button>
+</div>
+<div class="code-block lang-curl">
+  <h4>{{ _("Retrieve Records") }}</h4>
+  <p>{% trans %}Access this data through the
+    <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api"
+    >CKAN Datastore API</a>
+    with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}
+  </p>
+  <p>{% trans %}The CKAN API uses a JSON-RPC style, where you post a JSON object and receive another
+    JSON object in response.{% endtrans %}</p>
 
-        <h5>{{ _("Example:") }}</h5>
-        {% if examples=='curl' %}
-        <pre><code class="bash"
+  <h5>{{ _("Example:") }}</h5>
+  <pre class="bash"
 >curl {{ g.site_url }}/api/action/datastore_search -d '
 {
   "resource_id": "{{ resource_id }}",
@@ -26,9 +26,8 @@
 {{ h.recombinant_example(pkg.type, 'filters', indent=4) }}
   }
 }'
-</code></pre>
-        {% elif examples=='python' %}
-        <pre><code class="python"
+</pre>
+  <pre class="python"
 >from ckanapi import RemoteCKAN
 from pprint import pprint
 ckan = RemoteCKAN('{{ g.site_url }}')
@@ -40,28 +39,26 @@ result = ckan.action.datastore_search(
 {{ h.recombinant_example(pkg.type, 'filters', indent=8) }}
     }
 )
-pprint(result['records'])</code></pre>
-        {% endif %}
+pprint(result['records'])</pre>
 
-        <h4>{{ _("Create and Update Records") }}</h4>
-        <p>{% trans %}Modifying records requires an API key. Your API key is shown on your
-          <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
-        </p>
+  <h4>{{ _("Create and Update Records") }}</h4>
+  <p>{% trans %}Modifying records requires an API key. Your API key is shown on your
+    <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
+  </p>
 
-        <p>{% trans %}Do not include
-          your API key in any code shared with other people. Use a configuration file or environment
-          variable to let each user input their own key when they use your tool.
-          Your API key is <em>equivalent to your password</em> and may be used to
-          perform any action your user can on this site. All actions made with your API key will be
-          logged as actions you performed.{% endtrans %}
-        </p>
+  <p>{% trans %}Do not include
+    your API key in any code shared with other people. Use a configuration file or environment
+    variable to let each user input their own key when they use your tool.
+    Your API key is <em>equivalent to your password</em> and may be used to
+    perform any action your user can on this site. All actions made with your API key will be
+    logged as actions you performed.{% endtrans %}
+  </p>
 
-        <p>{% trans %}Create and update records with the "datastore_upsert" endpoint.
-          Your API key must be sent as an "Authorization" header.{% endtrans %}</p>
+  <p>{% trans %}Create and update records with the "datastore_upsert" endpoint.
+    Your API key must be sent as an "Authorization" header.{% endtrans %}</p>
 
-        <h5>{{ _("Example:") }}</h5>
-        {% if examples=='curl' %}
-        <pre><code class="bash"
+  <h5>{{ _("Example:") }}</h5>
+  <pre class="bash"
 >curl {{ g.site_url }}/api/action/datastore_upsert \
   -H"Authorization:$API_KEY" -d '
 {
@@ -69,9 +66,8 @@ pprint(result['records'])</code></pre>
   "records": [{
 {{ h.recombinant_example(pkg.type, 'record', indent=4) }}
   }]
-}'</code></pre>
-        {% elif examples=='python' %}
-        <pre><code class="python"
+}'</pre>
+  <pre class="python"
 >from ckanapi import RemoteCKAN
 ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
 result = ckan.action.datastore_upsert(
@@ -79,19 +75,17 @@ result = ckan.action.datastore_upsert(
     records=[{
 {{ h.recombinant_example(pkg.type, 'record', indent=8) }}
     }]
-)</code></pre>
-        {% endif %}
+)</pre>
 
-        <h4>{{ _("Delete Records") }}</h4>
-        <p>{% trans %}Deleting records requires an API key. Your API key is shown on your
-          <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
-        </p>
-        <p>{% trans %}First verify that the record you would like to remove is present with
-        the "datastore_search" endpoint{% endtrans %}<p>
+  <h4>{{ _("Delete Records") }}</h4>
+  <p>{% trans %}Deleting records requires an API key. Your API key is shown on your
+    <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
+  </p>
+  <p>{% trans %}First verify that the record you would like to remove is present with
+  the "datastore_search" endpoint{% endtrans %}<p>
 
-        <h5>{{ _("Example:") }}</h5>
-        {% if examples=='curl' %}
-        <pre><code class="bash"
+  <h5>{{ _("Example:") }}</h5>
+  <pre class="bash"
 >curl {{ g.site_url }}/api/action/datastore_search \
  -H"Authorization:$API_KEY" -d '
 {
@@ -100,9 +94,8 @@ result = ckan.action.datastore_upsert(
 {{ h.recombinant_example(pkg.type, 'filter_one', indent=4) }}
   }
 }'
-</code></pre>
-        {% elif examples=='python' %}
-        <pre><code class="python"
+</pre>
+  <pre class="python"
 >from ckanapi import RemoteCKAN
 from pprint import pprint
 ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
@@ -113,14 +106,12 @@ result = ckan.action.datastore_search(
     }
 )
 pprint(result['records'])</code></pre>
-        {% endif %}
 
-        <p>{% trans %}Remove the record returned by passing the same parameters
-        to the "datastore_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
+  <p>{% trans %}Remove the record returned by passing the same parameters
+  to the "datastore_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
 
-        <h5>{{ _("Example:") }}</h5>
-        {% if examples=='curl' %}
-        <pre><code class="bash"
+  <h5>{{ _("Example:") }}</h5>
+  <pre class="bash"
 >curl {{ g.site_url }}/api/action/datastore_delete \
  -H"Authorization:$API_KEY" -d '
 {
@@ -129,19 +120,14 @@ pprint(result['records'])</code></pre>
 {{ h.recombinant_example(pkg.type, 'filter_one', indent=4) }}
   }
 }'
-</code></pre>
-        {% elif examples=='python' %}
-        <pre><code class="python"
+</pre>
+  <pre class="python"
 >ckan.action.datastore_delete(
     resource_id="{{ resource_id }}",
     filters={
 {{ h.recombinant_example(pkg.type, 'filter_one', indent=8) }}
     }
-)</code></pre>
-        {% endif %}
-      </details>
-    {% endfor %}
-  </div>
+)</pre>
 </div>
 <p>
 {% trans %}If you have modified these API Access instructions for
@@ -150,3 +136,5 @@ another programming language please send them to
 and we may be able to post them here as well.
 {% endtrans %}
 </p>
+
+{% resource "js/code_block_buttons.js" %}

@@ -10,7 +10,6 @@
 {% endblock %}
 
 {% block primary_content %}
-
 <div class="col-md-9">
   <ul class="nav nav-pills mrgn-bttm-sm">
     {% for r in h.recombinant_show_package(dataset).resources %}
@@ -64,21 +63,14 @@
     </div>
   </div>
 </div>
-{% block inner_secondary_content %}
-{% endblock %}
 {% endblock %}
 
 {# syntax hilighting for API docs above #}
 {% block links %}
 {{ super() }}
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/styles/docco.min.css">
 <style>
-div.tabs-panel > div {padding: 1px 10px}
+.code-block pre {display: none}
+.code-block.lang-python pre.python {display: block}
+.code-block.lang-curl pre.bash {display: block}
 </style>
 {% endblock %}
-{% block scripts %}
-{{ super() }}
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/highlight.min.js"></script>
-<script>hljs.initHighlightingOnLoad();</script>
-{% endblock %}
-
