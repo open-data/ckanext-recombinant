@@ -31,7 +31,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
     def update_config(self, config):
         # add our templates
         p.toolkit.add_template_directory(config, 'templates')
-        p.toolkit.add_resource('public/js', 'js')
+        p.toolkit.add_public_directory(config, 'public')
 
         # read our configuration early
         self._tables_urls = config.get('recombinant.definitions', ""

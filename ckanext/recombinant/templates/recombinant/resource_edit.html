@@ -74,3 +74,8 @@
 .code-block.lang-curl pre.bash {display: block}
 </style>
 {% endblock %}
+
+{%- block scripts %}
+  {{ super() }}
+ <script src="{{ h.url_for_static('js/code_block_buttons.js') }}"></script>
+{% endblock %}

@@ -163,7 +163,8 @@ def _process_upload_file(lc, dataset, upload_file, geno):
         lc.action.datastore_upsert(
             method=method,
             resource_id=expected_sheet_names[sheet_name],
-            records=records)
+            records=records,
+            force=True)
 
 
 class PreviewController(PackageController):
