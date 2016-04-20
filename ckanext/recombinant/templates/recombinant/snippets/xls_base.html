@@ -5,7 +5,7 @@
   <div class="col-md-9">
     <div class="form-group control-medium">
       <div class="form-control">
-        <a class="button" href="{% url_for named_route='recombinant_template',
+        <a class="button" href="{% url_for 'recombinant_template',
           id=pkg.name %}"><span class="glyphicon glyphicon-download-alt"></span>
           {{ _('Download template Excel spreadsheet') }}</a>
       </div>
