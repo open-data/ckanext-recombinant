@@ -25,7 +25,7 @@
   {% set refs = h.recombinant_choice_fields(resource.name) %}
   <div class="wb-tabs">
     <div class="tabpanels">
-      <details>
+      <details id="update">
         <summary><span class="glyphicon glyphicon-plus-sign"></span>
           {{ _("Update") }}
         </summary>
@@ -38,7 +38,7 @@
         {% endif %}
       </details>
       {% if h.check_access('package_update', {'id': dataset.id }) %}
-        <details {% if delete_errors %}open="open"{% endif %}>
+        <details {% if delete_errors %}open="open"{% endif %} id="delete">
           <summary><span class="glyphicon glyphicon-minus-sign"></span>
             {{ _("Delete") }}</summary>
           {% snippet "recombinant/snippets/delete.html",
@@ -46,14 +46,14 @@
         </details>
       {% endif %}
       {% if refs %}
-        <details>
+        <details id="reference">
           <summary><span class="glyphicon glyphicon-th-list"></span>
             {{ _("Reference") }}
           </summary>
           {% snippet "recombinant/snippets/choices_reference.html", refs=refs %}
         </details>
       {% endif %}
-      <details>
+      <details id="api">
         <summary><span class="glyphicon glyphicon-wrench"></span>
           {{ _("API Access") }}
         </summary>
