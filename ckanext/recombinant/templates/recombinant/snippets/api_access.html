@@ -2,8 +2,8 @@
 {% set profile_url = h.url_for(controller='user', action='read', id=username) %}
 <h3>{{ _("API access examples") }}</h3>
 <div class="wb-prettify all-pre">
-  <button type="button" class="btn btn-default btn-code-lang lang-curl active" onclick="langBtnFn.apply(this)"><span class="sr-only">Show </span>curl<span class="sr-only"> Examples</span></button>
-  <button type="button" class="btn btn-default btn-code-lang lang-python" onclick="langBtnFn.apply(this)"><span class="sr-only">Show </span>python<span class="sr-only"> Examples</span></button>
+  <button type="button" class="btn btn-default btn-code-lang lang-curl active"><span class="sr-only">Show </span>curl<span class="sr-only"> Examples</span></button>
+  <button type="button" class="btn btn-default btn-code-lang lang-python"><span class="sr-only">Show </span>python<span class="sr-only"> Examples</span></button>
 </div>
 <div class="code-block lang-curl">
   <h4>{{ _("Retrieve Records") }}</h4>
