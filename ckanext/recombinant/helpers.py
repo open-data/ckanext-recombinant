@@ -5,7 +5,7 @@ from pylons.i18n import gettext
 import ckanapi
 from ckan.lib.helpers import lang
 
-from ckanext.recombinant.tables import get_chromo, get_geno
+from ckanext.recombinant.tables import get_chromo, get_geno, get_dataset_types
 from ckanext.recombinant.errors import RecombinantException
 
 
@@ -65,6 +65,9 @@ def recombinant_get_geno(dataset_type):
         return get_geno(dataset_type)
     except RecombinantException:
         return
+
+def recombinant_get_types():
+    return get_dataset_types()
 
 def recombinant_primary_key_fields(resource_name):
     try:
