@@ -12,7 +12,11 @@
 
 {% block primary_content %}
   {% set refs = h.recombinant_choice_fields(resource.name) %}
-  <header class="module-content page-header"></header>
+  <header class="module-content page-header">
+    <ul>
+      <li> {% link_for _('Update') ~ ' ' ~ _(dataset.title), controller='package', action='edit', id=dataset.name %}</li>
+    </ul>
+  </header>
   <div class="wet-boew-tabbedinterface tabs-style-3 auto-height-none">
     <ul class="tabs">
       {% if h.check_access('package_update', {'id': dataset.id }) %}
