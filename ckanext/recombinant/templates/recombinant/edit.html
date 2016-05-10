@@ -43,3 +43,10 @@
     </ul>
   </section>
 {% endblock %}
+
+{% block links %}
+{{ super() }}
+<style>
+div.tabs-panel > div {padding: 1px 10px}
+</style>
+{% endblock %}
