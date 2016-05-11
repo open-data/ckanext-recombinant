@@ -7,17 +7,19 @@ Usage:
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-excel EXCEL_FILE ... [-c CONFIG]
   paster recombinant load-csv CSV_FILE ... [-c CONFIG]
-  paster recombinant combine DIR (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
-  paster recombinant dataset-types [TARGET_DATASET ...] [-c CONFIG]
+  paster recombinant dataset-types [DATASET_TYPE ...] [-c CONFIG]
   paster recombinant -h
 
 Options:
-  -h --help           show this screen
-  -a --all-types      create all dataset types
-  -c --config=CONFIG  CKAN configuration file
-  -f --force-update   Force update of tables (required for changes
-                      to only primary keys/indexes)
+  -h --help            Show this screen
+  -a --all-types       Create all dataset types
+  -c --config=CONFIG   CKAN configuration file
+  -d --output-dir=DIR  Save CSV files to DIR/RESOURCE_NAME.csv instead
+                       of streaming to STDOUT
+  -f --force-update    Force update of tables (required for changes
+                       to only primary keys/indexes)
 """
 import os
 import csv
@@ -48,6 +50,7 @@ class TableCommand(CkanCommand):
         dest='all_types', help='create all registered dataset types')
     parser.add_option('-c', '--config', dest='config',
         default='development.ini', help='Config file to use.')
+    parser.add_option('-d', '--output-dir', dest='output_dir')
     parser.add_option('-f', '--force-update', action='store_true',
         dest='force_update', help='force update of tables')
 
@@ -71,7 +74,8 @@ class TableCommand(CkanCommand):
         elif opts['load-csv']:
             return self._load_csv_files(opts['CSV_FILE'])
         elif opts['combine']:
-            return self._combine_csv(opts['DIR'], opts['DATASET_TYPE'])
+            return self._combine_csv(
+                opts['--output-dir'], opts['RESOURCE_NAME'])
         elif opts['target-datasets']:
             return self._target_datasets()
         elif opts['dataset-types']:
@@ -272,8 +276,8 @@ class TableCommand(CkanCommand):
                 records=records)
         return 0
 
-    def _combine_csv(self, target_dir, dataset_types):
-        if not os.path.isdir(target_dir):
+    def _combine_csv(self, target_dir, resource_names):
+        if target_dir and not os.path.isdir(target_dir):
             print '"{0}" is not a directory'.format(target_dir)
             return 1
 
@@ -282,9 +286,18 @@ class TableCommand(CkanCommand):
         for dtype in self._expand_dataset_types(dataset_types):
             for pkg in self._get_packages(dtype, orgs):
                 for chromo in get_geno(dtype)['resources']:
-                    self._write_one_csv(lc, pkg, chromo, target_dir)
+                    if target_dir:
+                        outf = open(os.path.join(target_dir,
+                            chromo['resource_name'] + '.csv'), 'wb')
+                    else:
+                        outf = sys.stdout
+                    try:
+                        self._write_one_csv(lc, pkg, chromo, outf)
+                    finally:
+                        if target_dir:
+                            outf.close()
 
-    def _write_one_csv(self, lc, pkg, chromo, target_dir):
+    def _write_one_csv(self, lc, pkg, chromo, outfile):
         for res in pkg['resources']:
             if res['name'] == chromo['resource_name']:
                 break
@@ -293,33 +306,32 @@ class TableCommand(CkanCommand):
                 chromo['resource_name'], pkg['organization']['name'])
             return
 
-        with open(os.path.join(
-                target_dir, res['name'] + '.csv'), 'wb') as outfile:
-            out = unicodecsv.writer(outfile)
-            column_ids = [f['datastore_id'] for f in chromo['fields']
-                ] + ['owner_org', 'owner_org_title']
-            out.writerow(column_ids)
+        out = unicodecsv.writer(outfile)
+        column_ids = [f['datastore_id'] for f in chromo['fields']
+            ] + ['owner_org', 'owner_org_title']
+        out.writerow(column_ids)
 
+        try:
+            records = lc.action.datastore_search(
+                limit=RECORDS_PER_ORGANIZATION,
+                resource_id=res['id'],
+                )['records']
+        except NotFound:
+            print 'resource {0} table missing for {1}'.format(
+                chromo['resource_name'], pkg['owner_org'])
+            return
+
+        for record in records:
+            record['owner_org'] = pkg['owner_org']
+            record['owner_org_title'] = pkg['org_title']
             try:
-                records = lc.action.datastore_search(
-                    limit=RECORDS_PER_ORGANIZATION,
-                    resource_id=res['id'],
-                    )['records']
-            except NotFound:
-                print 'resource {0} table missing for {1}'.format(
+                out.writerow([
+                    unicode(record[col]).encode('utf-8')
+                    for col in column_ids])
+            except KeyError:
+                print 'resource {0} table missing keys for {1}'.format(
                     chromo['resource_name'], pkg['organization']['name'])
                 return
-
-            for record in records:
-                record['owner_org'] = pkg['organization']['name']
-                record['owner_org_title'] = pkg['organization']['title']
-                try:
-                    out.writerow([
-                        unicode(record[col]).encode('utf-8') for col in columns])
-                except KeyError:
-                    print 'resource {0} table missing keys for {1}'.format(
-                        chromo['resource_name'], pkg['organization']['name'])
-                    return
 
     def _target_datasets(self):
         print ' '.join(get_target_datasets())

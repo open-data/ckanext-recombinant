@@ -114,6 +114,7 @@ def recombinant_show(context, data_dict):
     return {
         'dataset_type': dataset['type'],
         'owner_org': dataset['organization']['name'],
+        'org_title': dataset['organization']['title'],
         'id': dataset['id'],
         'metadata_correct': metadata_correct,
         'all_correct': metadata_correct and resources_correct,
