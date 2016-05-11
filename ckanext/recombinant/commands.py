@@ -328,4 +328,5 @@ class TableCommand(CkanCommand):
         if len(target_datasets) == 0:
             target_datasets = get_target_datasets()
         for target_ds in target_datasets:
-            print target_ds
+            print target_ds + ': ' + ' '.join(
+                c['resource_name'] for c in get_geno(target_ds)['resources'])
