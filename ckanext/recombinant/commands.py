@@ -14,7 +14,7 @@ Usage:
 
 Options:
   -h --help            Show this screen
-  -a --all-types       Create all dataset types
+  -a --all-types       All dataset types/resource names
   -c --config=CONFIG   CKAN configuration file
   -d --output-dir=DIR  Save CSV files to DIR/RESOURCE_NAME.csv instead
                        of streaming to STDOUT
@@ -33,7 +33,7 @@ from ckanapi import LocalCKAN, NotFound
 import unicodecsv
 from docopt import docopt
 
-from ckanext.recombinant.tables import (
+from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
     get_dataset_types, get_chromo, get_geno, get_target_datasets)
 from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.read_csv import csv_data_batch
@@ -45,6 +45,8 @@ class TableCommand(CkanCommand):
     summary = __doc__.split('\n')[0]
     usage = __doc__
 
+    # docopt *and* argparse, because we're extending CkanCommand...
+    # FIXME: stop extending CkanCommand
     parser = paste.script.command.Command.standard_parser(verbose=True)
     parser.add_option('-a', '--all-types', action='store_true',
         dest='all_types', help='create all registered dataset types')
@@ -79,7 +81,7 @@ class TableCommand(CkanCommand):
         elif opts['target-datasets']:
             return self._target_datasets()
         elif opts['dataset-types']:
-            return self._dataset_types(opts['TARGET_DATASET'])
+            return self._dataset_types(opts['DATASET_TYPE'])
         else:
             print opts
             return -1
@@ -144,14 +146,13 @@ class TableCommand(CkanCommand):
 
     def _expand_dataset_types(self, dataset_types):
         if self.options.all_types:
-            if dataset_types:
-                print "--all-types makes no sense with dataset types listed"
-                return
             return get_dataset_types()
-        if not dataset_types:
-            print "please specify dataset types or use -a/--all-types option"
-            return
         return dataset_types
+
+    def _expand_resource_names(self, resource_names):
+        if self.options.all_types:
+            return get_resource_names()
+        return resource_names
 
     def _create(self, dataset_types):
         """
@@ -283,62 +284,62 @@ class TableCommand(CkanCommand):
 
         orgs = self._get_orgs()
         lc = LocalCKAN()
-        for dtype in self._expand_dataset_types(dataset_types):
-            for pkg in self._get_packages(dtype, orgs):
-                for chromo in get_geno(dtype)['resources']:
-                    if target_dir:
-                        outf = open(os.path.join(target_dir,
-                            chromo['resource_name'] + '.csv'), 'wb')
-                    else:
-                        outf = sys.stdout
-                    try:
-                        self._write_one_csv(lc, pkg, chromo, outf)
-                    finally:
-                        if target_dir:
-                            outf.close()
+        outf = sys.stdout
+        for resource_name in self._expand_resource_names(resource_names):
+            if target_dir:
+                outf = open(os.path.join(target_dir,
+                    resource_name + '.csv'), 'wb')
+            self._write_one_csv(
+                lc,
+                self._get_packages(
+                    get_dataset_type_for_resource_name(resource_name), orgs),
+                get_chromo(resource_name),
+                outf)
 
-    def _write_one_csv(self, lc, pkg, chromo, outfile):
-        for res in pkg['resources']:
-            if res['name'] == chromo['resource_name']:
-                break
-        else:
-            print 'resource {0} not found for {1}'.format(
-                chromo['resource_name'], pkg['organization']['name'])
-            return
+            if target_dir:
+                outf.close()
 
+    def _write_one_csv(self, lc, pkgs, chromo, outfile):
         out = unicodecsv.writer(outfile)
         column_ids = [f['datastore_id'] for f in chromo['fields']
             ] + ['owner_org', 'owner_org_title']
         out.writerow(column_ids)
 
-        try:
-            records = lc.action.datastore_search(
-                limit=RECORDS_PER_ORGANIZATION,
-                resource_id=res['id'],
-                )['records']
-        except NotFound:
-            print 'resource {0} table missing for {1}'.format(
-                chromo['resource_name'], pkg['owner_org'])
-            return
-
-        for record in records:
-            record['owner_org'] = pkg['owner_org']
-            record['owner_org_title'] = pkg['org_title']
-            try:
-                out.writerow([
-                    unicode(record[col]).encode('utf-8')
-                    for col in column_ids])
-            except KeyError:
-                print 'resource {0} table missing keys for {1}'.format(
+        for pkg in pkgs:
+            for res in pkg['resources']:
+                if res['name'] == chromo['resource_name']:
+                    break
+            else:
+                print 'resource {0} not found for {1}'.format(
                     chromo['resource_name'], pkg['organization']['name'])
+                continue
+
+            try:
+                records = lc.action.datastore_search(
+                    limit=RECORDS_PER_ORGANIZATION,
+                    resource_id=res['id'],
+                    )['records']
+            except NotFound:
+                print 'resource {0} table missing for {1}'.format(
+                    chromo['resource_name'], pkg['owner_org'])
                 return
+
+            for record in records:
+                record['owner_org'] = pkg['owner_org']
+                record['owner_org_title'] = pkg['org_title']
+                try:
+                    out.writerow([
+                        unicode(record[col]).encode('utf-8')
+                        for col in column_ids])
+                except KeyError:
+                    print 'resource {0} table missing keys for {1}'.format(
+                        chromo['resource_name'], pkg['organization']['name'])
+                    return
 
     def _target_datasets(self):
         print ' '.join(get_target_datasets())
 
-    def _dataset_types(self, target_datasets):
-        if len(target_datasets) == 0:
-            target_datasets = get_target_datasets()
-        for target_ds in target_datasets:
-            print target_ds + ': ' + ' '.join(
-                c['resource_name'] for c in get_geno(target_ds)['resources'])
+    def _dataset_types(self, dataset_types):
+        for t in self._expand_dataset_types():
+            print t + ': ' + ' '.join(
+                c['resource_name'] for c in get_geno(t)['resources'])
