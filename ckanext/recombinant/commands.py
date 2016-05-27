@@ -10,6 +10,7 @@ Usage:
   paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
   paster recombinant dataset-types [DATASET_TYPE ...] [-c CONFIG]
+  paster recombinant remove-broken DATASET_TYPE ... [-c CONFIG]
   paster recombinant -h
 
 Options:
@@ -83,6 +84,8 @@ class TableCommand(CkanCommand):
             return self._target_datasets()
         elif opts['dataset-types']:
             return self._dataset_types(opts['DATASET_TYPE'])
+        elif opts['remove-broken']:
+            return self._remove_broken(opts['DATASET_TYPE'])
         else:
             print opts
             return -1
@@ -336,6 +339,23 @@ class TableCommand(CkanCommand):
                     print 'resource {0} table missing keys for {1}'.format(
                         chromo['resource_name'], pkg['organization']['name'])
                     return
+
+    def _remove_broken(self, target_datasets):
+        """
+        Low-level command to remove datasets with missing datastore tables
+        """
+        lc = LocalCKAN()
+        for dtype in target_datasets:
+            datasets = lc.action.package_search(q="type:%s" % dtype, rows=5000)
+            for d in datasets['results']:
+                for r in d['resources']:
+                    try:
+                        lc.action.datastore_search(resource_id=r['id'], rows=1)
+                    except NotFound:
+                        print 'removing', d['name'], d['title']
+                        lc.package_delete(id=d['id'])
+                        break
+
 
     def _target_datasets(self):
         print ' '.join(get_target_datasets())
