@@ -34,7 +34,8 @@ import unicodecsv
 from docopt import docopt
 
 from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
-    get_dataset_types, get_chromo, get_geno, get_target_datasets)
+    get_dataset_types, get_chromo, get_geno, get_target_datasets,
+    get_resource_names)
 from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.read_csv import csv_data_batch
 
