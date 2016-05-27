@@ -353,7 +353,7 @@ class TableCommand(CkanCommand):
                         lc.action.datastore_search(resource_id=r['id'], rows=1)
                     except NotFound:
                         print 'removing', d['name'], d['title']
-                        lc.package_delete(id=d['id'])
+                        lc.action.package_delete(id=d['id'])
                         break
 
 
