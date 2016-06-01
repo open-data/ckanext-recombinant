@@ -1,14 +1,15 @@
-from pylons.i18n import _
-import ckan.plugins as p
-from ckan.lib.plugins import DefaultDatasetForm
-
-from paste.reloader import watch_file
-from paste.deploy.converters import asbool
-
 import importlib
 import os
 import json
 import uuid
+
+from paste.reloader import watch_file
+from paste.deploy.converters import asbool
+from pylons.i18n import _
+import ckan.plugins as p
+from ckan.lib.plugins import DefaultDatasetForm
+
+from ckanext.recombinant import logic, tables, helpers
 
 try:
     import yaml
@@ -19,76 +20,29 @@ class RecombinantException(Exception):
     pass
 
 
-class _IRecombinant(p.Interface):
-    pass
-
-
-def _get_tables():
-    """
-    Find the RecombinantPlugin instance and get the
-    table configuration from it
-    """
-    tables = []
-    for plugin in p.PluginImplementations(_IRecombinant):
-        tables.extend(plugin._tables)
-    return tables
-
-
-def get_table(dataset_type):
-    """
-    Get the table configured with the input dataset type
-    """
-    tables = _get_tables()
-    for t in tables:
-        if t['dataset_type'] == dataset_type:
-            break
-    else:
-        raise RecombinantException('dataset_type "%s" not found'
-            % dataset_type)
-    return t
-
-
-def get_target_datasets():
-    """
-    Find the RecombinantPlugin instance and get its
-    configured target datasets (e.g., ['ati', 'pd', ...])
-    """
-    tables = _get_tables()
-    return list(set((t['target_dataset'] for t in tables)))
-
-
-def get_dataset_types(target_dataset):
-    """
-    Find the RecombinantPlugin instance and get its
-    configured dataset types for the input target dataset
-    """
-    tables = _get_tables()
-    return (
-        t['dataset_type'] for t in tables
-            if t['target_dataset'] == target_dataset)
-
-
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
+    p.implements(tables.IRecombinant)
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
-    p.implements(_IRecombinant)
     p.implements(p.IRoutes, inherit=True)
     p.implements(p.ITemplateHelpers, inherit=True)
+    p.implements(p.IActions)
 
     def update_config(self, config):
         # add our templates
         p.toolkit.add_template_directory(config, 'templates')
 
         # read our configuration early
-        self._tables_url = config.get('recombinant.tables', ""
-            ).strip()
-        if not self._tables_url:
+        self._tables_urls = config.get('recombinant.definitions', ""
+            ).split()
+        if not self._tables_urls:
             raise RecombinantException("Missing configuration option "
-                "recombinant.tables")
-        self._tables = _load_tables(self._tables_url)
+                "recombinant.definitions")
+        self._chromos, self._genos = (
+            _load_table_definitions(self._tables_urls))
 
     def package_types(self):
-        return [t['dataset_type'] for t in self._tables]
+        return tables.get_dataset_types()
 
     def read_template(self):
         return 'recombinant/edit.html'
@@ -113,13 +67,28 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
             controller='ckanext.recombinant.controller:UploadController')
         map.connect('/recombinant/template/{id}', action='template',
             controller='ckanext.recombinant.controller:UploadController')
+        map.connect('/recombinant/preview/{id}/{resource_id}',
+            action='preview_table',
+            controller='ckanext.recombinant.controller:PreviewController')
         return map
 
     def get_helpers(self):
         return {
-            'recombinant_primary_key_fields': primary_key_fields,
-            'recombinant_get_table': recombinant_get_table,
-            'recombinant_example': recombinant_example,
+            'recombinant_language_text': helpers.recombinant_language_text,
+            'recombinant_primary_key_fields':
+                helpers.recombinant_primary_key_fields,
+            'recombinant_get_chromo': helpers.recombinant_get_chromo,
+            'recombinant_get_geno': helpers.recombinant_get_geno,
+            'recombinant_example': helpers.recombinant_example,
+            'recombinant_choice_fields': helpers.recombinant_choice_fields,
+            'recombinant_show_package': helpers.recombinant_show_package,
+            }
+
+    def get_actions(self):
+        return {
+            'recombinant_create': logic.recombinant_create,
+            'recombinant_update': logic.recombinant_update,
+            'recombinant_show': logic.recombinant_show,
             }
 
 
@@ -129,6 +98,7 @@ def generate_uuid(value):
     """
     return str(uuid.uuid4())
 
+
 def value_from_id(key, converted_data, errors, context):
     """
     Copy the 'id' value from converted_data
@@ -136,12 +106,22 @@ def value_from_id(key, converted_data, errors, context):
     converted_data[key] = converted_data[('id',)]
 
 
+def _load_table_definitions(urls):
+    chromos = {}
+    genos = {}
+    for url in urls:
+        t = _load_tables_module_path(url)
+        if not t:
+            t = _load_tables_url(url)
 
-def _load_tables(url):
-    tables = _load_tables_module_path(url)
-    if not tables:
-        tables = _load_tables_url(url)
-    return tables
+        genos[t['dataset_type']] = t
+
+        for chromo in t['resources']:
+            chromo['dataset_type'] = t['dataset_type']
+            chromo['target_dataset'] = t['target_dataset']
+            chromos[chromo['resource_name']] = chromo
+
+    return chromos, genos
 
 
 def _load_tables_module_path(url):
@@ -162,6 +142,7 @@ def _load_tables_module_path(url):
         watch_file(p)
         return load(open(p))
 
+
 def _load_tables_url(url):
     import urllib2
     try:
@@ -178,6 +159,7 @@ def load(f):
         return yaml.load(f)
     return json.load(f)
 
+
 def loads(s, url):
     if is_yaml(url):
         return yaml.load(s)
@@ -185,52 +167,5 @@ def loads(s, url):
 
 
 def is_yaml(n):
-    return n[-5:].lower() == '.yaml' or n[-4:] == '.yml'
-
-
-def primary_key_fields(dataset_type):
-    t = get_table(dataset_type)
-    return [
-        f for f in t['fields']
-        if f['datastore_id'] in t['datastore_primary_key']
-        ]
-
-def recombinant_get_table(dataset_type):
-    try:
-        return get_table(dataset_type)
-    except RecombinantException:
-        return
-
-def recombinant_example(dataset_type, doc_type, indent=2, lang='json'):
-    """
-    Return example data formatted for use in API documentation
-    """
-    t = recombinant_get_table(dataset_type)
-    if t and doc_type in t.get('examples', {}):
-        data = t['examples'][doc_type]
-    elif doc_type == 'sort':
-        data = "request_date desc, file_number asc"
-    elif doc_type == 'filters':
-        data = {"resource": "doc", "priority": "high"}
-    elif doc_type == 'filter_one':
-        data = {"file_number": "86086"}
-    else:
-        data = {
-            "request_date": "2016-01-01",
-            "file_number": "42042",
-            "resource": "doc",
-            "prioroty": "low",
-        }
-
-    if not isinstance(data, (list, dict)):
-        return json.dumps(data)
-
-    left = ' ' * indent
-
-    if lang == 'pythonargs':
-        return ',\n'.join(
-            "%s%s=%s" % (left, k, json.dumps(data[k]))
-            for k in sorted(data))
-
-    out = json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False)
-    return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
+    # import pyyaml only if necessary
+    return n.endswith(('.yaml', '.yml'))

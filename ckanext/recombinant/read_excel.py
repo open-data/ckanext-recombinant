@@ -1,33 +1,41 @@
 import re
 import openpyxl
 from datetime import datetime, date
-from datatypes import  data_store_type
-
-# special place to look for the organization name in each XLS file
-# FIXME: read this from the config instead
-ORG_NAME_CELL = 2
+from datatypes import datastore_type
 
 
-def read_xls(f, file_contents=None):
+def read_excel(f, file_contents=None):
     """
-    Return a generator that opens the xlsx file f (name or file object)
+    Return a generator that opens the excel file f (name or file object)
     and then produces ((sheet-name, org-name), row1, row2, ...)
     :param: f: file name or xlsx file object
 
-    :return: Generator that opens the xls file f
-    and then produces ((sheet-name, org-name), row1, row2, ...)
+    :return: Generator that opens the excel file f
+    and then produces:
+        (sheet-name, org-name, column_names, data_rows_generator)
+        ...
     :rtype: generator
     """
     wb = openpyxl.load_workbook(f, read_only=True)
 
-    sheet = wb[wb.sheetnames[0]]
-    rowiter = sheet.rows
-    organization_row = next(rowiter)
-    yield (sheet.title, organization_row[ORG_NAME_CELL].value)
+    for sheetname in wb.sheetnames:
+        if sheetname == 'reference':
+            return
+        sheet = wb[sheetname]
+        rowiter = sheet.rows
+        organization_row = next(rowiter)
 
-    header_row = next(rowiter)
-    # FIXME: reject if not matching current headers?
+        label_row = next(rowiter)
+        names_row = next(rowiter)
 
+        yield (
+            sheetname,
+            organization_row[0].value,
+            [c.value for c in names_row],
+            _filter_bumf(rowiter))
+
+
+def _filter_bumf(rowiter):
     for row in rowiter:
         values = [c.value for c in row]
         # return next non-empty row
@@ -63,7 +71,7 @@ def _canonicalize(dirty, dstore_tag):
     :return: Canonicalized cell input
     :rtype: float or unicode
     """
-    dtype = data_store_type[dstore_tag]
+    dtype = datastore_type[dstore_tag]
     if dirty is None:
         return dtype.default
     elif isinstance(dirty, float) or isinstance(dirty, int):
@@ -99,7 +107,7 @@ def _canonicalize(dirty, dstore_tag):
     return float(canon)
 
 
-def get_records(upload_data, fields):
+def get_records(rows, fields):
     """
     Truncate/pad empty/missing records to expected row length, canonicalize
     cell content, and return resulting record list.
@@ -113,7 +121,7 @@ def get_records(upload_data, fields):
     :rtype: tuple of dicts
     """
     records = []
-    for n, row in enumerate(upload_data):
+    for n, row in enumerate(rows):
         # trailing cells might be empty: trim row to fit
         while (row and
                 (len(row) > len(fields)) and

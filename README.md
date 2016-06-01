@@ -3,58 +3,58 @@ ckanext-recombinant
 
 This extension creates datasets and datastore tables for all
 organizations in a ckan instance and allows combining the
-data from all tables into a single CSV for exporting.
+data from all tables into CSVs for exporting.
 
 This lets us use CKAN's authentication to restrict users to
 update only their organizations' tables but have all values
 available as a single dataset for our public site.
 
-Add this plugin to your CKAN configuration and link to the
-table description file:
+Recombinant provides template excel files for end users
+to bulk import or update data. It also provides a form to
+delete individual rows that have been imported.
+
+
+Datasets and Recombinant Definitions
+------------------------------------
+
+![Recombinant Overview](images/recombinant_overview.png)
+
+Recombinant definitions control the behaviour of this extension.
+Dataset types are registered using an IDatasetForm plugin and
+must be unique across the CKAN instance.
+
+Resource names are used to identify Excel sheets being imported
+and must be unique across the CKAN instance. Resource names
+are often the same as the dataset type when only a single resource
+is present in a definition.
+
+The `paster recombinant create` command will create or update
+datasets for every organization to match the definition
+for its type, including updating fields, resources and
+creating or updating datastore table fields, primary keys and
+indexes.
+
+Examples provided will be used to generate API documentation
+for end users.
+
+
+Installation
+------------
+
+Add this plugin to your CKAN configuration and link to your
+recombinant definition files:
 
 ```ini
 ckan.plugins = datastore recombinant
 
-recombinant.tables = file:///.../mytables.json
+recombinant.definitions = file:///.../type1.yaml ...
 
 #   module-path:file name may also be used, e.g:
 #
-# recombinant.tables = ckanext.atisummaries:recombinant_tables.json
+# recombinant.definitions = ckanext.atisummaries:ati.yaml
 #
-#   will try to load "recombinant_tables.json" from the directory
+#   will try to load "ati.yaml" from the directory
 #   containing the ckanext.atisummaries module
-```
-
-
-Example Table Description File
-------------------------------
-
-```json
-[
-  {
-    "dataset_type": "ati-summaries",
-    "title": "ATI Summaries",
-    "fields": [
-      {
-        "label": "Request number",
-        "datastore_id": "request_number",
-        "datastore_type": "text",
-        "xls_column_width": 15
-      },
-      {
-        "label": "Pages",
-        "datastore_id": "pages",
-        "datastore_type": "int",
-        "xls_column_width": 6
-      }
-    ],
-    "datastore_primary_key": "request_number",
-    "datastore_indexes": "request_number",
-    "xls_organization_info": ["title", "name"],
-    "xls_organization_style": "pattern: pattern solid, fore_color gray25;",
-    "xls_header_style": "font: bold on; pattern: pattern solid, fore_color light_green;"
-  }
-]
 ```
 
 

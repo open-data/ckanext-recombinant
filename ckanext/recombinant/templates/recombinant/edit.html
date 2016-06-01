@@ -5,20 +5,17 @@
 {% block breadcrumb_content_selected %}{% endblock %}
 
 {% block breadcrumb_content %}
-  {{ super() }}
-  <li class="active">{% link_for _('Edit'), controller='package', action='edit', id=pkg.name %}</li>
+  {% set organization = pkg.organization.title or pkg.organization.name %}
+  <li>{% link_for _('Organizations'), controller='organization', action='index' %}</li>
+  <li>{% link_for organization|truncate(30), controller='organization', action='read', id=pkg.organization.name %}
+  <li class="active">{% link_for _('Update') ~ ' ' ~ _(pkg.title), controller='package', action='edit', id=pkg.name %}</li>
 {% endblock %}
 
 {% block primary_content %}
   <header class="module-content page-header"></header>
   <div class="wet-boew-tabbedinterface tabs-style-3 auto-height-none">
     <ul class="tabs">
-      <li {% if not delete_errors %}class="default"{% endif %}><a href="#tabs_update">{{ _("Update") }}</a></li>
-      {% if pkg.resources and h.check_access('package_update', {'id': pkg.id }) %}
-        <li {% if delete_errors %}class="default"{% endif %}><a href="#tabs_delete">{{ _("Delete") }}</a></li>
-      {% endif %}
-      <li><a href="#tabs_api_curl">{{ _("API Access") }}: curl</a></li>
-      <li><a href="#tabs_api_python">{{ _("API Access") }}: Python</a></li>
+      <li class="default"><a href="#tabs_update">{{ _("Update") }}</a></li>
     </ul>
     <div class="tabs-panel">
       <div id="tabs_update">
@@ -32,37 +29,24 @@
           {% endif %}
         </div>
       </div>
-      {% if pkg.resources %}
-        {% if h.check_access('package_update', {'id': pkg.id }) %}
-          <div id="tabs_delete">
-            {% snippet "recombinant/snippets/delete.html",
-              pkg=pkg, errors=delete_errors, filters=filters %}
-          </div>
-        {% endif %}
-        <div id="tabs_api_curl">
-          {% snippet "recombinant/snippets/api_access.html",
-            pkg=pkg, username=c.userobj.name, examples='curl' %}
-        </div>
-        <div id="tabs_api_python">
-          {% snippet "recombinant/snippets/api_access.html",
-            pkg=pkg, username=c.userobj.name, examples='python' %}
-        </div>
-      {% endif %}
     </div>
   </div>
+  <section>
+    <ul>
+      {% for r in h.recombinant_show_package(pkg).resources %}
+        <li>{% link_for _(r.description),
+          controller='ckanext.recombinant.controller:PreviewController',
+          action='preview_table', id=pkg.id, resource_id=r.id %}:
+          {{ ngettext("%(num)d row", "%(num)d rows", r.datastore_rows)
+            |format(num=r.datastore_rows) }}</li>
+      {% endfor %}
+    </ul>
+  </section>
 {% endblock %}
 
-{# syntax hilighting for API docs above #}
 {% block links %}
 {{ super() }}
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/styles/docco.min.css">
 <style>
 div.tabs-panel > div {padding: 1px 10px}
 </style>
 {% endblock %}
-{% block scripts %}
-{{ super() }}
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/highlight.min.js"></script>
-<script>hljs.initHighlightingOnLoad();</script>
-{% endblock %}
-

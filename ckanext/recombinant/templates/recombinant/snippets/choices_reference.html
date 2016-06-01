@@ -1,0 +1,7 @@
+<h3>{{ f.label }}</h3>
+<dl>
+  {% for value, label in f.choices %}
+    <dt>{{ value }}</dt>
+    <dd>{{ label }}</dd>
+  {% endfor %}
+</dl>

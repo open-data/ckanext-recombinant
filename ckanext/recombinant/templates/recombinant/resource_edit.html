@@ -1,0 +1,69 @@
+{% extends 'package/base_form_page.html' %}
+
+{% block breadcrumb_content_selected %}{% endblock %}
+
+{% block breadcrumb_content %}
+  {% set organization = dataset.organization.title or dataset.organization.name %}
+  <li>{% link_for _('Organizations'), controller='organization', action='index' %}</li>
+  <li>{% link_for organization|truncate(30), controller='organization', action='read', id=dataset.organization.name %}
+  <li>{% link_for _('Update') ~ ' ' ~ _(dataset.title), controller='package', action='edit', id=dataset.name %}</li>
+  <li class="active">{{ _('Preview') }} {{ _(resource.description) }} </li>
+{% endblock %}
+
+{% block primary_content %}
+  {% set refs = h.recombinant_choice_fields(resource.name) %}
+  <header class="module-content page-header">
+    <ul>
+      <li> {% link_for _('Update') ~ ' ' ~ _(dataset.title), controller='package', action='edit', id=dataset.name %}</li>
+    </ul>
+  </header>
+  <div class="wet-boew-tabbedinterface tabs-style-3 auto-height-none">
+    <ul class="tabs">
+      {% if h.check_access('package_update', {'id': dataset.id }) %}
+        <li {% if delete_errors %}class="default"{% endif %}><a href="#tabs_delete">{{ _("Delete") }}</a></li>
+      {% endif %}
+      {% for f in refs %}
+        <li><a href="#tabs_ref_{{ f.datastore_id }}">{{
+           _("Reference") }}: {{ f.label }}</a></li>
+      {% endfor %}
+      <li><a href="#tabs_api_curl">{{ _("API Access") }}: curl</a></li>
+      <li><a href="#tabs_api_python">{{ _("API Access") }}: Python</a></li>
+    </ul>
+    <div class="tabs-panel">
+      {% if h.check_access('package_update', {'id': pkg.id }) %}
+        <div id="tabs_delete">
+          {% snippet "recombinant/snippets/delete.html",
+            pkg=dataset, errors=delete_errors, filters=filters %}
+        </div>
+      {% endif %}
+      {% for f in refs %}
+        <div id="tabs_ref_{{ f.datastore_id }}">
+          {% snippet "recombinant/snippets/choices_reference.html", f=f %}
+        </div>
+      {% endfor %}
+      <div id="tabs_api_curl">
+        {% snippet "recombinant/snippets/api_access.html",
+          pkg=dataset, username=c.userobj.name, examples='curl' %}
+      </div>
+      <div id="tabs_api_python">
+        {% snippet "recombinant/snippets/api_access.html",
+          pkg=dataset, username=c.userobj.name, examples='python' %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{# syntax hilighting for API docs above #}
+{% block links %}
+{{ super() }}
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/styles/docco.min.css">
+<style>
+div.tabs-panel > div {padding: 1px 10px}
+</style>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.0.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+{% endblock %}
+
