@@ -32,6 +32,11 @@ def get_chromo(resource_name):
     try:
         return chromos[resource_name]
     except KeyError:
+        # workaround for file names having -'s removed when uploaded
+        # to some versions of CKAN
+        for rname in chromos:
+            if rname.replace('-', '') == resource_name:
+                return chromos[rname]
         raise RecombinantException('resource_name "%s" not found'
             % resource_name)
 
