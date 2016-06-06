@@ -7,6 +7,7 @@ from ckan.lib.helpers import lang
 
 from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.errors import RecombinantException
+from ckanext.recombinant import load
 
 
 # same as scheming_language_text, copied so we don't add the dependency
@@ -120,17 +121,27 @@ def recombinant_choice_fields(resource_name):
     chromo = recombinant_get_chromo(resource_name)
     if not chromo:
         return []
-    for f in chromo['fields']:
-        if 'choices' not in f:
-            continue
+
+    def choices(f, choices):
         out.append({
             'datastore_id': f['datastore_id'],
             'label': gettext(f['label']).decode('utf-8'),
-            'choices': [
-                (v, recombinant_language_text(f['choices'][v]))
-                for v in sorted(f['choices'])],
+            'choices': (v, recombinant_language_text(choices[v]))
+                for v in sorted(choices))
             })
+
+    for f in chromo['fields']:
+        if 'choices' in f:
+            choices(f, f['choices'])
+        elif 'choices_file' in f and '_path' in chromo:
+            choices(f, _read_choices_file(chromo, f))
+
     return out
+
+
+def _read_choices_file(chromo, f):
+    with open(os.path.join(chromo['_path'], f['choices_file'])) as cf:
+        return load.load(cf)
 
 
 def recombinant_show_package(pkg):
