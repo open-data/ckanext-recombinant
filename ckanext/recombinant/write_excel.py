@@ -4,7 +4,7 @@ from pylons.i18n import _
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
-from ckanext.recombinant.helpers import recombinant_language_text
+from ckanext.recombinant.helpers import recombinant_choice_fields
 
 boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
     type="list", formula1='"FALSE,TRUE"', allow_blank=True)
@@ -23,7 +23,7 @@ def excel_template(dataset_type, org):
     sheet = book.active
     refs = []
     for chromo in geno['resources']:
-        refs.extend(_populate_excel_sheet(sheet, chromo, org))
+        _populate_excel_sheet(sheet, chromo, org, refs)
         sheet = book.create_sheet()
 
     ref = sheet
@@ -34,13 +34,15 @@ def excel_template(dataset_type, org):
     return book
 
 
-def _populate_excel_sheet(sheet, chromo, org):
+def _populate_excel_sheet(sheet, chromo, org, refs):
     """
     Format openpyxl sheet for the resource definition chromo and org.
 
+    refs - list of rows to add to reference sheet, modified
+        in place from this function
+
     returns field information for reference sheet
     """
-    refs = []
     sheet.add_data_validation(boolean_validator)
 
     sheet.title = chromo['resource_name']
@@ -56,6 +58,11 @@ def _populate_excel_sheet(sheet, chromo, org):
     apply_styles(org_style, sheet.row_dimensions[1])
 
     header_style = chromo['excel_header_style']
+
+    choice_fields = dict(
+        (f['datastore_id'], f['choices'])
+        for f in recombinant_choice_fields(chromo['resource_name']))
+
     for n, field in enumerate(chromo['fields'], 1):
         fill_cell(2, n, _(field['label']), header_style)
         fill_cell(3, n, field['datastore_id'], header_style)
@@ -66,40 +73,41 @@ def _populate_excel_sheet(sheet, chromo, org):
         # FIXME: format only below header
         col.number_format = datastore_type[field['datastore_type']].xl_format
         validation_range = '{0}4:{0}1004'.format(col_letter)
+
         if field['datastore_type'] == 'boolean':
             boolean_validator.ranges.append(validation_range)
-        elif 'choices' in field:
+        if field['datastore_id'] in choice_fields:
+            refs.append([_(field['label'])])
+            ref1 = len(refs) + 2
+            for key, value in choice_fields[field['datastore_id']]:
+                refs.append([None, key, value])
+            refN = len(refs) + 1
+            refs.append([])
+
+            choice_range = 'reference!$B${0}:$B${1}'.format(ref1, refN)
             v = openpyxl.worksheet.datavalidation.DataValidation(
                 type="list",
-                formula1='"' + ','.join(sorted(field['choices'])) + '"',
+                formula1=choice_range,
                 allow_blank=True)
             v.errorTitle = u'Invalid choice'
-            v.error = u'Please enter one of the following codes:\n' + u', '.join(
-                sorted(field['choices'])
-                ) + '\n\nSheet "reference" shows code values.'
+            v.error = (u'Please enter one of the valid keys shown on '
+                'sheet "reference" rows {0}-{1}'.format(ref1, refN))
             sheet.add_data_validation(v)
             v.ranges.append(validation_range)
 
             # hilight header if bad values pasted below
             sheet.conditional_formatting.add("{0}2".format(col_letter),
                 openpyxl.formatting.FormulaRule([(
-                    'COUNTIF({0},"<>"&"") - ' + # all non-blank cells
-                    ' - '.join(
-                        'COUNTIF({0},"=' + x + '")'
-                        for x in set(field['choices'])) +
-                    ' > 0').format(validation_range)],
+                    'COUNTIF({0},"<>"&"")' # all non-blank cells
+                    '-SUMPRODUCT(COUNTIF({0},{1}))'
+                    .format(validation_range, choice_range))],
                     stopIfTrue=True, fill=red_fill))
 
-            refs.append([_(field['label'])])
-            for key, value in sorted(field['choices'].iteritems()):
-                refs.append([None, key, recombinant_language_text(value)])
-            refs.append([])
     apply_styles(header_style, sheet.row_dimensions[2])
     apply_styles(header_style, sheet.row_dimensions[3])
     sheet.row_dimensions[3].hidden = True
 
     sheet.freeze_panes = sheet['A4']
-    return refs
 
 
 def apply_styles(config, target):

@@ -1,6 +1,5 @@
 import importlib
 import os
-import json
 import uuid
 
 from paste.reloader import watch_file
@@ -9,12 +8,7 @@ from pylons.i18n import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm
 
-from ckanext.recombinant import logic, tables, helpers
-
-try:
-    import yaml
-except ImportError:
-    yaml = None
+from ckanext.recombinant import logic, tables, helpers, load
 
 class RecombinantException(Exception):
     pass
@@ -110,15 +104,20 @@ def _load_table_definitions(urls):
     chromos = {}
     genos = {}
     for url in urls:
-        t = _load_tables_module_path(url)
+        is_url = False
+        t, p = _load_tables_module_path(url)
         if not t:
             t = _load_tables_url(url)
+            is_url = True
 
         genos[t['dataset_type']] = t
 
         for chromo in t['resources']:
             chromo['dataset_type'] = t['dataset_type']
-            chromo['target_dataset'] = t['target_dataset']
+            if is_url:
+                chromo['_url_path'] = url.rsplit('/', 1)[0]
+            else:  # used for choices_file paths
+                chromo['_path'] = os.path.split(p)[0]
             chromos[chromo['resource_name']] = chromo
 
     return chromos, genos
@@ -129,18 +128,18 @@ def _load_tables_module_path(url):
     Given a path like "ckanext.spatialx:recombinant_tables.json"
     find the second part relative to the import path of the first
 
-    returns None if not found
+    returns geno, path if found and None, None if not found
     """
     module, file_name = url.split(':', 1)
     try:
         m = importlib.import_module(module)
     except ImportError:
-        return
+        return None, None
     p = m.__path__[0]
     p = os.path.join(p, file_name)
     if os.path.exists(p):
         watch_file(p)
-        return load(open(p))
+        return load.load(open(p)), p
 
 
 def _load_tables_url(url):
@@ -151,21 +150,4 @@ def _load_tables_url(url):
     except urllib2.URLError:
         raise RecombinantException("Could not find recombinant.tables json config file: %s" % url )
 
-    return loads(tables, url)
-
-
-def load(f):
-    if is_yaml(f.name):
-        return yaml.load(f)
-    return json.load(f)
-
-
-def loads(s, url):
-    if is_yaml(url):
-        return yaml.load(s)
-    return json.loads(s)
-
-
-def is_yaml(n):
-    # import pyyaml only if necessary
-    return n.endswith(('.yaml', '.yml'))
+    return load.loads(tables, url)
