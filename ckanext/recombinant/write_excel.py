@@ -4,7 +4,7 @@ from pylons.i18n import _
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
-from ckanext.recombinant.helpers import recombinant_language_text
+from ckanext.recombinant.helpers import recombinant_choice_fields
 
 boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
     type="list", formula1='"FALSE,TRUE"', allow_blank=True)
@@ -58,6 +58,11 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
     apply_styles(org_style, sheet.row_dimensions[1])
 
     header_style = chromo['excel_header_style']
+
+    choice_fields = dict(
+        (f['datastore_id'], f['choices'])
+        for f in recombinant_choice_fields(chromo['resource_name']))
+
     for n, field in enumerate(chromo['fields'], 1):
         fill_cell(2, n, _(field['label']), header_style)
         fill_cell(3, n, field['datastore_id'], header_style)
@@ -71,11 +76,11 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
 
         if field['datastore_type'] == 'boolean':
             boolean_validator.ranges.append(validation_range)
-        elif 'choices' in field:
+        if field['datastore_id'] in choice_fields:
             refs.append([_(field['label'])])
             ref1 = len(refs) + 2
-            for key, value in sorted(field['choices'].iteritems()):
-                refs.append([None, key, recombinant_language_text(value)])
+            for key, value in choice_fields[field['datastore_id']]:
+                refs.append([None, key, value])
             refN = len(refs) + 1
             refs.append([])
 

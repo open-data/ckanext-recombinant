@@ -1,4 +1,5 @@
 import json
+import os.path
 
 from pylons import c, config
 from pylons.i18n import gettext
@@ -126,8 +127,8 @@ def recombinant_choice_fields(resource_name):
         out.append({
             'datastore_id': f['datastore_id'],
             'label': gettext(f['label']).decode('utf-8'),
-            'choices': (v, recombinant_language_text(choices[v]))
-                for v in sorted(choices))
+            'choices': ((v, recombinant_language_text(choices[v]))
+                for v in sorted(choices)),
             })
 
     for f in chromo['fields']:
