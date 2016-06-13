@@ -76,7 +76,7 @@ def _canonicalize(dirty, dstore_tag):
         return dtype.default
     elif isinstance(dirty, float) or isinstance(dirty, int):
         if dtype.numeric:
-            return float(dirty)
+            return unicode(dirty) # FIXME ckan2.1 datastore?-- float(dirty)
         else:
             # JSON specifies text or money: content of origin is numeric string.
             # If xlrd has added .0 to present content as a float,
@@ -94,17 +94,17 @@ def _canonicalize(dirty, dstore_tag):
             # markers or digit group separators (e.g.,fr-CA uses 1$ (not $1)).
             # Truncate any trailing decimal digits, retain int
             # part, and cast as numeric string.
-            canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', str(dirty)))
+            canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', unicode(dirty)))
             return unicode(canon)
         elif dtype.tag == 'date' and isinstance(dirty, datetime):
             return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
         return unicode(dirty)
 
     # dirty is numeric: truncate trailing decimal digits, retain int part
-    canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', str(dirty)))
+    canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', unicode(dirty)))
     if not canon:
         return 0
-    return float(canon)
+    return unicode(canon) # FIXME ckan2.1 datastore?-- float(dirty)
 
 
 def get_records(rows, fields):

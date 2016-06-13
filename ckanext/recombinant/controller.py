@@ -152,11 +152,11 @@ def _process_upload_file(lc, dataset, upload_file, geno):
         expected_columns = [f['datastore_id'] for f in chromo['fields']]
         if column_names != expected_columns:
             raise BadExcelData(
-                _("The columns headings sent {0} are different than what "
-                "was expected: {1}. "
+                _("This template is out of date. "
                 "Please try copying your data into the latest "
-                "version of the template and uploading again.").format(
-                ','.join(column_names), ','.join(expected_columns)))
+                "version of the template and uploading again. If this "
+                "problem continues, send your Excel file to "
+                "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
         records = get_records(rows, chromo['fields'])
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
