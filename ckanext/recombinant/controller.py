@@ -169,27 +169,26 @@ def _process_upload_file(lc, dataset, upload_file, geno):
 
 class PreviewController(PackageController):
 
-    def type_redirect(self, dataset_type):
+    def type_redirect(self, resource_name):
         orgs = h.organizations_available('read')
 
         # FIXME: error message when no orgs
-        lc = ckanapi.LocalCKAN(username=c.user)
-        dataset = lc.action.recombinant_show(
-            dataset_type=dataset_type, owner_org=orgs[0]['name'])
-
+        chromo = get_chromo(resource_name)
         return redirect(h.url_for('recombinant_resource',
-            id=dataset['id'], resource_id=dataset['resources'][0]['id']))
+            resource_name=resource_name, owner_org=orgs[0]['name']))
 
-    def preview_table(self, id, resource_id):
+    def preview_table(self, resource_name, owner_org):
         lc = ckanapi.LocalCKAN(username=c.user)
-        dataset = lc.action.package_show(id=id)
         try:
-            get_geno(dataset['type'])
+            chromo = get_chromo(resource_name)
         except RecombinantException:
-            abort(404, _('Recombinant dataset_type not found'))
+            abort(404, _('Recombinant resource_name not found'))
+        dataset = lc.action.recombinant_show(
+            dataset_type=chromo['dataset_type'], owner_org=owner_org)
+        org = lc.action.organization_show(id=owner_org)
 
         for r in dataset['resources']:
-            if r['id'] == resource_id:
+            if r['name'] == resource_name:
                 break
         else:
             abort(404, _('Resource not found'))
@@ -197,4 +196,5 @@ class PreviewController(PackageController):
         return render('recombinant/resource_edit.html', extra_vars={
             'dataset': dataset,
             'resource': r,
+            'organization': org,
             })

@@ -3,22 +3,22 @@
 {% block breadcrumb_content_selected %}{% endblock %}
 
 {% block breadcrumb_content %}
-  {% set organization = dataset.organization.title or dataset.organization.name %}
-  <li>{% link_for _('Organizations'), controller='organization', action='index' %}</li>
-  <li>{% link_for organization|truncate(30), controller='organization', action='read', id=dataset.organization.name %}
-  <li class="active">{{ _(resource.description) }} </li>
+  {% set org_title = organization.title or organization.name %}
+  <li>{% link_for _(resource.description), named_route='recombinant_type',
+    resource_name=resource.name %}</li>
+  <li class="active">{{ org_title|truncate(60) }}</li>
 {% endblock %}
 
 {% block primary_content %}
 <div class="col-md-9">
   <ul class="nav nav-pills mrgn-bttm-sm">
-    {% for r in h.recombinant_show_package(dataset).resources %}
+    {% for r in dataset.resources %}
       <li {% if r.id == resource.id %}class="active"{% endif %}>{%
         link_for _(r.description) ~ ': ' ~ 
           ngettext("%(num)d row", "%(num)d rows", r.datastore_rows)
           |format(num=r.datastore_rows),
         named_route='recombinant_resource',
-        id=dataset.id, resource_id=r.id %}</li>
+        resource_name=r.name, owner_org=dataset.owner_org %}</li>
     {% endfor %}
   </ul>
 
