@@ -172,8 +172,13 @@ class PreviewController(PackageController):
     def type_redirect(self, resource_name):
         orgs = h.organizations_available('read')
 
-        # FIXME: error message when no orgs
-        chromo = get_chromo(resource_name)
+        if not orgs:
+            abort(404, _('No organizations found'))
+        try:
+            chromo = get_chromo(resource_name)
+        except RecombinantException:
+            abort(404, _('Recombinant resource_name not found'))
+
         return redirect(h.url_for('recombinant_resource',
             resource_name=resource_name, owner_org=orgs[0]['name']))
 
