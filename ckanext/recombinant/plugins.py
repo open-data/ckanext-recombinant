@@ -73,6 +73,10 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
             '/recombinant/preview/{id}/{resource_id}',
             action='preview_table',
             controller='ckanext.recombinant.controller:PreviewController')
+        map.connect('recombinant_type',
+            '/recombinant/type/{dataset_type}',
+            action='type_redirect',
+            controller='ckanext.recombinant.controller:PreviewController')
         return map
 
     def get_helpers(self):

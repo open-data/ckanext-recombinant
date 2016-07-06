@@ -169,6 +169,17 @@ def _process_upload_file(lc, dataset, upload_file, geno):
 
 class PreviewController(PackageController):
 
+    def type_redirect(self, dataset_type):
+        orgs = h.organizations_available('read')
+
+        # FIXME: error message when no orgs
+        lc = ckanapi.LocalCKAN(username=c.user)
+        dataset = lc.action.recombinant_show(
+            dataset_type=dataset_type, owner_org=orgs[0]['name'])
+
+        return redirect(h.url_for('recombinant_resource',
+            id=dataset['id'], resource_id=dataset['resources'][0]['id']))
+
     def preview_table(self, id, resource_id):
         lc = ckanapi.LocalCKAN(username=c.user)
         dataset = lc.action.package_show(id=id)
