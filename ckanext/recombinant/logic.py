@@ -62,7 +62,7 @@ def recombinant_show(context, data_dict):
     and checking that its metadata is up to date.
 
     :param dataset_type: recombinant dataset type
-    :param owner_org: organization name or id
+    :param owner_org: organization name
     '''
     lc, geno, dataset = _action_get_dataset(context, data_dict)
 

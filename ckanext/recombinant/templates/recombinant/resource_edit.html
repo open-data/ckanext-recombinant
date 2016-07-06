@@ -1,26 +1,36 @@
 {% extends 'package/base_form_page.html' %}
 
+{%- macro organization_display_name(org) -%}
+  {%- block organization_display scoped -%}
+    {%- set org_title = org.title or org.name -%}
+    {{- org_title|truncate(60) -}}
+  {%- endblock -%}
+{%- endmacro -%}
+
 {% block breadcrumb_content_selected %}{% endblock %}
 
 {% block breadcrumb_content %}
-  {% set organization = dataset.organization.title or dataset.organization.name %}
-  <li>{% link_for _('Organizations'), controller='organization', action='index' %}</li>
-  <li>{% link_for organization|truncate(30), controller='organization', action='read', id=dataset.organization.name %}
-  <li class="active">{{ _(resource.description) }} </li>
+  <li>{% link_for _(resource.description), named_route='recombinant_type',
+    resource_name=resource.name %}</li>
+  <li class="active">{{ organization_display_name(organization) }}</li>
 {% endblock %}
 
 {% block primary_content %}
 <div class="col-md-9">
   <ul class="nav nav-pills mrgn-bttm-sm">
-    {% for r in h.recombinant_show_package(dataset).resources %}
+    {% for r in dataset.resources %}
       <li {% if r.id == resource.id %}class="active"{% endif %}>{%
         link_for _(r.description) ~ ': ' ~ 
           ngettext("%(num)d row", "%(num)d rows", r.datastore_rows)
           |format(num=r.datastore_rows),
         named_route='recombinant_resource',
-        id=dataset.id, resource_id=r.id %}</li>
+        resource_name=r.name, owner_org=dataset.owner_org %}</li>
     {% endfor %}
   </ul>
+
+  {% snippet "recombinant/snippets/org_select.html",
+    selected=organization, resource_name=resource.name,
+    organization_display_name=organization_display_name %}
 
   {% set refs = h.recombinant_choice_fields(resource.name) %}
   <div class="wb-tabs">

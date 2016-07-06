@@ -67,11 +67,15 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
             conditions=dict(method=['POST']),
             controller='ckanext.recombinant.controller:UploadController')
         map.connect('recombinant_template',
-            '/recombinant/template/{id}', action='template',
+            '/recombinant-template/{id}', action='template',
             controller='ckanext.recombinant.controller:UploadController')
         map.connect('recombinant_resource', 
-            '/recombinant/preview/{id}/{resource_id}',
+            '/recombinant/{resource_name}/{owner_org}',
             action='preview_table',
+            controller='ckanext.recombinant.controller:PreviewController')
+        map.connect('recombinant_type',
+            '/recombinant/{resource_name}',
+            action='type_redirect',
             controller='ckanext.recombinant.controller:PreviewController')
         return map
 
