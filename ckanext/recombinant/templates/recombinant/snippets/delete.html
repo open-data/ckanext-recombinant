@@ -1,6 +1,10 @@
 <h3>{{_('Delete existing record')}}</h3>
 <div class="col-md-9">
-<form id="delete-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action='{% url_for controller='ckanext.recombinant.controller:UploadController', action='delete_record', id=pkg.name %}'>
+<form id="delete-form"
+  class="dataset-form dataset-resource-form form-horizontal" method="post"
+  action='{% url_for
+    controller='ckanext.recombinant.controller:UploadController',
+    action='delete_record', id=pkg.name, resource_id=res.id %}'>
 
   {% for field in h.recombinant_primary_key_fields(pkg.type) %}
     <div class="form-group control-medium">
