@@ -4,9 +4,9 @@
   class="dataset-form dataset-resource-form form-horizontal" method="post"
   action='{% url_for
     controller='ckanext.recombinant.controller:UploadController',
-    action='delete_record', id=pkg.name, resource_id=res.id %}'>
+    action='delete_record', id=pkg.id, resource_id=res.id %}'>
 
-  {% for field in h.recombinant_primary_key_fields(pkg.type) %}
+  {% for field in h.recombinant_primary_key_fields(res.name) %}
     <div class="form-group control-medium">
       <label for="{{ field.datastore_id }}">{% block field_label scoped %}{{ field.label }}:{% endblock %}</label>
       <input

@@ -59,7 +59,7 @@ class UploadController(PackageController):
         result = lc.action.datastore_search(
             resource_id=resource_id,
             filters=filters,
-            rows=2)  # only need two to know if there are multiple matches
+            limit=2)  # only need two to know if there are multiple matches
         records = result['records']
 
         x_vars = {'filters': filters, 'action': 'edit'}
@@ -68,16 +68,22 @@ class UploadController(PackageController):
         elif len(records) > 1:
             x_vars['delete_errors'] = [_('Multiple matching records found')]
 
+        pkg = lc.action.package_show(id=id)
+        org = lc.action.organization_show(id=pkg['owner_org'])
         if 'delete_errors' in x_vars:
-            c.pkg_dict = dataset = lc.action.package_show(id=id)
+            dataset = lc.action.recombinant_show(
+                dataset_type=pkg['type'], owner_org=org['name'])
+
             return render('recombinant/resource_edit.html',
-                extra_vars=dict(x_vars, dataset=dataset, resource=res))
+                extra_vars=dict(x_vars, dataset=dataset, resource=res,
+                    organization=org))
 
         # XXX: can't avoid the race here with the existing datastore API.
         # datastore_delete doesn't support _id filters
         lc.action.datastore_delete(
             resource_id=resource_id,
             filters=filters,
+            force=True,
             )
         h.flash_success(_(
             "Record deleted."
@@ -85,7 +91,10 @@ class UploadController(PackageController):
 
         redirect(h.url_for(
             controller='ckanext.recombinant.controller:PreviewController',
-            action='preview_table', id=id, resource_id=resource_id))
+            action='preview_table',
+            resource_name=res['name'],
+            owner_org=org['name'],
+            ))
 
 
     def template(self, id):
