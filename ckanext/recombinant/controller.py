@@ -49,16 +49,15 @@ class UploadController(PackageController):
             c.pkg_dict = dataset
             return render(self._edit_template(package_type), extra_vars=x_vars)
 
-    def delete_record(self, id):
+    def delete_record(self, id, resource_id):
         lc = ckanapi.LocalCKAN(username=c.user)
         filters = {}
-        package_type = self._get_package_type(id)
-        for f in recombinant_primary_key_fields(package_type):
+        res = lc.action.resource_show(id=resource_id)
+        for f in recombinant_primary_key_fields(res['name']):
            filters[f['datastore_id']] = request.POST.get(f['datastore_id'], '')
 
-        package = lc.action.package_show(id=id)
         result = lc.action.datastore_search(
-            resource_id=package['resources'][0]['id'],
+            resource_id=resource_id,
             filters=filters,
             rows=2)  # only need two to know if there are multiple matches
         records = result['records']
@@ -70,20 +69,23 @@ class UploadController(PackageController):
             x_vars['delete_errors'] = [_('Multiple matching records found')]
 
         if 'delete_errors' in x_vars:
-            c.pkg_dict = package
-            return render(self._edit_template(package_type), extra_vars=x_vars)
+            c.pkg_dict = dataset = lc.action.package_show(id=id)
+            return render('recombinant/resource_edit.html',
+                extra_vars=dict(x_vars, dataset=dataset, resource=res))
 
         # XXX: can't avoid the race here with the existing datastore API.
         # datastore_delete doesn't support _id filters
         lc.action.datastore_delete(
-            resource_id=package['resources'][0]['id'],
+            resource_id=resource_id,
             filters=filters,
             )
         h.flash_success(_(
             "Record deleted."
             ))
 
-        redirect(h.url_for(controller='package', action='read', id=id))
+        redirect(h.url_for(
+            controller='ckanext.recombinant.controller:PreviewController',
+            action='preview_table', id=id, resource_id=resource_id))
 
 
     def template(self, id):
