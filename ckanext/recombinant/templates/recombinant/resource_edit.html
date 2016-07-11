@@ -52,7 +52,7 @@
           <summary><span class="glyphicon glyphicon-minus-sign"></span>
             {{ _("Delete") }}</summary>
           {% snippet "recombinant/snippets/delete.html",
-            pkg=dataset, errors=delete_errors, filters=filters %}
+            pkg=dataset, res=resource, errors=delete_errors, filters=filters %}
         </details>
       {% endif %}
       {% if refs %}
