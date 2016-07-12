@@ -8,7 +8,9 @@
 
 {% block upload_submit %}
   <div class="form-group control-medium">
-    <label for="xls_update" class="required">{{ _('Upload') }}:</label>
+    <label for="xls_update" class="required" aria-required="true">{{ _('Upload') }}:
+      <strong aria-required="true" class="required">{{ _('(required)') }}</strong>
+    </label>
     <input required
       class="form-control"
       style="height: auto"

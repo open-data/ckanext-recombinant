@@ -63,7 +63,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         map.connect('/recombinant/upload/{id}', action='upload',
             conditions=dict(method=['POST']),
             controller='ckanext.recombinant.controller:UploadController')
-        map.connect('/recombinant/delete/{id}/{resource_id}', action='delete_record',
+        map.connect('/recombinant/delete/{id}/{resource_id}',
+            action='delete_records',
             conditions=dict(method=['POST']),
             controller='ckanext.recombinant.controller:UploadController')
         map.connect('recombinant_template',

@@ -1,33 +1,41 @@
-<h3>{{_('Delete existing record')}}</h3>
+<h3>{{_('Delete existing records')}}</h3>
 <div class="col-md-9">
 <form id="delete-form"
   class="dataset-form dataset-resource-form form-horizontal" method="post"
   action='{% url_for
     controller='ckanext.recombinant.controller:UploadController',
-    action='delete_record', id=pkg.id, resource_id=res.id %}'>
+    action='delete_records', id=pkg.id, resource_id=res.id %}'>
 
-  {% for field in h.recombinant_primary_key_fields(res.name) %}
-    <div class="form-group control-medium">
-      <label for="{{ field.datastore_id }}">{% block field_label scoped %}{{ field.label }}:{% endblock %}</label>
-      <input
-        class="form-control"
-        type="input"
-        name="{{ field.datastore_id }}"
-        id="{{ field.datastore_id }}"
-        {% if filters %}value="{{ filters.get(field.datastore_id, '') }}"{% endif %}>
+  <div class="form-group control-medium {% if errors %}has-error{% endif %}">
+    <label for="bulk-delete-field" class="required" aria-required="true">
+      {{- h.recombinant_primary_key_fields(res.name)|join(', ', 'label') -}}:
+
+      <strong aria-required="true" class="required">{{ _('(required)') }}</strong>
+    </label>
+    <textarea required
+      class="form-control"
+      type="input"
+      name="bulk-delete"
+      id="bulk-delete-field"
+      placeholder="{%- for f in h.recombinant_primary_key_fields(res.name) -%}
+        {{- f.label }} 1
+        {%- if not loop.last -%}, {% endif -%}
+      {%- endfor -%}"
+      >{% if filters %}{{ filters.get('bulk-delete', '') }}{% endif %}</textarea>
+      {% if errors %}
+        <span class="span-3 text-danger">
+          {% for error in errors %}
+            {{ error }}
+          {% endfor %}
+        </span><br />
+      {% endif %}
+      <small class="text-info">{{ _('Enter one record per line') }}</small>
     </div>
-  {% endfor %}
   <div>
-  {% if errors %}
-    <div class="span-3 form-attention">
-      {% for error in errors %}
-        <label>{{ error }}</label>
-      {% endfor %}
-    </div>
-  {% endif %}
   </div>
   <div class="form-actions form-group">
     <input class="btn btn-primary" type="submit" value="{{_('Delete')}}"/>
   </div>
 </form>
 </div>
+

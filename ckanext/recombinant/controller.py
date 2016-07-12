@@ -49,45 +49,75 @@ class UploadController(PackageController):
             c.pkg_dict = dataset
             return render(self._edit_template(package_type), extra_vars=x_vars)
 
-    def delete_record(self, id, resource_id):
+    def delete_records(self, id, resource_id):
         lc = ckanapi.LocalCKAN(username=c.user)
         filters = {}
-        res = lc.action.resource_show(id=resource_id)
-        for f in recombinant_primary_key_fields(res['name']):
-           filters[f['datastore_id']] = request.POST.get(f['datastore_id'], '')
-
-        result = lc.action.datastore_search(
-            resource_id=resource_id,
-            filters=filters,
-            limit=2)  # only need two to know if there are multiple matches
-        records = result['records']
+        deleted = 0
 
         x_vars = {'filters': filters, 'action': 'edit'}
-        if not records:
-            x_vars['delete_errors'] = [_('No matching records found')]
-        elif len(records) > 1:
-            x_vars['delete_errors'] = [_('Multiple matching records found')]
-
         pkg = lc.action.package_show(id=id)
+        res = lc.action.resource_show(id=resource_id)
         org = lc.action.organization_show(id=pkg['owner_org'])
-        if 'delete_errors' in x_vars:
+
+        def delete_error(err):
             dataset = lc.action.recombinant_show(
                 dataset_type=pkg['type'], owner_org=org['name'])
 
             return render('recombinant/resource_edit.html',
-                extra_vars=dict(x_vars, dataset=dataset, resource=res,
-                    organization=org))
+                extra_vars={
+                    'delete_errors':[err],
+                    'dataset':dataset,
+                    'resource':res,
+                    'organization':org,
+                    'filters':filters,
+                    'action':'edit'})
 
-        # XXX: can't avoid the race here with the existing datastore API.
-        # datastore_delete doesn't support _id filters
-        lc.action.datastore_delete(
-            resource_id=resource_id,
-            filters=filters,
-            force=True,
-            )
-        h.flash_success(_(
-            "Record deleted."
-            ))
+        form_text = request.POST.get('bulk-delete', '')
+        if not form_text.strip():
+            return delete_error(_('Required field'))
+
+        pk_fields = recombinant_primary_key_fields(res['name'])
+
+        records = iter(form_text.split('\n'))
+        for r in records:
+            def record_fail(err):
+                if deleted:
+                    h.flash_success(_("{num} deleted.").format(num=deleted))
+                filters['bulk-delete'] = '\n'.join([r] + list(records))
+                return delete_error(err)
+
+            if not r.strip():
+                continue
+
+            split_on = '\t' if '\t' in r else ','
+            fields = [f.strip() for f in r.split(split_on)]
+            if len(fields) != len(pk_fields):
+                return record_fail(_('Wrong number of fields, expected {num}')
+                    .format(num=len(pk_fields)))
+
+            for f, pkf in zip(fields, pk_fields):
+                filters[pkf['datastore_id']] = f
+            try:
+                result = lc.action.datastore_search(
+                    resource_id=resource_id,
+                    filters=filters,
+                    limit=2)
+            except ValidationError:
+                return record_fail(_('Invalid fields'))
+            found = result['records']
+            if not found:
+                return record_fail(_('No matching records found'))
+            if len(found) > 1:
+                return record_fail(_('Multiple matching records found'))
+
+            lc.action.datastore_delete(
+                resource_id=resource_id,
+                filters=filters,
+                force=True,
+                )
+            deleted += 1
+
+        h.flash_success(_("{num} deleted.").format(num=deleted))
 
         redirect(h.url_for(
             controller='ckanext.recombinant.controller:PreviewController',
