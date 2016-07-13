@@ -193,7 +193,9 @@ class TableCommand(CkanCommand):
                 print 'deleting %s %s' % (dtype, p['owner_org'])
                 for r in p['resources']:
                     try:
-                        lc.action.datastore_delete(resource_id=r['id'])
+                        lc.action.datastore_delete(
+                            force=True,
+                            resource_id=r['id'])
                     except NotFound:
                         pass
                 lc.action.package_delete(id=p['id'])
