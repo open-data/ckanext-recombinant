@@ -32,6 +32,11 @@ def get_chromo(resource_name):
     try:
         return chromos[resource_name]
     except KeyError:
+        # workaround for file names having -'s removed when uploaded
+        # to some versions of CKAN
+        for rname in chromos:
+            if rname.replace('-', '') == resource_name:
+                return chromos[rname]
         raise RecombinantException('resource_name "%s" not found'
             % resource_name)
 
@@ -53,6 +58,26 @@ def get_dataset_types():
     Get a list of recombinant dataset types
     """
     return sorted(_get_plugin()._genos)
+
+
+def get_resource_names():
+    """
+    Get a list of recombinant resource names
+    """
+    return [chromo['resource_name']
+        for t in get_dataset_types()
+        for chromo in get_geno(t)['resources']]
+
+
+def get_dataset_type_for_resource_name(resource_name):
+    """
+    Get the dataset type that contains resource_name,
+    or None if not found
+    """
+    for t in get_dataset_types():
+        for resource in get_geno(t)['resources']:
+            if resource['resource_name'] == resource_name:
+                return t
 
 
 def get_target_datasets():
