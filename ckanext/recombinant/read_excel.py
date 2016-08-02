@@ -3,6 +3,9 @@ import openpyxl
 from datetime import datetime, date
 from datatypes import datastore_type
 
+from ckanext.recombinant.errors import BadExcelData
+
+HEADER_ROWS = 3
 
 def read_excel(f, file_contents=None):
     """
@@ -70,6 +73,8 @@ def _canonicalize(dirty, dstore_tag):
 
     :return: Canonicalized cell input
     :rtype: float or unicode
+
+    Raises BadExcelData on formula cells
     """
     dtype = datastore_type[dstore_tag]
     if dirty is None:
@@ -98,6 +103,9 @@ def _canonicalize(dirty, dstore_tag):
             return unicode(canon)
         elif dtype.tag == 'date' and isinstance(dirty, datetime):
             return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
+
+        if unicode(dirty).startswith('='):
+            raise BadExcelData('Formulas are not supported')
         return unicode(dirty)
 
     # dirty is numeric: truncate trailing decimal digits, retain int part
@@ -130,10 +138,13 @@ def get_records(rows, fields):
         while row and (len(row) < len(fields)):
             row.append(None) # placeholder: canonicalize once only, below
 
-        records.append(
-            dict((
-                f['datastore_id'],
-                _canonicalize(v, f['datastore_type']))
-            for f, v in zip(fields, row)))
+        try:
+            records.append(
+                dict((
+                    f['datastore_id'],
+                    _canonicalize(v, f['datastore_type']))
+                for f, v in zip(fields, row)))
+        except BadExcelData, e:
+            raise BadExcelData('Row %d: ' % (n + HEADER_ROWS + 1) + e.message)
 
     return records
