@@ -150,6 +150,11 @@ def _process_upload_file(lc, dataset, upload_file, geno):
                 'but you supplied a sheet for {1}').format(
                     owner_org, org_name))
 
+        # custom styles or other errors cause columns to be read
+        # that actually have no data. strip them here to avoid error below
+        while column_names[-1] is None:
+            column_names.pop()
+
         chromo = get_chromo(sheet_name)
         expected_columns = [f['datastore_id'] for f in chromo['fields']]
         if column_names != expected_columns:
