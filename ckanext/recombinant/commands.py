@@ -230,7 +230,7 @@ class TableCommand(CkanCommand):
                 (1, len(packages)))
 
         if not packages:
-            logging.warn(("No recombinant tables for '%s' found. "
+            logging.warn(("No recombinant definition for '%s' found. "
                 "Try creating them first") % t['dataset_type'])
             return
         p = packages[0]

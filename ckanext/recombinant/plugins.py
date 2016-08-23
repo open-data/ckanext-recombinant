@@ -134,7 +134,7 @@ def _load_table_definitions(urls):
 
 def _load_tables_module_path(url):
     """
-    Given a path like "ckanext.spatialx:recombinant_tables.json"
+    Given a path like "ckanext.spatialx:my_definition.json"
     find the second part relative to the import path of the first
 
     returns geno, path if found and None, None if not found
@@ -157,6 +157,6 @@ def _load_tables_url(url):
         res = urllib2.urlopen(url)
         tables = res.read()
     except urllib2.URLError:
-        raise RecombinantException("Could not find recombinant.tables json config file: %s" % url )
+        raise RecombinantException("Could not find recombinant.definitions json config file: %s" % url )
 
     return load.loads(tables, url)
