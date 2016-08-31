@@ -129,10 +129,10 @@ def recombinant_choice_fields(resource_name, all_languages=False):
         out.append({
             'datastore_id': f['datastore_id'],
             'label': gettext(f['label']).decode('utf-8'),
-            'choices': ((v,
+            'choices': [(v,
                     choices[v] if all_languages else
                     recombinant_language_text(choices[v]))
-                for v in sorted(choices)),
+                for v in sorted(choices)],
             })
 
     for f in chromo['fields']:
