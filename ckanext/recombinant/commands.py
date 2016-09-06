@@ -337,7 +337,7 @@ class TableCommand(CkanCommand):
                         for col in column_ids])
                 except KeyError:
                     print 'resource {0} table missing keys for {1}'.format(
-                        chromo['resource_name'], pkg['organization']['name'])
+                        chromo['resource_name'], pkg['owner_org'])
                     return
 
     def _remove_broken(self, target_datasets):
