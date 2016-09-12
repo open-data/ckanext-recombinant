@@ -229,8 +229,11 @@ class PreviewController(PackageController):
             chromo = get_chromo(resource_name)
         except RecombinantException:
             abort(404, _('Recombinant resource_name not found'))
-        dataset = lc.action.recombinant_show(
-            dataset_type=chromo['dataset_type'], owner_org=owner_org)
+        try:
+            dataset = lc.action.recombinant_show(
+                dataset_type=chromo['dataset_type'], owner_org=owner_org)
+        except ckanapi.NotFound:
+            abort(404, _('Table for this organization not found'))
         org = lc.action.organization_show(id=owner_org)
 
         for r in dataset['resources']:
