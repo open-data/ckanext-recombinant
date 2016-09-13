@@ -16,7 +16,6 @@
 {% endblock %}
 
 {% block primary_content %}
-<div class="col-md-9">
   <ul class="nav nav-pills mrgn-bttm-sm">
     {% for r in dataset.resources %}
       <li {% if r.id == resource.id %}class="active"{% endif %}>{%
@@ -72,7 +71,6 @@
       </details>
     </div>
   </div>
-</div>
 {% endblock %}
 
 {# syntax hilighting for API docs above #}
