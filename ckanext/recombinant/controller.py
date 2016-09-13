@@ -115,6 +115,15 @@ class UploadController(PackageController):
             ok_records.append(r)
             ok_filters.append(dict(filters))
 
+        if 'cancel' in request.POST:
+            return render('recombinant/resource_edit.html',
+                extra_vars={
+                    'delete_errors':[],
+                    'dataset':dataset,
+                    'resource':res,
+                    'organization':org,
+                    'filters':{'bulk-delete':u'\n'.join(ok_records)},
+                    'action':'edit'})
         if not 'confirm' in request.POST:
             return render('recombinant/confirm_delete.html',
                 extra_vars={
