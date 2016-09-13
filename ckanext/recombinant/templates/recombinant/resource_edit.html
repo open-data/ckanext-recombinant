@@ -1,5 +1,7 @@
 {% extends 'package/base_form_page.html' %}
 
+{% block page_title %}<h1 id="wb-cont" property="name">{{ _(resource.description) }}</h1>{% endblock %}
+
 {%- macro organization_display_name(org) -%}
   {%- block organization_display scoped -%}
     {%- set org_title = org.title or org.name -%}
