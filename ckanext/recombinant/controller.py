@@ -52,17 +52,16 @@ class UploadController(PackageController):
     def delete_records(self, id, resource_id):
         lc = ckanapi.LocalCKAN(username=c.user)
         filters = {}
-        deleted = 0
 
         x_vars = {'filters': filters, 'action': 'edit'}
         pkg = lc.action.package_show(id=id)
         res = lc.action.resource_show(id=resource_id)
         org = lc.action.organization_show(id=pkg['owner_org'])
 
-        def delete_error(err):
-            dataset = lc.action.recombinant_show(
-                dataset_type=pkg['type'], owner_org=org['name'])
+        dataset = lc.action.recombinant_show(
+            dataset_type=pkg['type'], owner_org=org['name'])
 
+        def delete_error(err):
             return render('recombinant/resource_edit.html',
                 extra_vars={
                     'delete_errors':[err],
@@ -78,12 +77,14 @@ class UploadController(PackageController):
 
         pk_fields = recombinant_primary_key_fields(res['name'])
 
+        ok_records = []
+        ok_filters = []
         records = iter(form_text.split('\n'))
         for r in records:
             def record_fail(err):
-                if deleted:
-                    h.flash_success(_("{num} deleted.").format(num=deleted))
-                filters['bulk-delete'] = '\n'.join([r] + list(records))
+                # move bad record to the top of the pile
+                filters['bulk-delete'] = '\n'.join(
+                    [r] + list(records) + ok_records)
                 return delete_error(err)
 
             if not r.strip():
@@ -95,6 +96,7 @@ class UploadController(PackageController):
                 return record_fail(_('Wrong number of fields, expected {num}')
                     .format(num=len(pk_fields)))
 
+            filters.clear()
             for f, pkf in zip(fields, pk_fields):
                 filters[pkf['datastore_id']] = f
             try:
@@ -106,18 +108,29 @@ class UploadController(PackageController):
                 return record_fail(_('Invalid fields'))
             found = result['records']
             if not found:
-                return record_fail(_('No matching records found'))
+                return record_fail(_('No matching records found %s') % repr(filters))
             if len(found) > 1:
                 return record_fail(_('Multiple matching records found'))
 
+            ok_records.append(r)
+            ok_filters.append(dict(filters))
+
+        if not 'confirm' in request.POST:
+            return render('recombinant/confirm_delete.html',
+                extra_vars={
+                    'dataset':dataset,
+                    'resource':res,
+                    'num': len(ok_records),
+                    'bulk_delete': u'\n'.join(ok_records)})
+
+        for f in ok_filters:
             lc.action.datastore_delete(
                 resource_id=resource_id,
                 filters=filters,
                 force=True,
                 )
-            deleted += 1
 
-        h.flash_success(_("{num} deleted.").format(num=deleted))
+        h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
 
         redirect(h.url_for(
             controller='ckanext.recombinant.controller:PreviewController',
