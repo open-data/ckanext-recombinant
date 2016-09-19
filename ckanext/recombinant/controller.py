@@ -135,7 +135,7 @@ class UploadController(PackageController):
         for f in ok_filters:
             lc.action.datastore_delete(
                 resource_id=resource_id,
-                filters=filters,
+                filters=f,
                 force=True,
                 )
 
