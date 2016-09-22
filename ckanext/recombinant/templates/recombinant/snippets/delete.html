@@ -17,10 +17,6 @@
       type="input"
       name="bulk-delete"
       id="bulk-delete-field"
-      placeholder="{%- for f in h.recombinant_primary_key_fields(res.name) -%}
-        {{- f.label }} 1
-        {%- if not loop.last -%}, {% endif -%}
-      {%- endfor -%}"
       >{% if filters %}{{ filters.get('bulk-delete', '') }}{% endif %}</textarea>
       {% if errors %}
         <span class="span-3 text-danger">
@@ -29,7 +25,15 @@
           {% endfor %}
         </span><br />
       {% endif %}
-      <small class="text-info">{{ _('Enter one record per line') }}</small>
+      <small class="text-info">{{ _('Enter one record per line, e.g:') }}<br/><br/>
+        {%- for n in range(1, 4) -%}
+          {%- for f in h.recombinant_primary_key_fields(res.name) -%}
+            {{- f.label }} {{ n }}
+            {%- if not loop.last -%}, {% endif -%}
+          {%- endfor -%}
+          <br/>
+        {%- endfor -%}
+      </small>
     </div>
   <div>
   </div>
