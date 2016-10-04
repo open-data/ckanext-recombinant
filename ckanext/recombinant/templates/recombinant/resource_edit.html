@@ -22,7 +22,7 @@
     {% for r in dataset.resources %}
       <li {% if r.id == resource.id %}class="active"{% endif %}>{%
         link_for _(r.description) ~ ': ' ~ 
-          ngettext("%(num)d row", "%(num)d rows", r.datastore_rows)
+          ngettext("%(num)d "+_('row'), "%(num)d "+_('rows'), r.datastore_rows)
           |format(num=r.datastore_rows),
         named_route='recombinant_resource',
         resource_name=r.name, owner_org=dataset.owner_org %}</li>
