@@ -1,3 +1,4 @@
+import uuid
 from pylons.i18n import _
 
 from ckanapi import LocalCKAN, NotFound, ValidationError
@@ -24,11 +25,17 @@ def recombinant_create(context, data_dict):
             _("dataset type %s already exists for this organization")
             % data_dict['dataset_type']})
 
-    resources = [_resource_fields(chromo) for chromo in geno['resources']]
+    # generate stable resource ids based on org id + resource_name
+    owner_org = data_dict['owner_org']
+    org = lc.action.organization_show(id=owner_org)
+    resources = [
+        dict(_resource_fields(chromo), id=str(
+            uuid.uuid5(uuid.UUID(org['id']), chromo['resource_name'])))
+        for chromo in geno['resources']]
 
     dataset = lc.action.package_create(
         type=data_dict['dataset_type'],
-        owner_org=data_dict['owner_org'],
+        owner_org=owner_org,
         resources=resources,
         **_dataset_fields(geno))
 
