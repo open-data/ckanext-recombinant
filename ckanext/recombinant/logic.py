@@ -24,7 +24,10 @@ def recombinant_create(context, data_dict):
             _("dataset type %s already exists for this organization")
             % data_dict['dataset_type']})
 
-    resources = [_resource_fields(chromo) for chromo in geno['resources']]
+    resources = [
+        # dummy url for old ckan compatibility reasons
+        dict(_resource_fields(chromo), url='http://')
+        for chromo in geno['resources']]
 
     dataset = lc.action.package_create(
         type=data_dict['dataset_type'],
@@ -269,7 +272,7 @@ def _resource_fields(chromo):
     return {
         'name': chromo['resource_name'],
         'description': chromo['title'],
-        'url': 'http://',
+        'url_type': u'datastore',
         }
 
 
