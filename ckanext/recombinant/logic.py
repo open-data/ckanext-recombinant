@@ -117,7 +117,8 @@ def recombinant_show(context, data_dict):
         'org_title': dataset['organization']['title'],
         'id': dataset['id'],
         'metadata_correct': metadata_correct,
-        'all_correct': metadata_correct and resources_correct,
+        'all_correct': (metadata_correct and resources_correct
+            and len(dataset['resources']) == len(chromos)),
         'resources': resources,
         }
 
@@ -197,7 +198,8 @@ def _update_dataset(lc, geno, dataset, delete_resources=False):
 
     # missing resources
     if chromos:
-        out_resources.extend(_resource_fields[chromo] for chromo in chromos)
+        out_resources.extend(_resource_fields(chromo)
+            for chromo in chromos.values())
         package_update_required = True
 
     if (package_update_required or
