@@ -1,0 +1,277 @@
+# Translations template for ckanext-recombinant.
+# Copyright (C) 2016 ORGANIZATION
+# This file is distributed under the same license as the ckanext-recombinant
+# project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2016.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2016-10-31 08:42-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 0.9.6\n"
+
+#: ckanext/recombinant/controller.py:42
+msgid "Your file was successfully uploaded into the central system."
+msgstr ""
+
+#: ckanext/recombinant/controller.py:76
+msgid "Required field"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:96
+msgid "Wrong number of fields, expected {num}"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:108
+msgid "Invalid fields"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:111
+#, python-format
+msgid "No matching records found %s"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:113
+msgid "Multiple matching records found"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:142
+msgid "{num} deleted."
+msgstr "{num} supprimé"
+
+#: ckanext/recombinant/controller.py:194
+msgid ""
+"The server encountered a problem processing the file uploaded. Please try"
+" copying your data into the latest version of the template and uploading "
+"again. If this problem continues, send your Excel file to open-ouvert"
+"@tbs-sct.gc.ca so we may investigate."
+msgstr ""
+
+#: ckanext/recombinant/controller.py:201
+msgid ""
+"Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
+"supplied a sheet labeled \"{1}\""
+msgstr ""
+
+#: ckanext/recombinant/controller.py:208
+msgid ""
+"Invalid sheet for this organization. Sheet must be labeled for {0}, but "
+"you supplied a sheet for {1}"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:223
+msgid ""
+"This template is out of date. Please try copying your data into the "
+"latest version of the template and uploading again. If this problem "
+"continues, send your Excel file to open-ouvert@tbs-sct.gc.ca so we may "
+"investigate."
+msgstr ""
+
+#: ckanext/recombinant/controller.py:244
+msgid "No organizations found"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:248 ckanext/recombinant/controller.py:258
+msgid "Recombinant resource_name not found"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:263
+msgid "Table for this organization not found"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:270
+msgid "Resource not found"
+msgstr ""
+
+#: ckanext/recombinant/helpers.py:134 ckanext/recombinant/write_excel.py:67
+#: ckanext/recombinant/write_excel.py:80
+msgid "label"
+msgstr ""
+
+#: ckanext/recombinant/logic.py:24
+#, python-format
+msgid "dataset type %s already exists for this organization"
+msgstr ""
+
+#: ckanext/recombinant/logic.py:137
+msgid "Recombinant dataset type not found"
+msgstr ""
+
+#: ckanext/recombinant/logic.py:157
+#, python-format
+msgid "Multiple datasets exist for type %s"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:3
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:17
+msgid "Confirm Delete"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:7
+msgid ""
+"Are you sure you want to delete {num} record? This action cannot be "
+"undone."
+msgid_plural ""
+"Are you sure you want to delete {num} records? This action cannot be "
+"undone."
+msgstr[0] "Souhaitez-vous vraiment supprimer {num} demande? Cette action ne peut pas être annulée."
+msgstr[1] "Souhaitez-vous vraiment supprimer {num} demandes? Cette action ne peut pas être annulée."
+
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:16
+msgid "Cancel"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:25
+msgid "row"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:25
+msgid "rows"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:41
+msgid "Update"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:54
+#: ckanext/recombinant/templates/recombinant/snippets/delete.html:41
+msgid "Delete"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:62
+msgid "Reference"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:69
+msgid "API Access"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:3
+msgid "API access examples"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:9
+msgid "Retrieve Records"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:10
+#, python-format
+msgid ""
+"Access this data through the <a "
+"href=\"http://docs.ckan.org/en/latest/maintaining/datastore.html#the-"
+"datastore-api\"     >CKAN Datastore API</a> with "
+"<code>resource_id=\"%(resource_id)s\"</code>"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:15
+msgid ""
+"The CKAN API uses a JSON-RPC style, where you post a JSON object and "
+"receive another JSON object in response."
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:18
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:60
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:87
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:113
+msgid "Example:"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:44
+msgid "Create and Update Records"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:45
+#, python-format
+msgid ""
+"Modifying records requires an API key. Your API key is shown on your <a "
+"href=\"%(profile_url)s\">profile page</a>."
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:49
+msgid ""
+"Do not include your API key in any code shared with other people. Use a "
+"configuration file or environment variable to let each user input their "
+"own key when they use your tool. Your API key is <em>equivalent to your "
+"password</em> and may be used to perform any action your user can on this"
+" site. All actions made with your API key will be logged as actions you "
+"performed."
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:57
+msgid ""
+"Create and update records with the \"datastore_upsert\" endpoint. Your "
+"API key must be sent as an \"Authorization\" header."
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:80
+msgid "Delete Records"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:81
+#, python-format
+msgid ""
+"Deleting records requires an API key. Your API key is shown on your <a "
+"href=\"%(profile_url)s\">profile page</a>."
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:84
+msgid ""
+"First verify that the record you would like to remove is present with the"
+" \"datastore_search\" endpoint"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:110
+msgid ""
+"Remove the record returned by passing the same parameters to the "
+"\"datastore_delete\" endpoint instead of \"datastore_search\"."
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:133
+msgid ""
+"If you have modified these API Access instructions for another "
+"programming language please send them to <a href=\"mailto:open-ouvert"
+"@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a> and we may be able to post"
+" them here as well. "
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/choices_reference.html:1
+msgid "Field choices reference"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/delete.html:1
+msgid "Delete existing records"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/delete.html:13
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:12
+msgid "(required)"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/delete.html:28
+msgid "Enter one record per line, e.g:"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:10
+#: ckanext/recombinant/templates/recombinant/snippets/xls_download.html:3
+msgid "Download template Excel spreadsheet"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
+msgid "Create and update records from Excel spreadsheet"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:11
+msgid "Upload"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:32
+msgid "Submit"
+msgstr ""
