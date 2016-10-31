@@ -30,5 +30,14 @@ setup(
 
     [paste.paster_command]
     recombinant=ckanext.recombinant.commands:TableCommand
+
+    [babel.extractors]
+    ckan=ckan.lib.extract:extract_ckan
     """,
+    message_extractors={
+        'ckanext': [
+            ('**.py', 'python', None),
+            ('**/templates/**.html', 'ckan', None),
+        ],
+    },
 )
