@@ -45,9 +45,11 @@ class UploadController(PackageController):
 
             redirect(h.url_for(controller='package', action='read', id=id))
         except BadExcelData, e:
-            x_vars = {'errors': [e.message], 'action': 'edit'}
-            c.pkg_dict = dataset
-            return render(self._edit_template(package_type), extra_vars=x_vars)
+            org = lc.action.organization_show(id=dataset['owner_org'])
+            return self.preview_table(
+                resource_name=dataset['resources'][0]['name'],
+                owner_org=org['name'],
+                errors=[e.message])
 
     def delete_records(self, id, resource_id):
         lc = ckanapi.LocalCKAN(username=c.user)
@@ -167,6 +169,46 @@ class UploadController(PackageController):
         return blob.getvalue()
 
 
+    def type_redirect(self, resource_name):
+        orgs = h.organizations_available('read')
+
+        if not orgs:
+            abort(404, _('No organizations found'))
+        try:
+            chromo = get_chromo(resource_name)
+        except RecombinantException:
+            abort(404, _('Recombinant resource_name not found'))
+
+        return redirect(h.url_for('recombinant_resource',
+            resource_name=resource_name, owner_org=orgs[0]['name']))
+
+    def preview_table(self, resource_name, owner_org, errors=None):
+        lc = ckanapi.LocalCKAN(username=c.user)
+        try:
+            chromo = get_chromo(resource_name)
+        except RecombinantException:
+            abort(404, _('Recombinant resource_name not found'))
+        try:
+            dataset = lc.action.recombinant_show(
+                dataset_type=chromo['dataset_type'], owner_org=owner_org)
+        except ckanapi.NotFound:
+            abort(404, _('Table for this organization not found'))
+        org = lc.action.organization_show(id=owner_org)
+
+        for r in dataset['resources']:
+            if r['name'] == resource_name:
+                break
+        else:
+            abort(404, _('Resource not found'))
+
+        return render('recombinant/resource_edit.html', extra_vars={
+            'dataset': dataset,
+            'resource': r,
+            'organization': org,
+            'errors': errors,
+            })
+
+
 def _process_upload_file(lc, dataset, upload_file, geno):
     """
     Use lc.action.datastore_upsert to load data from upload_file
@@ -235,42 +277,3 @@ def _process_upload_file(lc, dataset, upload_file, geno):
             force=True)
 
 
-class PreviewController(PackageController):
-
-    def type_redirect(self, resource_name):
-        orgs = h.organizations_available('read')
-
-        if not orgs:
-            abort(404, _('No organizations found'))
-        try:
-            chromo = get_chromo(resource_name)
-        except RecombinantException:
-            abort(404, _('Recombinant resource_name not found'))
-
-        return redirect(h.url_for('recombinant_resource',
-            resource_name=resource_name, owner_org=orgs[0]['name']))
-
-    def preview_table(self, resource_name, owner_org):
-        lc = ckanapi.LocalCKAN(username=c.user)
-        try:
-            chromo = get_chromo(resource_name)
-        except RecombinantException:
-            abort(404, _('Recombinant resource_name not found'))
-        try:
-            dataset = lc.action.recombinant_show(
-                dataset_type=chromo['dataset_type'], owner_org=owner_org)
-        except ckanapi.NotFound:
-            abort(404, _('Table for this organization not found'))
-        org = lc.action.organization_show(id=owner_org)
-
-        for r in dataset['resources']:
-            if r['name'] == resource_name:
-                break
-        else:
-            abort(404, _('Resource not found'))
-
-        return render('recombinant/resource_edit.html', extra_vars={
-            'dataset': dataset,
-            'resource': r,
-            'organization': org,
-            })
