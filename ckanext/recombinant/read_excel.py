@@ -81,15 +81,11 @@ def _canonicalize(dirty, dstore_tag):
         return dtype.default
     elif isinstance(dirty, float) or isinstance(dirty, int):
         if dtype.numeric:
-            return unicode(dirty) # FIXME ckan2.1 datastore?-- float(dirty)
+            # XXX truncate decimal values to behave the same as strings
+            return unicode(int(dirty // 1))
         else:
-            # JSON specifies text or money: content of origin is numeric string.
-            # If xlrd has added .0 to present content as a float,
-            # trim it before returning as numeric string
-            if int(dirty) == dirty:
-                return unicode(int(dirty))
-            else:
-                return unicode(dirty)
+            return unicode(dirty) # FIXME ckan2.1 datastore?-- float(dirty)
+
     elif (isinstance(dirty, basestring)) and (dirty.strip() == ''):
         # Content trims to empty: default
         return dtype.default
@@ -109,7 +105,7 @@ def _canonicalize(dirty, dstore_tag):
         return unicode(dirty)
 
     # dirty is numeric: truncate trailing decimal digits, retain int part
-    canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', unicode(dirty)))
+    canon = re.sub(r'[^0-9]', '', unicode(dirty).split('.')[0])
     if not canon:
         return 0
     return unicode(canon) # FIXME ckan2.1 datastore?-- float(dirty)
