@@ -67,11 +67,11 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         map.connect('recombinant_resource', 
             '/recombinant/{resource_name}/{owner_org}',
             action='preview_table',
-            controller='ckanext.recombinant.controller:PreviewController')
+            controller='ckanext.recombinant.controller:UploadController')
         map.connect('recombinant_type',
             '/recombinant/{resource_name}',
             action='type_redirect',
-            controller='ckanext.recombinant.controller:PreviewController')
+            controller='ckanext.recombinant.controller:UploadController')
         return map
 
     def get_helpers(self):
