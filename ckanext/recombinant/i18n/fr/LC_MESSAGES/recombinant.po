@@ -75,20 +75,12 @@ msgid ""
 "investigate."
 msgstr ""
 
-#: ckanext/recombinant/controller.py:244
-msgid "No organizations found"
-msgstr ""
-
 #: ckanext/recombinant/controller.py:248 ckanext/recombinant/controller.py:258
 msgid "Recombinant resource_name not found"
 msgstr ""
 
 #: ckanext/recombinant/controller.py:263
 msgid "Table for this organization not found"
-msgstr ""
-
-#: ckanext/recombinant/controller.py:270
-msgid "Resource not found"
 msgstr ""
 
 #: ckanext/recombinant/helpers.py:134 ckanext/recombinant/write_excel.py:67
@@ -110,11 +102,6 @@ msgstr ""
 msgid "Multiple datasets exist for type %s"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/confirm_delete.html:3
-#: ckanext/recombinant/templates/recombinant/confirm_delete.html:17
-msgid "Confirm Delete"
-msgstr ""
-
 #: ckanext/recombinant/templates/recombinant/confirm_delete.html:7
 msgid ""
 "Are you sure you want to delete {num} record? This action cannot be "
@@ -125,20 +112,12 @@ msgid_plural ""
 msgstr[0] "Souhaitez-vous vraiment supprimer {num} demande? Cette action ne peut pas être annulée."
 msgstr[1] "Souhaitez-vous vraiment supprimer {num} demandes? Cette action ne peut pas être annulée."
 
-#: ckanext/recombinant/templates/recombinant/confirm_delete.html:16
-msgid "Cancel"
-msgstr ""
-
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:25
 msgid "row"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:25
 msgid "rows"
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:41
-msgid "Update"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:54
@@ -268,10 +247,33 @@ msgstr ""
 msgid "Create and update records from Excel spreadsheet"
 msgstr ""
 
+# DUPLICATES FROM CKAN
+
+#: ckanext/recombinant/controller.py:244
+#msgid "No organizations found"
+#msgstr ""
+
+#: ckanext/recombinant/controller.py:270
+#msgid "Resource not found"
+#msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:3
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:17
+#msgid "Confirm Delete"
+#msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:16
+#msgid "Cancel"
+#msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:41
+#msgid "Update"
+#msgstr ""
+
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:11
-msgid "Upload"
-msgstr ""
+#msgid "Upload"
+#msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:32
-msgid "Submit"
-msgstr ""
+#msgid "Submit"
+#msgstr ""
