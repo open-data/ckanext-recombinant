@@ -201,7 +201,9 @@ def _update_dataset(lc, geno, dataset, delete_resources=False):
 
     # missing resources
     if chromos:
-        out_resources.extend(_resource_fields(chromo)
+        out_resources.extend(
+            # dummy url for old ckan compatibility reasons
+            dict(_resource_fields(chromo), url='http://')
             for chromo in chromos.values())
         package_update_required = True
 
