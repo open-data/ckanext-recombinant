@@ -1,7 +1,14 @@
-<h3>{{ f.label }}</h3>
-<dl>
-  {% for value, label in f.choices[:1000] %}
-    <dt>{{ value }}</dt>
-    <dd>{{ label }}</dd>
+<h3>{{ _("Field choices reference") }}</h3>
+
+<div class="tabpanels mrgn-bttm-md">
+  {% for f in refs %}
+    <details><summary>{{ f.label }}</summary>
+      <dl class="mrgn-tp-md mrgn-bttm-0">
+        {% for value, label in f.choices[:1000] %}
+          <dt>{{ value }}</dt>
+          <dd>{{ label }}</dd>
+        {% endfor %}
+      </dl>
+    </details>
   {% endfor %}
-</dl>
+</div>

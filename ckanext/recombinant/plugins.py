@@ -25,6 +25,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
     def update_config(self, config):
         # add our templates
         p.toolkit.add_template_directory(config, 'templates')
+        p.toolkit.add_public_directory(config, 'public')
 
         # read our configuration early
         self._tables_urls = config.get('recombinant.definitions', ""
@@ -56,14 +57,21 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
         map.connect('/recombinant/upload/{id}', action='upload',
             conditions=dict(method=['POST']),
             controller='ckanext.recombinant.controller:UploadController')
-        map.connect('/recombinant/delete/{id}/{resource_id}', action='delete_record',
+        map.connect('/recombinant/delete/{id}/{resource_id}',
+            action='delete_records',
             conditions=dict(method=['POST']),
             controller='ckanext.recombinant.controller:UploadController')
-        map.connect('/recombinant/template/{id}', action='template',
+        map.connect('recombinant_template',
+            '/recombinant-template/{id}', action='template',
             controller='ckanext.recombinant.controller:UploadController')
-        map.connect('/recombinant/preview/{id}/{resource_id}',
+        map.connect('recombinant_resource', 
+            '/recombinant/{resource_name}/{owner_org}',
             action='preview_table',
-            controller='ckanext.recombinant.controller:PreviewController')
+            controller='ckanext.recombinant.controller:UploadController')
+        map.connect('recombinant_type',
+            '/recombinant/{resource_name}',
+            action='type_redirect',
+            controller='ckanext.recombinant.controller:UploadController')
         return map
 
     def get_helpers(self):
@@ -73,6 +81,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
                 helpers.recombinant_primary_key_fields,
             'recombinant_get_chromo': helpers.recombinant_get_chromo,
             'recombinant_get_geno': helpers.recombinant_get_geno,
+            'recombinant_get_types': helpers.recombinant_get_types,
             'recombinant_example': helpers.recombinant_example,
             'recombinant_choice_fields': helpers.recombinant_choice_fields,
             'recombinant_show_package': helpers.recombinant_show_package,
@@ -126,7 +135,7 @@ def _load_table_definitions(urls):
 
 def _load_tables_module_path(url):
     """
-    Given a path like "ckanext.spatialx:recombinant_tables.json"
+    Given a path like "ckanext.spatialx:my_definition.json"
     find the second part relative to the import path of the first
 
     returns geno, path if found and None, None if not found
@@ -149,6 +158,6 @@ def _load_tables_url(url):
         res = urllib2.urlopen(url)
         tables = res.read()
     except urllib2.URLError:
-        raise RecombinantException("Could not find recombinant.tables json config file: %s" % url )
+        raise RecombinantException("Could not find recombinant.definitions json config file: %s" % url )
 
     return load.loads(tables, url)

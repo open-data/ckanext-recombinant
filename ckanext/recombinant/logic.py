@@ -24,7 +24,10 @@ def recombinant_create(context, data_dict):
             _("dataset type %s already exists for this organization")
             % data_dict['dataset_type']})
 
-    resources = [_resource_fields(chromo) for chromo in geno['resources']]
+    resources = [
+        # dummy url for old ckan compatibility reasons
+        dict(_resource_fields(chromo), url='http://')
+        for chromo in geno['resources']]
 
     dataset = lc.action.package_create(
         type=data_dict['dataset_type'],
@@ -62,7 +65,7 @@ def recombinant_show(context, data_dict):
     and checking that its metadata is up to date.
 
     :param dataset_type: recombinant dataset type
-    :param owner_org: organization name or id
+    :param owner_org: organization name
     '''
     lc, geno, dataset = _action_get_dataset(context, data_dict)
 
@@ -117,7 +120,8 @@ def recombinant_show(context, data_dict):
         'org_title': dataset['organization']['title'],
         'id': dataset['id'],
         'metadata_correct': metadata_correct,
-        'all_correct': metadata_correct and resources_correct,
+        'all_correct': (metadata_correct and resources_correct
+            and len(dataset['resources']) == len(chromos)),
         'resources': resources,
         }
 
@@ -197,7 +201,10 @@ def _update_dataset(lc, geno, dataset, delete_resources=False):
 
     # missing resources
     if chromos:
-        out_resources.extend(_resource_fields[chromo] for chromo in chromos)
+        out_resources.extend(
+            # dummy url for old ckan compatibility reasons
+            dict(_resource_fields(chromo), url='http://')
+            for chromo in chromos.values())
         package_update_required = True
 
     if (package_update_required or
@@ -267,7 +274,7 @@ def _resource_fields(chromo):
     return {
         'name': chromo['resource_name'],
         'description': chromo['title'],
-        'url': 'http://',
+        'url_type': u'datastore',
         }
 
 

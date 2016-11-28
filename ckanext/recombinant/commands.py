@@ -193,7 +193,9 @@ class TableCommand(CkanCommand):
                 print 'deleting %s %s' % (dtype, p['owner_org'])
                 for r in p['resources']:
                     try:
-                        lc.action.datastore_delete(resource_id=r['id'])
+                        lc.action.datastore_delete(
+                            force=True,
+                            resource_id=r['id'])
                     except NotFound:
                         pass
                 lc.action.package_delete(id=p['id'])
@@ -228,7 +230,7 @@ class TableCommand(CkanCommand):
                 (1, len(packages)))
 
         if not packages:
-            logging.warn(("No recombinant tables for '%s' found. "
+            logging.warn(("No recombinant definition for '%s' found. "
                 "Try creating them first") % t['dataset_type'])
             return
         p = packages[0]
@@ -278,6 +280,7 @@ class TableCommand(CkanCommand):
             lc.action.datastore_upsert(
                 method=method,
                 resource_id=r['id'],
+                force=True,
                 records=records)
         return 0
 

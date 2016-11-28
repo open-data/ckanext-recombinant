@@ -45,47 +45,110 @@ class UploadController(PackageController):
 
             redirect(h.url_for(controller='package', action='read', id=id))
         except BadExcelData, e:
-            x_vars = {'errors': [e.message], 'action': 'edit'}
-            c.pkg_dict = dataset
-            return render(self._edit_template(package_type), extra_vars=x_vars)
+            org = lc.action.organization_show(id=dataset['owner_org'])
+            return self.preview_table(
+                resource_name=dataset['resources'][0]['name'],
+                owner_org=org['name'],
+                errors=[e.message])
 
-    def delete_record(self, id, resource_id):
+    def delete_records(self, id, resource_id):
         lc = ckanapi.LocalCKAN(username=c.user)
         filters = {}
-        res = lc.action.resource_show(id=resource_id)
-        for f in recombinant_primary_key_fields(res['name']):
-           filters[f['datastore_id']] = request.POST.get(f['datastore_id'], '')
-
-        result = lc.action.datastore_search(
-            resource_id=resource_id,
-            filters=filters,
-            rows=2)  # only need two to know if there are multiple matches
-        records = result['records']
 
         x_vars = {'filters': filters, 'action': 'edit'}
-        if not records:
-            x_vars['delete_errors'] = [_('No matching records found')]
-        elif len(records) > 1:
-            x_vars['delete_errors'] = [_('Multiple matching records found')]
+        pkg = lc.action.package_show(id=id)
+        res = lc.action.resource_show(id=resource_id)
+        org = lc.action.organization_show(id=pkg['owner_org'])
 
-        if 'delete_errors' in x_vars:
-            c.pkg_dict = dataset = lc.action.package_show(id=id)
+        dataset = lc.action.recombinant_show(
+            dataset_type=pkg['type'], owner_org=org['name'])
+
+        def delete_error(err):
             return render('recombinant/resource_edit.html',
-                extra_vars=dict(x_vars, dataset=dataset, resource=res))
+                extra_vars={
+                    'delete_errors':[err],
+                    'dataset':dataset,
+                    'resource':res,
+                    'organization':org,
+                    'filters':filters,
+                    'action':'edit'})
 
-        # XXX: can't avoid the race here with the existing datastore API.
-        # datastore_delete doesn't support _id filters
-        lc.action.datastore_delete(
-            resource_id=resource_id,
-            filters=filters,
-            )
-        h.flash_success(_(
-            "Record deleted."
-            ))
+        form_text = request.POST.get('bulk-delete', '')
+        if not form_text.strip():
+            return delete_error(_('Required field'))
+
+        pk_fields = recombinant_primary_key_fields(res['name'])
+
+        ok_records = []
+        ok_filters = []
+        records = iter(form_text.split('\n'))
+        for r in records:
+            def record_fail(err):
+                # move bad record to the top of the pile
+                filters['bulk-delete'] = '\n'.join(
+                    [r] + list(records) + ok_records)
+                return delete_error(err)
+
+            if not r.strip():
+                continue
+
+            split_on = '\t' if '\t' in r else ','
+            fields = [f.strip() for f in r.split(split_on)]
+            if len(fields) != len(pk_fields):
+                return record_fail(_('Wrong number of fields, expected {num}')
+                    .format(num=len(pk_fields)))
+
+            filters.clear()
+            for f, pkf in zip(fields, pk_fields):
+                filters[pkf['datastore_id']] = f
+            try:
+                result = lc.action.datastore_search(
+                    resource_id=resource_id,
+                    filters=filters,
+                    limit=2)
+            except ValidationError:
+                return record_fail(_('Invalid fields'))
+            found = result['records']
+            if not found:
+                return record_fail(_('No matching records found %s') % repr(filters))
+            if len(found) > 1:
+                return record_fail(_('Multiple matching records found'))
+
+            ok_records.append(r)
+            ok_filters.append(dict(filters))
+
+        if 'cancel' in request.POST:
+            return render('recombinant/resource_edit.html',
+                extra_vars={
+                    'delete_errors':[],
+                    'dataset':dataset,
+                    'resource':res,
+                    'organization':org,
+                    'filters':{'bulk-delete':u'\n'.join(ok_records)},
+                    'action':'edit'})
+        if not 'confirm' in request.POST:
+            return render('recombinant/confirm_delete.html',
+                extra_vars={
+                    'dataset':dataset,
+                    'resource':res,
+                    'num': len(ok_records),
+                    'bulk_delete': u'\n'.join(ok_records)})
+
+        for f in ok_filters:
+            lc.action.datastore_delete(
+                resource_id=resource_id,
+                filters=f,
+                force=True,
+                )
+
+        h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
 
         redirect(h.url_for(
             controller='ckanext.recombinant.controller:PreviewController',
-            action='preview_table', id=id, resource_id=resource_id))
+            action='preview_table',
+            resource_name=res['name'],
+            owner_org=org['name'],
+            ))
 
 
     def template(self, id):
@@ -104,6 +167,46 @@ class UploadController(PackageController):
                 dataset['organization']['name'],
                 dataset['type']))
         return blob.getvalue()
+
+
+    def type_redirect(self, resource_name):
+        orgs = h.organizations_available('read')
+
+        if not orgs:
+            abort(404, _('No organizations found'))
+        try:
+            chromo = get_chromo(resource_name)
+        except RecombinantException:
+            abort(404, _('Recombinant resource_name not found'))
+
+        return redirect(h.url_for('recombinant_resource',
+            resource_name=resource_name, owner_org=orgs[0]['name']))
+
+    def preview_table(self, resource_name, owner_org, errors=None):
+        lc = ckanapi.LocalCKAN(username=c.user)
+        try:
+            chromo = get_chromo(resource_name)
+        except RecombinantException:
+            abort(404, _('Recombinant resource_name not found'))
+        try:
+            dataset = lc.action.recombinant_show(
+                dataset_type=chromo['dataset_type'], owner_org=owner_org)
+        except ckanapi.NotFound:
+            abort(404, _('Table for this organization not found'))
+        org = lc.action.organization_show(id=owner_org)
+
+        for r in dataset['resources']:
+            if r['name'] == resource_name:
+                break
+        else:
+            abort(404, _('Resource not found'))
+
+        return render('recombinant/resource_edit.html', extra_vars={
+            'dataset': dataset,
+            'resource': r,
+            'organization': org,
+            'errors': errors,
+            })
 
 
 def _process_upload_file(lc, dataset, upload_file, geno):
@@ -170,26 +273,7 @@ def _process_upload_file(lc, dataset, upload_file, geno):
         lc.action.datastore_upsert(
             method=method,
             resource_id=expected_sheet_names[sheet_name],
-            records=records)
+            records=records,
+            force=True)
 
 
-class PreviewController(PackageController):
-
-    def preview_table(self, id, resource_id):
-        lc = ckanapi.LocalCKAN(username=c.user)
-        dataset = lc.action.package_show(id=id)
-        try:
-            get_geno(dataset['type'])
-        except RecombinantException:
-            abort(404, _('Recombinant dataset_type not found'))
-
-        for r in dataset['resources']:
-            if r['id'] == resource_id:
-                break
-        else:
-            abort(404, _('Resource not found'))
-
-        return render('recombinant/resource_edit.html', extra_vars={
-            'dataset': dataset,
-            'resource': r,
-            })
