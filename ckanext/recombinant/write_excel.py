@@ -6,9 +6,6 @@ from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import recombinant_choice_fields
 
-boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
-    type="list", formula1='"FALSE,TRUE"', allow_blank=True)
-
 red_fill = openpyxl.styles.PatternFill(start_color='FFEE1111',
     end_color='FFEE1111', fill_type='solid')
 
@@ -43,6 +40,8 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
 
     returns field information for reference sheet
     """
+    boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
+        type="list", formula1='"FALSE,TRUE"', allow_blank=True)
     sheet.add_data_validation(boolean_validator)
 
     sheet.title = chromo['resource_name']
