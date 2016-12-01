@@ -143,7 +143,7 @@ class UploadController(PackageController):
         h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
 
         redirect(h.url_for(
-            controller='ckanext.recombinant.controller:PreviewController',
+            controller='ckanext.recombinant.controller:UploadController',
             action='preview_table',
             resource_name=res['name'],
             owner_org=org['name'],
