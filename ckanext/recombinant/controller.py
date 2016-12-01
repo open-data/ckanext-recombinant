@@ -108,7 +108,8 @@ class UploadController(PackageController):
                 return record_fail(_('Invalid fields'))
             found = result['records']
             if not found:
-                return record_fail(_('No matching records found %s') % repr(filters))
+                return record_fail(_('No matching records found "%s"') %
+                    u'", "'.join(fields))
             if len(found) > 1:
                 return record_fail(_('Multiple matching records found'))
 
