@@ -74,7 +74,7 @@ class UploadController(PackageController):
                     'action':'edit'})
 
         form_text = request.POST.get('bulk-delete', '')
-        if not form_text.strip():
+        if not form_text:
             return delete_error(_('Required field'))
 
         pk_fields = recombinant_primary_key_fields(res['name'])
@@ -83,17 +83,15 @@ class UploadController(PackageController):
         ok_filters = []
         records = iter(form_text.split('\n'))
         for r in records:
+            r = r.rstrip('\r')
             def record_fail(err):
                 # move bad record to the top of the pile
                 filters['bulk-delete'] = '\n'.join(
                     [r] + list(records) + ok_records)
                 return delete_error(err)
 
-            if not r.strip():
-                continue
-
             split_on = '\t' if '\t' in r else ','
-            fields = [f.strip() for f in r.split(split_on)]
+            fields = [f for f in r.split(split_on)]
             if len(fields) != len(pk_fields):
                 return record_fail(_('Wrong number of fields, expected {num}')
                     .format(num=len(pk_fields)))
