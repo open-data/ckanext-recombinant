@@ -113,8 +113,9 @@ class UploadController(PackageController):
             if len(found) > 1:
                 return record_fail(_('Multiple matching records found'))
 
-            ok_records.append(r)
-            ok_filters.append(dict(filters))
+            if r not in ok_records:
+                ok_records.append(r)
+                ok_filters.append(dict(filters))
 
         if 'cancel' in request.POST:
             return render('recombinant/resource_edit.html',
