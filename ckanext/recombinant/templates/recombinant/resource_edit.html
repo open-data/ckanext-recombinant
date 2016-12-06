@@ -36,41 +36,43 @@
   {% set refs = h.recombinant_choice_fields(resource.name) %}
   <div class="wb-tabs">
     <div class="tabpanels">
-      <details id="update">
-        <summary><span class="glyphicon glyphicon-plus-sign"></span>
-          {{ _("Update") }}
-        </summary>
-        {% if h.check_access('package_update', {'id': dataset.id }) %}
-          {% snippet "recombinant/snippets/xls_upload.html",
-            pkg=dataset, errors=errors %}
-        {% else %}
-          {% snippet "recombinant/snippets/xls_download.html",
-            pkg=dataset, errors=errors %}
-        {% endif %}
-      </details>
-      {% if h.check_access('package_update', {'id': dataset.id }) %}
-        <details {% if delete_errors %}open="open"{% endif %} id="delete">
-          <summary><span class="glyphicon glyphicon-minus-sign"></span>
-            {{ _("Delete") }}</summary>
-          {% snippet "recombinant/snippets/delete.html",
-            pkg=dataset, res=resource, errors=delete_errors, filters=filters %}
-        </details>
-      {% endif %}
-      {% if refs %}
-        <details id="reference">
-          <summary><span class="glyphicon glyphicon-th-list"></span>
-            {{ _("Reference") }}
+      {% block tabpanels %}
+        <details id="update">
+          <summary><span class="glyphicon glyphicon-import"></span>
+            {{ _("Import") }}
           </summary>
-          {% snippet "recombinant/snippets/choices_reference.html", refs=refs %}
+          {% if h.check_access('package_update', {'id': dataset.id }) %}
+            {% snippet "recombinant/snippets/xls_upload.html",
+              pkg=dataset, errors=errors %}
+          {% else %}
+            {% snippet "recombinant/snippets/xls_download.html",
+              pkg=dataset, errors=errors %}
+          {% endif %}
         </details>
-      {% endif %}
-      <details id="api">
-        <summary><span class="glyphicon glyphicon-wrench"></span>
-          {{ _("API Access") }}
-        </summary>
-        {% snippet "recombinant/snippets/api_access.html",
-          pkg=dataset, username=c.userobj.name, resource=resource %}
-      </details>
+        {% if h.check_access('package_update', {'id': dataset.id }) %}
+          <details {% if delete_errors %}open="open"{% endif %} id="delete">
+            <summary><span class="glyphicon glyphicon-remove"></span>
+              {{ _("Delete") }}</summary>
+            {% snippet "recombinant/snippets/delete.html",
+              pkg=dataset, res=resource, errors=delete_errors, filters=filters %}
+          </details>
+        {% endif %}
+        {% if refs %}
+          <details id="reference">
+            <summary><span class="glyphicon glyphicon-th-list"></span>
+              {{ _("Reference") }}
+            </summary>
+            {% snippet "recombinant/snippets/choices_reference.html", refs=refs %}
+          </details>
+        {% endif %}
+        <details id="api">
+          <summary><span class="glyphicon glyphicon-wrench"></span>
+            {{ _("API Access") }}
+          </summary>
+          {% snippet "recombinant/snippets/api_access.html",
+            pkg=dataset, username=c.userobj.name, resource=resource %}
+        </details>
+      {% endblock %}
     </div>
   </div>
 {% endblock %}
