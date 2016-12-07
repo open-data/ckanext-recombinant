@@ -38,8 +38,8 @@
     <div class="tabpanels">
       {% block update_panel %}
         <details id="update">
-          <summary><span class="glyphicon glyphicon-plus-sign"></span>
-            {{ _("Update") }}
+          <summary><span class="glyphicon glyphicon-import"></span>
+            {{ _("Import") }}
           </summary>
           {% if h.check_access('package_update', {'id': dataset.id }) %}
             {% snippet "recombinant/snippets/xls_upload.html",
@@ -52,7 +52,7 @@
       {% endblock %}
       {% if h.check_access('package_update', {'id': dataset.id }) %}
         <details {% if delete_errors %}open="open"{% endif %} id="delete">
-          <summary><span class="glyphicon glyphicon-minus-sign"></span>
+          <summary><span class="glyphicon glyphicon-remove"></span>
             {{ _("Delete") }}</summary>
           {% snippet "recombinant/snippets/delete.html",
             pkg=dataset, res=resource, errors=delete_errors, filters=filters %}
