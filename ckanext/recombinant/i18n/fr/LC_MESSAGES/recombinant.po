@@ -20,7 +20,7 @@ msgstr ""
 
 #: ckanext/recombinant/controller.py:42
 msgid "Your file was successfully uploaded into the central system."
-msgstr ""
+msgstr "Votre fichier a été téléchargé avec succès dans le système central."
 
 #: ckanext/recombinant/controller.py:76
 msgid "Required field"
@@ -54,6 +54,10 @@ msgid ""
 "again. If this problem continues, send your Excel file to open-ouvert"
 "@tbs-sct.gc.ca so we may investigate."
 msgstr ""
+"Le serveur a éprouvé un problème dans le traitement du fichier qui a été téléchargé. "
+"Veuillez tenter de copier vos données dans la version la plus récente du modèle et de télécharger "
+"le tout de nouveau. Si ce problème persiste, envoyez votre fichier Excel à open-ouvert@… afin"
+" que nous puissions faire enquête."
 
 #: ckanext/recombinant/controller.py:201
 msgid ""
@@ -66,6 +70,8 @@ msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but "
 "you supplied a sheet for {1}"
 msgstr ""
+"La feuille n'est pas valide pour cette organisation. La feuille doit être étiquetée pour {0}, "
+"mais vous avez fourni une feuille pour {1}"
 
 #: ckanext/recombinant/controller.py:223
 msgid ""
@@ -114,11 +120,11 @@ msgstr[1] "Souhaitez-vous vraiment supprimer {num} demandes? Cette action ne peu
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:25
 msgid "row"
-msgstr ""
+msgstr "ligne"
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:25
 msgid "rows"
-msgstr ""
+msgstr "lignes"
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:54
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:41
@@ -127,11 +133,11 @@ msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:62
 msgid "Reference"
-msgstr ""
+msgstr "Référence"
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:69
 msgid "API Access"
-msgstr ""
+msgstr "Accès par API"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:3
 msgid "API access examples"
@@ -223,29 +229,29 @@ msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/choices_reference.html:1
 msgid "Field choices reference"
-msgstr ""
+msgstr "Listes de choix pour les champs"
 
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:1
 msgid "Delete existing records"
-msgstr ""
+msgstr "Supprimer les dossiers existants"
 
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:13
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:12
 msgid "(required)"
-msgstr ""
+msgstr "(obligatoire)"
 
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:28
 msgid "Enter one record per line, e.g:"
-msgstr ""
+msgstr "Entrer un (1) dossier par ligne"
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:10
 #: ckanext/recombinant/templates/recombinant/snippets/xls_download.html:3
 msgid "Download template Excel spreadsheet"
-msgstr ""
+msgstr "Télécharger modèle Excel"
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
 msgid "Create and update records from Excel spreadsheet"
-msgstr ""
+msgstr "Créer et mettre à jour les données de la feuille de calcul Excel"
 
 # DUPLICATES FROM CKAN
 
