@@ -59,7 +59,7 @@ def canonicalize(dirty, dstore_tag):
             # markers or digit group separators (e.g.,fr-CA uses 1$ (not $1)).
             # Accept only "DDDDD.DD", discard other characters
             dollars, sep, cents = unicode(dirty).rpartition('.')
-            return re.sub(ur'[^0-9]', '', dollars) + sep + re.sub(ur'[0-9]', '', cents)
+            return re.sub(ur'[^0-9]', '', dollars) + sep + re.sub(ur'[^0-9]', '', cents)
         elif dtype.tag == 'date' and isinstance(dirty, datetime):
             return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
 
