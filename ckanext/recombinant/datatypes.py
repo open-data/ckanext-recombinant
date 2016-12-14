@@ -46,24 +46,19 @@ def canonicalize(dirty, dstore_tag):
     dtype = datastore_type[dstore_tag]
     if dirty is None:
         return dtype.default
-    elif isinstance(dirty, float) or isinstance(dirty, int):
-        if dtype.numeric:
-            # XXX truncate decimal values to behave the same as strings
-            return unicode(int(dirty // 1))
-        else:
-            return unicode(dirty) # FIXME ckan2.1 datastore?-- float(dirty)
+    elif isinstance(dirty, (float, int, long)):
+        return unicode(dirty)
 
-    elif (isinstance(dirty, basestring)) and (dirty.strip() == ''):
+    elif isinstance(dirty, basestring) and not dirty.strip():
         # Content trims to empty: default
         return dtype.default
     elif not dtype.numeric:
         if dtype.tag == 'money':
             # User has overridden Excel format string, probably adding currency
             # markers or digit group separators (e.g.,fr-CA uses 1$ (not $1)).
-            # Truncate any trailing decimal digits, retain int
-            # part, and cast as numeric string.
-            canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', unicode(dirty)))
-            return unicode(canon)
+            # Accept only "DDDDD.DD", discard other characters
+            dollars, sep, cents = unicode(dirty).rpartition('.')
+            return re.sub(ur'[^0-9]', '', dollars) + sep + re.sub(ur'[0-9]', '', cents)
         elif dtype.tag == 'date' and isinstance(dirty, datetime):
             return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
 
