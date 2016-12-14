@@ -1,4 +1,3 @@
-import re
 import openpyxl
 from datetime import datetime, date
 from datatypes import canonicalize

@@ -1,4 +1,5 @@
 from collections import namedtuple
+import re
 
 
 # Codifies data store types available in recombinant-tables JSON
