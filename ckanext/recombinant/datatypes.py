@@ -26,3 +26,53 @@ datastore_type = {
     'text': DatastoreType('text', False, u'', '@'),
     'boolean': DatastoreType('boolean', False, u'', 'General'),
 }
+
+
+def canonicalize(dirty, dstore_tag):
+    """
+    Canonicalize dirty input from xlrd to align with
+    recombinant.json datastore type specified in dstore_tag.
+
+    :param dirty: dirty cell content as read through xlrd
+    :type dirty: object
+    :param dstore_tag: datastore_type specifier in (JSON) schema for cell
+    :type dstore_tag: str
+
+    :return: Canonicalized cell input
+    :rtype: float or unicode
+
+    Raises BadExcelData on formula cells
+    """
+    dtype = datastore_type[dstore_tag]
+    if dirty is None:
+        return dtype.default
+    elif isinstance(dirty, float) or isinstance(dirty, int):
+        if dtype.numeric:
+            # XXX truncate decimal values to behave the same as strings
+            return unicode(int(dirty // 1))
+        else:
+            return unicode(dirty) # FIXME ckan2.1 datastore?-- float(dirty)
+
+    elif (isinstance(dirty, basestring)) and (dirty.strip() == ''):
+        # Content trims to empty: default
+        return dtype.default
+    elif not dtype.numeric:
+        if dtype.tag == 'money':
+            # User has overridden Excel format string, probably adding currency
+            # markers or digit group separators (e.g.,fr-CA uses 1$ (not $1)).
+            # Truncate any trailing decimal digits, retain int
+            # part, and cast as numeric string.
+            canon = re.sub(r'[^0-9]', '', re.sub(r'\.[0-9 ]+$', '', unicode(dirty)))
+            return unicode(canon)
+        elif dtype.tag == 'date' and isinstance(dirty, datetime):
+            return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
+
+        if unicode(dirty).startswith('='):
+            raise BadExcelData('Formulas are not supported')
+        return unicode(dirty)
+
+    # dirty is numeric: truncate trailing decimal digits, retain int part
+    canon = re.sub(r'[^0-9]', '', unicode(dirty).split('.')[0])
+    if not canon:
+        return 0
+    return unicode(canon) # FIXME ckan2.1 datastore?-- float(dirty)
