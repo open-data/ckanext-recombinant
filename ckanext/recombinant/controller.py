@@ -135,7 +135,7 @@ class UploadController(PackageController):
                     'bulk_delete': u'\n'.join(ok_records
                         # extra blank is needed to prevent field
                         # from being completely empty
-                        + [''] if '' in ok_records else [])})
+                        + ([''] if '' in ok_records else [])) })
 
         for f in ok_filters:
             lc.action.datastore_delete(
