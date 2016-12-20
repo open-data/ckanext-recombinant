@@ -1,5 +1,4 @@
 import openpyxl
-from datetime import datetime, date
 from datatypes import canonicalize
 
 from ckanext.recombinant.errors import BadExcelData
