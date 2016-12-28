@@ -272,10 +272,17 @@ def _process_upload_file(lc, dataset, upload_file, geno):
 
         records = get_records(rows, chromo['fields'])
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
-        lc.action.datastore_upsert(
-            method=method,
-            resource_id=expected_sheet_names[sheet_name],
-            records=records,
-            )
+        try:
+            lc.action.datastore_upsert(
+                method=method,
+                resource_id=expected_sheet_names[sheet_name],
+                records=records,
+                )
+        except ValidationError as e:
+            raise BadExcelData(
+                _(u"Database error while importing data: {0}").format(
+                    # because, where else would you put the error text?
+                    # XXX improve this in datastore, please
+                    e.error_dict['info']['orig'][0].decode('utf-8')))
 
 
