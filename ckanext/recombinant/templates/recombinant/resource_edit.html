@@ -37,7 +37,7 @@
   <div class="wb-tabs">
     <div class="tabpanels">
       {% block update_panel %}
-        <details id="update">
+        <details id="update" {% if errors %}open="open"{% endif %}>
           <summary><span class="glyphicon glyphicon-import"></span>
             {{ _("Import") }}
           </summary>
