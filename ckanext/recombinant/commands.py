@@ -280,7 +280,6 @@ class TableCommand(CkanCommand):
             lc.action.datastore_upsert(
                 method=method,
                 resource_id=r['id'],
-                force=True,
                 records=records)
         return 0
 
