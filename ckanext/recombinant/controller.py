@@ -1,3 +1,5 @@
+import re
+
 from pylons.i18n import _
 from pylons import config
 from paste.deploy.converters import asbool
@@ -279,10 +281,13 @@ def _process_upload_file(lc, dataset, upload_file, geno):
                 records=records,
                 )
         except ValidationError as e:
+            # because, where else would you put the error text?
+            # XXX improve this in datastore, please
+            pgerror = e.error_dict['info']['orig'][0].decode('utf-8')
+            # remove some postgres-isms that won't help the user
+            # when we render this as an error in the form
+            pgerror = re.sub(ur'\nLINE \d+:', u'', pgerror)
+            pgerror = re.sub(ur'\n *\^\n$', u'', pgerror)
             raise BadExcelData(
-                _(u"Database error while importing data: {0}").format(
-                    # because, where else would you put the error text?
-                    # XXX improve this in datastore, please
-                    e.error_dict['info']['orig'][0].decode('utf-8')))
-
-
+                _(u"Error while importing data: {0}").format(
+                    pgerror))
