@@ -2,6 +2,8 @@ from collections import namedtuple
 import re
 from datetime import datetime
 
+from ckanext.recombinant.errors import BadExcelData
+
 
 # Codifies data store types available in recombinant-tables JSON
 # specification:
