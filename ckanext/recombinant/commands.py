@@ -42,6 +42,8 @@ from ckanext.recombinant.read_csv import csv_data_batch
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 RECORDS_PER_UPSERT = 1000
+UTF8_BOM = u'\uFEFF'.encode(u'utf-8')
+
 
 class TableCommand(CkanCommand):
     summary = __doc__.split('\n')[0]
@@ -295,6 +297,7 @@ class TableCommand(CkanCommand):
             if target_dir:
                 outf = open(os.path.join(target_dir,
                     resource_name + '.csv'), 'wb')
+                outf.write(UTF8_BOM)
             self._write_one_csv(
                 lc,
                 self._get_packages(
@@ -308,7 +311,7 @@ class TableCommand(CkanCommand):
     def _write_one_csv(self, lc, pkgs, chromo, outfile):
         out = unicodecsv.writer(outfile)
         column_ids = [f['datastore_id'] for f in chromo['fields']
-            ] + ['owner_org', 'owner_org_title']
+            ] + ['owner_org_id', 'owner_org_name', 'owner_org_title']
         out.writerow(column_ids)
 
         for pkg in pkgs:
@@ -330,9 +333,11 @@ class TableCommand(CkanCommand):
                     chromo['resource_name'], pkg['owner_org'])
                 return
 
+            org = pkg['organization']
             for record in records:
-                record['owner_org'] = pkg['owner_org']
-                record['owner_org_title'] = pkg['org_title']
+                record['owner_org_id'] = org['id'].lower()
+                record['owner_org_name'] = org['name']
+                record['owner_org_title'] = org['title']
                 try:
                     out.writerow([unicode(
                         u'' if record[col] is None else record[col]
