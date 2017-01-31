@@ -116,8 +116,7 @@ def recombinant_show(context, data_dict):
     metadata_correct = _dataset_match(geno, dataset)
     return {
         'dataset_type': dataset['type'],
-        'owner_org': dataset['organization']['name'],
-        'org_title': dataset['organization']['title'],
+        'organization': dataset['organization'],
         'id': dataset['id'],
         'metadata_correct': metadata_correct,
         'all_correct': (metadata_correct and resources_correct

@@ -25,7 +25,7 @@
           ngettext("%(num)d "+_('row'), "%(num)d "+_('rows'), r.datastore_rows)
           |format(num=r.datastore_rows),
         named_route='recombinant_resource',
-        resource_name=r.name, owner_org=dataset.owner_org %}</li>
+        resource_name=r.name, owner_org=dataset.organization.name %}</li>
     {% endfor %}
   </ul>
 
