@@ -32,6 +32,7 @@ from ckan.logic import ValidationError
 import paste.script
 from ckanapi import LocalCKAN, NotFound
 import unicodecsv
+import codecs
 from docopt import docopt
 
 from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
@@ -295,6 +296,7 @@ class TableCommand(CkanCommand):
             if target_dir:
                 outf = open(os.path.join(target_dir,
                     resource_name + '.csv'), 'wb')
+            outf.write(codecs.BOM_UTF8)
             self._write_one_csv(
                 lc,
                 self._get_packages(

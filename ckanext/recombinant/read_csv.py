@@ -1,4 +1,5 @@
 from unicodecsv import DictReader
+import codecs
 
 BATCH_SIZE = 1000
 
@@ -17,6 +18,12 @@ def csv_data_batch(csv_path, chromo):
     current_owner_org = None
 
     with open(csv_path, 'rb') as f:
+        first3bytes = f.read(3)
+        if first3bytes == codecs.BOM_UTF8:
+            f.seek(3)
+        else:
+            f.seek(0)
+
         csv_in = DictReader(f)
         cols = csv_in.unicode_fieldnames
 
