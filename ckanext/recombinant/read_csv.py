@@ -19,9 +19,7 @@ def csv_data_batch(csv_path, chromo):
 
     with open(csv_path, 'rb') as f:
         first3bytes = f.read(3)
-        if first3bytes == codecs.BOM_UTF8:
-            f.seek(3)
-        else:
+        if first3bytes != codecs.BOM_UTF8:
             f.seek(0)
 
         csv_in = DictReader(f)
