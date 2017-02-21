@@ -11,13 +11,16 @@
     <label for="xls_update" class="required" aria-required="true">{{ _('Upload') }}:
       <strong aria-required="true" class="required">{{ _('(required)') }}</strong>
     </label>
+    {% block file_input %}
     <input required
       class="form-control"
       style="height: auto"
       type="file"
       name="xls_update"
       id="xls_update"
+      oninvalid="setCustomValidity(' {{ _('You must provide a valid file') }} ')" onchange="setCustomValidity('')"
       accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+    {% endblock %}
     {% if errors %}
       <div class="span-3 text-danger">
         {% for error in errors %}
