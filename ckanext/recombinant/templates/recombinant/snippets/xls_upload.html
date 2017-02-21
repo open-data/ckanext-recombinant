@@ -18,6 +18,7 @@
       type="file"
       name="xls_update"
       id="xls_update"
+      oninvalid="setCustomValidity(' {{ _('You must provide a valid file') }} ')" onchange="setCustomValidity('')"
       accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
     {% endblock %}
     {% if errors %}
