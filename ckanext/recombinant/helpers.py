@@ -94,6 +94,11 @@ def recombinant_get_res_csv_dict(res_id):
     csv_dict = [ (f['datastore_id'], f['label'], _(f['label']))
             for f in chromo['fields'] ]
     set_lang(current_lang)
+
+    csv_dict.append(('owner_org', 'owner organization',
+            _('owner organization') ))
+    csv_dict.append(('owner_org_title', 'owner organization title',
+            _('owner organization title') ))
     return csv_dict
 
 def recombinant_example(resource_name, doc_type, indent=2, lang='json'):
