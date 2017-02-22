@@ -40,6 +40,15 @@ def get_chromo(resource_name):
         raise RecombinantException('resource_name "%s" not found'
             % resource_name)
 
+def get_chromo_by_id(resource_id):
+    """
+    Get the resource definition (chromo) for the given resource name
+    """
+    chromos = _get_plugin()._chromos
+    for resource_name, data_dict in chromos.iteritems():
+        if data_dict.get('resource_id', None) == resource_id:
+            return data_dict
+    return None
 
 def get_geno(dataset_type):
     """
