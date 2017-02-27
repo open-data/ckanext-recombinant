@@ -283,3 +283,7 @@ msgstr "Créer et mettre à jour les données de la feuille de calcul Excel"
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:32
 #msgid "Submit"
 #msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/delete.html:20
+#msgid "Please fill out this field."
+#msgstr "Ce champ est obligatoire."
