@@ -164,8 +164,8 @@ def recombinant_show_package(pkg):
         dataset_type=pkg['type'],
         owner_org=pkg['organization']['name'])
 
-def recombinant_resource_link(pkg_type, org_name, resource_name):
-    url = url_for('/'.join(['/recombinant', pkg_type, org_name]).encode('ascii') )
+def recombinant_resource_link(org_name, resource_name):
+    url = url_for('/'.join(['/recombinant', resource_name, org_name]).encode('ascii') )
     chromo = recombinant_get_chromo(resource_name)
     resource_title = _(chromo['title'])
     return ''.join(['<a href="', url, '">', resource_title, '</a>'])
