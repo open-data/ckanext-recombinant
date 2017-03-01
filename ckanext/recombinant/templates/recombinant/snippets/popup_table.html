@@ -1,0 +1,20 @@
+<span>
+    <a href="#{{ id }}" aria-controls="mid-screen" class="overlay-lnk" role="button">{{ _(name) }}</a>
+    <section id="{{ id }}" class="wb-overlay modal-content overlay-def wb-popup-mid">
+       <header class="modal-header">
+               <h2 class="modal-title">{{ _(title) }}</h2>
+       </header>
+        <div class="modal-body">
+      <table class="table table-striped" style="white-space: normal;">
+      {% for row in rows %}
+          <tr>
+              <th width="10%"> {{ row[0] }}</th>
+              {% for var in row[1:] %}
+              <td>{{ var }}</td>
+              {% endfor %}
+          </tr>
+      {% endfor %}
+      </table>
+        </div>
+    </section>
+</span>
