@@ -165,7 +165,7 @@ def recombinant_show_package(pkg):
         owner_org=pkg['organization']['name'])
 
 def recombinant_resource_link(org_name, resource_name):
-    url = url_for('/'.join(['/recombinant', resource_name, org_name]).encode('ascii') )
+    url = url_for('/'.join(['/recombinant', resource_name, org_name]).encode('ascii'))
     chromo = recombinant_get_chromo(resource_name)
     resource_title = _(chromo['title'])
     return ''.join(['<a href="', url, '">', resource_title, '</a>'])
@@ -179,13 +179,13 @@ def recombinant_resource_detail(id, records, act_type, resource_name):
         for f in chromo['fields']:
             f_dict[f['datastore_id']] = f['label']
         for k,v in records.iteritems():
-            rows.append([_(f_dict[k]), v ])
+            rows.append([(f_dict[k]), v])
     else:
         if len(records) > 0:
             for f in chromo['fields']:
                 row = [_(f['label']), ]
                 for record in records:
-                    row.append( record[ f['datastore_id'] ] )
+                    row.append(record[f['datastore_id']])
                 rows.append(row)
     if len(records)==0:
         if act_type =='deleted datastore':
