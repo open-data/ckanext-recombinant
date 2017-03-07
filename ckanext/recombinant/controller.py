@@ -187,6 +187,9 @@ class UploadController(PackageController):
             resource_name=resource_name, owner_org=orgs[0]['name']))
 
     def preview_table(self, resource_name, owner_org, errors=None):
+        if not c.user:
+            h.redirect_to(controller='user', action='login')
+
         lc = ckanapi.LocalCKAN(username=c.user)
         try:
             chromo = get_chromo(resource_name)
