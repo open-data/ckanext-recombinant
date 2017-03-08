@@ -229,11 +229,12 @@ def _process_upload_file(lc, dataset, upload_file, geno):
         for resource in dataset['resources'])
 
     upload_data = read_excel(upload_file)
+    total_records = 0
     while True:
         try:
             sheet_name, org_name, column_names, rows = next(upload_data)
         except StopIteration:
-            return
+            break
         except:
             # XXX bare except because this can fail in all sorts of ways
             if asbool(config.get('debug', False)):
@@ -277,6 +278,9 @@ def _process_upload_file(lc, dataset, upload_file, geno):
 
         records = get_records(rows, chromo['fields'])
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
+        total_records += len(records)
+        if len(records)==0:
+            continue
         try:
             lc.action.datastore_upsert(
                 method=method,
@@ -294,3 +298,5 @@ def _process_upload_file(lc, dataset, upload_file, geno):
             raise BadExcelData(
                 _(u"Error while importing data: {0}").format(
                     pgerror))
+    if total_records==0:
+        raise BadExcelData(_("The template updated is empty"))
