@@ -141,11 +141,11 @@ msgstr "Accès par API"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:3
 msgid "API access examples"
-msgstr ""
+msgstr "Exemples d’accès par API"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:9
 msgid "Retrieve Records"
-msgstr ""
+msgstr "Récupérer un dossier"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:10
 #, python-format
@@ -155,23 +155,29 @@ msgid ""
 "datastore-api\"     >CKAN Datastore API</a> with "
 "<code>resource_id=\"%(resource_id)s\"</code>"
 msgstr ""
+"Accéder à ces données par <a "
+"href=\"http://docs.ckan.org/en/latest/maintaining/datastore.html#the-"
+"datastore-api\"     >l’API de mémoire de données CKAN</a> avec "
+"<code>resource_id=\"%(resource_id)s\"</code>"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:15
 msgid ""
 "The CKAN API uses a JSON-RPC style, where you post a JSON object and "
 "receive another JSON object in response."
 msgstr ""
+"L’API CKAN utilise un style JSON-RPC, par lequel on inscrit un objet "
+"JSON et on reçoit en réponse un autre objet JSON."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:18
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:60
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:87
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:113
 msgid "Example:"
-msgstr ""
+msgstr "Exemple :"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:44
 msgid "Create and Update Records"
-msgstr ""
+msgstr "Créer et mettre à jour un dossier"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:45
 #, python-format
@@ -179,6 +185,8 @@ msgid ""
 "Modifying records requires an API key. Your API key is shown on your <a "
 "href=\"%(profile_url)s\">profile page</a>."
 msgstr ""
+"La modification d’un dossier exige une clé API. Votre clé API apparaît "
+"dans votre <a href=\"%(profile_url)s\">page de profil</a>."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:49
 msgid ""
@@ -189,16 +197,26 @@ msgid ""
 " site. All actions made with your API key will be logged as actions you "
 "performed."
 msgstr ""
+"N’insérez jamais votre clé API dans un code partagé avec d’autres "
+"personnes. Utilisez un fichier de configuration ou une variable "
+"d’environnement pour permettre à chaque utilisateur d’entrer sa propre "
+"clé lorsqu’il utilise votre outil. Votre clé API équivaut à votre mot "
+"de passe et peut être utilisée pour n’importe quelle action que peut "
+"exécuter votre utilisateur sur ce site. Toutes les actions effectuées "
+"à partir de votre clé API seront inscrites à votre nom."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:57
 msgid ""
 "Create and update records with the \"datastore_upsert\" endpoint. Your "
 "API key must be sent as an \"Authorization\" header."
 msgstr ""
+"Pour créer ou mettre à jour des dossiers, utilisez le point de "
+"terminaison « datastore_upsert ». Votre clé API doit être transmise "
+"comme en-tête « Authorization »."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:80
 msgid "Delete Records"
-msgstr ""
+msgstr "Supprimer un dossier"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:81
 #, python-format
@@ -206,18 +224,24 @@ msgid ""
 "Deleting records requires an API key. Your API key is shown on your <a "
 "href=\"%(profile_url)s\">profile page</a>."
 msgstr ""
+"La suppression d’un dossier exige une clé API. Votre clé API apparaît "
+"dans votre <a href=\"%(profile_url)s\">page de profil</a>."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:84
 msgid ""
 "First verify that the record you would like to remove is present with the"
 " \"datastore_search\" endpoint"
 msgstr ""
+"Vérifiez d’abord que le dossier que vous voulez supprimer apparaît avec"
+" le point de terminaison « datastore_search »."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:110
 msgid ""
 "Remove the record returned by passing the same parameters to the "
 "\"datastore_delete\" endpoint instead of \"datastore_search\"."
 msgstr ""
+"Supprimez le dossier retourné en appliquant les mêmes paramètres au "
+"point de terminaison « datastore_delete » plutôt que « datastore_search »."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:133
 msgid ""
@@ -226,6 +250,10 @@ msgid ""
 "@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a> and we may be able to post"
 " them here as well. "
 msgstr ""
+"Si vous avez modifié ces instructions d’accès par API pour un autre langage "
+"de programmation, veuillez les transmettre à l’adresse <a href=\"mailto:open-ouvert"
+"@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a> et nous pourrons peut-être "
+"les afficher également ici."
 
 #: ckanext/recombinant/templates/recombinant/snippets/choices_reference.html:1
 msgid "Field choices reference"
