@@ -29,7 +29,7 @@
       <small class="text-info">{{ _('Enter one record per line, e.g:') }}<br/><br/>
         {%- for n in range(1, 4) -%}
           {%- for f in h.recombinant_primary_key_fields(res.name) -%}
-            {{- _(f.label) }} {{ n }}
+            {{- h.recombinant_language_text(f.label) }} {{ n }}
             {%- if not loop.last -%}, {% endif -%}
           {%- endfor -%}
           <br/>

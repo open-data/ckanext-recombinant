@@ -1,10 +1,10 @@
 import openpyxl
-from pylons.i18n import _
 
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
-from ckanext.recombinant.helpers import recombinant_choice_fields
+from ckanext.recombinant.helpers import (
+    recombinant_choice_fields, recombinant_language_text)
 
 red_fill = openpyxl.styles.PatternFill(start_color='FFEE1111',
     end_color='FFEE1111', fill_type='solid')
@@ -23,11 +23,7 @@ def excel_template(dataset_type, org):
         _populate_excel_sheet(sheet, chromo, org, refs)
         sheet = book.create_sheet()
 
-    ref = sheet
-    ref.title = 'reference'
-    ref.append([u'field', u'key', u'value'])
-    for ref_line in refs:
-        ref.append(ref_line)
+    _populate_reference_sheet(sheet, chromo, refs)
     return book
 
 
@@ -63,7 +59,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         for f in recombinant_choice_fields(chromo['resource_name']))
 
     for n, field in enumerate(chromo['fields'], 1):
-        fill_cell(2, n, _(field['label']), header_style)
+        fill_cell(2, n, recombinant_language_text(field['label']), header_style)
         fill_cell(3, n, field['datastore_id'], header_style)
         # jumping through openpyxl hoops:
         col_letter = openpyxl.cell.get_column_letter(n)
@@ -73,15 +69,29 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         col.number_format = datastore_type[field['datastore_type']].xl_format
         validation_range = '{0}4:{0}1004'.format(col_letter)
 
+        refs.append((None, []))
+        refs.append((org_style,
+            [recombinant_language_text(field['label'])]))
+        if 'description' in field:
+            refs.append((header_style,
+                [recombinant_language_text(field['description'])]))
+        if 'obligation' in field:
+            refs.append((header_style,
+                [recombinant_language_text(field['obligation'])]))
+        if 'format_type' in field:
+            refs.append((header_style,
+                [recombinant_language_text(field['format_type'])]))
+
         if field['datastore_type'] == 'boolean':
             boolean_validator.ranges.append(validation_range)
         if field['datastore_id'] in choice_fields:
-            refs.append([_(field['label'])])
-            ref1 = len(refs) + 2
+            ref1 = len(refs) + 1
             for key, value in choice_fields[field['datastore_id']]:
-                refs.append([None, key, value])
-            refN = len(refs) + 1
-            refs.append([])
+                refs.append((None, [None, key, value]))
+            refN = len(refs)
+
+            if field['datastore_type'] == '_text':
+                continue  # can't validate these in excel yet
 
             choice_range = 'reference!$B${0}:$B${1}'.format(ref1, refN)
             v = openpyxl.worksheet.datavalidation.DataValidation(
@@ -109,6 +119,14 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
     sheet.freeze_panes = sheet['A4']
 
 
+def _populate_reference_sheet(sheet, chromo, refs):
+    sheet.title = 'reference'
+    for style, ref_line in refs:
+        sheet.append(ref_line)
+        if style:
+            apply_styles(style, sheet.row_dimensions[sheet.max_row])
+
+
 def apply_styles(config, target):
     """
     apply styles from config to target
@@ -121,4 +139,3 @@ def apply_styles(config, target):
     font = config.get('Font')
     if font:
         target.font = openpyxl.styles.Font(**font)
-
