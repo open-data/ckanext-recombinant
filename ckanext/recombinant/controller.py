@@ -279,7 +279,7 @@ def _process_upload_file(lc, dataset, upload_file, geno):
         records = get_records(rows, chromo['fields'])
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
         total_records += len(records)
-        if len(records)==0:
+        if not records:
             continue
         try:
             lc.action.datastore_upsert(
@@ -298,5 +298,5 @@ def _process_upload_file(lc, dataset, upload_file, geno):
             raise BadExcelData(
                 _(u"Error while importing data: {0}").format(
                     pgerror))
-    if total_records==0:
-        raise BadExcelData(_("The template updated is empty"))
+    if not total_records:
+        raise BadExcelData(_("The template uploaded is empty"))
