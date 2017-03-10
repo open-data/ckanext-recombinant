@@ -89,6 +89,10 @@ msgstr ""
 msgid "Table for this organization not found"
 msgstr ""
 
+#: ckanext/recombinant/controller.py:302
+msgid "The template uploaded is empty"
+msgstr "Le modèle que vous avez soumis est vide"
+
 #: ckanext/recombinant/helpers.py:134 ckanext/recombinant/write_excel.py:67
 #: ckanext/recombinant/write_excel.py:80
 msgid "label"
