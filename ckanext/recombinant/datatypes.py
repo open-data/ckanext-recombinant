@@ -49,6 +49,9 @@ def canonicalize(dirty, dstore_tag):
     Raises BadExcelData on formula cells
     """
     dtype = datastore_type[dstore_tag]
+    if dstore_tag == '_text':
+        return [s.strip() for s in unicode(dirty).split(',')]
+
     if dirty is None:
         return dtype.default
     elif isinstance(dirty, (float, int, long)):
