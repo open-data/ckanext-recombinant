@@ -222,13 +222,14 @@ def _update_datastore(lc, geno, dataset, force_update=False):
     geno for existing dataset.
     """
     resource_ids = dict((r['name'], r['id']) for r in dataset['resources'])
+    datastore_text_types = geno.get('datastore_text_types', False)
 
     for chromo in geno['resources']:
         assert chromo['resource_name'] in resource_ids, (
             "dataset missing resource for resource name",
             chromo['resource_name'], dataset['id'])
         resource_id = resource_ids[chromo['resource_name']]
-        fields = _datastore_fields(chromo['fields'])
+        fields = datastore_fields(chromo['fields'], datastore_text_types)
         try:
             ds = lc.action.datastore_search(resource_id=resource_id, limit=0)
         except NotFound:
@@ -241,7 +242,7 @@ def _update_datastore(lc, geno, dataset, force_update=False):
             # datastore_create rejects our list otherwise
             fields = ds['fields'][1:] # trim _id field
             seen = set(f['id'] for f in fields)
-            for f in _datastore_fields(chromo['fields']):
+            for f in datastore_fields(chromo['fields'], datastore_text_types):
                 if f['id'] not in seen:
                     fields.append(f)
 
@@ -285,20 +286,23 @@ def _resource_match(chromo, resource):
     return all(resource[k] == v for (k, v) in _resource_fields(chromo).items())
 
 
-def _column_type(t):
+def datastore_column_type(t, text_types):
     """
     return postgres column type for field type t
+    if text_types is true return simple types (almost all text) for backwards compatibility
     """
-    return 'bigint' if datastore_type[t].numeric else 'text'
+    if text_types:
+        return 'bigint' if datastore_type[t].numeric else 'text'
+    return 'int' if t in ('year', 'month') else t
 
 
-def _datastore_fields(fs):
+def datastore_fields(fs, text_types):
     """
     return the datastore field definitions for fields fs
     """
     return [{
         'id': f['datastore_id'],
-        'type': _column_type(f['datastore_type'])}
+        'type': datastore_column_type(f['datastore_type'], text_types)}
         for f in fs]
 
 
