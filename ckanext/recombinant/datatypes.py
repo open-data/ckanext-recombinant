@@ -50,6 +50,8 @@ def canonicalize(dirty, dstore_tag):
     """
     dtype = datastore_type[dstore_tag]
     if dstore_tag == '_text':
+        if not dirty or not unicode(dirty).strip():
+            return []
         return [s.strip() for s in unicode(dirty).split(',')]
 
     if dirty is None:
