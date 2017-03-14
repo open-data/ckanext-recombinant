@@ -251,6 +251,7 @@ def _update_datastore(lc, geno, dataset, force_update=False):
             fields=fields,
             primary_key=chromo.get('datastore_primary_key', []),
             indexes=chromo.get('datastore_indexes', []),
+            triggers=[{'function': unicode(f)} for f in chromo.get('triggers', [])],
             force=True)
 
 

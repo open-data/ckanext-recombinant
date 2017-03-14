@@ -284,9 +284,12 @@ def _process_upload_file(lc, dataset, upload_file, geno):
                 records=records,
                 )
         except ValidationError as e:
-            # because, where else would you put the error text?
-            # XXX improve this in datastore, please
-            pgerror = e.error_dict['info']['orig'][0].decode('utf-8')
+            if 'info' in e.error_dict:
+                # because, where else would you put the error text?
+                # XXX improve this in datastore, please
+                pgerror = e.error_dict['info']['orig'][0].decode('utf-8')
+            else:
+                pgerror = e.error_dict['records'][0]
             # remove some postgres-isms that won't help the user
             # when we render this as an error in the form
             pgerror = re.sub(ur'\nLINE \d+:', u'', pgerror)
