@@ -281,7 +281,7 @@ def _process_upload_file(lc, dataset, upload_file, geno):
             lc.action.datastore_upsert(
                 method=method,
                 resource_id=expected_sheet_names[sheet_name],
-                records=records,
+                records=[r[1] for r in records],
                 )
         except ValidationError as e:
             if 'info' in e.error_dict:
@@ -294,6 +294,10 @@ def _process_upload_file(lc, dataset, upload_file, geno):
             # when we render this as an error in the form
             pgerror = re.sub(ur'\nLINE \d+:', u'', pgerror)
             pgerror = re.sub(ur'\n *\^\n$', u'', pgerror)
+            if '_records_row' in e.error_dict:
+                raise BadExcelData(_(u'Sheet {0} Row {1}:').format(
+                    sheet_name, records[e.error_dict['_records_row']][0])
+                    + u' ' + pgerror)
             raise BadExcelData(
                 _(u"Error while importing data: {0}").format(
                     pgerror))

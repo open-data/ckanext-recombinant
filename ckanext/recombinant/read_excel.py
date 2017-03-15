@@ -37,11 +37,13 @@ def read_excel(f, file_contents=None):
 
 
 def _filter_bumf(rowiter):
+    i = HEADER_ROWS
     for row in rowiter:
+        i += 1
         values = [c.value for c in row]
         # return next non-empty row
         if not all(_is_bumf(v) for v in values):
-            yield values
+            yield i, values
 
 
 def _is_bumf(value):
@@ -73,7 +75,7 @@ def get_records(rows, fields):
     :rtype: tuple of dicts
     """
     records = []
-    for n, row in enumerate(rows):
+    for n, row in rows:
         # trailing cells might be empty: trim row to fit
         while (row and
                 (len(row) > len(fields)) and
@@ -84,11 +86,11 @@ def get_records(rows, fields):
 
         try:
             records.append(
-                dict((
+                (n, dict((
                     f['datastore_id'],
                     canonicalize(v, f['datastore_type']))
-                for f, v in zip(fields, row)))
+                for f, v in zip(fields, row))))
         except BadExcelData, e:
-            raise BadExcelData('Row %d: ' % (n + HEADER_ROWS + 1) + e.message)
+            raise BadExcelData(u'Row {0}:'.format(n) + u' ' + e.message)
 
     return records
