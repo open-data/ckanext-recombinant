@@ -20,7 +20,7 @@ DatastoreType = namedtuple(
 datastore_type = {
     'year': DatastoreType('year', True, 0.0, '###0'),
     'month': DatastoreType('month', True, 0.0, '00'),
-    'date': DatastoreType('date', False, u'', 'yyyy-mm-dd'),
+    'date': DatastoreType('date', False, None, 'yyyy-mm-dd'),
     'int': DatastoreType('int', True, 0.0, '### ### ### ### ### ##0'),
     'money': DatastoreType(
         'money',
