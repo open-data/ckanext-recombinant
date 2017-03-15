@@ -72,7 +72,12 @@ def canonicalize(dirty, dstore_tag):
         elif dtype.tag == 'date' and isinstance(dirty, datetime):
             return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
 
-        if unicode(dirty).startswith('='):
+        # excel, you keep being you
+        if unicode(dirty) == u'=FALSE()':
+            return u'FALSE'
+        elif unicode(dirty) == u'=TRUE()':
+            return u'TRUE'
+        elif unicode(dirty).startswith('='):
             raise BadExcelData('Formulas are not supported')
         return unicode(dirty)
 
