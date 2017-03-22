@@ -1,6 +1,6 @@
 import openpyxl
-from datatypes import canonicalize
 
+from ckanext.recombinant.datatypes import canonicalize
 from ckanext.recombinant.errors import BadExcelData
 
 HEADER_ROWS = 3

@@ -28,7 +28,7 @@ datastore_type = {
         u'',
         '[<1000]$##0;[<1000000]$### ##0;$### ### ##0'),
     'text': DatastoreType('text', False, u'', '@'),
-    'boolean': DatastoreType('boolean', False, u'', 'General'),
+    'boolean': DatastoreType('boolean', False, None, 'General'),
     '_text': DatastoreType('_text', False, u'', 'General'),
 }
 
