@@ -163,3 +163,13 @@ def recombinant_show_package(pkg):
     return lc.action.recombinant_show(
         dataset_type=pkg['type'],
         owner_org=pkg['organization']['name'])
+
+
+def recombinant_get_field(resource_name, datastore_id):
+    """
+    Return field info from resource name and datastore column id
+    """
+    chromo = recombinant_get_chromo(resource_name)
+    for f in chromo['fields']:
+        if f['datastore_id'] == datastore_id:
+            return f
