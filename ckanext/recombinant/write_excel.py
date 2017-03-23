@@ -58,7 +58,8 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         (f['datastore_id'], f['choices'])
         for f in recombinant_choice_fields(chromo['resource_name']))
 
-    for n, field in enumerate(chromo['fields'], 1):
+    for n, field in enumerate((f for f in chromo['fields'] if f.get(
+            'import_template_include', True)), 1):
         fill_cell(2, n, recombinant_language_text(field['label']), header_style)
         fill_cell(3, n, field['datastore_id'], header_style)
         # jumping through openpyxl hoops:

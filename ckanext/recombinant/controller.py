@@ -266,7 +266,8 @@ def _process_upload_file(lc, dataset, upload_file, geno):
             column_names.pop()
 
         chromo = get_chromo(sheet_name)
-        expected_columns = [f['datastore_id'] for f in chromo['fields']]
+        expected_columns = [f['datastore_id'] for f in chromo['fields']
+            if f.get('import_template_include', True)]
         if column_names != expected_columns:
             raise BadExcelData(
                 _("This template is out of date. "
