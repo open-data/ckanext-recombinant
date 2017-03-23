@@ -30,6 +30,7 @@ datastore_type = {
     'text': DatastoreType('text', False, u'', '@'),
     'boolean': DatastoreType('boolean', False, None, 'General'),
     '_text': DatastoreType('_text', False, u'', 'General'),
+    'timestamp': DatastoreType('timestamp', False, None, 'General'),
 }
 
 
