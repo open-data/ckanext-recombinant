@@ -2,11 +2,16 @@ import json
 import os.path
 
 from pylons import c, config
-from pylons.i18n import gettext
+from pylons.i18n import _, gettext
 import ckanapi
 from ckan.lib.helpers import lang
+from ckan.lib.i18n import set_lang, get_lang
 
-from ckanext.recombinant.tables import get_chromo, get_geno, get_dataset_types
+from ckanext.recombinant.tables import (
+    get_chromo,
+    get_chromo_by_id,
+    get_geno,
+    get_dataset_types)
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant import load
 
@@ -80,6 +85,21 @@ def recombinant_primary_key_fields(resource_name):
         f for f in chromo['fields']
         if f['datastore_id'] in chromo['datastore_primary_key']
         ]
+def recombinant_get_res_csv_dict(res_id):
+    chromo = get_chromo_by_id(res_id)
+    if not chromo:
+        return None
+    current_lang= get_lang()
+    set_lang('fr')
+    csv_dict = [ (f['datastore_id'], f['label'], _(f['label']))
+            for f in chromo['fields'] ]
+    set_lang(current_lang)
+
+    csv_dict.append(('owner_org', 'owner organization',
+            _('owner organization') ))
+    csv_dict.append(('owner_org_title', 'owner organization title',
+            _('owner organization title') ))
+    return csv_dict
 
 def recombinant_example(resource_name, doc_type, indent=2, lang='json'):
     """
