@@ -4,7 +4,7 @@ import os.path
 from pylons import c, config
 from pylons.i18n import gettext
 import ckanapi
-from ckan.lib.helpers import lang
+from ckan.lib.helpers import lang, url_for
 
 from ckanext.recombinant.tables import get_chromo, get_geno, get_dataset_types
 from ckanext.recombinant.errors import RecombinantException
@@ -163,3 +163,28 @@ def recombinant_show_package(pkg):
     return lc.action.recombinant_show(
         dataset_type=pkg['type'],
         owner_org=pkg['organization']['name'])
+
+def recombinant_resource_link(org_name, resource_name):
+    url = url_for(resource_name=resource_name,owner_org=org_name,
+            action='preview_table',
+            controller='ckanext.recombinant.controller:UploadController')
+    chromo = recombinant_get_chromo(resource_name)
+    return url, chromo['title']
+
+def recombinant_resource_detail(records, act_type, resource_name):
+    chromo = recombinant_get_chromo(resource_name)
+    rows = []
+    if act_type =='deleted datastore':
+        f_dict = {}
+        for f in chromo['fields']:
+            f_dict[f['datastore_id']] = f['label']
+        for k,v in records.iteritems():
+            rows.append([f_dict[k], v])
+    else:
+        if len(records) > 0:
+            for f in chromo['fields']:
+                row = [f['label'],]
+                for record in records:
+                    row.append(record[f['datastore_id']])
+                rows.append(row)
+    return rows, chromo['title']
