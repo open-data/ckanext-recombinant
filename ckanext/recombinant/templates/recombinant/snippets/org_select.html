@@ -1,10 +1,11 @@
-<div class="form-group control-medium control-select">
+<div class="form-group control-medium control-select form-horizontal">
+  <label class="col-sm-2 control-label " for="org-select">{{ _('Organization') }}</label>
   <select id="org-select" name="org_select" class="form-control"
     onchange="window.location.href=this.value">
     {% for org in h.organizations_available('read') %}
       <option value="{% url_for 'recombinant_resource',
         resource_name=resource_name, owner_org=org.name %}"
-        {%- if selected.name == org.name -%}selected="selected"{% endif %}
+        {% if selected.name == org.name %}selected="selected"{% endif %}
         >{{ organization_display_name(org) }}</option>
     {% endfor %}
   </select>
