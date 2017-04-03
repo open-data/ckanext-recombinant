@@ -85,6 +85,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
             'recombinant_example': helpers.recombinant_example,
             'recombinant_choice_fields': helpers.recombinant_choice_fields,
             'recombinant_show_package': helpers.recombinant_show_package,
+            'recombinant_get_field': helpers.recombinant_get_field,
             }
 
     def get_actions(self):

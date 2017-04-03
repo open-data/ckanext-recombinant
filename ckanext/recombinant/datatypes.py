@@ -20,7 +20,7 @@ DatastoreType = namedtuple(
 datastore_type = {
     'year': DatastoreType('year', True, 0.0, '###0'),
     'month': DatastoreType('month', True, 0.0, '00'),
-    'date': DatastoreType('date', False, u'', 'yyyy-mm-dd'),
+    'date': DatastoreType('date', False, None, 'yyyy-mm-dd'),
     'int': DatastoreType('int', True, 0.0, '### ### ### ### ### ##0'),
     'money': DatastoreType(
         'money',
@@ -28,7 +28,9 @@ datastore_type = {
         u'',
         '[<1000]$##0;[<1000000]$### ##0;$### ### ##0'),
     'text': DatastoreType('text', False, u'', '@'),
-    'boolean': DatastoreType('boolean', False, u'', 'General'),
+    'boolean': DatastoreType('boolean', False, None, 'General'),
+    '_text': DatastoreType('_text', False, u'', 'General'),
+    'timestamp': DatastoreType('timestamp', False, None, 'General'),
 }
 
 
@@ -48,6 +50,11 @@ def canonicalize(dirty, dstore_tag):
     Raises BadExcelData on formula cells
     """
     dtype = datastore_type[dstore_tag]
+    if dstore_tag == '_text':
+        if not dirty or not unicode(dirty).strip():
+            return []
+        return [s.strip() for s in unicode(dirty).split(',')]
+
     if dirty is None:
         return dtype.default
     elif isinstance(dirty, (float, int, long)):
@@ -66,7 +73,12 @@ def canonicalize(dirty, dstore_tag):
         elif dtype.tag == 'date' and isinstance(dirty, datetime):
             return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
 
-        if unicode(dirty).startswith('='):
+        # excel, you keep being you
+        if unicode(dirty) == u'=FALSE()':
+            return u'FALSE'
+        elif unicode(dirty) == u'=TRUE()':
+            return u'TRUE'
+        elif unicode(dirty).startswith('='):
             raise BadExcelData('Formulas are not supported')
         return unicode(dirty)
 

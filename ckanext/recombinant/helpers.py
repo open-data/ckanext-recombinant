@@ -134,7 +134,7 @@ def recombinant_choice_fields(resource_name, all_languages=False,
     def choices(f, choices):
         out.append({
             'datastore_id': f['datastore_id'],
-            'label': gettext(f['label']).decode('utf-8'),
+            'label': recombinant_language_text(f['label']),
             'choices': [(v,
                     choices[v] if all_languages else
                     recombinant_language_text(choices[v], prefer_lang))
@@ -163,3 +163,13 @@ def recombinant_show_package(pkg):
     return lc.action.recombinant_show(
         dataset_type=pkg['type'],
         owner_org=pkg['organization']['name'])
+
+
+def recombinant_get_field(resource_name, datastore_id):
+    """
+    Return field info from resource name and datastore column id
+    """
+    chromo = recombinant_get_chromo(resource_name)
+    for f in chromo['fields']:
+        if f['datastore_id'] == datastore_id:
+            return f

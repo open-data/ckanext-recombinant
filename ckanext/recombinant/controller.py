@@ -267,7 +267,8 @@ def _process_upload_file(lc, dataset, upload_file, geno):
             column_names.pop()
 
         chromo = get_chromo(sheet_name)
-        expected_columns = [f['datastore_id'] for f in chromo['fields']]
+        expected_columns = [f['datastore_id'] for f in chromo['fields']
+            if f.get('import_template_include', True)]
         if column_names != expected_columns:
             raise BadExcelData(
                 _("This template is out of date. "
@@ -285,16 +286,23 @@ def _process_upload_file(lc, dataset, upload_file, geno):
             lc.action.datastore_upsert(
                 method=method,
                 resource_id=expected_sheet_names[sheet_name],
-                records=records,
+                records=[r[1] for r in records],
                 )
         except ValidationError as e:
-            # because, where else would you put the error text?
-            # XXX improve this in datastore, please
-            pgerror = e.error_dict['info']['orig'][0].decode('utf-8')
+            if 'info' in e.error_dict:
+                # because, where else would you put the error text?
+                # XXX improve this in datastore, please
+                pgerror = e.error_dict['info']['orig'][0].decode('utf-8')
+            else:
+                pgerror = e.error_dict['records'][0]
             # remove some postgres-isms that won't help the user
             # when we render this as an error in the form
             pgerror = re.sub(ur'\nLINE \d+:', u'', pgerror)
             pgerror = re.sub(ur'\n *\^\n$', u'', pgerror)
+            if '_records_row' in e.error_dict:
+                raise BadExcelData(_(u'Sheet {0} Row {1}:').format(
+                    sheet_name, records[e.error_dict['_records_row']][0])
+                    + u' ' + pgerror)
             raise BadExcelData(
                 _(u"Error while importing data: {0}").format(
                     pgerror))
