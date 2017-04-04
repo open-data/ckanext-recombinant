@@ -1,14 +1,6 @@
 {% extends 'package/base_form_page.html' %}
 
-{% set geno = h.recombinant_get_geno(dataset.dataset_type) %}
-{% block page_title %}<h1 id="wb-cont" property="name">{{ _(resource.description) }}</h1>
-  {% if 'alt_notes' in geno %}
-    <div class="alert alert-info" role="alert">
-       {{ _(geno.alt_notes) }}
-    </div>
-  {% endif %}
-{% endblock %}
-
+{% block page_title %}<h1 id="wb-cont" property="name">{{ _(resource.description) }}</h1>{% endblock %}
 {% block subtitle %}{{ _(resource.description) }}{% endblock %}
 {%- macro organization_display_name(org) -%}
   {%- block organization_display scoped -%}
