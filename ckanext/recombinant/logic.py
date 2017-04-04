@@ -259,7 +259,8 @@ def _dataset_fields(geno):
     """
     return the dataset metadata fields created for dataset definition geno
     """
-    return {'title': geno['title'], 'notes': geno.get('notes', '')}
+    notes = geno.get('alt_notes', geno.get('notes', ''))
+    return {'title': geno['title'], 'notes': notes}
 
 
 def _dataset_match(geno, dataset):
