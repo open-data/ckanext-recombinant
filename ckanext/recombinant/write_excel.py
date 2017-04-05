@@ -24,6 +24,57 @@ def excel_template(dataset_type, org):
         sheet = book.create_sheet()
 
     _populate_reference_sheet(sheet, chromo, refs)
+    sheet.title = 'reference'
+    return book
+
+
+def excel_data_dictionary(chromo):
+    """
+    return an openpyxl.Workbook object containing the field reference
+    from chromo, one sheet per language
+    """
+    book = openpyxl.Workbook()
+    sheet = book.active
+
+    style1 = {
+        'PatternFill': {
+            'patternType': 'solid',
+            'fgColor': 'FFFFF056'},
+        'Font': {
+            'bold': True}}
+    style2 = {
+        'PatternFill': {
+            'patternType': 'solid',
+            'fgColor': 'FFDFE2DB'}}
+
+    from pylons import config
+    from ckan.lib.i18n import handle_request, get_lang
+    from ckan.common import c, request
+
+    for lang in config['ckan.locales_offered'].split():
+        if sheet is None:
+            sheet = book.create_sheet()
+
+        sheet.title = lang.upper()
+        # switch language (FIXME: this is harder than it should be)
+        request.environ['CKAN_LANG'] = lang
+        handle_request(request, c)
+        choice_fields = dict(
+            (f['datastore_id'], f['choices'])
+            for f in recombinant_choice_fields(chromo['resource_name']))
+
+        refs = []
+        for field in chromo['fields']:
+            _append_field_ref_rows(refs, field, style1, style2)
+
+            if field['datastore_id'] in choice_fields:
+                _append_field_choices_rows(
+                    refs,
+                    choice_fields[field['datastore_id']])
+
+        _populate_reference_sheet(sheet, chromo, refs)
+        sheet = None
+
     return book
 
 
@@ -70,25 +121,15 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         col.number_format = datastore_type[field['datastore_type']].xl_format
         validation_range = '{0}4:{0}1004'.format(col_letter)
 
-        refs.append((None, []))
-        refs.append((org_style,
-            [recombinant_language_text(field['label'])]))
-        if 'description' in field:
-            refs.append((header_style,
-                [recombinant_language_text(field['description'])]))
-        if 'obligation' in field:
-            refs.append((header_style,
-                [recombinant_language_text(field['obligation'])]))
-        if 'format_type' in field:
-            refs.append((header_style,
-                [recombinant_language_text(field['format_type'])]))
+        _append_field_ref_rows(refs, field, org_style, header_style)
 
         if field['datastore_type'] == 'boolean':
             boolean_validator.ranges.append(validation_range)
         if field['datastore_id'] in choice_fields:
             ref1 = len(refs) + 1
-            for key, value in choice_fields[field['datastore_id']]:
-                refs.append((None, [None, key, value]))
+            _append_field_choices_rows(
+                refs,
+                choice_fields[field['datastore_id']])
             refN = len(refs)
 
             if field['datastore_type'] == '_text':
@@ -120,8 +161,25 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
     sheet.freeze_panes = sheet['A4']
 
 
+def _append_field_ref_rows(refs, field, style1, style2):
+    refs.append((None, []))
+    refs.append((style1,
+        [recombinant_language_text(field['label'])]))
+    if 'description' in field:
+        refs.append((style2,
+            [recombinant_language_text(field['description'])]))
+    if 'obligation' in field:
+        refs.append((style2,
+            [recombinant_language_text(field['obligation'])]))
+    if 'format_type' in field:
+        refs.append((style2,
+            [recombinant_language_text(field['format_type'])]))
+
+def _append_field_choices_rows(refs, choices):
+    for key, value in choices:
+        refs.append((None, [None, key, value]))
+
 def _populate_reference_sheet(sheet, chromo, refs):
-    sheet.title = 'reference'
     for style, ref_line in refs:
         sheet.append(ref_line)
         if style:

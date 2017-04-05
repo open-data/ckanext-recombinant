@@ -11,7 +11,8 @@ from ckan.logic import ValidationError, NotAuthorized
 
 from ckanext.recombinant.errors import RecombinantException, BadExcelData
 from ckanext.recombinant.read_excel import read_excel, get_records
-from ckanext.recombinant.write_excel import excel_template
+from ckanext.recombinant.write_excel import (
+    excel_template, excel_data_dictionary)
 from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import recombinant_primary_key_fields
 
@@ -170,6 +171,22 @@ class UploadController(PackageController):
             'inline; filename="{0}.{1}.xlsx"'.format(
                 dataset['organization']['name'],
                 dataset['type']))
+        return blob.getvalue()
+
+
+    def data_dictionary(self, resource_name):
+        try:
+            chromo = get_chromo(resource_name)
+        except RecombinantException:
+            abort(404, _('Recombinant resource_name not found'))
+
+        book = excel_data_dictionary(chromo)
+        blob = StringIO()
+        book.save(blob)
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = (
+            'inline; filename="{0}.xlsx"'.format(
+                resource_name))
         return blob.getvalue()
 
 
