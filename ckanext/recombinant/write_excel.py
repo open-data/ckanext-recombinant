@@ -6,6 +6,8 @@ from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import (
     recombinant_choice_fields, recombinant_language_text)
 
+from ckan.plugins.toolkit import _
+
 red_fill = openpyxl.styles.PatternFill(start_color='FFEE1111',
     end_color='FFEE1111', fill_type='solid')
 
@@ -163,27 +165,41 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
 
 def _append_field_ref_rows(refs, field, style1, style2):
     refs.append((None, []))
-    refs.append((style1,
-        [recombinant_language_text(field['label'])]))
+    refs.append((style1, [
+        _('Element Name'),
+        recombinant_language_text(field['label'])]))
+    refs.append((style2, [
+        _('ID'),
+        field['datastore_id']]))
     if 'description' in field:
-        refs.append((style2,
-            [recombinant_language_text(field['description'])]))
+        refs.append((style2, [
+            _('Description'),
+            recombinant_language_text(field['description'])]))
     if 'obligation' in field:
-        refs.append((style2,
-            [recombinant_language_text(field['obligation'])]))
+        refs.append((style2, [
+            _('Obligation'),
+            recombinant_language_text(field['obligation'])]))
     if 'format_type' in field:
-        refs.append((style2,
-            [recombinant_language_text(field['format_type'])]))
+        refs.append((style2, [
+            _('Format'),
+            recombinant_language_text(field['format_type'])]))
 
 def _append_field_choices_rows(refs, choices):
+    label = _('Values')
     for key, value in choices:
-        refs.append((None, [None, key, value]))
+        refs.append((None, [label, unicode(key), value]))
+        label = None
 
 def _populate_reference_sheet(sheet, chromo, refs):
     for style, ref_line in refs:
         sheet.append(ref_line)
-        if style:
-            apply_styles(style, sheet.row_dimensions[sheet.max_row])
+        if not style:
+            continue
+
+        apply_styles(style, sheet.row_dimensions[sheet.max_row])
+        for c in range(len(ref_line)):
+            apply_styles(style, sheet.cell(
+                row=sheet.max_row, column=c + 1))
 
 
 def apply_styles(config, target):
