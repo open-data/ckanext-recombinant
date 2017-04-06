@@ -6,7 +6,7 @@ from paste.reloader import watch_file
 from paste.deploy.converters import asbool
 from pylons.i18n import _
 import ckan.plugins as p
-from ckan.lib.plugins import DefaultDatasetForm
+from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
 from ckanext.recombinant import logic, tables, helpers, load
 
@@ -14,13 +14,15 @@ class RecombinantException(Exception):
     pass
 
 
-class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm):
+class RecombinantPlugin(
+        p.SingletonPlugin, DefaultDatasetForm, DefaultTranslation):
     p.implements(tables.IRecombinant)
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
     p.implements(p.IRoutes, inherit=True)
     p.implements(p.ITemplateHelpers, inherit=True)
     p.implements(p.IActions)
+    p.implements(p.ITranslation)
 
     def update_config(self, config):
         # add our templates
