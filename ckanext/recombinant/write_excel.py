@@ -166,7 +166,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
 def _append_field_ref_rows(refs, field, style1, style2):
     refs.append((None, []))
     refs.append((style1, [
-        _('Element Name'),
+        _('Field Name'),
         recombinant_language_text(field['label'])]))
     refs.append((style2, [
         _('ID'),
