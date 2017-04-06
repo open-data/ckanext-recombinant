@@ -112,6 +112,31 @@ msgstr ""
 msgid "Multiple datasets exist for type %s"
 msgstr ""
 
+#: ckanext/recombinant/write_excel.py:169
+msgid "Field Name"
+msgstr "Nom de la zone"
+
+#: ckanext/recombinant/write_excel.py:172
+msgid "ID"
+msgstr ""
+
+#: ckanext/recombinant/write_excel.py:176
+msgid "Description"
+msgstr "Description"
+
+#: ckanext/recombinant/write_excel.py:180
+msgid "Obligation"
+msgstr "Obligation"
+
+#: ckanext/recombinant/write_excel.py:184
+msgid "Format"
+msgstr ""
+
+#: ckanext/recombinant/write_excel.py:188
+msgid "Values"
+msgstr ""
+
+
 #: ckanext/recombinant/templates/recombinant/confirm_delete.html:7
 msgid ""
 "Are you sure you want to delete {num} record? This action cannot be "
