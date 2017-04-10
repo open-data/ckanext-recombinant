@@ -134,7 +134,7 @@ msgstr ""
 
 #: ckanext/recombinant/write_excel.py:188
 msgid "Values"
-msgstr ""
+msgstr "Valeurs"
 
 
 #: ckanext/recombinant/templates/recombinant/confirm_delete.html:7
