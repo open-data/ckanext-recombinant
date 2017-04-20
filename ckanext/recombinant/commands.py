@@ -337,7 +337,9 @@ class TableCommand(CkanCommand):
                 record['owner_org_title'] = pkg['org_title']
                 try:
                     out.writerow([unicode(
-                        u'' if record[col] is None else record[col]
+                        u'' if record[col] is None else
+                        u','.join(record[col]) if isinstance(record[col], list) else
+                        record[col]
                         ).encode('utf-8') for col in column_ids])
                 except KeyError:
                     print 'resource {0} table missing keys for {1}'.format(
