@@ -280,7 +280,7 @@ def _process_upload_file(lc, dataset, upload_file, geno):
 
         # custom styles or other errors cause columns to be read
         # that actually have no data. strip them here to avoid error below
-        while column_names[-1] is None:
+        while column_names and column_names[-1] is None:
             column_names.pop()
 
         chromo = get_chromo(sheet_name)
