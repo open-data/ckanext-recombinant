@@ -30,6 +30,9 @@ def csv_data_batch(csv_path, chromo):
         assert cols == expected, 'column mismatch:\n{0}\n{1}'.format(
             cols, expected)
 
+        none_fields = [f['datastore_id'] for f in chromo['fields']
+            if f['datastore_type'] != 'text']
+
         for row_dict in csv_in:
             owner_org = row_dict.pop('owner_org')
             owner_org_title = row_dict.pop('owner_org_title')
@@ -38,6 +41,10 @@ def csv_data_batch(csv_path, chromo):
                     yield (current_owner_org, records)
                 records = []
                 current_owner_org = owner_org
+
+            for f_id in none_fields:
+                if not row_dict[f_id]:
+                    row_dict[f_id] = None
 
             records.append(row_dict)
             if len(records) >= BATCH_SIZE:
