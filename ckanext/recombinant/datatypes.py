@@ -22,6 +22,7 @@ datastore_type = {
     'month': DatastoreType('month', True, 0.0, '00'),
     'date': DatastoreType('date', False, None, 'yyyy-mm-dd'),
     'int': DatastoreType('int', True, 0.0, '### ### ### ### ### ##0'),
+    'bigint': DatastoreType('bigint', True, 0.0, '### ### ### ### ### ##0'),
     'money': DatastoreType(
         'money',
         False,
