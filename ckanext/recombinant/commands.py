@@ -11,6 +11,7 @@ Usage:
   paster recombinant target-datasets [-c CONFIG]
   paster recombinant dataset-types [DATASET_TYPE ...] [-c CONFIG]
   paster recombinant remove-broken DATASET_TYPE ... [-c CONFIG]
+  paster recombinant update DATASET_TYPE ... [-c CONFIG]
   paster recombinant -h
 
 Options:
@@ -87,6 +88,8 @@ class TableCommand(CkanCommand):
             return self._dataset_types(opts['DATASET_TYPE'])
         elif opts['remove-broken']:
             return self._remove_broken(opts['DATASET_TYPE'])
+        elif opts['update']:
+            return self._update(opts['DATASET_TYPE'])
         else:
             print opts
             return -1
@@ -362,6 +365,16 @@ class TableCommand(CkanCommand):
                         lc.action.package_delete(id=d['id'])
                         break
 
+    def _update(self, target_datasets):
+        """
+        Low-level command to update field value in datasets' datastore tables
+        """
+        lc = LocalCKAN()
+        for dtype in target_datasets:
+            datasets = lc.action.package_search(q="type:%s" % dtype, rows=5000)
+            for d in datasets['results']:
+                for r in d['resources']:
+                    lc.action.datastore_trigger_each_row(resource_id=r['id'])
 
     def _target_datasets(self):
         print ' '.join(get_target_datasets())
