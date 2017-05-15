@@ -373,8 +373,11 @@ class TableCommand(CkanCommand):
         for dtype in target_datasets:
             datasets = lc.action.package_search(q="type:%s" % dtype, rows=5000)
             for d in datasets['results']:
-                for r in d['resources']:
-                    lc.action.datastore_trigger_each_row(resource_id=r['id'])
+                results = [lc.action.datastore_trigger_each_row(resource_id=r['id'])
+                           for r in d['resources']]
+                rowcount = reduce(lambda x,y: x + y, results)
+                print ' '.join([d['owner_org'], d['organization']['name'],
+                               'updated', str(rowcount), 'records'])
 
     def _target_datasets(self):
         print ' '.join(get_target_datasets())
