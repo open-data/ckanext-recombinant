@@ -375,7 +375,7 @@ class TableCommand(CkanCommand):
             for d in datasets['results']:
                 results = [lc.action.datastore_trigger_each_row(resource_id=r['id'])
                            for r in d['resources']]
-                rowcount = reduce(lambda x,y: x + y, results)
+                rowcount = sum(results)
                 print ' '.join([d['owner_org'], d['organization']['name'],
                                'updated', str(rowcount), 'records'])
 
