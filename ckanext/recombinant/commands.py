@@ -339,11 +339,12 @@ class TableCommand(CkanCommand):
                 record['owner_org'] = pkg['owner_org']
                 record['owner_org_title'] = pkg['org_title']
                 try:
-                    out.writerow([unicode(
+                    row = [unicode(
                         u'' if record[col] is None else
                         u','.join(record[col]) if isinstance(record[col], list) else
                         record[col]
-                        ).encode('utf-8') for col in column_ids])
+                        ).encode('utf-8') for col in column_ids]
+                    out.writerow(['\r\n'.join(col.splitlines()) for col in row])
                 except KeyError:
                     print 'resource {0} table missing keys for {1}'.format(
                         chromo['resource_name'], pkg['owner_org'])
