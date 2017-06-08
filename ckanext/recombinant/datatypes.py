@@ -35,7 +35,7 @@ datastore_type = {
 }
 
 
-def canonicalize(dirty, dstore_tag):
+def canonicalize(dirty, dstore_tag, primary_key):
     """
     Canonicalize dirty input from xlrd to align with
     recombinant.json datastore type specified in dstore_tag.
@@ -44,6 +44,8 @@ def canonicalize(dirty, dstore_tag):
     :type dirty: object
     :param dstore_tag: datastore_type specifier in (JSON) schema for cell
     :type dstore_tag: str
+    :param primary_key: True if this field is part of the PK
+    :type primary_key: bool
 
     :return: Canonicalized cell input
     :rtype: float or unicode
@@ -74,14 +76,19 @@ def canonicalize(dirty, dstore_tag):
         elif dtype.tag == 'date' and isinstance(dirty, datetime):
             return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
 
+        dirty = unicode(dirty)
+        # accidental whitespace around primary keys leads to unpleasantness
+        if primary_key:
+            dirty = dirty.strip()
+
         # excel, you keep being you
-        if unicode(dirty) == u'=FALSE()':
+        if dirty == u'=FALSE()':
             return u'FALSE'
-        elif unicode(dirty) == u'=TRUE()':
+        elif dirty == u'=TRUE()':
             return u'TRUE'
-        elif unicode(dirty).startswith('='):
+        elif dirty.startswith('='):
             raise BadExcelData('Formulas are not supported')
-        return unicode(dirty)
+        return dirty
 
     # dirty is numeric: truncate trailing decimal digits, retain int part
     canon = re.sub(r'[^0-9]', '', unicode(dirty).split('.')[0])

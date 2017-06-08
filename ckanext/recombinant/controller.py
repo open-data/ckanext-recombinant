@@ -294,8 +294,9 @@ def _process_upload_file(lc, dataset, upload_file, geno):
                 "problem continues, send your Excel file to "
                 "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
-        records = get_records(rows, chromo['fields'])
-        method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
+        pk = chromo.get('datastore_primary_key', [])
+        records = get_records(rows, chromo['fields'], pk)
+        method = 'upsert' if pk else 'insert'
         total_records += len(records)
         if not records:
             continue

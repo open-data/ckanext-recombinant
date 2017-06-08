@@ -61,7 +61,7 @@ def _is_bumf(value):
     return value is None
 
 
-def get_records(rows, fields):
+def get_records(rows, fields, primary_key_fields):
     """
     Truncate/pad empty/missing records to expected row length, canonicalize
     cell content, and return resulting record list.
@@ -70,6 +70,8 @@ def get_records(rows, fields):
     :type upload_data: generator
     :param fields: collection of fields specified in JSON schema
     :type fields: list or tuple
+    :param primary_key_fields: list of field ids making up the PK
+    :type primary_key_fields: list of strings
 
     :return: canonicalized records of specified upload data
     :rtype: tuple of dicts
@@ -88,7 +90,10 @@ def get_records(rows, fields):
             records.append(
                 (n, dict((
                     f['datastore_id'],
-                    canonicalize(v, f['datastore_type']))
+                    canonicalize(
+                        v,
+                        f['datastore_type'],
+                        f['datastore_id'] in primary_key_fields))
                 for f, v in zip(fields, row))))
         except BadExcelData, e:
             raise BadExcelData(u'Row {0}:'.format(n) + u' ' + e.message)
