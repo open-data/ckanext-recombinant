@@ -5,7 +5,6 @@ Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
   paster recombinant create [-f] (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
-  paster recombinant load-excel EXCEL_FILE ... [-c CONFIG]
   paster recombinant load-csv CSV_FILE ... [-c CONFIG]
   paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
@@ -39,7 +38,6 @@ from docopt import docopt
 from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
     get_dataset_types, get_chromo, get_geno, get_target_datasets,
     get_resource_names)
-from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.read_csv import csv_data_batch
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
@@ -75,8 +73,6 @@ class TableCommand(CkanCommand):
             return self._create(opts['DATASET_TYPE'])
         elif opts['delete']:
             return self._delete(opts['DATASET_TYPE'])
-        elif opts['load-excel']:
-            return self._load_excel_files(opts['EXCEL_FILE'])
         elif opts['load-csv']:
             return self._load_csv_files(opts['CSV_FILE'])
         elif opts['combine']:
@@ -203,46 +199,6 @@ class TableCommand(CkanCommand):
                     except NotFound:
                         pass
                 lc.action.package_delete(id=p['id'])
-
-    def _load_excel_files(self, excel_file_names):
-        for n in excel_file_names:
-            self._load_one_excel(n)
-
-    def _load_one_excel_file(self, name):
-        g = read_excel(name)
-        sheet_name, org_name, date_mode = next(g)
-
-        for t in _get_tables():
-            if t['excel_sheet_name'] == sheet_name:
-                break
-        else:
-            logging.warn("XLS sheet name '{0}' not found in tables".format(
-                sheet_name))
-            return
-
-        if org_name not in self._get_orgs():
-            logging.warn("Organization name '{0}' not found".format(org_name))
-            return
-
-        lc = LocalCKAN()
-        org = lc.action.organization_show(id=org_name, include_datsets=False)
-        packages = lc.action.package_search(
-            q="type:%s AND owner_org:%s" % (t['dataset_type'], org['id']),
-            rows=10)['results']
-        if len(packages) != 1:
-            logging.warn('expected %d packages, received %d' %
-                (1, len(packages)))
-
-        if not packages:
-            logging.warn(("No recombinant definition for '%s' found. "
-                "Try creating them first") % t['dataset_type'])
-            return
-        p = packages[0]
-        resource_id = p['resources'][0]['id']
-        records = get_records(g, t['fields'], date_mode)
-
-        print name, len(records)
-        lc.action.datastore_upsert(resource_id=resource_id, records=records)
 
     def _load_csv_files(self, csv_file_names):
         errs = 0
