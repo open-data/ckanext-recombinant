@@ -131,7 +131,9 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
             ref1 = len(refs) + 1
             _append_field_choices_rows(
                 refs,
-                choice_fields[field['datastore_id']])
+                choice_fields[field['datastore_id']],
+                sheet.title + '!' + validation_range
+                if field['datastore_type'] == '_text' else None)
             refN = len(refs)
 
             choice_range = 'reference!$B${0}:$B${1}'.format(ref1, refN)
@@ -207,10 +209,16 @@ def _append_field_ref_rows(refs, field, style1, style2):
             _('Format'),
             recombinant_language_text(field['format_type'])]))
 
-def _append_field_choices_rows(refs, choices):
+def _append_field_choices_rows(refs, choices, count_range=None):
     label = _('Values')
     for key, value in choices:
-        refs.append((None, [label, unicode(key), value]))
+        r = [label, unicode(key), value]
+        if count_range: # used by _text choiced validation
+            r.extend([None]*6 + ['=SUMPRODUCT(ISNUMBER(SEARCH('
+                'SUBSTITUTE(","&{r}&","," ",""),","&B{n}&",")))'.format(
+                    r=count_range,
+                    n=len(refs) + 1)])
+        refs.append((None, r))
         label = None
 
 def _populate_reference_sheet(sheet, chromo, refs):
