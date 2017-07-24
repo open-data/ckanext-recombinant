@@ -134,27 +134,50 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                 choice_fields[field['datastore_id']])
             refN = len(refs)
 
-            if field['datastore_type'] == '_text':
-                continue  # can't validate these in excel yet
-
             choice_range = 'reference!$B${0}:$B${1}'.format(ref1, refN)
-            v = openpyxl.worksheet.datavalidation.DataValidation(
-                type="list",
-                formula1=choice_range,
-                allow_blank=True)
-            v.errorTitle = u'Invalid choice'
-            v.error = (u'Please enter one of the valid keys shown on '
-                'sheet "reference" rows {0}-{1}'.format(ref1, refN))
-            sheet.add_data_validation(v)
-            v.ranges.append(validation_range)
+
+            choices = [c[0] for c in choice_fields[field['datastore_id']]]
+            if field['datastore_type'] == '_text':
+                # custom validation only works in Excel, use conditional
+                # formatting instead
+                sheet.conditional_formatting.add(validation_range,
+                    openpyxl.formatting.FormulaRule([(
+                        'LEN({subs0}SUBSTITUTE(","&{col}4," ","")'
+                        '{subs1})=0'.format(
+                            subs0='SUBSTITUTE(' * len(choices),
+                            col=col_letter,
+                            subs1=''.join(',",%s","")' % c for c in choices))
+                    )],
+                    stopIfTrue=True, fill=red_fill))
+            else:
+                v = openpyxl.worksheet.datavalidation.DataValidation(
+                    type="list",
+                    formula1=choice_range,
+                    allow_blank=True)
+                v.errorTitle = u'Invalid choice'
+                v.error = (u'Please enter one of the valid keys shown on '
+                    'sheet "reference" rows {0}-{1}'.format(ref1, refN))
+                sheet.add_data_validation(v)
+                v.ranges.append(validation_range)
 
             # hilight header if bad values pasted below
-            sheet.conditional_formatting.add("{0}2".format(col_letter),
-                openpyxl.formatting.FormulaRule([(
-                    'COUNTIF({0},"<>"&"")' # all non-blank cells
-                    '-SUMPRODUCT(COUNTIF({0},{1}))'
-                    .format(validation_range, choice_range))],
-                    stopIfTrue=True, fill=red_fill))
+            if field['datastore_type'] == '_text':
+                sheet.conditional_formatting.add("{0}2".format(col_letter),
+                    openpyxl.formatting.FormulaRule([(
+                        'SUMPRODUCT(LEN({subs0}SUBSTITUTE(","&{vrange}," ","")'
+                        '{subs1})-COUNTBLANK({vrange})=0'.format(
+                            subs0='SUBSTITUTE(' * len(choices),
+                            vrange=validation_range,
+                            subs1=''.join(',",%s","")' % c for c in choices))
+                        )],
+                        stopIfTrue=True, fill=red_fill))
+            else:
+                sheet.conditional_formatting.add("{0}2".format(col_letter),
+                    openpyxl.formatting.FormulaRule([(
+                        'COUNTIF({0},"<>"&"")' # all non-blank cells
+                        '-SUMPRODUCT(COUNTIF({0},{1}))'
+                        .format(validation_range, choice_range))],
+                        stopIfTrue=True, fill=red_fill))
 
     apply_styles(header_style, sheet.row_dimensions[2])
     apply_styles(header_style, sheet.row_dimensions[3])
