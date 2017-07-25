@@ -141,14 +141,19 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
             choices = [c[0] for c in choice_fields[field['datastore_id']]]
             if field['datastore_type'] == '_text':
                 # custom validation only works in Excel, use conditional
-                # formatting instead
+                # formatting for libre office compatibility
                 sheet.conditional_formatting.add(validation_range,
                     openpyxl.formatting.FormulaRule([(
-                        'LEN({subs0}SUBSTITUTE(","&{col}4," ","")'
-                        '{subs1})=0'.format(
-                            subs0='SUBSTITUTE(' * len(choices),
+                        # count characters in the cell
+                        'IF(SUBSTITUTE({col}4," ","")="",0,'
+                        'LEN(SUBSTITUTE({col}4," ",""))+1)-'
+                        # minus length of valid choices
+                        'SUMPRODUCT(ISNUMBER(SEARCH('
+                        '","&{r}&",",SUBSTITUTE(","&{col}4&","," ",""))),'
+                        'LEN({r})+1)'
+                        .format(
                             col=col_letter,
-                            subs1=''.join(',",%s","")' % c for c in choices))
+                            r=choice_range)
                     )],
                     stopIfTrue=True, fill=red_fill))
             else:
@@ -164,13 +169,19 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
 
             # hilight header if bad values pasted below
             if field['datastore_type'] == '_text':
+                choice_counts = 'reference!$J${0}:$J${1}'.format(ref1, refN)
                 sheet.conditional_formatting.add("{0}2".format(col_letter),
                     openpyxl.formatting.FormulaRule([(
-                        'SUMPRODUCT(LEN({subs0}SUBSTITUTE(","&{vrange}," ","")'
-                        '{subs1})-COUNTBLANK({vrange})=0'.format(
-                            subs0='SUBSTITUTE(' * len(choices),
-                            vrange=validation_range,
-                            subs1=''.join(',",%s","")' % c for c in choices))
+                        # count characters in the validation range
+                        'SUMPRODUCT(IF(SUBSTITUTE({v}," ","")="",0,'
+                        'LEN(SUBSTITUTE({v}," ",""))+1))-'
+                        # minus length of all valid choices found
+                        'SUMPRODUCT({counts},LEN({choices})+1)'
+                        .format(
+                            v=validation_range,
+                            col=col_letter,
+                            choices=choice_range,
+                            counts=choice_counts)
                         )],
                         stopIfTrue=True, fill=red_fill))
             else:
@@ -215,7 +226,7 @@ def _append_field_choices_rows(refs, choices, count_range=None):
         r = [label, unicode(key), value]
         if count_range: # used by _text choiced validation
             r.extend([None]*6 + ['=SUMPRODUCT(ISNUMBER(SEARCH('
-                'SUBSTITUTE(","&{r}&","," ",""),","&B{n}&",")))'.format(
+                '","&B{n}&",",SUBSTITUTE(","&{r}&","," ",""))))'.format(
                     r=count_range,
                     n=len(refs) + 1)])
         refs.append((None, r))
