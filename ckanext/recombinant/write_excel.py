@@ -162,8 +162,13 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                     formula1=choice_range,
                     allow_blank=True)
                 v.errorTitle = u'Invalid choice'
-                v.error = (u'Please enter one of the valid keys shown on '
-                    'sheet "reference" rows {0}-{1}'.format(ref1, refN))
+                valid_keys = ', '.join(choices)
+                if len(valid_keys) < 40:
+                    v.error = (u'Please enter one of the valid keys: '
+                        + valid_keys)
+                else:
+                    v.error = (u'Please enter one of the valid keys shown on '
+                        'sheet "reference" rows {0}-{1}'.format(ref1, refN))
                 sheet.add_data_validation(v)
                 v.ranges.append(validation_range)
 
