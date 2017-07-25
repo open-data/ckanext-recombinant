@@ -10,6 +10,8 @@ from ckan.plugins.toolkit import _
 
 red_fill = openpyxl.styles.PatternFill(start_color='FFEE1111',
     end_color='FFEE1111', fill_type='solid')
+orange_fill = openpyxl.styles.PatternFill(start_color='FFFFAA77',
+    end_color='FFFFAA77', fill_type='solid')
 
 def excel_template(dataset_type, org):
     """
@@ -111,6 +113,12 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         (f['datastore_id'], f['choices'])
         for f in recombinant_choice_fields(chromo['resource_name']))
 
+    pk_cells = [
+        openpyxl.cell.get_column_letter(n)+'4' for
+        n, field in enumerate((f for f in chromo['fields'] if f.get(
+                    'import_template_include', True)), 1)
+        if field['datastore_id'] in chromo['datastore_primary_key']]
+
     for n, field in enumerate((f for f in chromo['fields'] if f.get(
             'import_template_include', True)), 1):
         fill_cell(2, n, recombinant_language_text(field['label']), header_style)
@@ -197,6 +205,25 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                         .format(validation_range, choice_range))],
                         stopIfTrue=True, fill=red_fill))
 
+        if field.get('excel_required'):
+            # hilight missing values
+            if field['datastore_id'] in chromo['datastore_primary_key']:
+                sheet.conditional_formatting.add(validation_range,
+                    openpyxl.formatting.FormulaRule([(
+                        'AND({col}4="",SUMPRODUCT(LEN(A4:Z4)))'
+                        .format(col=col_letter)
+                        )],
+                        stopIfTrue=True, fill=orange_fill))
+            else:
+                sheet.conditional_formatting.add(validation_range,
+                    openpyxl.formatting.FormulaRule([(
+                        'AND({col}4="",{pk_vals})'
+                        .format(
+                            col=col_letter,
+                            pk_vals='+'.join('LEN(%s)'%c for c in pk_cells))
+                        )],
+                        stopIfTrue=True, fill=orange_fill))
+
     apply_styles(header_style, sheet.row_dimensions[2])
     apply_styles(header_style, sheet.row_dimensions[3])
     sheet.row_dimensions[3].hidden = True
@@ -229,7 +256,7 @@ def _append_field_choices_rows(refs, choices, count_range=None):
     label = _('Values')
     for key, value in choices:
         r = [label, unicode(key), value]
-        if count_range: # used by _text choiced validation
+        if count_range: # used by _text choices validation
             r.extend([None]*6 + ['=SUMPRODUCT(ISNUMBER(SEARCH('
                 '","&B{n}&",",SUBSTITUTE(","&{r}&","," ",""))))'.format(
                     r=count_range,
