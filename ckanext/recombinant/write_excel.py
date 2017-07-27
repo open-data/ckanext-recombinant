@@ -10,8 +10,9 @@ from ckan.plugins.toolkit import _
 
 red_fill = openpyxl.styles.PatternFill(start_color='FFEE1111',
     end_color='FFEE1111', fill_type='solid')
-orange_fill = openpyxl.styles.PatternFill(start_color='FFFFAA77',
-    end_color='FFFFAA77', fill_type='solid')
+orange_side = openpyxl.styles.Side(style='medium', color='FFFFAA77')
+orange_border = openpyxl.styles.Border(
+    orange_side, orange_side, orange_side, orange_side)
 
 def excel_template(dataset_type, org):
     """
@@ -213,7 +214,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                         'AND({col}4="",SUMPRODUCT(LEN(A4:Z4)))'
                         .format(col=col_letter)
                         )],
-                        stopIfTrue=True, fill=orange_fill))
+                        stopIfTrue=True, border=orange_border))
             else:
                 sheet.conditional_formatting.add(validation_range,
                     openpyxl.formatting.FormulaRule([(
@@ -222,7 +223,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                             col=col_letter,
                             pk_vals='+'.join('LEN(%s)'%c for c in pk_cells))
                         )],
-                        stopIfTrue=True, fill=orange_fill))
+                        stopIfTrue=True, border=orange_border))
 
     apply_styles(header_style, sheet.row_dimensions[2])
     apply_styles(header_style, sheet.row_dimensions[3])
