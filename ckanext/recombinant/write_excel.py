@@ -157,7 +157,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                         'IF(SUBSTITUTE({col}4," ","")="",0,'
                         'LEN(SUBSTITUTE({col}4," ",""))+1)-'
                         # minus length of valid choices
-                        'SUMPRODUCT(ISNUMBER(SEARCH('
+                        'SUMPRODUCT(--ISNUMBER(SEARCH('
                         '","&{r}&",",SUBSTITUTE(","&{col}4&","," ",""))),'
                         'LEN({r})+1)'
                         .format(
@@ -258,7 +258,7 @@ def _append_field_choices_rows(refs, choices, count_range=None):
     for key, value in choices:
         r = [label, unicode(key), value]
         if count_range: # used by _text choices validation
-            r.extend([None]*6 + ['=SUMPRODUCT(ISNUMBER(SEARCH('
+            r.extend([None]*6 + ['=SUMPRODUCT(--ISNUMBER(SEARCH('
                 '","&B{n}&",",SUBSTITUTE(","&{r}&","," ",""))))'.format(
                     r=count_range,
                     n=len(refs) + 1)])
