@@ -10,8 +10,10 @@ from ckan.plugins.toolkit import _
 
 error_fill = openpyxl.styles.PatternFill(
     start_color='FF763626', end_color='FF763626', fill_type='solid')
-required_fill = openpyxl.styles.PatternFill(
-    start_color='FF2A3132', end_color='FF2A3132', fill_type='solid')
+required_side = openpyxl.styles.Side(style='medium', color='FF2A3132')
+required_border = openpyxl.styles.Border(
+    required_side, required_side, required_side, required_side)
+
 white_font = openpyxl.styles.Font(color=openpyxl.styles.colors.WHITE)
 
 def excel_template(dataset_type, org):
@@ -227,8 +229,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                             .format(col=col_letter)
                             )],
                         stopIfTrue=True,
-                        fill=required_fill,
-                        font=white_font,
+                        border=required_border,
                         ))
             else:
                 sheet.conditional_formatting.add(validation_range,
@@ -239,8 +240,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                                 pk_vals='+'.join('LEN(%s)'%c for c in pk_cells))
                             )],
                         stopIfTrue=True,
-                        fill=required_fill,
-                        font=white_font,
+                        border=required_border,
                         ))
 
     apply_styles(header_style, sheet.row_dimensions[2])
