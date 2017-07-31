@@ -103,8 +103,11 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         chromo['excel_organization_style'],
         Alignment={'vertical': 'center'})
     fill_cell(1, 1, org['name'], org_style)
-    fill_cell(1, 2, recombinant_language_text(chromo['title']), org_style)
-    fill_cell(1, 5, org['title'], org_style)
+    fill_cell(
+        1,
+        2,
+        recombinant_language_text(chromo['title']) + '        ' + org['title'],
+        org_style)
     sheet.row_dimensions[1].height = 24
     apply_styles(org_style, sheet.row_dimensions[1])
 
