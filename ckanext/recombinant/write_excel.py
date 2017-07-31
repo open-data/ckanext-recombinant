@@ -8,12 +8,6 @@ from ckanext.recombinant.helpers import (
 
 from ckan.plugins.toolkit import _
 
-error_fill = openpyxl.styles.PatternFill(
-    start_color='FF763626', end_color='FF763626', fill_type='solid')
-required_side = openpyxl.styles.Side(style='medium', color='FF2A3132')
-required_border = openpyxl.styles.Border(
-    required_side, required_side, required_side, required_side)
-
 white_font = openpyxl.styles.Font(color=openpyxl.styles.colors.WHITE)
 
 def excel_template(dataset_type, org):
@@ -114,6 +108,19 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
     apply_styles(org_style, sheet.row_dimensions[1])
 
     header_style = chromo['excel_header_style']
+    error_color = chromo.get('excel_error_background_color', '763626')
+    required_color = chromo.get('excel_required_border_color', '2A3132')
+
+    error_fill = openpyxl.styles.PatternFill(
+        start_color='FF%s' % error_color,
+        end_color='FF%s' % error_color,
+        fill_type='solid')
+    required_side = openpyxl.styles.Side(
+        style='medium',
+        color='FF%s' % required_color)
+    required_border = openpyxl.styles.Border(
+        required_side, required_side, required_side, required_side)
+
 
     choice_fields = dict(
         (f['datastore_id'], f['choices'])
