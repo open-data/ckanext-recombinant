@@ -8,11 +8,11 @@ from ckanext.recombinant.helpers import (
 
 from ckan.plugins.toolkit import _
 
-red_fill = openpyxl.styles.PatternFill(start_color='FFEE1111',
-    end_color='FFEE1111', fill_type='solid')
-orange_side = openpyxl.styles.Side(style='medium', color='FFFFAA77')
-orange_border = openpyxl.styles.Border(
-    orange_side, orange_side, orange_side, orange_side)
+error_fill = openpyxl.styles.PatternFill(
+    start_color='FF763626', end_color='FF763626', fill_type='solid')
+required_fill = openpyxl.styles.PatternFill(
+    start_color='FF2A3132', end_color='FF2A3132', fill_type='solid')
+white_font = openpyxl.styles.Font(color=openpyxl.styles.colors.WHITE)
 
 def excel_template(dataset_type, org):
     """
@@ -163,8 +163,11 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                         .format(
                             col=col_letter,
                             r=choice_range)
-                    )],
-                    stopIfTrue=True, fill=red_fill))
+                        )],
+                    stopIfTrue=True,
+                    fill=error_fill,
+                    font=white_font,
+                    ))
             else:
                 v = openpyxl.worksheet.datavalidation.DataValidation(
                     type="list",
@@ -186,44 +189,56 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                 choice_counts = 'reference!$J${0}:$J${1}'.format(ref1, refN)
                 sheet.conditional_formatting.add("{0}2".format(col_letter),
                     openpyxl.formatting.FormulaRule([(
-                        # count characters in the validation range
-                        'SUMPRODUCT(IF(SUBSTITUTE({v}," ","")="",0,'
-                        'LEN(SUBSTITUTE({v}," ",""))+1))-'
-                        # minus length of all valid choices found
-                        'SUMPRODUCT({counts},LEN({choices})+1)'
-                        .format(
-                            v=validation_range,
-                            col=col_letter,
-                            choices=choice_range,
-                            counts=choice_counts)
-                        )],
-                        stopIfTrue=True, fill=red_fill))
+                            # count characters in the validation range
+                            'SUMPRODUCT(IF(SUBSTITUTE({v}," ","")="",0,'
+                            'LEN(SUBSTITUTE({v}," ",""))+1))-'
+                            # minus length of all valid choices found
+                            'SUMPRODUCT({counts},LEN({choices})+1)'
+                            .format(
+                                v=validation_range,
+                                col=col_letter,
+                                choices=choice_range,
+                                counts=choice_counts)
+                            )],
+                        stopIfTrue=True,
+                        fill=error_fill,
+                        font=white_font,
+                        ))
             else:
                 sheet.conditional_formatting.add("{0}2".format(col_letter),
                     openpyxl.formatting.FormulaRule([(
-                        'COUNTIF({0},"<>"&"")' # all non-blank cells
-                        '-SUMPRODUCT(COUNTIF({0},{1}))'
-                        .format(validation_range, choice_range))],
-                        stopIfTrue=True, fill=red_fill))
+                            'COUNTIF({0},"<>"&"")' # all non-blank cells
+                            '-SUMPRODUCT(COUNTIF({0},{1}))'
+                            .format(validation_range, choice_range))],
+                        stopIfTrue=True,
+                        fill=error_fill,
+                        font=white_font,
+                        ))
 
         if field.get('excel_required'):
             # hilight missing values
             if field['datastore_id'] in chromo['datastore_primary_key']:
                 sheet.conditional_formatting.add(validation_range,
                     openpyxl.formatting.FormulaRule([(
-                        'AND({col}4="",SUMPRODUCT(LEN(A4:Z4)))'
-                        .format(col=col_letter)
-                        )],
-                        stopIfTrue=True, border=orange_border))
+                            'AND({col}4="",SUMPRODUCT(LEN(A4:Z4)))'
+                            .format(col=col_letter)
+                            )],
+                        stopIfTrue=True,
+                        fill=required_fill,
+                        font=white_font,
+                        ))
             else:
                 sheet.conditional_formatting.add(validation_range,
                     openpyxl.formatting.FormulaRule([(
-                        'AND({col}4="",{pk_vals})'
-                        .format(
-                            col=col_letter,
-                            pk_vals='+'.join('LEN(%s)'%c for c in pk_cells))
-                        )],
-                        stopIfTrue=True, border=orange_border))
+                            'AND({col}4="",{pk_vals})'
+                            .format(
+                                col=col_letter,
+                                pk_vals='+'.join('LEN(%s)'%c for c in pk_cells))
+                            )],
+                        stopIfTrue=True,
+                        fill=required_fill,
+                        font=white_font,
+                        ))
 
     apply_styles(header_style, sheet.row_dimensions[2])
     apply_styles(header_style, sheet.row_dimensions[3])
