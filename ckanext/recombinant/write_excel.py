@@ -103,9 +103,12 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         c.value = value
         apply_styles(styles, c)
 
-    org_style = chromo['excel_organization_style']
+    org_style = dict(
+        chromo['excel_organization_style'],
+        Alignment={'vertical': 'center'})
     fill_cell(1, 1, org['name'], org_style)
     fill_cell(1, 2, org['title'], org_style)
+    sheet.row_dimensions[1].height = 24
     apply_styles(org_style, sheet.row_dimensions[1])
 
     header_style = chromo['excel_header_style']
@@ -248,23 +251,23 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
 
 
 def _append_field_ref_rows(refs, field, style1, style2):
-    refs.append((None, []))
-    refs.append((style1, [
+    refs.append((None, None, []))
+    refs.append((style1, 24, [
         _('Field Name'),
         recombinant_language_text(field['label'])]))
-    refs.append((style2, [
+    refs.append((style2, None, [
         _('ID'),
         field['datastore_id']]))
     if 'description' in field:
-        refs.append((style2, [
+        refs.append((style2, None, [
             _('Description'),
             recombinant_language_text(field['description'])]))
     if 'obligation' in field:
-        refs.append((style2, [
+        refs.append((style2, None, [
             _('Obligation'),
             recombinant_language_text(field['obligation'])]))
     if 'format_type' in field:
-        refs.append((style2, [
+        refs.append((style2, None, [
             _('Format'),
             recombinant_language_text(field['format_type'])]))
 
@@ -277,12 +280,15 @@ def _append_field_choices_rows(refs, choices, count_range=None):
                 '","&B{n}&",",SUBSTITUTE(","&{r}&","," ",""))))'.format(
                     r=count_range,
                     n=len(refs) + 1)])
-        refs.append((None, r))
+        refs.append((None, None, r))
         label = None
 
 def _populate_reference_sheet(sheet, chromo, refs):
-    for style, ref_line in refs:
+    for style, height, ref_line in refs:
         sheet.append(ref_line)
+        if height:
+            sheet.row_dimensions[sheet.max_row].height = height
+
         if not style:
             continue
 
@@ -296,7 +302,7 @@ def apply_styles(config, target):
     """
     apply styles from config to target
 
-    currently supports PatternFill and Font
+    currently supports PatternFill, Font, Alignment
     """
     pattern_fill = config.get('PatternFill')
     if pattern_fill:
@@ -304,3 +310,6 @@ def apply_styles(config, target):
     font = config.get('Font')
     if font:
         target.font = openpyxl.styles.Font(**font)
+    alignment = config.get('Alignment')
+    if alignment:
+        target.alignment = openpyxl.styles.Alignment(**alignment)
