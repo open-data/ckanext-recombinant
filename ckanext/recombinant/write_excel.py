@@ -190,7 +190,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                     formula1=choice_range,
                     allow_blank=True)
                 v.errorTitle = u'Invalid choice'
-                valid_keys = ', '.join(choices)
+                valid_keys = u', '.join(unicode(c) for c in choices)
                 if len(valid_keys) < 40:
                     v.error = (u'Please enter one of the valid keys: '
                         + valid_keys)
@@ -255,19 +255,19 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                         ))
         if field.get('excel_cell_error_formula'):
             sheet.conditional_formatting.add(validation_range,
-                openpyxl.formatting.FormulaRule([(
+                openpyxl.formatting.FormulaRule([
                     field['excel_cell_error_formula'].format(
-                        cell=col + '4',)
-                    )],
+                        cell=col_letter + '4',)
+                    ],
                 stopIfTrue=True,
                 fill=error_fill,
                 font=white_font,
                 ))
         if field.get('excel_header_error_formula'):
             sheet.conditional_formatting.add("{0}2".format(col_letter),
-                openpyxl.formatting.FormulaRule([(
+                openpyxl.formatting.FormulaRule([
                         field['excel_header_error_formula'].format(
-                            validation_range=validation_range,
+                            cells=validation_range,
                             column=col_letter,
                         )],
                     stopIfTrue=True,
