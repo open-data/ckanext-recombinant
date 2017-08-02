@@ -253,6 +253,27 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                         stopIfTrue=True,
                         border=required_border,
                         ))
+        if field.get('excel_cell_error_formula'):
+            sheet.conditional_formatting.add(validation_range,
+                openpyxl.formatting.FormulaRule([(
+                    field['excel_cell_error_formula'].format(
+                        cell=col + '4',)
+                    )],
+                stopIfTrue=True,
+                fill=error_fill,
+                font=white_font,
+                ))
+        if field.get('excel_header_error_formula'):
+            sheet.conditional_formatting.add("{0}2".format(col_letter),
+                openpyxl.formatting.FormulaRule([(
+                        field['excel_header_error_formula'].format(
+                            validation_range=validation_range,
+                            column=col_letter,
+                        )],
+                    stopIfTrue=True,
+                    fill=error_fill,
+                    font=white_font,
+                    ))
 
     apply_styles(header_style, sheet.row_dimensions[2])
     apply_styles(header_style, sheet.row_dimensions[3])
