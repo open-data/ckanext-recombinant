@@ -152,6 +152,25 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
 
         if field['datastore_type'] == 'boolean':
             boolean_validator.ranges.append(validation_range)
+        if field['datastore_type'] == 'date':
+            sheet.conditional_formatting.add(validation_range,
+                openpyxl.formatting.FormulaRule([
+                        'AND(NOT(ISBLANK({cell})),NOT(ISNUMBER({cell})))'
+                        .format(cell=col_letter + '4',)],
+                    stopIfTrue=True,
+                    fill=error_fill,
+                    font=white_font,
+                    ))
+            sheet.conditional_formatting.add("{0}2".format(col_letter),
+                openpyxl.formatting.FormulaRule([
+                        'SUMPRODUCT(--NOT(ISBLANK({cells})),'
+                        '--NOT(ISNUMBER({cells})))'
+                        .format(cells=validation_range,)],
+                    stopIfTrue=True,
+                    fill=error_fill,
+                    font=white_font,
+                    ))
+
         if field['datastore_id'] in choice_fields:
             ref1 = len(refs) + 1
             _append_field_choices_rows(
