@@ -71,7 +71,8 @@ def excel_data_dictionary(chromo):
             if field['datastore_id'] in choice_fields:
                 _append_field_choices_rows(
                     refs,
-                    choice_fields[field['datastore_id']])
+                    choice_fields[field['datastore_id']],
+                    style2)
 
         _populate_reference_sheet(sheet, chromo, refs)
         sheet = None
@@ -176,6 +177,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
             _append_field_choices_rows(
                 refs,
                 choice_fields[field['datastore_id']],
+                header_style,
                 sheet.title + '!' + validation_range
                 if field['datastore_type'] == '_text' else None)
             refN = len(refs)
@@ -302,28 +304,31 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
 
 
 def _append_field_ref_rows(refs, field, style1, style2):
-    refs.append((None, None, []))
-    refs.append((style1, 24, [
+    a1 = (style2, style1, 24)
+    a2 = (style2, None, None)
+    refs.append((None, []))
+    refs.append((a1, [
         _('Field Name'),
         recombinant_language_text(field['label'])]))
-    refs.append((style2, None, [
+    refs.append((a2, [
         _('ID'),
         field['datastore_id']]))
     if 'description' in field:
-        refs.append((style2, None, [
+        refs.append((a2, [
             _('Description'),
             recombinant_language_text(field['description'])]))
     if 'obligation' in field:
-        refs.append((style2, None, [
+        refs.append((a2, [
             _('Obligation'),
             recombinant_language_text(field['obligation'])]))
     if 'format_type' in field:
-        refs.append((style2, None, [
+        refs.append((a2, [
             _('Format'),
             recombinant_language_text(field['format_type'])]))
 
-def _append_field_choices_rows(refs, choices, count_range=None):
+def _append_field_choices_rows(refs, choices, style2, count_range=None):
     label = _('Values')
+    a1 = (style2, None, 24)
     for key, value in choices:
         r = [label, unicode(key), value]
         if count_range: # used by _text choices validation
@@ -331,22 +336,29 @@ def _append_field_choices_rows(refs, choices, count_range=None):
                 '","&B{n}&",",SUBSTITUTE(","&{r}&","," ",""))))'.format(
                     r=count_range,
                     n=len(refs) + 1)])
-        refs.append((None, None, r))
+        refs.append((a1, r))
         label = None
+        a1 = (style2, None, None)
 
 def _populate_reference_sheet(sheet, chromo, refs):
-    for style, height, ref_line in refs:
+    for style, ref_line in refs:
         sheet.append(ref_line)
-        if height:
-            sheet.row_dimensions[sheet.max_row].height = height
-
         if not style:
             continue
 
-        apply_styles(style, sheet.row_dimensions[sheet.max_row])
+        s1, s2, height = style
+        if height:
+            sheet.row_dimensions[sheet.max_row].height = height
+
+        if s2:
+            apply_styles(s2, sheet.row_dimensions[sheet.max_row])
         for c in range(len(ref_line)):
-            apply_styles(style, sheet.cell(
-                row=sheet.max_row, column=c + 1))
+            if c and s2:
+                apply_styles(s2, sheet.cell(
+                    row=sheet.max_row, column=c + 1))
+            if not c and s1:
+                apply_styles(s1, sheet.cell(
+                    row=sheet.max_row, column=c + 1))
 
 
 def apply_styles(config, target):
