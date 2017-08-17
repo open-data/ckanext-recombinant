@@ -145,6 +145,8 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         col_letter = openpyxl.cell.get_column_letter(n)
         col = sheet.column_dimensions[col_letter]
         col.width = field['excel_column_width']
+        col.alignment = openpyxl.styles.Alignment(
+            wrap_text=True)
         # FIXME: format only below header
         col.number_format = datastore_type[field['datastore_type']].xl_format
         validation_range = '{0}4:{0}1004'.format(col_letter)
