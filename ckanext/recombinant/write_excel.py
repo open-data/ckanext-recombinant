@@ -114,7 +114,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
 
     header_style = chromo['excel_header_style']
     error_color = chromo.get('excel_error_background_color', '763626')
-    required_color = chromo.get('excel_required_border_color', '2A3132')
+    required_color = chromo.get('excel_required_border_color', '763626')
 
     error_fill = openpyxl.styles.PatternFill(
         start_color='FF%s' % error_color,
