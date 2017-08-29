@@ -173,6 +173,25 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                     fill=error_fill,
                     font=white_font,
                     ))
+        if field['datastore_type'] == 'int':
+            sheet.conditional_formatting.add(validation_range,
+                openpyxl.formatting.FormulaRule([
+                        'AND(NOT(ISBLANK({cell})),NOT(IFERROR(INT({cell})={cell},FALSE)))'
+                        .format(cell=col_letter + '4',)],
+                    stopIfTrue=True,
+                    fill=error_fill,
+                    font=white_font,
+                    ))
+            sheet.conditional_formatting.add("{0}2".format(col_letter),
+                openpyxl.formatting.FormulaRule([
+                        'SUMPRODUCT(--NOT(ISBLANK({cells})),'
+                        '--NOT(IFERROR(INT({cells})={cells},FALSE)))'
+                        .format(cells=validation_range,)],
+                    stopIfTrue=True,
+                    fill=error_fill,
+                    font=white_font,
+                    ))
+
 
         if field['datastore_id'] in choice_fields:
             ref1 = len(refs) + 1
