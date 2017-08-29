@@ -254,28 +254,17 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                         font=white_font,
                         ))
 
-        if field.get('excel_required'):
+        if (field.get('excel_required') or
+                field['datastore_id'] in chromo['datastore_primary_key']):
             # hilight missing values
-            if field['datastore_id'] in chromo['datastore_primary_key']:
-                sheet.conditional_formatting.add(validation_range,
-                    openpyxl.formatting.FormulaRule([(
-                            'AND({col}4="",SUMPRODUCT(LEN(A4:Z4)))'
-                            .format(col=col_letter)
-                            )],
-                        stopIfTrue=True,
-                        border=required_border,
-                        ))
-            else:
-                sheet.conditional_formatting.add(validation_range,
-                    openpyxl.formatting.FormulaRule([(
-                            'AND({col}4="",{pk_vals})'
-                            .format(
-                                col=col_letter,
-                                pk_vals='+'.join('LEN(%s)'%c for c in pk_cells))
-                            )],
-                        stopIfTrue=True,
-                        border=required_border,
-                        ))
+            sheet.conditional_formatting.add(validation_range,
+                openpyxl.formatting.FormulaRule([(
+                        'AND({col}4="",SUMPRODUCT(LEN(A4:Z4)))'
+                        .format(col=col_letter)
+                        )],
+                    stopIfTrue=True,
+                    border=required_border,
+                    ))
         if field.get('excel_cell_error_formula'):
             sheet.conditional_formatting.add(validation_range,
                 openpyxl.formatting.FormulaRule([
