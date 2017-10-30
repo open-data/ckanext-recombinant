@@ -158,7 +158,8 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         if field['datastore_type'] == 'date':
             sheet.conditional_formatting.add(validation_range,
                 openpyxl.formatting.FormulaRule([
-                        'AND(NOT(ISBLANK({cell})),NOT(ISNUMBER({cell})))'
+                        # +0 is needed by excel to recognize dates. sometimes.
+                        'AND(NOT(ISBLANK({cell})),NOT(ISNUMBER({cell}+0)))'
                         .format(cell=col_letter + '4',)],
                     stopIfTrue=True,
                     fill=error_fill,
@@ -166,8 +167,9 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                     ))
             sheet.conditional_formatting.add("{0}2".format(col_letter),
                 openpyxl.formatting.FormulaRule([
+                        # +0 is needed by excel to recognize dates. sometimes.
                         'SUMPRODUCT(--NOT(ISBLANK({cells})),'
-                        '--NOT(ISNUMBER({cells})))'
+                        '--NOT(ISNUMBER({cells}+0)))'
                         .format(cells=validation_range,)],
                     stopIfTrue=True,
                     fill=error_fill,
