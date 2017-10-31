@@ -196,7 +196,8 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         if field['datastore_type'] == 'money':
             sheet.conditional_formatting.add(validation_range,
                 openpyxl.formatting.FormulaRule([
-                        'AND(NOT(ISBLANK({cell})),NOT(IFERROR(ROUND({cell},2)={cell},FALSE)))'
+                        # isblank doesnt work. sometimes. trim()="" is more permissive
+                        'AND(NOT(TRIM({cell})=""),NOT(IFERROR(ROUND({cell},2)={cell},FALSE)))'
                         .format(cell=col_letter + '4',)],
                     stopIfTrue=True,
                     fill=error_fill,
@@ -204,7 +205,8 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                     ))
             sheet.conditional_formatting.add("{0}2".format(col_letter),
                 openpyxl.formatting.FormulaRule([
-                        'SUMPRODUCT(--NOT(ISBLANK({cells})),'
+                        # isblank doesnt work. sometimes. trim()="" is more permissive
+                        'SUMPRODUCT(--NOT(TRIM({cells})=""),'
                         '--NOT(IFERROR(ROUND({cells},2)={cells},FALSE)))'
                         .format(cells=validation_range,)],
                     stopIfTrue=True,
