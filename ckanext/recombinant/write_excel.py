@@ -287,7 +287,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
             else:
                 sheet.conditional_formatting.add("{0}2".format(col_letter),
                     openpyxl.formatting.FormulaRule([(
-                            'COUNTIF({0},"<>"&"")' # all non-blank cells
+                            'SUMPRODUCT(--NOT(TRIM({0})=""))'
                             '-SUMPRODUCT(COUNTIF({0},{1}))'
                             .format(validation_range, choice_range))],
                         stopIfTrue=True,
