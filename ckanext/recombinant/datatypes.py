@@ -68,6 +68,8 @@ def canonicalize(dirty, dstore_tag, primary_key):
         return dtype.default
     elif not dtype.numeric:
         if dtype.tag == 'money':
+            if unicode(dirty).startswith('='):
+                raise BadExcelData('Formulas are not supported')
             # User has overridden Excel format string, probably adding currency
             # markers or digit group separators (e.g.,fr-CA uses 1$ (not $1)).
             # Accept only "DDDDD.DD", discard other characters
