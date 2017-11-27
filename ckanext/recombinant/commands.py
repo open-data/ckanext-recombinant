@@ -219,6 +219,7 @@ class TableCommand(CkanCommand):
         for org_name, records in csv_data_batch(name, chromo):
             results = lc.action.package_search(
                 q='type:%s organization:%s' % (dataset_type, org_name),
+                include_private=True,
                 rows=2)['results']
             if not results:
                 print 'type:%s organization:%s not found!' % (
@@ -312,7 +313,7 @@ class TableCommand(CkanCommand):
         """
         lc = LocalCKAN()
         for dtype in target_datasets:
-            datasets = lc.action.package_search(q="type:%s" % dtype, rows=5000)
+            datasets = lc.action.package_search(q="type:%s" % dtype, include_private=True, rows=5000)
             for d in datasets['results']:
                 for r in d['resources']:
                     try:
@@ -328,7 +329,7 @@ class TableCommand(CkanCommand):
         """
         lc = LocalCKAN()
         for dtype in target_datasets:
-            datasets = lc.action.package_search(q="type:%s" % dtype, rows=5000)
+            datasets = lc.action.package_search(q="type:%s" % dtype, include_private=True, rows=5000)
             for d in datasets['results']:
                 results = [lc.action.datastore_trigger_each_row(resource_id=r['id'])
                            for r in d['resources']]
