@@ -8,6 +8,8 @@ from ckanext.recombinant.helpers import (
 
 from ckan.plugins.toolkit import _
 
+DEFAULT_EXCEL_COLUMN_WIDTH = 30
+
 white_font = openpyxl.styles.Font(color=openpyxl.styles.colors.WHITE)
 
 def excel_template(dataset_type, org):
@@ -144,7 +146,7 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         # jumping through openpyxl hoops:
         col_letter = openpyxl.cell.get_column_letter(n)
         col = sheet.column_dimensions[col_letter]
-        col.width = field['excel_column_width']
+        col.width = field.get('excel_column_width', DEFAULT_EXCEL_COLUMN_WIDTH)
         col.alignment = openpyxl.styles.Alignment(
             wrap_text=True)
         # FIXME: format only below header
