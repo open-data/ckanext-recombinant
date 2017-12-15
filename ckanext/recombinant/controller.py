@@ -4,8 +4,8 @@ from pylons.i18n import _
 from pylons import config
 from paste.deploy.converters import asbool
 
-from ckan.lib.base import (c, render, model, request, h, g,
-    response, abort, redirect)
+from ckan.lib.base import (c, render, model, request, h,
+    response, abort)
 from ckan.controllers.package import PackageController
 from ckan.logic import ValidationError, NotAuthorized
 
@@ -46,7 +46,7 @@ class UploadController(PackageController):
                 "Your file was successfully uploaded into the central system."
                 ))
 
-            redirect(h.url_for(controller='package', action='read', id=id))
+            h.redirect_to(controller='package', action='read', id=id)
         except BadExcelData, e:
             org = lc.action.organization_show(id=dataset['owner_org'])
             return self.preview_table(
@@ -148,12 +148,12 @@ class UploadController(PackageController):
 
         h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
 
-        redirect(h.url_for(
+        h.redirect_to(
             controller='ckanext.recombinant.controller:UploadController',
             action='preview_table',
             resource_name=res['name'],
             owner_org=org['name'],
-            ))
+            )
 
 
     def template(self, id):
@@ -200,8 +200,8 @@ class UploadController(PackageController):
         except RecombinantException:
             abort(404, _('Recombinant resource_name not found'))
 
-        return redirect(h.url_for('recombinant_resource',
-            resource_name=resource_name, owner_org=orgs[0]['name']))
+        return h.redirect_to('recombinant_resource',
+            resource_name=resource_name, owner_org=orgs[0]['name'])
 
     def preview_table(self, resource_name, owner_org, errors=None):
         if not c.user:
