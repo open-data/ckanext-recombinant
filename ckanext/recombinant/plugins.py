@@ -28,6 +28,7 @@ class RecombinantPlugin(
         # add our templates
         p.toolkit.add_template_directory(config, 'templates')
         p.toolkit.add_public_directory(config, 'public')
+        p.toolkit.add_resource('public', 'ckanext-recombinant')
 
         # read our configuration early
         self._tables_urls = config.get('recombinant.definitions', ""
@@ -80,7 +81,7 @@ class RecombinantPlugin(
             controller='ckanext.recombinant.controller:UploadController')
         map.connect('recombinant_preview',
             '/recombinant/preview/{resource_name}/{resource_id}',
-            action='datatable',
+            action='recombinant_preview',
             controller='ckanext.recombinant.controller:UploadController')
 
         return map

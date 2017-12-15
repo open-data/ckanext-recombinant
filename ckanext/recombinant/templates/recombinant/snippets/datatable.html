@@ -1,22 +1,29 @@
 <section>
   <h2 id="prtable">{{_("Preview")}}</h2>
-    <table id="dtprv" class="wb-tables table table-striped"
-      data-wb-tables='{
-        "paging": true,
-        "serverSide": true,
-        "processing": true,
-        "ajax": {
+    <table id="dtprv" class="table table-striped table-borderd"
+      data-module="recombinant_preview"
+      data-ajax='{
           "url": "/recombinant/preview/{{ resource_name }}/{{ resource_id }}",
           "type": "POST"
-        },
-        "columns": [
+        }'
+      data-paging="true"
+      data-server-side="true"
+      data-processing="true"
+      data-responsive="false"
+      data-scroll-x="true"
+      data-fixed-header="true"
+      data-fixed-columns="true"
+      data-dom='"Blifrtip"'
+      data-buttons='[{
+          "extend": "colvis",
+          "text": "{{ _('Hide/Unhide Columns') }}"
+        }]'
+      data-columns='[
           {% for f in h.recombinant_get_chromo(resource_name).fields %}
             {{- "null" if 'preview_class' not in f else
               '{"className":"' | safe ~ f['preview_class'] ~ '"}' | safe }}
             {%- if not loop.last %},{% endif %}
-          {% endfor %}]}'
-      data-role="table"
-      data-mode="columntoggle" >
+          {% endfor %}]'>
     <thead>
       <tr class="font-small">
         {% set magic_priority_no_field_should_be_below = 2 %}
