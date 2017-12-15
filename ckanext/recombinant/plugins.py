@@ -130,7 +130,8 @@ def _load_table_definitions(urls):
 
         for chromo in t['resources']:
             chromo['dataset_type'] = t['dataset_type']
-            chromo['target_dataset'] = t['target_dataset']
+            if 'target_dataset' in t:
+                chromo['target_dataset'] = t['target_dataset']
             if is_url:
                 chromo['_url_path'] = url.rsplit('/', 1)[0]
             else:  # used for choices_file paths
