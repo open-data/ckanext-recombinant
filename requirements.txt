@@ -1,3 +1,4 @@
 unicodecsv
 openpyxl==2.2.5
 docopt
+ckanapi
