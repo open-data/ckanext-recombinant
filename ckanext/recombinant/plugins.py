@@ -78,6 +78,11 @@ class RecombinantPlugin(
             '/recombinant/{resource_name}',
             action='type_redirect',
             controller='ckanext.recombinant.controller:UploadController')
+        map.connect('recombinant_preview',
+            '/recombinant/preview/{resource_name}/{resource_id}',
+            action='datatable',
+            controller='ckanext.recombinant.controller:UploadController')
+
         return map
 
     def get_helpers(self):
@@ -92,6 +97,7 @@ class RecombinantPlugin(
             'recombinant_choice_fields': helpers.recombinant_choice_fields,
             'recombinant_show_package': helpers.recombinant_show_package,
             'recombinant_get_field': helpers.recombinant_get_field,
+            'recombinant_preview': helpers.recombinant_preview,
             }
 
     def get_actions(self):

@@ -4,7 +4,7 @@ import os.path
 from pylons import c, config
 from pylons.i18n import gettext
 import ckanapi
-from ckan.lib.helpers import lang
+from ckan.lib.helpers import lang, snippet
 
 from ckanext.recombinant.tables import get_chromo, get_geno, get_dataset_types
 from ckanext.recombinant.errors import RecombinantException
@@ -173,3 +173,35 @@ def recombinant_get_field(resource_name, datastore_id):
     for f in chromo['fields']:
         if f['datastore_id'] == datastore_id:
             return f
+
+
+def recombinant_preview(resource_name, res_id):
+    chromo = get_chromo(resource_name)
+    default_preview_args = {}
+
+    lc = ckanapi.LocalCKAN(username=c.user)
+    results = lc.action.datastore_search(
+        resource_id=res_id,
+        limit=0,
+        )
+
+    priority = len(chromo['datastore_primary_key'])
+    pk_priority = 0
+    fields = []
+    for f in chromo['fields']:
+        out = {
+            'type': f['datastore_type'],
+            'id': f['datastore_id'],
+            'label': recombinant_language_text(f['label'])}
+        if out['id'] in chromo['datastore_primary_key']:
+            out['priority'] = pk_priority
+            pk_priority += 1
+        else:
+            out['priority'] = priority
+            priority += 1
+        fields.append(out)
+
+    return snippet('recombinant/snippets/datatable.html',
+        resource_name=resource_name,
+        resource_id=res_id,
+        ds_fields=fields)

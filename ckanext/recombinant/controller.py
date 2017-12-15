@@ -326,3 +326,43 @@ def _process_upload_file(lc, dataset, upload_file, geno):
                     pgerror))
     if not total_records:
         raise BadExcelData(_("The template uploaded is empty"))
+
+
+    def recombinant_preview(self, resource_name, resource_id):
+        draw = int(request.params['draw'])
+        search_text = unicode(request.params['search[value]'])
+        offset = int(request.params['start'])
+        limit = int(request.params['length'])
+        sort_by_num = int(request.params['order[0][column]'])
+        sort_order = ('desc' if request.params['order[0][dir]'] == 'desc'
+                      else 'asc'
+                      )
+
+        chromo = get_chromo(resource_name)
+        lc = LocalCKAN(username=c.user)
+        unfiltered_response = lc.action.datastore_search(
+            resource_id=resource_id,
+            limit=1,
+        )
+
+        cols = [f['datastore_id'] for f in chromo['fields']]
+        sort_str = cols[sort_by_num] + ' ' + sort_order
+        sort_str += ' NULLS LAST'
+
+        response = lc.action.datastore_search(
+            q=search_text,
+            resource_id=resource_id,
+            offset=offset,
+            limit=limit,
+            sort=sort_str
+        )
+
+        return json.dumps({
+            'draw': draw,
+            'iTotalRecords': unfiltered_response.get('total', 0),
+            'iTotalDisplayRecords': response.get('total', 0),
+            'aaData': [
+                [datatablify(row.get(colname, u''), colname) for colname in cols]
+                for row in response['records']
+            ],
+        })

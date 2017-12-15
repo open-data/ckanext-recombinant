@@ -77,6 +77,11 @@
   </div>
 {% endblock %}
 
+{% block primary %}
+  {{ super() }}
+  {{ h.recombinant_preview(resource.name, resource.id) }}
+{% endblock %}
+
 {# syntax hilighting for API docs above #}
 {% block links %}
 {{ super() }}
@@ -85,9 +90,36 @@
 .code-block.lang-python pre.python {display: block}
 .code-block.lang-curl pre.bash {display: block}
 </style>
+  <link rel="stylesheet"  href="https://cdn.datatables.net/buttons/1.2.2/css/buttons.dataTables.min.css" />
 {% endblock %}
 
 {%- block scripts %}
   {{ super() }}
  <script src="{{ h.url_for_static('js/code_block_buttons.js') }}"></script>
+  <script>
+    wb.doc.on("wb-ready.wb-tables", function() {
+      Modernizr.load( {
+        load: [
+          "https://cdn.datatables.net/buttons/1.2.2/js/dataTables.buttons" + wb.getMode() + ".js",
+          "https://cdn.datatables.net/buttons/1.2.2/js/buttons.colVis" + wb.getMode() + ".js",
+        ],
+        complete: function() {
+          var selector = "#dtprv", table;
+          if ($.fn.DataTable.isDataTable( selector ) ) {
+            table = $( selector ).DataTable()
+            new $.fn.dataTable.Buttons( table, {
+              buttons: [ {
+                extend: 'colvis',
+                text: '{{ _("Column visibility") }}'
+              }  ]
+            });
+
+            table.buttons().container()
+              .appendTo( $( table.table().container() ).find( ".top" ) );
+
+          }
+        }
+      });
+     });
+  </script>
 {% endblock %}
