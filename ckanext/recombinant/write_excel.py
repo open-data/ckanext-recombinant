@@ -143,6 +143,8 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
         fill_cell(3, n, field['datastore_id'], header_style)
         # jumping through openpyxl hoops:
         col_letter = openpyxl.cell.get_column_letter(n)
+        col_letter_before = openpyxl.cell.get_column_letter(max(1, n-1))
+        col_letter_after = openpyxl.cell.get_column_letter(n+1)
         col = sheet.column_dimensions[col_letter]
         col.width = field['excel_column_width']
         col.alignment = openpyxl.styles.Alignment(
@@ -295,7 +297,19 @@ def _populate_excel_sheet(sheet, chromo, org, refs):
                         font=white_font,
                         ))
 
-        if (field.get('excel_required') or
+        if field.get('excel_cell_required_formula'):
+            sheet.conditional_formatting.add(validation_range,
+                openpyxl.formatting.FormulaRule([
+                        field['excel_cell_required_formula'].format(
+                            column=col_letter,
+                            column_before=col_letter_before,
+                            column_after=col_letter_after,
+                            row='4',
+                        )],
+                    stopIfTrue=True,
+                    border=required_border,
+                    ))
+        elif (field.get('excel_required') or
                 field['datastore_id'] in chromo['datastore_primary_key']):
             # hilight missing values
             sheet.conditional_formatting.add(validation_range,
