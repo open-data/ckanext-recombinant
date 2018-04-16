@@ -18,19 +18,19 @@ DatastoreType = namedtuple(
         ['tag', 'numeric', 'default', 'xl_format'])
 
 datastore_type = {
-    'year': DatastoreType('year', True, 0.0, '###0'),
-    'month': DatastoreType('month', True, 0.0, '00'),
+    'year': DatastoreType('year', True, None, '###0'),
+    'month': DatastoreType('month', True, None, '00'),
     'date': DatastoreType('date', False, None, 'yyyy-mm-dd'),
-    'int': DatastoreType('int', True, 0.0, '### ### ### ### ### ##0'),
-    'bigint': DatastoreType('bigint', True, 0.0, '### ### ### ### ### ##0'),
+    'int': DatastoreType('int', True, None, '### ### ### ### ### ##0'),
+    'bigint': DatastoreType('bigint', True, None, '### ### ### ### ### ##0'),
     'money': DatastoreType(
         'money',
         False,
-        u'',
-        '[<1000]$##0;[<1000000]$### ##0;$### ### ##0'),
-    'text': DatastoreType('text', False, u'', '@'),
+        None,
+        '### ### ### ### ### ##0'),
+    'text': DatastoreType('text', False, None, '@'),
     'boolean': DatastoreType('boolean', False, None, '@'),
-    '_text': DatastoreType('_text', False, u'', '@'),
+    '_text': DatastoreType('_text', False, None, '@'),
     'timestamp': DatastoreType('timestamp', False, None, 'General'),
 }
 
