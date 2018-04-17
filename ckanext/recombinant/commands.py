@@ -41,7 +41,6 @@ from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
 from ckanext.recombinant.read_csv import csv_data_batch
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
-RECORDS_PER_UPSERT = 1000
 
 class TableCommand(CkanCommand):
     summary = __doc__.split('\n')[0]

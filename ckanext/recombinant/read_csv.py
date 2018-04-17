@@ -1,7 +1,7 @@
 from unicodecsv import DictReader
 import codecs
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 20000
 
 def csv_data_batch(csv_path, chromo):
     """
