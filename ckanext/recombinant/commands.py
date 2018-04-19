@@ -228,18 +228,26 @@ class TableCommand(CkanCommand):
                 print 'type:%s organization:%s multiple found!' % (
                     dataset_type, org_name)
                 return 1
-            for r in results[0]['resources']:
-                if r['name'] == resource_name:
+            for res in results[0]['resources']:
+                if res['name'] == resource_name:
                     break
             else:
                 print 'type:%s organization:%s missing resource:%s' % (
                     dataset_type, org_name, resource_name)
                 return 1
 
+            # convert list values to lists
+            list_fields = [f['datastore_id']
+                for f in chromo['fields'] if f['datastore_type'] == '_text']
+            if list_fields:
+                for r in records:
+                    for k in list_fields:
+                        r[k] = r[k].split(',')
+
             print '-', org_name, len(records)
             lc.action.datastore_upsert(
                 method=method,
-                resource_id=r['id'],
+                resource_id=res['id'],
                 records=records)
         return 0
 
