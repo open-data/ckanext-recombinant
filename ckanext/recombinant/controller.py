@@ -295,7 +295,10 @@ def _process_upload_file(lc, dataset, upload_file, geno):
                 "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
         pk = chromo.get('datastore_primary_key', [])
-        records = get_records(rows, chromo['fields'], pk)
+        records = get_records(
+            rows,
+            [f for f in chromo['fields'] if f.get('import_template_include', True)]
+            , pk)
         method = 'upsert' if pk else 'insert'
         total_records += len(records)
         if not records:
