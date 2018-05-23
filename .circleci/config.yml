@@ -5,6 +5,7 @@ jobs:
       - image: circleci/python:2-stretch-browsers
     steps:
       - checkout
+      - run: pip install nose==1.3.7
       - run: nosetests
 
 workflows:
