@@ -58,6 +58,11 @@ def canonicalize(dirty, dstore_tag, primary_key):
     Raises BadExcelData on formula cells
     """
     dtype = datastore_type[dstore_tag]
+
+    if dirty is None:
+        # use common value for blank cells
+        dirty = u""
+
     if isinstance(dirty, basestring):
         if not dirty.strip():
             # whitespace-only values
@@ -69,12 +74,10 @@ def canonicalize(dirty, dstore_tag, primary_key):
             dirty = u'TRUE'
         if dirty.startswith('='):
             raise BadExcelData('Formulas are not supported')
-        if primary_key:
-            dirty = dirty.strip()
 
     if dstore_tag == '_text':
         dirty = unicode(dirty)
-        if not dirty or not unicode(dirty).strip():
+        if not dirty.strip():
             return []
         return [s.strip() for s in unicode(dirty).split(',')]
 
