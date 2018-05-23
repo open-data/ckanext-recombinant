@@ -1,6 +1,7 @@
 from collections import namedtuple
 import re
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 from ckanext.recombinant.errors import BadExcelData
 
@@ -8,30 +9,29 @@ from ckanext.recombinant.errors import BadExcelData
 # Codifies data store types available in recombinant-tables JSON
 # specification:
 #    'tag': the content of the datastore_type value
-#    'numeric': if content is a number, whether to retain
+#    'whole_number': if content is a whole number, whether to retain
 #        trailing .0 padding for xlrd float coercion
 #    'default': default value to use if blank
 #    'xl_format': Excel custom format string to apply
 
 DatastoreType = namedtuple(
         'DataStoreType',
-        ['tag', 'numeric', 'default', 'xl_format'])
+        ['tag', 'whole_number', 'xl_format'])
 
 datastore_type = {
-    'year': DatastoreType('year', True, None, '###0'),
-    'month': DatastoreType('month', True, None, '00'),
-    'date': DatastoreType('date', False, None, 'yyyy-mm-dd'),
-    'int': DatastoreType('int', True, None, '### ### ### ### ### ##0'),
-    'bigint': DatastoreType('bigint', True, None, '### ### ### ### ### ##0'),
+    'year': DatastoreType('year', True, '###0'),
+    'month': DatastoreType('month', True, '00'),
+    'date': DatastoreType('date', False, 'yyyy-mm-dd'),
+    'int': DatastoreType('int', True, '### ### ### ### ### ##0'),
+    'bigint': DatastoreType('bigint', True, '### ### ### ### ### ##0'),
     'money': DatastoreType(
         'money',
         False,
-        None,
         '### ### ### ### ### ##0'),
-    'text': DatastoreType('text', False, None, '@'),
-    'boolean': DatastoreType('boolean', False, None, '@'),
-    '_text': DatastoreType('_text', False, None, '@'),
-    'timestamp': DatastoreType('timestamp', False, None, 'General'),
+    'text': DatastoreType('text', False, '@'),
+    'boolean': DatastoreType('boolean', False, '@'),
+    '_text': DatastoreType('_text', False, '@'),
+    'timestamp': DatastoreType('timestamp', False, 'General'),
 }
 
 
@@ -39,6 +39,11 @@ def canonicalize(dirty, dstore_tag, primary_key):
     """
     Canonicalize dirty input from xlrd to align with
     recombinant.json datastore type specified in dstore_tag.
+
+    Except for "=" Excel functions the purpose of this function is not
+    to validate the data, just help format it so that it's more likely
+    to be accepted when loaded into the datastore, and refuse to
+    pass NULL values as parts of a primary key.
 
     :param dirty: dirty cell content as read through xlrd
     :type dirty: object
@@ -48,52 +53,59 @@ def canonicalize(dirty, dstore_tag, primary_key):
     :type primary_key: bool
 
     :return: Canonicalized cell input
-    :rtype: float or unicode
+    :rtype: unicode, None or list of unicode values (_text)
 
     Raises BadExcelData on formula cells
     """
     dtype = datastore_type[dstore_tag]
+    if isinstance(dirty, basestring):
+        if not dirty.strip():
+            # whitespace-only values
+            dirty = u""
+        # excel, you keep being you
+        if dirty == u'=FALSE()':
+            dirty = u'FALSE'
+        elif dirty == u'=TRUE()':
+            dirty = u'TRUE'
+        if dirty.startswith('='):
+            raise BadExcelData('Formulas are not supported')
+        if primary_key:
+            dirty = dirty.strip()
+
     if dstore_tag == '_text':
+        dirty = unicode(dirty)
         if not dirty or not unicode(dirty).strip():
             return []
         return [s.strip() for s in unicode(dirty).split(',')]
 
-    if dirty is None:
-        return dtype.default
-    elif isinstance(dirty, (float, int, long)):
-        return unicode(dirty)
+    if dtype.whole_number:
+        canon = re.sub(r'[$,\s]', '', unicode(dirty))
+        try:
+            d = Decimal(canon)
+            if not d % 1:  # truncate trailing .00's
+                return unicode(d // 1)
+        except InvalidOperation:
+            pass
 
-    elif isinstance(dirty, basestring) and not dirty.strip():
-        # Content trims to empty: default
-        return dtype.default
-    elif not dtype.numeric:
-        if dtype.tag == 'money':
-            if unicode(dirty).startswith('='):
-                raise BadExcelData('Formulas are not supported')
-            # User has overridden Excel format string, probably adding currency
-            # markers or digit group separators (e.g.,fr-CA uses 1$ (not $1)).
-            # Accept only "DDDDD.DD", discard other characters
-            dollars, sep, cents = unicode(dirty).rpartition('.')
-            return re.sub(ur'[^0-9]', '', dollars) + sep + re.sub(ur'[^0-9]', '', cents)
-        elif dtype.tag == 'date' and isinstance(dirty, datetime):
-            return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
+    if dstore_tag == 'money':
+        # User has overridden Excel format string, probably adding currency
+        # markers or digit group separators (e.g.,fr-CA uses 1$ (not $1)).
+        # Accept only "DDDDD.DD", discard other characters
+        canon = re.sub(r'[$,\s]', '', unicode(dirty))
+        try:
+            d = Decimal(canon)
+            return unicode(d)
+        except InvalidOperation:
+            pass
 
-        dirty = unicode(dirty)
-        # accidental whitespace around primary keys leads to unpleasantness
-        if primary_key:
-            dirty = dirty.strip()
+    if dstore_tag == 'date' and isinstance(dirty, datetime):
+        return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
 
-        # excel, you keep being you
-        if dirty == u'=FALSE()':
-            return u'FALSE'
-        elif dirty == u'=TRUE()':
-            return u'TRUE'
-        elif dirty.startswith('='):
-            raise BadExcelData('Formulas are not supported')
-        return dirty
+    dirty = unicode(dirty)
+    # accidental whitespace around primary keys leads to unpleasantness
+    if primary_key:
+        dirty = dirty.strip()
 
-    # dirty is numeric: truncate trailing decimal digits, retain int part
-    canon = re.sub(r'[^0-9]', '', unicode(dirty).split('.')[0])
-    if not canon:
-        return 0
-    return unicode(canon) # FIXME ckan2.1 datastore?-- float(dirty)
+    if dstore_tag != 'text' and not primary_key and not dirty:
+        return None
+    return dirty
