@@ -5,11 +5,6 @@ jobs:
       - image: circleci/python:2-stretch-browsers
     steps:
       - checkout
-  test:
-    docker:
-      - image: circleci/python:2-stretch-browsers
-    steps:
-      - checkout
       - run: nosetests
 
 workflows:
@@ -17,6 +12,3 @@ workflows:
   build_and_test:
     jobs:
       - build
-      - test:
-          requires:
-            - build
