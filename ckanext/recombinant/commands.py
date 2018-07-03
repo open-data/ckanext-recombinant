@@ -242,7 +242,10 @@ class TableCommand(CkanCommand):
             if list_fields:
                 for r in records:
                     for k in list_fields:
-                        r[k] = r[k].split(',')
+                        if not r[k]:
+                            r[k] = []
+                        else:
+                            r[k] = r[k].split(',')
 
             print '-', org_name, len(records)
             lc.action.datastore_upsert(
