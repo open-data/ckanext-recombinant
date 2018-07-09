@@ -60,6 +60,8 @@ class TableCommand(CkanCommand):
     _orgs = None
 
     def command(self):
+        if '--plugin=ckanext-recombinant' in sys.argv:
+            sys.argv.remove('--plugin=ckanext-recombinant')
         opts = docopt(__doc__)
         self._load_config()
 
