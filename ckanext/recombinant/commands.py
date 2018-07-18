@@ -282,7 +282,8 @@ class TableCommand(CkanCommand):
     def _write_one_csv(self, lc, pkgs, chromo, outfile):
         out = unicodecsv.writer(outfile)
         column_ids = [f['datastore_id'] for f in chromo['fields']
-            ] + ['owner_org', 'owner_org_title']
+            ] + chromo.get('csv_org_extras', []) + [
+            'owner_org', 'owner_org_title']
         out.writerow(column_ids)
 
         for pkg in pkgs:
@@ -304,9 +305,24 @@ class TableCommand(CkanCommand):
                     chromo['resource_name'], pkg['owner_org'])
                 return
 
+            if not records:
+                continue
+
+            org_extras = {
+                'owner_org': pkg['owner_org'],
+                'owner_org_title': pkg['org_title'],
+            }
+            if chromo.get('csv_org_extras'):
+                org = lc.action.organization_show(id=pkg['owner_org'])
+                for ename in chromo.get('csv_org_extras', []):
+                    org_extras[ename] = u''
+                    for e in org['extras']:
+                        if e['key'] == ename:
+                            org_extras[ename] = e['value']
+                            break
+
             for record in records:
-                record['owner_org'] = pkg['owner_org']
-                record['owner_org_title'] = pkg['org_title']
+                record.update(org_extras)
                 try:
                     row = [unicode(
                         u'' if record[col] is None else
