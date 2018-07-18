@@ -294,7 +294,7 @@ def datastore_column_type(t, text_types):
     if text_types is true return simple types (almost all text) for backwards compatibility
     """
     if text_types:
-        return 'bigint' if datastore_type[t].numeric else 'text'
+        return 'bigint' if datastore_type[t].whole_number else 'text'
     return 'int' if t in ('year', 'month') else t
 
 
