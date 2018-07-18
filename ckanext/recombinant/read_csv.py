@@ -23,7 +23,9 @@ def csv_data_batch(csv_path, chromo):
             f.seek(0)
 
         csv_in = DictReader(f)
-        cols = csv_in.unicode_fieldnames
+        cols = [
+            f for f in csv_in.unicode_fieldnames
+            if f not in chromo.get('csv_org_extras', [])]
 
         expected = [f['datastore_id'] for f in chromo['fields']
             ] + ['owner_org', 'owner_org_title']
