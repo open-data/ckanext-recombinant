@@ -153,9 +153,8 @@ msgstr "Valeurs"
 
 #: ckanext/recombinant/templates/recombinant/confirm_delete.html:3
 #: ckanext/recombinant/templates/recombinant/confirm_delete.html:17
-#, fuzzy
 msgid "Confirm Delete"
-msgstr "{num} supprimé"
+msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/confirm_delete.html:7
 msgid ""
