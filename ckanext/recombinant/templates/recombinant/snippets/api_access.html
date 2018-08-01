@@ -12,19 +12,12 @@
     >CKAN Datastore API</a>
     with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}
   </p>
-  <p>{% trans %}The CKAN API uses a JSON-RPC style, where you post a JSON object and receive another
-    JSON object in response.{% endtrans %}</p>
+  <p>{% trans %}The CKAN API uses a JSON-RPC style, where you post a JSON object and receive another JSON object in response.{% endtrans %}</p>
 
-  <p>{% trans %}Retrieving records requires an API key. Your API key is shown on your
-    <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
+  <p>{% trans %}Retrieving records requires an API key. Your API key is shown on your <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
   </p>
 
-  <p>{% trans %}Do not include
-    your API key in any code shared with other people. Use a configuration file or environment
-    variable to let each user input their own key when they use your tool.
-    Your API key is <em>equivalent to your password</em> and may be used to
-    perform any action your user can on this site. All actions made with your API key will be
-    logged as actions you performed.{% endtrans %}
+  <p>{% trans %}Do not include your API key in any code shared with other people. Use a configuration file or environment variable to let each user input their own key when they use your tool. Your API key is <em>equivalent to your password</em> and may be used to perform any action your user can on this site. All actions made with your API key will be logged as actions you performed.{% endtrans %}
   </p>
 
   <h5>{{ _("Example:") }}</h5>
@@ -78,8 +71,7 @@ result = ckan.action.datastore_upsert(
 )</pre>
 
   <h4>{{ _("Delete Records") }}</h4>
-  <p>{% trans %}First verify that the record you would like to remove is present with
-  the "datastore_search" endpoint{% endtrans %}<p>
+  <p>{% trans %}First verify that the record you would like to remove is present with the "datastore_search" endpoint{% endtrans %}<p>
 
   <h5>{{ _("Example:") }}</h5>
   <pre class="bash"
@@ -104,8 +96,7 @@ result = ckan.action.datastore_search(
 )
 pprint(result['records'])</code></pre>
 
-  <p>{% trans %}Remove the record returned by passing the same parameters
-  to the "datastore_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
+  <p>{% trans %}Remove the record returned by passing the same parameters to the "datastore_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
 
   <h5>{{ _("Example:") }}</h5>
   <pre class="bash"
@@ -127,9 +118,5 @@ pprint(result['records'])</code></pre>
 )</pre>
 </div>
 <p>
-{% trans %}If you have modified these API Access instructions for
-another programming language please send them to
-<a href="mailto:open-ouvert@tbs-sct.gc.ca">open-ouvert@tbs-sct.gc.ca</a>
-and we may be able to post them here as well.
-{% endtrans %}
+{% trans %}If you have modified these API Access instructions for another programming language please send them to <a href="mailto:open-ouvert@tbs-sct.gc.ca">open-ouvert@tbs-sct.gc.ca</a> and we may be able to post them here as well. {% endtrans %}
 </p>
