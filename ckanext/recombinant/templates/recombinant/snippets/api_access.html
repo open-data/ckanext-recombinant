@@ -15,9 +15,22 @@
   <p>{% trans %}The CKAN API uses a JSON-RPC style, where you post a JSON object and receive another
     JSON object in response.{% endtrans %}</p>
 
+  <p>{% trans %}Retrieving records requires an API key. Your API key is shown on your
+    <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
+  </p>
+
+  <p>{% trans %}Do not include
+    your API key in any code shared with other people. Use a configuration file or environment
+    variable to let each user input their own key when they use your tool.
+    Your API key is <em>equivalent to your password</em> and may be used to
+    perform any action your user can on this site. All actions made with your API key will be
+    logged as actions you performed.{% endtrans %}
+  </p>
+
   <h5>{{ _("Example:") }}</h5>
   <pre class="bash"
->curl {{ g.site_url }}/api/action/datastore_search -d '
+>curl {{ g.site_url }}/api/action/datastore_search \
+  -H"Authorization:$API_KEY" -d '
 {
   "resource_id": "{{ resource_id }}",
   "sort": {{ h.recombinant_example(resource.name, 'sort') }},
@@ -30,7 +43,7 @@
   <pre class="python"
 >from ckanapi import RemoteCKAN
 from pprint import pprint
-ckan = RemoteCKAN('{{ g.site_url }}')
+ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
 result = ckan.action.datastore_search(
     resource_id="{{ resource_id }}",
     sort={{ h.recombinant_example(resource.name, 'sort') }},
@@ -42,20 +55,7 @@ result = ckan.action.datastore_search(
 pprint(result['records'])</pre>
 
   <h4>{{ _("Create and Update Records") }}</h4>
-  <p>{% trans %}Modifying records requires an API key. Your API key is shown on your
-    <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
-  </p>
-
-  <p>{% trans %}Do not include
-    your API key in any code shared with other people. Use a configuration file or environment
-    variable to let each user input their own key when they use your tool.
-    Your API key is <em>equivalent to your password</em> and may be used to
-    perform any action your user can on this site. All actions made with your API key will be
-    logged as actions you performed.{% endtrans %}
-  </p>
-
-  <p>{% trans %}Create and update records with the "datastore_upsert" endpoint.
-    Your API key must be sent as an "Authorization" header.{% endtrans %}</p>
+  <p>{% trans %}Create and update records with the "datastore_upsert" endpoint.{% endtrans %}</p>
 
   <h5>{{ _("Example:") }}</h5>
   <pre class="bash"
@@ -78,9 +78,6 @@ result = ckan.action.datastore_upsert(
 )</pre>
 
   <h4>{{ _("Delete Records") }}</h4>
-  <p>{% trans %}Deleting records requires an API key. Your API key is shown on your
-    <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
-  </p>
   <p>{% trans %}First verify that the record you would like to remove is present with
   the "datastore_search" endpoint{% endtrans %}<p>
 
