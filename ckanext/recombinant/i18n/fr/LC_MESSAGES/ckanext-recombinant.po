@@ -229,12 +229,12 @@ msgstr ""
 " et on reçoit en réponse un autre objet JSON."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:18
-#, fuzzy, python-format
+#, python-format
 msgid ""
 "Retrieving records requires an API key. Your API key is shown on your <a "
 "href=\"%(profile_url)s\">profile page</a>."
 msgstr ""
-"La suppression d’un dossier exige une clé API. Votre clé API apparaît "
+"La récupération d’un dossier exige une clé API. Votre clé API apparaît "
 "dans votre <a href=\"%(profile_url)s\">page de profil</a>."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:22
@@ -266,12 +266,10 @@ msgid "Create and Update Records"
 msgstr "Créer et mettre à jour un dossier"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:58
-#, fuzzy
 msgid "Create and update records with the \"datastore_upsert\" endpoint."
 msgstr ""
 "Pour créer ou mettre à jour des dossiers, utilisez le point de "
-"terminaison « datastore_upsert ». Votre clé API doit être transmise comme"
-" en-tête « Authorization »."
+"terminaison « datastore_upsert »."
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:80
 msgid "Delete Records"
