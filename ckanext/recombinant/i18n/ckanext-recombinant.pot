@@ -1,22 +1,22 @@
 # Translations template for ckanext-recombinant.
-# Copyright (C) 2017 ORGANIZATION
+# Copyright (C) 2018 ORGANIZATION
 # This file is distributed under the same license as the ckanext-recombinant
 # project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2018.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: ckanext-recombinant 2.0.0dev\n"
+"Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2017-04-06 17:14+0000\n"
+"POT-Creation-Date: 2018-08-01 14:48+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 0.9.6\n"
+"Generated-By: Babel 2.3.4\n"
 
 #: ckanext/recombinant/controller.py:45
 msgid "Your file was successfully uploaded into the central system."
@@ -91,15 +91,15 @@ msgid ""
 "your Excel file to open-ouvert@tbs-sct.gc.ca so we may investigate."
 msgstr ""
 
-#: ckanext/recombinant/controller.py:320
+#: ckanext/recombinant/controller.py:324
 msgid "Sheet {0} Row {1}:"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:324
+#: ckanext/recombinant/controller.py:328
 msgid "Error while importing data: {0}"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:327
+#: ckanext/recombinant/controller.py:331
 msgid "The template uploaded is empty"
 msgstr ""
 
@@ -112,32 +112,32 @@ msgstr ""
 msgid "Recombinant dataset type not found"
 msgstr ""
 
-#: ckanext/recombinant/logic.py:161
+#: ckanext/recombinant/logic.py:162
 #, python-format
 msgid "Multiple datasets exist for type %s"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:169
+#: ckanext/recombinant/write_excel.py:357
 msgid "Field Name"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:172
+#: ckanext/recombinant/write_excel.py:360
 msgid "ID"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:176
+#: ckanext/recombinant/write_excel.py:364
 msgid "Description"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:180
+#: ckanext/recombinant/write_excel.py:368
 msgid "Obligation"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:184
+#: ckanext/recombinant/write_excel.py:372
 msgid "Format"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:188
+#: ckanext/recombinant/write_excel.py:376
 msgid "Values"
 msgstr ""
 
