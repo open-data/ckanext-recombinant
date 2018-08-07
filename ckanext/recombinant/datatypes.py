@@ -105,9 +105,11 @@ def canonicalize(dirty, dstore_tag, primary_key):
         return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
 
     dirty = unicode(dirty)
-    # accidental whitespace around primary keys leads to unpleasantness
+    # accidental control characters and whitespace around primary keys
+    # leads to unpleasantness
     if primary_key:
         dirty = dirty.strip()
+        dirty = re.sub(u'[\x00-\x1f]', '', dirty)
 
     if dstore_tag != 'text' and not primary_key and not dirty:
         return None

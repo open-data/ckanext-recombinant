@@ -212,3 +212,10 @@ def test_text_array():
     assert_equal(canonicalize('=TRUE()', dt, False), ['TRUE'])
     assert_equal(canonicalize('=FALSE()', dt, False), ['FALSE'])
     assert_equal(canonicalize('AB,CD,E', dt, False), ['AB', 'CD', 'E'])
+
+def test_primary_key():
+    dt = 'text'
+    assert_equal(canonicalize('OGP-324', dt, True), 'OGP-324')
+    assert_equal(canonicalize('\t OGP-324\n', dt, True), 'OGP-324')
+    assert_equal(canonicalize('OGP-\r\n\r\n324', dt, True), 'OGP-324')
+    assert_equal(canonicalize('OGP- 324', dt, True), 'OGP- 324')
