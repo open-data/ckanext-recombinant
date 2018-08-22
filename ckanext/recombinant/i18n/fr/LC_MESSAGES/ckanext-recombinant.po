@@ -22,7 +22,7 @@ msgstr ""
 
 #: ckanext/recombinant/controller.py:48
 msgid "No errors found."
-msgstr ""
+msgstr "Aucune erreur trouvée."
 
 #: ckanext/recombinant/controller.py:52
 msgid "Your file was successfully uploaded into the central system."
@@ -355,7 +355,7 @@ msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:36
 msgid "Check for Errors"
-msgstr ""
+msgstr "Vérifier les erreurs"
 
 #~ msgid "No matching records found %s"
 #~ msgstr ""
