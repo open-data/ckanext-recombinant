@@ -362,7 +362,3 @@ msgstr "Vérifier les erreurs"
 
 #~ msgid "label"
 #~ msgstr ""
-
-#~ msgid ""
-#~ msgstr ""
-
