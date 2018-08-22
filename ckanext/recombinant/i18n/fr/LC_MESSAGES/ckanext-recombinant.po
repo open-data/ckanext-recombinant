@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-08-01 14:52+0000\n"
+"POT-Creation-Date: 2018-08-22 16:21+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -20,53 +20,57 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.3.4\n"
 
-#: ckanext/recombinant/controller.py:45
+#: ckanext/recombinant/controller.py:48
+msgid "No errors found."
+msgstr ""
+
+#: ckanext/recombinant/controller.py:52
 msgid "Your file was successfully uploaded into the central system."
 msgstr "Votre fichier a été téléchargé avec succès dans le système central."
 
-#: ckanext/recombinant/controller.py:81
+#: ckanext/recombinant/controller.py:88
 msgid "Required field"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:99
+#: ckanext/recombinant/controller.py:106
 msgid "Wrong number of fields, expected {num}"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:111
+#: ckanext/recombinant/controller.py:118
 msgid "Invalid fields"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:114
+#: ckanext/recombinant/controller.py:121
 #, python-format
 msgid "No matching records found \"%s\""
 msgstr ""
 
-#: ckanext/recombinant/controller.py:117
+#: ckanext/recombinant/controller.py:124
 msgid "Multiple matching records found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:149
+#: ckanext/recombinant/controller.py:156
 msgid "{num} deleted."
 msgstr "{num} supprimé"
 
-#: ckanext/recombinant/controller.py:181 ckanext/recombinant/controller.py:201
-#: ckanext/recombinant/controller.py:214
+#: ckanext/recombinant/controller.py:188 ckanext/recombinant/controller.py:208
+#: ckanext/recombinant/controller.py:221
 msgid "Recombinant resource_name not found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:197
+#: ckanext/recombinant/controller.py:204
 msgid "No organizations found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:219
+#: ckanext/recombinant/controller.py:226
 msgid "Table for this organization not found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:226
+#: ckanext/recombinant/controller.py:233
 msgid "Resource not found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:261
+#: ckanext/recombinant/controller.py:268
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try"
 " copying your data into the latest version of the template and uploading "
@@ -79,13 +83,13 @@ msgstr ""
 "persiste, envoyez votre fichier Excel à open-ouvert@… afin que nous "
 "puissions faire enquête."
 
-#: ckanext/recombinant/controller.py:268
+#: ckanext/recombinant/controller.py:275
 msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
 
-#: ckanext/recombinant/controller.py:275
+#: ckanext/recombinant/controller.py:282
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but "
 "you supplied a sheet for {1}"
@@ -93,7 +97,7 @@ msgstr ""
 "La feuille n'est pas valide pour cette organisation. La feuille doit être"
 " étiquetée pour {0}, mais vous avez fourni une feuille pour {1}"
 
-#: ckanext/recombinant/controller.py:291
+#: ckanext/recombinant/controller.py:298
 msgid ""
 "This template is out of date. Please try copying your data into the "
 "latest version of the template and uploading again. If this problem "
@@ -101,15 +105,15 @@ msgid ""
 "investigate."
 msgstr ""
 
-#: ckanext/recombinant/controller.py:324
+#: ckanext/recombinant/controller.py:332
 msgid "Sheet {0} Row {1}:"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:328
+#: ckanext/recombinant/controller.py:336
 msgid "Error while importing data: {0}"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:331
+#: ckanext/recombinant/controller.py:339
 msgid "The template uploaded is empty"
 msgstr "Le modèle que vous avez soumis est vide"
 
@@ -203,11 +207,11 @@ msgstr "Accès par API"
 msgid "API access examples"
 msgstr "Exemples d’accès par API"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:9
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:10
 msgid "Retrieve Records"
 msgstr "Récupérer un dossier"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:10
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:11
 #, python-format
 msgid ""
 "Access this data through the <a "
@@ -220,7 +224,7 @@ msgstr ""
 "datastore-api\"     >l’API de mémoire de données CKAN</a> avec "
 "<code>resource_id=\"%(resource_id)s\"</code>"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:15
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:13
 msgid ""
 "The CKAN API uses a JSON-RPC style, where you post a JSON object and "
 "receive another JSON object in response."
@@ -228,7 +232,7 @@ msgstr ""
 "L’API CKAN utilise un style JSON-RPC, par lequel on inscrit un objet JSON"
 " et on reçoit en réponse un autre objet JSON."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:18
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:15
 #, python-format
 msgid ""
 "Retrieving records requires an API key. Your API key is shown on your <a "
@@ -237,7 +241,7 @@ msgstr ""
 "La récupération d’un dossier exige une clé API. Votre clé API apparaît "
 "dans votre <a href=\"%(profile_url)s\">page de profil</a>."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:22
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:18
 msgid ""
 "Do not include your API key in any code shared with other people. Use a "
 "configuration file or environment variable to let each user input their "
@@ -254,28 +258,28 @@ msgstr ""
 "exécuter votre utilisateur sur ce site. Toutes les actions effectuées à "
 "partir de votre clé API seront inscrites à votre nom."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:30
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:60
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:84
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:110
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:21
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:66
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:101
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:139
 msgid "Example:"
 msgstr "Exemple :"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:57
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:63
 msgid "Create and Update Records"
 msgstr "Créer et mettre à jour un dossier"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:58
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:64
 msgid "Create and update records with the \"datastore_upsert\" endpoint."
 msgstr ""
 "Pour créer ou mettre à jour des dossiers, utilisez le point de "
 "terminaison « datastore_upsert »."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:80
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:98
 msgid "Delete Records"
 msgstr "Supprimer un dossier"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:81
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:99
 msgid ""
 "First verify that the record you would like to remove is present with the"
 " \"datastore_search\" endpoint"
@@ -283,7 +287,7 @@ msgstr ""
 "Vérifiez d’abord que le dossier que vous voulez supprimer apparaît avec "
 "le point de terminaison « datastore_search »."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:107
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:137
 msgid ""
 "Remove the record returned by passing the same parameters to the "
 "\"datastore_delete\" endpoint instead of \"datastore_search\"."
@@ -291,7 +295,7 @@ msgstr ""
 "Supprimez le dossier retourné en appliquant les mêmes paramètres au point"
 " de terminaison « datastore_delete » plutôt que « datastore_search »."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:130
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:163
 msgid ""
 "If you have modified these API Access instructions for another "
 "programming language please send them to <a href=\"mailto:open-ouvert"
@@ -349,6 +353,10 @@ msgstr ""
 msgid "Submit"
 msgstr ""
 
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:36
+msgid "Check for Errors"
+msgstr ""
+
 #~ msgid "No matching records found %s"
 #~ msgstr ""
 
@@ -356,12 +364,5 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid ""
-#~ "Modifying records requires an API key."
-#~ " Your API key is shown on your"
-#~ " <a href=\"%(profile_url)s\">profile page</a>."
 #~ msgstr ""
-#~ "La modification d’un dossier exige une"
-#~ " clé API. Votre clé API apparaît "
-#~ "dans votre <a href=\"%(profile_url)s\">page de"
-#~ " profil</a>."
 
