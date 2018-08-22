@@ -32,6 +32,7 @@ class UploadController(PackageController):
         geno = get_geno(package_type)
         lc = ckanapi.LocalCKAN(username=c.user)
         dataset = lc.action.package_show(id=id)
+        dry_run = 'validate' in request.POST
         try:
             if request.POST['xls_update'] == '':
                 raise BadExcelData('You must provide a valid file')
@@ -40,11 +41,17 @@ class UploadController(PackageController):
                 lc,
                 dataset,
                 request.POST['xls_update'].file,
-                geno)
+                geno,
+                dry_run)
 
-            h.flash_success(_(
-                "Your file was successfully uploaded into the central system."
-                ))
+            if dry_run:
+                h.flash_success(_(
+                    "No errors found."
+                    ))
+            else:
+                h.flash_success(_(
+                    "Your file was successfully uploaded into the central system."
+                    ))
 
             redirect(h.url_for(controller='package', action='read', id=id))
         except BadExcelData, e:
@@ -233,7 +240,7 @@ class UploadController(PackageController):
             })
 
 
-def _process_upload_file(lc, dataset, upload_file, geno):
+def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
     """
     Use lc.action.datastore_upsert to load data from upload_file
 
@@ -252,8 +259,8 @@ def _process_upload_file(lc, dataset, upload_file, geno):
             sheet_name, org_name, column_names, rows = next(upload_data)
         except StopIteration:
             break
-        except:
-            # XXX bare except because this can fail in all sorts of ways
+        except Exception:
+            # unfortunately this can fail in all sorts of ways
             if asbool(config.get('debug', False)):
                 # on debug we want the real error
                 raise
@@ -308,6 +315,7 @@ def _process_upload_file(lc, dataset, upload_file, geno):
                 method=method,
                 resource_id=expected_sheet_names[sheet_name],
                 records=[r[1] for r in records],
+                dry_run=dry_run,
                 )
         except ValidationError as e:
             if 'info' in e.error_dict:
