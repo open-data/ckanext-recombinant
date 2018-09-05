@@ -97,14 +97,15 @@ class TableCommand(CkanCommand):
             self._orgs = lc.action.organization_list()
         return self._orgs
 
-    def _get_packages(self, dataset_type, orgs):
+    def _get_packages(self, dataset_type, orgs, ignore_errors=False):
         lc = LocalCKAN()
         packages = []
         for o in orgs:
             try:
                 result = lc.action.recombinant_show(
                     dataset_type=dataset_type,
-                    owner_org=o)
+                    owner_org=o,
+                    ignore_errors=ignore_errors)
                 packages.append(result)
             except NotFound:
                 continue
@@ -189,7 +190,7 @@ class TableCommand(CkanCommand):
         orgs = self._get_orgs()
         lc = LocalCKAN()
         for dtype in self._expand_dataset_types(dataset_types):
-            packages = self._get_packages(dtype, orgs)
+            packages = self._get_packages(dtype, orgs, ignore_errors=True)
             for p in packages:
                 print 'deleting %s %s' % (dtype, p['owner_org'])
                 for r in p['resources']:
