@@ -7,6 +7,7 @@ from paste.deploy.converters import asbool
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
+from ckanext.recombinant.helpers import _read_choices_file
 
 
 def recombinant_create(context, data_dict):
@@ -247,13 +248,48 @@ def _update_datastore(lc, geno, dataset, force_update=False):
                 if f['id'] not in seen:
                     fields.append(f)
 
+        trigger_names = _update_triggers(lc, chromo)
+
         lc.action.datastore_create(
             resource_id=resource_id,
             fields=fields,
             primary_key=chromo.get('datastore_primary_key', []),
             indexes=chromo.get('datastore_indexes', []),
-            triggers=[{'function': unicode(f)} for f in chromo.get('triggers', [])],
+            triggers=[{'function': unicode(f)} for f in trigger_names],
             force=True)
+
+
+def _update_triggers(lc, chromo):
+    field_choices = {}
+    trigger_names = []
+
+    for f in chromo['fields']:
+        if 'choices' in f:
+            field_choices[f['datastore_id']] = sorted(f['choices'])
+        elif 'choices_file' in f and '_path' in chromo:
+            field_choices[f['datastore_id']] = sorted(_read_choices_file(chromo, f))
+
+    for tr in chromo.get('triggers', []):
+        if isinstance(tr, dict):
+            assert len(tr) == 1, 'inline trigger may have only one key:' + repr(tr.keys())
+            ((trname, trcode),) = tr.items()
+            trigger_names.append(trname)
+            lc.action.datastore_function_create(
+                name=unicode(trname),
+                or_replace=True,
+                rettype=u'trigger',
+                definition=unicode(trcode).format(**dict(
+                    (fkey, _pg_array(fchoices))
+                    for fkey, fchoices in field_choices.items())))
+        else:
+            trigger_names.append(tr)
+    return trigger_names
+
+
+def _pg_array(choices):
+    from ckanext.datastore.helpers import literal_string
+    return u'ARRAY[' + u','.join(
+        literal_string(unicode(c)) for c in choices) + u']'
 
 
 def _dataset_fields(geno):
