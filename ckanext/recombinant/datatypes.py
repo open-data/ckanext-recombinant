@@ -33,7 +33,7 @@ datastore_type = {
 }
 
 
-def canonicalize(dirty, dstore_tag, primary_key):
+def canonicalize(dirty, dstore_tag, primary_key, single_choice_field):
     """
     Canonicalize dirty input from xlrd to align with
     recombinant.json datastore type specified in dstore_tag.
@@ -49,6 +49,8 @@ def canonicalize(dirty, dstore_tag, primary_key):
     :type dstore_tag: str
     :param primary_key: True if this field is part of the PK
     :type primary_key: bool
+    :padam single_choice_field: True if this field is a single-choice field
+    :type single_choice_field: bool
 
     :return: Canonicalized cell input
     :rtype: unicode, None or list of unicode values (_text)
@@ -103,6 +105,10 @@ def canonicalize(dirty, dstore_tag, primary_key):
         return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
 
     dirty = unicode(dirty)
+
+    if single_choice_field: # "code:full-text", just need code
+        dirty = dirty.split(':')[0]
+
     # accidental control characters and whitespace around primary keys
     # leads to unpleasantness
     if primary_key:

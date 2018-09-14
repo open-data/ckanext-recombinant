@@ -61,7 +61,7 @@ def _is_bumf(value):
     return value is None
 
 
-def get_records(rows, fields, primary_key_fields):
+def get_records(rows, fields, primary_key_fields, single_choice_fields):
     """
     Truncate/pad empty/missing records to expected row length, canonicalize
     cell content, and return resulting record list.
@@ -93,7 +93,8 @@ def get_records(rows, fields, primary_key_fields):
                     canonicalize(
                         v,
                         f['datastore_type'],
-                        f['datastore_id'] in primary_key_fields))
+                        f['datastore_id'] in primary_key_fields,
+                        f['datastore_id'] in single_choice_fields))
                 for f, v in zip(fields, row))))
         except BadExcelData, e:
             raise BadExcelData(u'Row {0}:'.format(n) + u' ' + e.message)
