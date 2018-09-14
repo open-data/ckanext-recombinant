@@ -376,12 +376,16 @@ def _append_field_choices_rows(refs, choices, style2, count_range=None):
     label = _('Values')
     a1 = (style2, None, 24)
     for key, value in choices:
-        r = [label, unicode(key), value]
         if count_range: # used by _text choices validation
+            r = [label, unicode(key), value]
             r.extend([None]*6 + ['=SUMPRODUCT(--ISNUMBER(SEARCH('
                 '","&B{n}&",",SUBSTITUTE(","&{r}&","," ",""))))'.format(
                     r=count_range,
                     n=len(refs) + 1)])
+        elif key == value:
+            r = [label, unicode(key)]
+        else:
+            r = [label, u'{0}: {1}'.format(key, value)]
         refs.append((a1, r))
         label = None
         a1 = (style2, None, None)

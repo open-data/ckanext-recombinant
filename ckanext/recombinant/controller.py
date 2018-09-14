@@ -14,7 +14,8 @@ from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.write_excel import (
     excel_template, excel_data_dictionary)
 from ckanext.recombinant.tables import get_chromo, get_geno
-from ckanext.recombinant.helpers import recombinant_primary_key_fields
+from ckanext.recombinant.helpers import (
+    recombinant_primary_key_fields, recombinant_choice_fields)
 
 from cStringIO import StringIO
 
@@ -302,10 +303,16 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
         pk = chromo.get('datastore_primary_key', [])
+        single_choice_fields = [
+            f['datastore_id'] for f in chromo['fields']
+            if ('choices' in f or 'choices_file' in f) and f['datastore_type'] != '_text']
+
         records = get_records(
             rows,
-            [f for f in chromo['fields'] if f.get('import_template_include', True)]
-            , pk)
+            [f for f in chromo['fields'] if f.get('import_template_include', True)],
+            pk,
+            single_choice_fields,
+            )
         method = 'upsert' if pk else 'insert'
         total_records += len(records)
         if not records:
