@@ -22,9 +22,9 @@ EXAMPLE_ROW, EXAMPLE_HEIGHT = 5, 15
 EXAMPLE_MERGE = 'A5:B5'
 FREEZE_PANES = 'C5'
 DATA_FIRST_ROW, DATA_HEIGHT = 6, 24
-DATA_NUM_ROWS = 10000
+DATA_NUM_ROWS = 2000
 RSTATUS_COL, RSTATUS_WIDTH = 'A', 1
-RPAD_COL, RPAD_WIDTH = 'B', 2.5
+RPAD_COL, RPAD_WIDTH = 'B', 3
 DATA_FIRST_COL, DATA_FIRST_COL_NUM = 'C', 3
 ESTIMATE_WIDTH_MULTIPLE = 1.2
 EDGE_RANGE = 'A1:A4' # just to look spiffy
@@ -32,7 +32,7 @@ EDGE_RANGE = 'A1:A4' # just to look spiffy
 REF_HEADER1_ROW, REF_HEADER1_HEIGHT = 1, 27
 REF_HEADER2_ROW, REF_HEADER2_HEIGHT = 2, 27
 REF_FIRST_ROW = 4
-REF_FIELD_NUM_COL_NUM = 1
+REF_FIELD_NUM_COL, REF_FIELD_NUM_COL_NUM = 'A', 1
 REF_FIELD_NUM_MERGE = 'A{row}:B{row}'
 REF_FIELD_TITLE_HEIGHT = 24
 REF_FIELD_TITLE_MERGE = 'C{row}:D{row}'
@@ -59,7 +59,10 @@ DEFAULT_CHEADING_STYLE = {
     'PatternFill': {
         'patternType': 'solid',
         'fgColor': 'FF90AFC5'},
+    'Alignment': {
+        'wrapText': True},
     'Font': {
+        'color': '000000',
         'underline': 'single'}}
 DEFAULT_EXAMPLE_STYLE = {
     'PatternFill': {
@@ -89,8 +92,12 @@ REF_ATTR_STYLE = {
         'patternType': 'solid',
         'fgColor': 'FFFFFFFF'},
     'Font': {
-        'color': 'CCCCCC'},
+        'color': '666666'},
     'Alignment': {
+        'vertical': 'top'}}
+REF_VALUE_STYLE = {
+    'Alignment': {
+        'wrapText': True,
         'vertical': 'top'}}
 REF_PAPER_STYLE = {
     'PatternFill': {
@@ -114,6 +121,7 @@ def excel_template(dataset_type, org):
             _populate_excel_sheet_v2(sheet, chromo, org, refs)
         elif version == 3:
             _populate_excel_sheet(sheet, geno, chromo, org, refs, rnum)
+        sheet.protection.enabled = True
         sheet = book.create_sheet()
 
     if version == 2:
@@ -121,6 +129,7 @@ def excel_template(dataset_type, org):
     elif version == 3:
         _populate_reference_sheet(sheet, chromo, refs)
     sheet.title = 'reference'
+    sheet.protection.enabled = True
 
     if version == 2:
         return book
@@ -247,12 +256,10 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
             sheet,
             CHEADINGS_ROW,
             col_num,
-            hyperlink_formula(
-                '#reference!{col}{row}'.format(
-                    col=REF_KEY_COL,
-                    row=len(refs) + REF_FIRST_ROW),
-                field_heading),
+            field_heading,
             cheadings_style)
+
+        reference_row1 = len(refs) + REF_FIRST_ROW
 
         # match against db columns
         sheet.cell(row=CODE_ROW, column=col_num).value = field['datastore_id']
@@ -264,7 +271,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
                 EXAMPLE_ROW,
                 col_num,
                 u','.join(example) if isinstance(example, list)
-                else unicode(example),
+                else example,
                 example_style)
 
         col_letter = openpyxl.cell.get_column_letter(col_num)
@@ -322,6 +329,13 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
                         'sheet "reference" rows {0}-{1}'.format(ref1, refN))
                 sheet.add_data_validation(v)
                 v.ranges.append(validation_range)
+
+        sheet.cell(row=CHEADINGS_ROW, column=col_num).hyperlink = (
+            '#reference!{colA}{row1}:{colZ}{rowN}'.format(
+                colA=REF_FIELD_NUM_COL,
+                row1=reference_row1,
+                colZ=REF_VALUE_COL,
+                rowN=len(refs) + REF_FIRST_ROW - 2))
 
     sheet.row_dimensions[HEADER_ROW].height = HEADER_HEIGHT
     sheet.row_dimensions[CODE_ROW].hidden = True
@@ -613,18 +627,11 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
     sheet.freeze_panes = sheet['A4']
 
 
-def hyperlink_formula(target, text):
-    text = text.replace(u'"', u'""')
-    text = text.replace(u'\n', u'"&CHAR(10)&"')
-    return u'=HYPERLINK("{target}","{text}")'.format(target=target, text=text)
-
-
 def _append_field_ref_rows(refs, field, link):
     refs.append((None, []))
-    refs.append(('title', [
-        hyperlink_formula(
-            link,
-            recombinant_language_text(field['label']))]))
+    refs.append(('title', [(
+        link,
+        recombinant_language_text(field['label']))]))
     refs.append(('attr', [
         _('ID'),
         field['datastore_id']]))
@@ -715,12 +722,16 @@ def _populate_reference_sheet(sheet, geno, refs):
     sheet.row_dimensions[REF_HEADER2_ROW].height = REF_HEADER2_HEIGHT
 
 
-    for row_number, (style, ref_line) in enumerate(refs, 3):
+    for row_number, (style, ref_line) in enumerate(refs, REF_FIRST_ROW - 1):
+        link = None
         if len(ref_line) == 2:
             value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH)
             ref_line = [ref_line[0], value]
+        elif len(ref_line) == 1 and isinstance(ref_line[0], tuple):
+            link, value = ref_line[0]
+            ref_line = [value]
 
-        sheet.append([None, None] + ref_line)
+        sheet.append([None, None] + [v.replace('\n', '\r\n') for v in ref_line])
 
         if len(ref_line) == 2:
             sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
@@ -733,9 +744,10 @@ def _populate_reference_sheet(sheet, geno, refs):
                 sheet,
                 row_number,
                 REF_FIELD_NUM_COL_NUM,
-                '{fnum}.'.format(fnum=field_count),
+                field_count,
                 REF_NUMBER_STYLE)
             title_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+            title_cell.hyperlink = link
             apply_styles(REF_TITLE_STYLE, title_cell)
             sheet.row_dimensions[row_number].height = REF_FIELD_TITLE_HEIGHT
             field_count += 1
@@ -750,7 +762,9 @@ def _populate_reference_sheet(sheet, geno, refs):
 
         elif style == 'attr':
             key_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+            value_cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
             apply_styles(REF_ATTR_STYLE, key_cell)
+            apply_styles(REF_VALUE_STYLE, value_cell)
 
         apply_styles(REF_PAPER_STYLE, sheet.row_dimensions[row_number])
 
@@ -783,7 +797,9 @@ def _populate_reference_sheet_v2(sheet, chromo, refs):
 
 def fill_cell(sheet, row, column, value, styles):
     c = sheet.cell(row=row, column=column)
-    c.value = value.replace('\n', '\r\n')
+    if isinstance(value, basestring):
+        value = value.replace(u'\n', u'\r\n')
+    c.value = value
     apply_styles(styles, c)
 
 
