@@ -133,7 +133,7 @@ msgstr ""
 
 #: ckanext/recombinant/write_excel.py:229
 msgid "e.g."
-msgstr ""
+msgstr "ex."
 
 #: ckanext/recombinant/write_excel.py:636
 #: ckanext/recombinant/write_excel.py:668
