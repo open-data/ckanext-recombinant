@@ -28,7 +28,7 @@ datastore_type = {
     'money': DatastoreType(
         'money',
         False,
-        '### ### ### ### ### ##0'),
+        '$#,##0.00'),
     'text': DatastoreType('text', False, '@'),
     'boolean': DatastoreType('boolean', False, '@'),
     '_text': DatastoreType('_text', False, '@'),
