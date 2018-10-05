@@ -1,3 +1,5 @@
+import textwrap
+
 import openpyxl
 
 from ckanext.recombinant.tables import get_geno
@@ -36,9 +38,45 @@ REF_FIELD_TITLE_HEIGHT = 24
 REF_FIELD_TITLE_COL_NUM = 3
 REF_KEY_COL_NUM = 3
 REF_KEY_WIDTH = 18
+REF_VALUE_COL_NUM = 3
 REF_VALUE_WIDTH = 114
 REF_EDGE_RANGE = 'A1:A2'
 REF_PAD_RANGE = 'B1:B2'
+
+DEFAULT_EDGE_STYLE = {
+    'PatternFill': {
+        'patternType': 'solid',
+        'fgColor': 'FFFFF056'},
+    'Font': {
+        'bold': True}}
+DEFAULT_HEADER_STYLE = {
+    'PatternFill': {
+        'patternType': 'solid',
+        'fgColor': 'FFDFE2DB'},
+    'Font': {
+        'size': 16}}
+DEFAULT_CHEADING_STYLE = {
+    'PatternFill': {
+        'patternType': 'solid',
+        'fgColor': 'FFDFE2DB'},
+    'Font': {
+        'underline': 'single'},
+    'Alignment': {
+        'vertical': 'bottom'}}
+DEFAULT_EXAMPLE_STYLE = {
+    'PatternFill': {
+        'patternType': 'solid',
+        'fgColor': 'FFDDD9C4'}}
+DEFAULT_ERROR_STYLE = {
+    'PatternFill': {
+        'patternType': 'solid',
+        'fgColor': 'FFC00000'},
+    'Font': {
+        'color': 'FFFFFF'}}
+REF_TITLE_STYLE = {
+    'Font': {
+        'size': 16}}
+
 
 def excel_template(dataset_type, org):
     """
@@ -55,7 +93,7 @@ def excel_template(dataset_type, org):
         if version == 2:
             _populate_excel_sheet_v2(sheet, chromo, org, refs)
         elif version == 3:
-            _populate_excel_sheet(sheet, chromo, org, refs, rnum)
+            _populate_excel_sheet(sheet, geno, chromo, org, refs, rnum)
         sheet = book.create_sheet()
 
     if version == 2:
@@ -69,14 +107,14 @@ def excel_template(dataset_type, org):
 
     for i, chromo in enumerate(geno['resources']):
         sheet = book.create_sheet()
-        _populate_excel_validation(sheet, chromo, org, refs)
+        #_populate_excel_validation(sheet, chromo, org, refs)
     return book
 
 
-def excel_data_dictionary(chromo):
+def excel_data_dictionary(geno):
     """
     return an openpyxl.Workbook object containing the field reference
-    from chromo, one sheet per language
+    from geno, one sheet per language
     """
     book = openpyxl.Workbook()
     sheet = book.active
@@ -106,19 +144,21 @@ def excel_data_dictionary(chromo):
         handle_request(request, c)
         choice_fields = dict(
             (f['datastore_id'], f['choices'])
-            for f in recombinant_choice_fields(chromo['resource_name']))
+            for f in recombinant_choice_fields(chromo['resource_name'])
+            for chromo in geno['resources'])
 
         refs = []
-        for field in chromo['fields']:
-            _append_field_ref_rows(refs, field, style1, style2)
+        for chromo in geno['resources']:
+            for field in chromo['fields']:
+                _append_field_ref_rows(refs, field, style1, style2)
 
-            if field['datastore_id'] in choice_fields:
-                _append_field_choices_rows(
-                    refs,
-                    choice_fields[field['datastore_id']],
-                    style2)
+                if field['datastore_id'] in choice_fields:
+                    _append_field_choices_rows(
+                        refs,
+                        choice_fields[field['datastore_id']],
+                        style2)
 
-        _populate_reference_sheet(sheet, chromo, refs)
+        _populate_reference_sheet(sheet, geno, refs)
         sheet = None
 
     return book
@@ -127,8 +167,14 @@ def excel_data_dictionary(chromo):
 def estimate_width(text):
     return max(len(s) for s in text.split('\n')) * ESTIMATE_WIDTH_MULTIPLE
 
+def wrap_text_to_width(text, width):
+    cwidth = width // ESTIMATE_WIDTH_MULTIPLE
+    return '\n'.join(
+        '\n'.join(textwrap.wrap(line, cwidth))
+        for line in text.split('\n'))
 
-def _populate_excel_sheet(sheet, chromo, org, refs, resource_num):
+
+def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     """
     Format openpyxl sheet for the resource definition chromo and org.
     (Version 3)
@@ -139,75 +185,31 @@ def _populate_excel_sheet(sheet, chromo, org, refs, resource_num):
     """
     sheet.title = chromo['resource_name']
 
-    def fill_cell(row, column, value, styles):
-        c = sheet.cell(row=row, column=column)
-        c.value = value
-        apply_styles(styles, c)
+    edge_style = geno.get('excel_edge_style', DEFAULT_EDGE_STYLE)
+    required_style = geno.get('excel_required_style', edge_style)
+    header_style = geno.get('excel_header_style', DEFAULT_HEADER_STYLE)
+    cheadings_style = geno.get('excel_column_heading_style', DEFAULT_CHEADING_STYLE)
+    example_style = geno.get('excel_example_style', DEFAULT_EXAMPLE_STYLE)
+    errors_style = geno.get('excel_error_style', DEFAULT_ERROR_STYLE)
 
-    edge_style = chromo.get('excel_edge_style', {
-        'PatternFill': {
-            'patternType': 'solid',
-            'fgColor': 'FFFFF056'},
-        'Font': {
-            'bold': True}})
-    required_style = chromo.get('excel_required_style', edge_style)
-    header_style = chromo.get('excel_header_style', {
-        'PatternFill': {
-            'patternType': 'solid',
-            'fgColor': 'FFDFE2DB'},
-        'Font': {
-            'size': 16}})
-    cheading_style = chromo.get('excel_column_heading_style', {
-        'PatternFill': {
-            'patternType': 'solid',
-            'fgColor': 'FFDFE2DB'},
-        'Font': {
-            'underline': 'single'},
-        'Alignment': {
-            'vertical': 'bottom'}})
-    example_style = chromo.get('excel_example_style', {
-        'PatternFill': {
-            'patternType': 'solid',
-            'fgColor': 'FFDDD9C4'}})
-    errors_style = chromo.get('excel_error_style', {
-        'PatternFill': {
-            'patternType': 'solid',
-            'fgColor': 'FFC00000'},
-        'Font': {
-            'color': 'FFFFFF'}})
-
-    sheet.row_dimensions[HEADER_ROW].height = HEADER_HEIGHT
-    cheadings_dimensions = sheet.row_dimensions[CHEADINGS_ROW]
-    cheadings_dimensions.height = CHEADINGS_HEIGHT
-    sheet.row_dimensions[CODE_ROW].hidden = True
-    sheet.row_dimensions[CSTATUS_ROW].height = CSTATUS_HEIGHT
-    sheet.row_dimensions[EXAMPLE_ROW].height = EXAMPLE_HEIGHT
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
-        sheet.row_dimensions[i].height = DATA_HEIGHT
-
-    sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
-    sheet.column_dimensions[RPAD_COL].width = RPAD_WIDTH
-
-    sheet.freeze_panes = sheet[FREEZE_PANES]
-
-    apply_styles(header_style, sheet.row_dimensions[HEADER_ROW])
-    apply_styles(cheading_style, sheet.row_dimensions[CHEADINGS_ROW])
-    apply_styles(cheading_style, sheet.row_dimensions[CSTATUS_ROW])
-    apply_styles(example_style, sheet.row_dimensions[EXAMPLE_ROW])
-    for c in sheet[EDGE_RANGE]:
-        apply_styles(edge_style, c)
+    # create rows so we can set all heights
+    for i in xrange(1, DATA_FIRST_ROW + DATA_NUM_ROWS):
+        sheet.append([])
 
     sheet.merge_cells(EXAMPLE_MERGE)
-    fill_cell(EXAMPLE_ROW, 1, _('e.g.'), example_style)
+    fill_cell(sheet, EXAMPLE_ROW, 1, _('e.g.'), example_style)
 
     fill_cell(
+        sheet,
         HEADER_ROW,
         DATA_FIRST_COL_NUM,
         recombinant_language_text(chromo['title']) + '        ' + org['title'],
         header_style)
 
-    sheet.cell(CODE_ROW, 1).value = 'v3'  # template version
-    sheet.cell(CODE_ROW, 2).value = org['name']  # allow only upload to this org
+    sheet.cell(row=CODE_ROW, column=1).value = 'v3'  # template version
+    sheet.cell(row=CODE_ROW, column=2).value = org['name']  # allow only upload to this org
+
+    cheadings_dimensions = sheet.row_dimensions[CHEADINGS_ROW]
 
     choice_fields = dict(
         (f['datastore_id'], f['choices'])
@@ -222,24 +224,28 @@ def _populate_excel_sheet(sheet, chromo, org, refs, resource_num):
             cheadings_dimensions.height,
             field_heading.count('\n') * LINE_HEIGHT + CHEADINGS_HEIGHT)
         fill_cell(
+            sheet,
             CHEADINGS_ROW,
             col_num,
             field_heading,
             cheadings_style)
-        sheet.cell(CHEADINGS_ROW, n).hyperlink = 'reference!${col}${row}'.format(
-            col=openpyxl.cell.get_column_letter(REF_KEY_COL_NUM),
-            row=len(refs) + 2)
+        sheet.cell(row=CHEADINGS_ROW, column=col_num).hyperlink = (
+            'reference!${col}${row}'.format(
+                col=openpyxl.cell.get_column_letter(REF_KEY_COL_NUM),
+                row=len(refs) + REF_FIRST_ROW))
+        # match against db columns
+        sheet.cell(row=CODE_ROW, column=col_num).value = field['datastore_id']
+        # jumping through openpyxl hoops:
+        col_letter = openpyxl.cell.get_column_letter(col_num)
+        col_letter_before = openpyxl.cell.get_column_letter(max(1, col_num-1))
+        col_letter_after = openpyxl.cell.get_column_letter(col_num+1)
+
         col = sheet.column_dimensions[col_letter]
         if 'excel_column_width' in field:
             col.width = field['excel_column_width']
         else:
             col.width = estimate_width(field_heading)
 
-        sheet.cell(CODE_ROW, n).value = field['datastore_id']  # match against db columns
-        # jumping through openpyxl hoops:
-        col_letter = openpyxl.cell.get_column_letter(col_num)
-        col_letter_before = openpyxl.cell.get_column_letter(max(1, col_num-1))
-        col_letter_after = openpyxl.cell.get_column_letter(col_num+1)
 
         validation_range = '{col}{row1}:{col}{rowN}'.format(
             col=col_letter,
@@ -249,19 +255,20 @@ def _populate_excel_sheet(sheet, chromo, org, refs, resource_num):
         xl_format = datastore_type[field['datastore_type']].xl_format
         alignment = openpyxl.styles.Alignment(wrap_text=True)
         protection = openpyxl.styles.Protection(locked=False)
-        for c in worksheet[validation_range]:
+        for (c,) in sheet[validation_range]:
             c.number_format = xl_format
             c.alignment = alignment
             c.protection = protection
 
-        _append_field_ref_rows(refs, field, link)
+        _append_field_ref_rows(refs, field, '{sheet}!{col}{row}'.format(
+            sheet=sheet.title, col=col_letter, row=CHEADINGS_ROW))
 
         if field['datastore_id'] in choice_fields:
-            ref1 = len(refs) + 2
+            ref1 = len(refs) + REF_FIRST_ROW + 2
             _append_field_choices_rows(
                 refs,
                 choice_fields[field['datastore_id']])
-            refN = len(refs)
+            refN = len(refs) + REF_FIRST_ROW
 
             choice_range = 'reference!${col}${ref1}:${col}${refN}'.format(
                 col=REF_KEY_COL_NUM, ref1=ref1, refN=refN)
@@ -283,6 +290,27 @@ def _populate_excel_sheet(sheet, chromo, org, refs, resource_num):
                 sheet.add_data_validation(v)
                 v.ranges.append(validation_range)
 
+    sheet.row_dimensions[HEADER_ROW].height = HEADER_HEIGHT
+    cheadings_dimensions.height = CHEADINGS_HEIGHT
+    sheet.row_dimensions[CODE_ROW].hidden = True
+    sheet.row_dimensions[CSTATUS_ROW].height = CSTATUS_HEIGHT
+    sheet.row_dimensions[EXAMPLE_ROW].height = EXAMPLE_HEIGHT
+    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+        sheet.row_dimensions[i].height = DATA_HEIGHT
+
+    sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
+    sheet.column_dimensions[RPAD_COL].width = RPAD_WIDTH
+
+    sheet.freeze_panes = sheet[FREEZE_PANES]
+
+    apply_styles(header_style, sheet.row_dimensions[HEADER_ROW])
+    apply_styles(cheadings_style, sheet.row_dimensions[CHEADINGS_ROW])
+    apply_styles(cheadings_style, sheet.row_dimensions[CSTATUS_ROW])
+    apply_styles(example_style, sheet.row_dimensions[EXAMPLE_ROW])
+    for (c,) in sheet[EDGE_RANGE]:
+        apply_styles(edge_style, c)
+
+
 
 def _populate_excel_sheet_v2(sheet, chromo, org, refs):
     """
@@ -299,16 +327,12 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
 
     sheet.title = chromo['resource_name']
 
-    def fill_cell(row, column, value, styles):
-        c = sheet.cell(row=row, column=column)
-        c.value = value
-        apply_styles(styles, c)
-
     org_style = dict(
         chromo['excel_organization_style'],
         Alignment={'vertical': 'center'})
-    fill_cell(1, 1, org['name'], org_style)
+    fill_cell(sheet, 1, 1, org['name'], org_style)
     fill_cell(
+        sheet,
         1,
         2,
         recombinant_language_text(chromo['title']) + '        ' + org['title'],
@@ -343,8 +367,8 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
 
     for n, field in enumerate((f for f in chromo['fields'] if f.get(
             'import_template_include', True)), 1):
-        fill_cell(2, n, recombinant_language_text(field['label']), header_style)
-        fill_cell(3, n, field['datastore_id'], header_style)
+        fill_cell(sheet, 2, n, recombinant_language_text(field['label']), header_style)
+        fill_cell(sheet, 3, n, field['datastore_id'], header_style)
         # jumping through openpyxl hoops:
         col_letter = openpyxl.cell.get_column_letter(n)
         col_letter_before = openpyxl.cell.get_column_letter(max(1, n-1))
@@ -554,7 +578,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
 
 
 def _append_field_ref_rows(refs, field, link):
-    refs.append((None, []))
+    refs.append((None, None, []))
     refs.append(('title', link, [
         recombinant_language_text(field['label'])]))
     refs.append(('attr', None, [
@@ -598,9 +622,9 @@ def _append_field_ref_rows_v2(refs, field, style1, style2):
             recombinant_language_text(field['format_type'])]))
 
 def _append_field_choices_rows(refs, choices):
-    refs.append(('attr', [_('Values')]))
+    refs.append(('attr', None, [_('Values')]))
     for key, value in choices:
-        refs.append(('choice', [unicode(key), value]))
+        refs.append(('choice', None, [unicode(key), value]))
 
 def _append_field_choices_rows_v2(refs, choices, style2, count_range=None):
     label = _('Values')
@@ -616,25 +640,71 @@ def _append_field_choices_rows_v2(refs, choices, style2, count_range=None):
         label = None
         a1 = (style2, None, None)
 
-def _populate_reference_sheet(sheet, chromo, refs):
-    for style, ref_line in refs:
-        sheet.append(ref_line)
-        if not style:
-            continue
+def _populate_reference_sheet(sheet, geno, refs):
+    field_count = 1
 
-        s1, s2, height = style
-        if height:
-            sheet.row_dimensions[sheet.max_row].height = height
+    edge_style = geno.get('excel_edge_style', DEFAULT_EDGE_STYLE)
+    header1_style = geno.get('excel_header_style', DEFAULT_HEADER_STYLE)
+    header2_style = geno.get('excel_column_heading_style', DEFAULT_CHEADING_STYLE)
+    choice_style = geno.get('excel_example_style', DEFAULT_EXAMPLE_STYLE)
 
-        if s2:
-            apply_styles(s2, sheet.row_dimensions[sheet.max_row])
-        for c in range(len(ref_line)):
-            if c and s2:
-                apply_styles(s2, sheet.cell(
-                    row=sheet.max_row, column=c + 1))
-            if not c and s1:
-                apply_styles(s1, sheet.cell(
-                    row=sheet.max_row, column=c + 1))
+    fill_cell(
+        sheet,
+        REF_HEADER1_ROW,
+        REF_KEY_COL_NUM,
+        recombinant_language_text(geno['title']),
+        header1_style)
+    apply_styles(header1_style, sheet.row_dimensions[REF_HEADER1_ROW])
+    fill_cell(
+        sheet,
+        REF_HEADER2_ROW,
+        REF_KEY_COL_NUM,
+        _('Reference'),
+        header2_style)
+    apply_styles(header2_style, sheet.row_dimensions[REF_HEADER2_ROW])
+    for (c,) in sheet[REF_EDGE_RANGE]:
+        apply_styles(edge_style, c)
+    sheet.row_dimensions[REF_HEADER1_ROW].height = REF_HEADER1_HEIGHT
+    sheet.row_dimensions[REF_HEADER2_ROW].height = REF_HEADER2_HEIGHT
+
+
+    for row_number, (style, link, ref_line) in enumerate(refs, 3):
+        if len(ref_line) == 2:
+            value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH)
+            ref_line = [ref_line[0], value]
+
+        sheet.append([None, None] + ref_line)
+
+        if len(ref_line) == 2:
+            sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
+                value.count('\n') * LINE_HEIGHT)
+
+        if style == 'title':
+            sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))
+            fill_cell(
+                sheet,
+                row_number,
+                REF_FIELD_NUM_COL_NUM,
+                '{fnum}.'.format(fnum=field_count),
+                REF_TITLE_STYLE)
+            title_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+            apply_styles(REF_TITLE_STYLE, title_cell)
+            title_cell.hyperlink = link
+            field_count += 1
+
+        elif style == 'choice':
+            key_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+            value_cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
+            apply_styles(choice_style, title_cell)
+            apply_styles(choice_style, value_cell)
+
+    sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
+    sheet.column_dimensions[RPAD_COL].width = RPAD_WIDTH
+    sheet.column_dimensions[openpyxl.cell.get_column_letter(REF_KEY_COL_NUM)
+        ].width = REF_KEY_WIDTH
+    sheet.column_dimensions[openpyxl.cell.get_column_letter(REF_VALUE_COL_NUM)
+        ].width = REF_VALUE_WIDTH
+
 
 def _populate_reference_sheet_v2(sheet, chromo, refs):
     for style, ref_line in refs:
@@ -655,6 +725,12 @@ def _populate_reference_sheet_v2(sheet, chromo, refs):
             if not c and s1:
                 apply_styles(s1, sheet.cell(
                     row=sheet.max_row, column=c + 1))
+
+
+def fill_cell(sheet, row, column, value, styles):
+    c = sheet.cell(row=row, column=column)
+    c.value = value
+    apply_styles(styles, c)
 
 
 def apply_styles(config, target):
