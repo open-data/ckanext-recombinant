@@ -50,66 +50,35 @@ REF_VALUE_WIDTH = 114
 REF_EDGE_RANGE = 'A1:A2'
 
 DEFAULT_EDGE_STYLE = {
-    'PatternFill': {
-        'patternType': 'solid',
-        'fgColor': 'FF336B87'},
-    'Font': {
-        'color': 'FFFFFF'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FF336B87'},
+    'Font': {'color': 'FFFFFF'}}
 DEFAULT_HEADER_STYLE = {
-    'PatternFill': {
-        'patternType': 'solid',
-        'fgColor': 'FF90AFC5'},
-    'Font': {
-        'bold': True,
-        'size': 16}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FF90AFC5'},
+    'Font': {'bold': True, 'size': 16}}
 DEFAULT_CHEADING_STYLE = {
-    'PatternFill': {
-        'patternType': 'solid',
-        'fgColor': 'FF90AFC5'},
-    'Alignment': {
-        'wrapText': True},
-    'Font': {
-        'color': '000000',
-        'underline': 'single'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FF90AFC5'},
+    'Alignment': {'wrapText': True},
+    'Font': {'color': '000000', 'underline': 'single'}}
 DEFAULT_EXAMPLE_STYLE = {
-    'PatternFill': {
-        'patternType': 'solid',
-        'fgColor': 'FFDDD9C4'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFDDD9C4'}}
 DEFAULT_ERROR_STYLE = {
-    'PatternFill': {
-        'patternType': 'solid',
-        'fgColor': 'FFC00000'},
-    'Font': {
-        'color': 'FFFFFF'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFC00000'},
+    'Font': {'color': 'FFFFFF'}}
 DEFAULT_REF_HEADER2_STYLE = {
-    'PatternFill': {
-        'patternType': 'solid',
-        'fgColor': 'FF90AFC5'},
-    'Alignment': {
-        'vertical': 'center'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FF90AFC5'},
+    'Alignment': {'vertical': 'center'}}
 REF_NUMBER_STYLE = {}
 REF_TITLE_STYLE = {
-    'PatternFill': {
-        'patternType': 'solid',
-        'fgColor': 'FFFFFFFF'},
-    'Font': {
-        'underline': 'single'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFFFFFFF'},
+    'Font': {'underline': 'single'}}
 REF_ATTR_STYLE = {
-    'PatternFill': {
-        'patternType': 'solid',
-        'fgColor': 'FFFFFFFF'},
-    'Font': {
-        'color': '666666'},
-    'Alignment': {
-        'vertical': 'top'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFFFFFFF'},
+    'Font': {'color': '666666'},
+    'Alignment': {'vertical': 'top'}}
 REF_VALUE_STYLE = {
-    'Alignment': {
-        'wrapText': True,
-        'vertical': 'top'}}
+    'Alignment': {'wrapText': True, 'vertical': 'top'}}
 REF_PAPER_STYLE = {
-    'PatternFill': {
-        'patternType': 'solid',
-        'fgColor': 'FFFFFFFF'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFFFFFFF'}}
 
 
 def excel_template(dataset_type, org):
