@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-08-22 16:21+0000\n"
+"POT-Creation-Date: 2018-10-05 19:47+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -107,42 +107,51 @@ msgstr ""
 msgid "The template uploaded is empty"
 msgstr ""
 
-#: ckanext/recombinant/logic.py:24
+#: ckanext/recombinant/logic.py:25
 #, python-format
 msgid "dataset type %s already exists for this organization"
 msgstr ""
 
-#: ckanext/recombinant/logic.py:141
+#: ckanext/recombinant/logic.py:142
 msgid "Recombinant dataset type not found"
 msgstr ""
 
-#: ckanext/recombinant/logic.py:162
+#: ckanext/recombinant/logic.py:163
 #, python-format
 msgid "Multiple datasets exist for type %s"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:357
-msgid "Field Name"
+#: ckanext/recombinant/write_excel.py:229
+msgid "e.g."
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:360
+#: ckanext/recombinant/write_excel.py:636 ckanext/recombinant/write_excel.py:668
 msgid "ID"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:364
+#: ckanext/recombinant/write_excel.py:640 ckanext/recombinant/write_excel.py:672
 msgid "Description"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:368
+#: ckanext/recombinant/write_excel.py:644 ckanext/recombinant/write_excel.py:676
 msgid "Obligation"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:372
+#: ckanext/recombinant/write_excel.py:648 ckanext/recombinant/write_excel.py:680
 msgid "Format"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:376
+#: ckanext/recombinant/write_excel.py:652 ckanext/recombinant/write_excel.py:684
 msgid "Values"
+msgstr ""
+
+#: ckanext/recombinant/write_excel.py:665
+msgid "Field Name"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:64
+#: ckanext/recombinant/write_excel.py:716
+msgid "Reference"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/confirm_delete.html:3
@@ -175,10 +184,6 @@ msgstr ""
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:56
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:45
 msgid "Delete"
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:64
-msgid "Reference"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:71
