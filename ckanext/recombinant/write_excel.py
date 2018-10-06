@@ -30,8 +30,10 @@ EXAMPLE_MERGE = 'A5:B5'
 FREEZE_PANES = 'C5'
 DATA_FIRST_ROW, DATA_HEIGHT = 6, 24
 DATA_NUM_ROWS = 2000
-RSTATUS_COL, RSTATUS_WIDTH = 'A', 1
-RPAD_COL, RPAD_WIDTH = 'B', 3
+RSTATUS_COL, RSTATUS_COL_NUM = 'A', 1
+RSTATUS_WIDTH = 1
+RPAD_COL = 'B'
+RPAD_WIDTH = 3
 DATA_FIRST_COL, DATA_FIRST_COL_NUM = 'C', 3
 ESTIMATE_WIDTH_MULTIPLE = 1.2
 EDGE_RANGE = 'A1:A4' # just to look spiffy
@@ -92,11 +94,13 @@ def excel_template(dataset_type, org):
     book = openpyxl.Workbook()
     sheet = book.active
     refs = []
+    choice_ranges = []
     for rnum, chromo in enumerate(geno['resources'], 1):
         if version == 2:
             _populate_excel_sheet_v2(sheet, chromo, org, refs)
         elif version == 3:
-            _populate_excel_sheet(sheet, geno, chromo, org, refs, rnum)
+            choice_ranges.append(_populate_excel_sheet(
+                sheet, geno, chromo, org, refs, rnum))
         sheet.protection.enabled = True
         sheet = book.create_sheet()
 
@@ -110,9 +114,17 @@ def excel_template(dataset_type, org):
     if version == 2:
         return book
 
-    for i, chromo in enumerate(geno['resources']):
+    for i, (chromo, cranges) in enumerate(
+            zip(geno['resources'], choice_ranges), 1):
         sheet = book.create_sheet()
-        #_populate_excel_validation(sheet, chromo, org, refs)
+        _populate_excel_e_sheet(sheet, chromo, cranges)
+        sheet.title = 'e{i}'.format(i=i)
+        sheet.protection.enabled = True
+
+        sheet = book.create_sheet()
+        _populate_excel_r_sheet(sheet, chromo)
+        sheet.title = 'r{i}'.format(i=i)
+        sheet.protection.enabled = True
     return book
 
 
@@ -187,6 +199,8 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     refs - list of rows to add to reference sheet, modified
         in place from this function
     resource_num - 1-based index of resource
+
+    returns cranges dict of {datastore_id: reference_key_range}
     """
     sheet.title = chromo['resource_name']
 
@@ -196,6 +210,8 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     cheadings_style = geno.get('excel_column_heading_style', DEFAULT_CHEADING_STYLE)
     example_style = geno.get('excel_example_style', DEFAULT_EXAMPLE_STYLE)
     errors_style = geno.get('excel_error_style', DEFAULT_ERROR_STYLE)
+
+    cranges = {}
 
     # create rows so we can set all heights
     for i in xrange(1, DATA_FIRST_ROW + DATA_NUM_ROWS):
@@ -288,6 +304,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
 
             choice_range = 'reference!${col}${ref1}:${col}${refN}'.format(
                 col=REF_KEY_COL, ref1=ref1, refN=refN)
+            cranges[field['datastore_id']] = choice_range
 
             choices = [c[0] for c in choice_fields[field['datastore_id']]]
             if field['datastore_type'] != '_text':
@@ -332,9 +349,12 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     for (c,) in sheet[EDGE_RANGE]:
         apply_styles(edge_style, c)
 
+    # trying to set the active cell (not working yet)
     select = "{col}{row}".format(col=DATA_FIRST_COL, row=DATA_FIRST_ROW)
     sheet.sheet_view.selection[0].activeCell = select
     sheet.sheet_view.selection[0].sqref = select
+
+    return cranges
 
 
 def _append_field_ref_rows(refs, field, link):
@@ -445,6 +465,99 @@ def _populate_reference_sheet(sheet, geno, refs):
     sheet.column_dimensions[REF_KEY_COL].width = REF_KEY_WIDTH
     sheet.column_dimensions[REF_VALUE_COL].width = REF_VALUE_WIDTH
 
+
+def _populate_excel_e_sheet(sheet, chromo, cranges):
+    """
+    Populate the "error" calculation excel worksheet
+
+    The 'A' column is the sum of all following columns.
+    The 4th row is the sum of all rows below.
+
+    Other cells are 1 for error, 0 or blank for no error or no value
+    in the corresponding cell on the data entry sheet.
+    """
+    col = None
+
+    for col_num, field in enumerate(
+            (f for f in chromo['fields'] if f.get(
+                'import_template_include', True)), DATA_FIRST_COL_NUM):
+
+        crange = cranges.get(field['datastore_id'])
+        fmla = field.get('excel_cell_error_formula')
+
+        if fmla:
+            pass
+        elif field['datastore_type'] == 'date':
+            fmla = (
+                '=NOT(ISNUMBER({cell}+0))'
+                '*NOT(ISBLANK({cell}))')
+        elif field['datastore_type'] == 'int':
+            fmla = (
+                '=NOT(IFERROR(INT({cell})={cell},FALSE))'
+                '*NOT(ISBLANK({cell}))')
+        elif field['datastore_type'] == 'numeric':
+            fmla = (
+                '=NOT(ISNUMBER({cell}))'
+                '*NOT(ISBLANK({cell}))')
+        elif field['datastore_type'] == 'money':
+            # isblank doesnt work. sometimes. trim()="" is more permissive
+            fmla = (
+                '=NOT(IFERROR(ROUND({cell},2)={cell},FALSE))'
+                '*NOT(TRIM({cell})="")')
+        elif crange and field['datastore_type'] == '_text':
+            # multiple comma-separated choices
+            # validate by counting choices against matches
+            fmla = (
+                '=NOT(TRIM({{cell}})="")'
+                '*(LEN(SUBSTITUTE({{cell}}," ",""))+1-SUMPRODUCT(--ISNUMBER('
+                    'SEARCH(","&{r}&",",SUBSTITUTE(","&{{cell}}&","," ",""))),'
+                    'LEN({r})+1))').format(r=crange)
+        elif crange:
+            # single choice
+            fmla = (
+                '=NOT(TRIM({{cell}})="")'
+                '*(COUNTIF({r},{{cell}})=0)').format(r=crange)
+        else:
+            continue
+
+        col = openpyxl.cell.get_column_letter(col_num)
+        cell = '{sheet}!{col}{{num}}'.format(
+            sheet=chromo['resource_name'],
+            col=col)
+        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+            sheet.cell(row=i, column=col_num).value = fmla.format(
+                cell=cell.format(num=i))
+
+        sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
+            '=SUM({col}{row1}:{col}{rowN})'.format(
+                col=col,
+                row1=DATA_FIRST_ROW,
+                rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1))
+
+    if col is None:
+        return  # no errors to report on!
+
+    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+        sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
+            '=SUM({colA}{row}:{colZ}{row})'.format(
+                colA=DATA_FIRST_COL,
+                colZ=col,
+                row=i))
+
+
+def _populate_excel_r_sheet(sheet, chromo):
+    """
+    Populate the "required" calculation excel worksheet
+
+    The 'A' column is 1 when any data is entered on the corresponding row
+    of the data entry sheet.
+    The 'B' column is the sum of all following columns.
+    The 4th row is the sum of all rows below.
+
+    Other cells in this worksheet are 1 for required fields, 0 or blank for
+    no value or not required fields in the corresponding cell on the
+    data entry sheet
+    """
 
 def fill_cell(sheet, row, column, value, styles):
     c = sheet.cell(row=row, column=column)
