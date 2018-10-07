@@ -15,9 +15,7 @@ from ckanext.recombinant.write_excel_v2 import (
     _populate_excel_sheet_v2, _populate_reference_sheet_v2)
 
 
-from ckan.plugins.toolkit import _
-
-white_font = openpyxl.styles.Font(color=openpyxl.styles.colors.WHITE)
+from ckan.plugins.toolkit import _, h
 
 HEADER_ROW, HEADER_HEIGHT = 1, 27
 CHEADINGS_ROW, CHEADINGS_HEIGHT = 2, 22
@@ -36,7 +34,7 @@ RPAD_COL = 'B'
 RPAD_WIDTH = 3
 DATA_FIRST_COL, DATA_FIRST_COL_NUM = 'C', 3
 ESTIMATE_WIDTH_MULTIPLE = 1.2
-EDGE_RANGE = 'A1:A4' # just to look spiffy
+EDGE_RANGE = 'A1:A4'
 
 REF_HEADER1_ROW, REF_HEADER1_HEIGHT = 1, 27
 REF_HEADER2_ROW, REF_HEADER2_HEIGHT = 2, 27
@@ -49,6 +47,7 @@ REF_KEY_COL, REF_KEY_COL_NUM = 'C', 3
 REF_KEY_WIDTH = 18
 REF_VALUE_COL, REF_VALUE_COL_NUM = 'D', 4
 REF_VALUE_WIDTH = 114
+REF_CHOICE_HEADING_HEIGHT = 24
 REF_EDGE_RANGE = 'A1:A2'
 
 DEFAULT_EDGE_STYLE = {
@@ -64,7 +63,7 @@ DEFAULT_CHEADING_STYLE = {
 DEFAULT_EXAMPLE_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFDDD9C4'}}
 DEFAULT_ERROR_STYLE = {
-    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFC00000'},
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFC00000', 'bgColor': 'FFC00000'},
     'Font': {'color': 'FFFFFF'}}
 DEFAULT_REF_HEADER2_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FF90AFC5'},
@@ -209,7 +208,10 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     header_style = geno.get('excel_header_style', DEFAULT_HEADER_STYLE)
     cheadings_style = geno.get('excel_column_heading_style', DEFAULT_CHEADING_STYLE)
     example_style = geno.get('excel_example_style', DEFAULT_EXAMPLE_STYLE)
-    errors_style = geno.get('excel_error_style', DEFAULT_ERROR_STYLE)
+    error_style = geno.get('excel_error_style', DEFAULT_ERROR_STYLE)
+
+    error_fill = openpyxl.styles.PatternFill(**error_style['PatternFill'])
+    error_font = openpyxl.styles.Font(**error_style['Font'])
 
     cranges = {}
 
@@ -224,11 +226,13 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
         sheet,
         HEADER_ROW,
         DATA_FIRST_COL_NUM,
-        recombinant_language_text(chromo['title']) + '        ' + org['title'],
+        recombinant_language_text(chromo['title'])
+            + u' \N{em dash} ' + org_title_lang_hack(org['title']),
         header_style)
 
     sheet.cell(row=CODE_ROW, column=1).value = 'v3'  # template version
-    sheet.cell(row=CODE_ROW, column=2).value = org['name']  # allow only upload to this org
+    # allow only upload to this org
+    sheet.cell(row=CODE_ROW, column=2).value = org['name']
 
     cheadings_dimensions = sheet.row_dimensions[CHEADINGS_ROW]
 
@@ -330,6 +334,48 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
                 colZ=REF_VALUE_COL,
                 rowN=len(refs) + REF_FIRST_ROW - 2))
 
+    sheet.conditional_formatting.add(
+        '{colA}{row}:{colZ}{row}'.format(
+            colA=DATA_FIRST_COL,
+            row=CSTATUS_ROW,
+            colZ=col_letter),
+        openpyxl.formatting.FormulaRule([
+            'e{rnum}!{colA}{row1}>0'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=CSTATUS_ROW)],
+        stopIfTrue=True,
+        fill=error_fill,
+        font=error_font))
+    sheet.conditional_formatting.add(
+        '{col}{row1}:{col}{rowN}'.format(
+            col=RSTATUS_COL,
+            row1=DATA_FIRST_ROW,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'e{rnum}!{colA}{row1}>0'.format(
+                rnum=resource_num,
+                colA=RSTATUS_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=error_fill,
+        font=error_font))
+    sheet.conditional_formatting.add(
+        '{colA}{row1}:{colZ}{rowN}'.format(
+            colA=DATA_FIRST_COL,
+            row1=DATA_FIRST_ROW,
+            colZ=col_letter,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'e{rnum}!{colA}{row1}>0'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=error_fill,
+        font=error_font))
+
+
     sheet.row_dimensions[HEADER_ROW].height = HEADER_HEIGHT
     sheet.row_dimensions[CODE_ROW].hidden = True
     sheet.row_dimensions[CSTATUS_ROW].height = CSTATUS_HEIGHT
@@ -379,7 +425,7 @@ def _append_field_ref_rows(refs, field, link):
             recombinant_language_text(field['format_type'])]))
 
 def _append_field_choices_rows(refs, choices):
-    refs.append(('attr', [_('Values')]))
+    refs.append(('choice heading', [_('Values')]))
     for key, value in choices:
         if unicode(key) != value:
             refs.append(('choice', [unicode(key), value]))
@@ -429,6 +475,9 @@ def _populate_reference_sheet(sheet, geno, refs):
             sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
                 value.count('\n') * LINE_HEIGHT)
 
+        key_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+        value_cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
+
         if style == 'title':
             sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))
             sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
@@ -443,20 +492,18 @@ def _populate_reference_sheet(sheet, geno, refs):
             apply_styles(REF_TITLE_STYLE, title_cell)
             sheet.row_dimensions[row_number].height = REF_FIELD_TITLE_HEIGHT
             field_count += 1
-
         elif style == 'choice':
             pad_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
-            key_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
-            value_cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
             apply_styles(choice_style, pad_cell)
             apply_styles(choice_style, key_cell)
             apply_styles(choice_style, value_cell)
-
         elif style == 'attr':
-            key_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
-            value_cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
             apply_styles(REF_ATTR_STYLE, key_cell)
             apply_styles(REF_VALUE_STYLE, value_cell)
+        elif style == 'choice heading':
+            apply_styles(REF_ATTR_STYLE, key_cell)
+            apply_styles(REF_VALUE_STYLE, value_cell)
+            sheet.row_dimensions[row_number].height = REF_CHOICE_HEADING_HEIGHT
 
         apply_styles(REF_PAPER_STYLE, sheet.row_dimensions[row_number])
 
@@ -582,3 +629,16 @@ def apply_styles(config, target):
     alignment = config.get('Alignment')
     if alignment:
         target.alignment = openpyxl.styles.Alignment(**alignment)
+
+def org_title_lang_hack(title):
+    """
+    Canada site is using title to store "{en title name} | {fr title name}"
+    this hack displays the correct one (one day soon we'll fix this, promise)
+    """
+    try:
+        lang = h.lang()
+    except TypeError:
+        lang = 'en'
+    if lang == 'fr':
+        return title.split(u' | ')[-1]
+    return title.split(u' | ')[0]
