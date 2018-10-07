@@ -30,7 +30,7 @@ DATA_FIRST_ROW, DATA_HEIGHT = 6, 24
 DATA_NUM_ROWS = 2000
 RSTATUS_COL, RSTATUS_COL_NUM = 'A', 1
 RSTATUS_WIDTH = 1
-RPAD_COL = 'B'
+RPAD_COL, RPAD_COL_NUM = 'B', 2
 RPAD_WIDTH = 3
 DATA_FIRST_COL, DATA_FIRST_COL_NUM = 'C', 3
 ESTIMATE_WIDTH_MULTIPLE = 1.2
@@ -63,7 +63,7 @@ DEFAULT_CHEADING_STYLE = {
 DEFAULT_EXAMPLE_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFDDD9C4'}}
 DEFAULT_ERROR_STYLE = {
-    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFC00000', 'bgColor': 'FFC00000'},
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFC00000'},
     'Font': {'color': 'FFFFFF'}}
 DEFAULT_REF_HEADER2_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FF90AFC5'},
@@ -210,9 +210,6 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     example_style = geno.get('excel_example_style', DEFAULT_EXAMPLE_STYLE)
     error_style = geno.get('excel_error_style', DEFAULT_ERROR_STYLE)
 
-    error_fill = openpyxl.styles.PatternFill(**error_style['PatternFill'])
-    error_font = openpyxl.styles.Font(**error_style['Font'])
-
     cranges = {}
 
     # create rows so we can set all heights
@@ -240,9 +237,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
         (f['datastore_id'], f['choices'])
         for f in recombinant_choice_fields(chromo['resource_name']))
 
-    for col_num, field in enumerate(
-            (f for f in chromo['fields'] if f.get(
-                'import_template_include', True)), DATA_FIRST_COL_NUM):
+    for col_num, field in template_cols_fields(chromo):
         field_heading = recombinant_language_text(
             field.get('excel_heading', field['label'])).strip()
         cheadings_dimensions.height = max(
@@ -334,47 +329,8 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
                 colZ=REF_VALUE_COL,
                 rowN=len(refs) + REF_FIRST_ROW - 2))
 
-    sheet.conditional_formatting.add(
-        '{colA}{row}:{colZ}{row}'.format(
-            colA=DATA_FIRST_COL,
-            row=CSTATUS_ROW,
-            colZ=col_letter),
-        openpyxl.formatting.FormulaRule([
-            'e{rnum}!{colA}{row1}>0'.format(
-                rnum=resource_num,
-                colA=DATA_FIRST_COL,
-                row1=CSTATUS_ROW)],
-        stopIfTrue=True,
-        fill=error_fill,
-        font=error_font))
-    sheet.conditional_formatting.add(
-        '{col}{row1}:{col}{rowN}'.format(
-            col=RSTATUS_COL,
-            row1=DATA_FIRST_ROW,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
-        openpyxl.formatting.FormulaRule([
-            'e{rnum}!{colA}{row1}>0'.format(
-                rnum=resource_num,
-                colA=RSTATUS_COL,
-                row1=DATA_FIRST_ROW)],
-        stopIfTrue=True,
-        fill=error_fill,
-        font=error_font))
-    sheet.conditional_formatting.add(
-        '{colA}{row1}:{colZ}{rowN}'.format(
-            colA=DATA_FIRST_COL,
-            row1=DATA_FIRST_ROW,
-            colZ=col_letter,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
-        openpyxl.formatting.FormulaRule([
-            'e{rnum}!{colA}{row1}>0'.format(
-                rnum=resource_num,
-                colA=DATA_FIRST_COL,
-                row1=DATA_FIRST_ROW)],
-        stopIfTrue=True,
-        fill=error_fill,
-        font=error_font))
-
+    _add_conditional_formatting(
+        sheet, col_letter, resource_num, error_style, required_style)
 
     sheet.row_dimensions[HEADER_ROW].height = HEADER_HEIGHT
     sheet.row_dimensions[CODE_ROW].hidden = True
@@ -525,10 +481,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
     """
     col = None
 
-    for col_num, field in enumerate(
-            (f for f in chromo['fields'] if f.get(
-                'import_template_include', True)), DATA_FIRST_COL_NUM):
-
+    for col_num, field in template_cols_fields(chromo):
         crange = cranges.get(field['datastore_id'])
         fmla = field.get('excel_cell_error_formula')
 
@@ -596,15 +549,61 @@ def _populate_excel_r_sheet(sheet, chromo):
     """
     Populate the "required" calculation excel worksheet
 
-    The 'A' column is 1 when any data is entered on the corresponding row
+    The 'A' column is the sum of all columns "C" and later.
+    The 'B' column is TRUE when any data is entered on the corresponding row
     of the data entry sheet.
-    The 'B' column is the sum of all following columns.
     The 4th row is the sum of all rows below.
 
     Other cells in this worksheet are 1 for required fields, 0 or blank for
     no value or not required fields in the corresponding cell on the
     data entry sheet
     """
+    col = None
+
+    for col_num, field in template_cols_fields(chromo):
+        fmla = field.get('excel_cell_required_formula')
+
+        if fmla:
+            pass
+        elif (
+                field['datastore_id'] in chromo['datastore_primary_key']
+                or field.get('excel_required', False)):
+            fmla = '={has_data}*ISBLANK({cell})'
+        else:
+            continue
+
+        col = openpyxl.cell.get_column_letter(col_num)
+        cell = '{sheet}!{col}{{num}}'.format(
+            sheet=chromo['resource_name'],
+            col=col)
+        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+            sheet.cell(row=i, column=col_num).value = fmla.format(
+                cell=cell.format(num=i),
+                has_data='{col}{num}'.format(col=RPAD_COL, num=i))
+
+        sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
+            '=SUM({col}{row1}:{col}{rowN})'.format(
+                col=col,
+                row1=DATA_FIRST_ROW,
+                rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1))
+
+    if col is None:
+        return  # no required columns?!
+
+    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+        sheet.cell(row=i, column=RPAD_COL_NUM).value = (
+            '=SUMPRODUCT(LEN({sheet}!{colA}{row}:{colZ}{row}))>0'.format(
+                sheet=chromo['resource_name'],
+                colA=DATA_FIRST_COL,
+                colZ=col,
+                row=i))
+
+    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+        sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
+            '=SUM({colA}{row}:{colZ}{row})'.format(
+                colA=DATA_FIRST_COL,
+                colZ=col,
+                row=i))
 
 def fill_cell(sheet, row, column, value, styles):
     c = sheet.cell(row=row, column=column)
@@ -642,3 +641,184 @@ def org_title_lang_hack(title):
     if lang == 'fr':
         return title.split(u' | ')[-1]
     return title.split(u' | ')[0]
+
+def template_cols_fields(chromo):
+    ''' (col_num, field) ... for fields in template'''
+    return enumerate(
+        (f for f in chromo['fields'] if f.get(
+            'import_template_include', True)), DATA_FIRST_COL_NUM)
+
+def _add_conditional_formatting(
+        sheet, col_letter, resource_num, error_style, required_style):
+    '''
+    Error and required cell hilighting based on e/r sheets
+    '''
+    error_fill = openpyxl.styles.PatternFill(
+        bgColor=error_style['PatternFill']['fgColor'],
+        **error_style['PatternFill'])
+    error_font = openpyxl.styles.Font(**error_style['Font'])
+    required_fill = openpyxl.styles.PatternFill(
+        bgColor=required_style['PatternFill']['fgColor'],
+        **required_style['PatternFill'])
+    required_font = openpyxl.styles.Font(**required_style['Font'])
+
+    sheet.conditional_formatting.add(
+        '{colA}{row}:{colZ}{row}'.format(
+            colA=DATA_FIRST_COL,
+            row=CSTATUS_ROW,
+            colZ=col_letter),
+        openpyxl.formatting.FormulaRule([
+            'e{rnum}!{colA}{row1}>0'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=CSTATUS_ROW)],
+        stopIfTrue=True,
+        fill=error_fill,
+        font=error_font))
+    sheet.conditional_formatting.add(
+        '{colA}{row}:{colZ}{row}'.format(
+            colA=DATA_FIRST_COL,
+            row=CSTATUS_ROW,
+            colZ=col_letter),
+        openpyxl.formatting.FormulaRule([
+            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=CSTATUS_ROW)],
+        stopIfTrue=True,
+        fill=required_fill,
+        font=required_font))
+    sheet.conditional_formatting.add(
+        '{col}{row1}:{col}{rowN}'.format(
+            col=RSTATUS_COL,
+            row1=DATA_FIRST_ROW,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'e{rnum}!{colA}{row1}>0'.format(
+                rnum=resource_num,
+                colA=RSTATUS_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=error_fill,
+        font=error_font))
+    sheet.conditional_formatting.add(
+        '{col}{row1}:{col}{rowN}'.format(
+            col=RSTATUS_COL,
+            row1=DATA_FIRST_ROW,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
+                rnum=resource_num,
+                colA=RSTATUS_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=required_fill,
+        font=required_font))
+    sheet.conditional_formatting.add(
+        '{colA}{row1}:{colZ}{rowN}'.format(
+            colA=DATA_FIRST_COL,
+            row1=DATA_FIRST_ROW,
+            colZ=col_letter,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'e{rnum}!{colA}{row1}>0'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=error_fill,
+        font=error_font))
+    sheet.conditional_formatting.add(
+        '{colA}{row1}:{colZ}{rowN}'.format(
+            colA=DATA_FIRST_COL,
+            row1=DATA_FIRST_ROW,
+            colZ=col_letter,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=required_fill,
+        font=required_font))
+    sheet.conditional_formatting.add(
+        '{colA}{row}:{colZ}{row}'.format(
+            colA=DATA_FIRST_COL,
+            row=CSTATUS_ROW,
+            colZ=col_letter),
+        openpyxl.formatting.FormulaRule([
+            'e{rnum}!{colA}{row1}>0'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=CSTATUS_ROW)],
+        stopIfTrue=True,
+        fill=error_fill,
+        font=error_font))
+    sheet.conditional_formatting.add(
+        '{colA}{row}:{colZ}{row}'.format(
+            colA=DATA_FIRST_COL,
+            row=CSTATUS_ROW,
+            colZ=col_letter),
+        openpyxl.formatting.FormulaRule([
+            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=CSTATUS_ROW)],
+        stopIfTrue=True,
+        fill=required_fill,
+        font=required_font))
+    sheet.conditional_formatting.add(
+        '{col}{row1}:{col}{rowN}'.format(
+            col=RSTATUS_COL,
+            row1=DATA_FIRST_ROW,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'e{rnum}!{colA}{row1}>0'.format(
+                rnum=resource_num,
+                colA=RSTATUS_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=error_fill,
+        font=error_font))
+    sheet.conditional_formatting.add(
+        '{col}{row1}:{col}{rowN}'.format(
+            col=RSTATUS_COL,
+            row1=DATA_FIRST_ROW,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
+                rnum=resource_num,
+                colA=RSTATUS_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=required_fill,
+        font=required_font))
+    sheet.conditional_formatting.add(
+        '{colA}{row1}:{colZ}{rowN}'.format(
+            colA=DATA_FIRST_COL,
+            row1=DATA_FIRST_ROW,
+            colZ=col_letter,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'e{rnum}!{colA}{row1}>0'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=error_fill,
+        font=error_font))
+    sheet.conditional_formatting.add(
+        '{colA}{row1}:{colZ}{rowN}'.format(
+            colA=DATA_FIRST_COL,
+            row1=DATA_FIRST_ROW,
+            colZ=col_letter,
+            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+        openpyxl.formatting.FormulaRule([
+            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
+                rnum=resource_num,
+                colA=DATA_FIRST_COL,
+                row1=DATA_FIRST_ROW)],
+        stopIfTrue=True,
+        fill=required_fill,
+        font=required_font))

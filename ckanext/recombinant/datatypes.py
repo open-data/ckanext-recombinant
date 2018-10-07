@@ -24,11 +24,8 @@ datastore_type = {
     'date': DatastoreType('date', False, 'yyyy-mm-dd'),
     'int': DatastoreType('int', True, '### ### ### ### ### ##0'),
     'bigint': DatastoreType('bigint', True, '### ### ### ### ### ##0'),
-    'numeric': DatastoreType('numeric', False, '#'),
-    'money': DatastoreType(
-        'money',
-        False,
-        '$#,##0.00'),
+    'numeric': DatastoreType('numeric', False, 'General'),
+    'money': DatastoreType( 'money', False, '$#,##0.00'),
     'text': DatastoreType('text', False, '@'),
     'boolean': DatastoreType('boolean', False, '@'),
     '_text': DatastoreType('_text', False, '@'),
