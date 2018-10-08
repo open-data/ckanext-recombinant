@@ -160,13 +160,13 @@ def excel_data_dictionary(geno):
         handle_request(request, c)
         choice_fields = dict(
             (f['datastore_id'], f['choices'])
-            for f in recombinant_choice_fields(chromo['resource_name'])
-            for chromo in geno['resources'])
+            for chromo in geno['resources']
+            for f in recombinant_choice_fields(chromo['resource_name']))
 
         refs = []
         for chromo in geno['resources']:
             for field in chromo['fields']:
-                _append_field_ref_rows(refs, field, style1, style2)
+                _append_field_ref_rows(refs, field, link=None)
 
                 if field['datastore_id'] in choice_fields:
                     _append_field_choices_rows(
@@ -368,9 +368,8 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
 
 def _append_field_ref_rows(refs, field, link):
     refs.append((None, []))
-    refs.append(('title', [(
-        link,
-        recombinant_language_text(field['label']))]))
+    label = recombinant_language_text(field['label'])
+    refs.append(('title', [(link, label) if link else label]))
     refs.append(('attr', [
         _('ID'),
         field['datastore_id']]))
@@ -457,7 +456,8 @@ def _populate_reference_sheet(sheet, geno, refs):
                 field_count,
                 REF_NUMBER_STYLE)
             title_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
-            title_cell.hyperlink = link
+            if link:
+                title_cell.hyperlink = link
             apply_styles(REF_TITLE_STYLE, title_cell)
             sheet.row_dimensions[row_number].height = REF_FIELD_TITLE_HEIGHT
             field_count += 1

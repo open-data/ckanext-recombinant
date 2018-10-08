@@ -67,10 +67,10 @@ class RecombinantPlugin(
             '/recombinant-template/{id}', action='template',
             controller='ckanext.recombinant.controller:UploadController')
         map.connect('recombinant_data_dictionary',
-            '/recombinant-dictionary/{resource_name}',
+            '/recombinant-dictionary/{dataset_type}',
             action='data_dictionary',
             controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_resource', 
+        map.connect('recombinant_resource',
             '/recombinant/{resource_name}/{owner_org}',
             action='preview_table',
             controller='ckanext.recombinant.controller:UploadController')

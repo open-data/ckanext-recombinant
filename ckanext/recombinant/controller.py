@@ -182,19 +182,19 @@ class UploadController(PackageController):
         return blob.getvalue()
 
 
-    def data_dictionary(self, resource_name):
+    def data_dictionary(self, dataset_type):
         try:
-            chromo = get_chromo(resource_name)
+            geno = get_geno(dataset_type)
         except RecombinantException:
-            abort(404, _('Recombinant resource_name not found'))
+            abort(404, _('Recombinant dataset_type not found'))
 
-        book = excel_data_dictionary(chromo)
+        book = excel_data_dictionary(geno)
         blob = StringIO()
         book.save(blob)
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response.headers['Content-Disposition'] = (
             'inline; filename="{0}.xlsx"'.format(
-                resource_name))
+                dataset_type))
         return blob.getvalue()
 
 
