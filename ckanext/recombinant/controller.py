@@ -313,8 +313,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
             rows,
             [f for f in chromo['fields'] if f.get('import_template_include', True)],
             pk,
-            single_choice_fields,
-            )
+            full_text_choice_fields)
         method = 'upsert' if pk else 'insert'
         total_records += len(records)
         if not records:
