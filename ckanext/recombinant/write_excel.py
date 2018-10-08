@@ -295,13 +295,18 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
             sheet=sheet.title, col=col_letter, row=CHEADINGS_ROW))
 
         if field['datastore_id'] in choice_fields:
+            full_text_choices = (
+                field['datastore_type'] != '_text' and field.get(
+                'excel_full_text_choices', False))
             ref1 = len(refs) + REF_FIRST_ROW
-            _append_field_choices_rows(
+            max_choice_width = _append_field_choices_rows(
                 refs,
                 choice_fields[field['datastore_id']],
-                field['datastore_type'] != '_text' and field.get(
-                    'excel_full_text_choices', False))
+                full_text_choices)
             refN = len(refs) + REF_FIRST_ROW - 2
+
+            if full_text_choices:
+                col.width = max(col.width, max_choice_width)
 
             choice_range = 'reference!${col}${ref1}:${col}${refN}'.format(
                 col=REF_KEY_COL, ref1=ref1, refN=refN)
@@ -384,13 +389,17 @@ def _append_field_ref_rows(refs, field, link):
 
 def _append_field_choices_rows(refs, choices, full_text_choices):
     refs.append(('choice heading', [_('Values')]))
+    max_width = 0
     for key, value in choices:
         if unicode(key) == value:
-            refs.append(('choice', [unicode(key)]))
+            choice = [unicode(key)]
         elif full_text_choices:
-            refs.append(('choice', [u'{0}: {1}'.format(key, value)]
+            choice = [u'{0}: {1}'.format(key, value)]
         else:
-            refs.append(('choice', [unicode(key), value]))
+            choice = [unicode(key), value]
+        refs.append(('choice', choice))
+        max_width = max(max_width, estimate_width(choice[0]))
+    return max_width
 
 def _populate_reference_sheet(sheet, geno, refs):
     field_count = 1
