@@ -307,6 +307,11 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
 
             if full_text_choices:
                 col.width = max(col.width, max_choice_width)
+                # expand example
+                for ck, cv in choice_fields[field['datastore_id']]:
+                    if ck == example:
+                        ex_cell.value = u"{0}: {1}".format(ck, cv)
+                        break
 
             choice_range = 'reference!${col}${ref1}:${col}${refN}'.format(
                 col=REF_KEY_COL, ref1=ref1, refN=refN)
@@ -529,8 +534,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             # 'code:text'-style choices, accept 'code' and 'code:anything'
             fmla = (
                 '=NOT(TRIM({{cell}})="")'
-                '*(COUNTIF({r},IFERROR('
-                    'LEFT({{cell}},FIND(":",{{cell}})-1),{{cell}})&":*")=0)'
+                '*(COUNTIF({r},LEFT({{cell}},FIND(":",{{cell}}&":")-1)&":*")=0)'
                 ).format(r=crange)
         elif crange:
             # single choice
