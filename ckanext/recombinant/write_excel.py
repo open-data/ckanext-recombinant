@@ -676,45 +676,6 @@ def _add_conditional_formatting(
     required_font = openpyxl.styles.Font(**required_style['Font'])
 
     sheet.conditional_formatting.add(
-        '{colA}{row}:{colZ}{row}'.format(
-            colA=DATA_FIRST_COL,
-            row=CSTATUS_ROW,
-            colZ=col_letter),
-        openpyxl.formatting.FormulaRule([
-            'e{rnum}!{colA}{row1}>0'.format(
-                rnum=resource_num,
-                colA=DATA_FIRST_COL,
-                row1=CSTATUS_ROW)],
-        stopIfTrue=True,
-        fill=error_fill,
-        font=error_font))
-    sheet.conditional_formatting.add(
-        '{colA}{row}:{colZ}{row}'.format(
-            colA=DATA_FIRST_COL,
-            row=CSTATUS_ROW,
-            colZ=col_letter),
-        openpyxl.formatting.FormulaRule([
-            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
-                rnum=resource_num,
-                colA=DATA_FIRST_COL,
-                row1=CSTATUS_ROW)],
-        stopIfTrue=True,
-        fill=required_fill,
-        font=required_font))
-    sheet.conditional_formatting.add(
-        '{col}{row1}:{col}{rowN}'.format(
-            col=RSTATUS_COL,
-            row1=DATA_FIRST_ROW,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
-        openpyxl.formatting.FormulaRule([
-            'e{rnum}!{colA}{row1}>0'.format(
-                rnum=resource_num,
-                colA=RSTATUS_COL,
-                row1=DATA_FIRST_ROW)],
-        stopIfTrue=True,
-        fill=error_fill,
-        font=error_font))
-    sheet.conditional_formatting.add(
         '{col}{row1}:{col}{rowN}'.format(
             col=RSTATUS_COL,
             row1=DATA_FIRST_ROW,
@@ -729,109 +690,29 @@ def _add_conditional_formatting(
         font=required_font))
     sheet.conditional_formatting.add(
         '{colA}{row1}:{colZ}{rowN}'.format(
-            colA=DATA_FIRST_COL,
-            row1=DATA_FIRST_ROW,
+            colA=RSTATUS_COL,
+            row1=CSTATUS_ROW,
             colZ=col_letter,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
-        openpyxl.formatting.FormulaRule([
-            'e{rnum}!{colA}{row1}>0'.format(
-                rnum=resource_num,
-                colA=DATA_FIRST_COL,
-                row1=DATA_FIRST_ROW)],
-        stopIfTrue=True,
-        fill=error_fill,
-        font=error_font))
-    sheet.conditional_formatting.add(
-        '{colA}{row1}:{colZ}{rowN}'.format(
-            colA=DATA_FIRST_COL,
-            row1=DATA_FIRST_ROW,
-            colZ=col_letter,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
-        openpyxl.formatting.FormulaRule([
-            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
-                rnum=resource_num,
-                colA=DATA_FIRST_COL,
-                row1=DATA_FIRST_ROW)],
-        stopIfTrue=True,
-        fill=required_fill,
-        font=required_font))
-    sheet.conditional_formatting.add(
-        '{colA}{row}:{colZ}{row}'.format(
-            colA=DATA_FIRST_COL,
-            row=CSTATUS_ROW,
-            colZ=col_letter),
-        openpyxl.formatting.FormulaRule([
-            'e{rnum}!{colA}{row1}>0'.format(
-                rnum=resource_num,
-                colA=DATA_FIRST_COL,
-                row1=CSTATUS_ROW)],
-        stopIfTrue=True,
-        fill=error_fill,
-        font=error_font))
-    sheet.conditional_formatting.add(
-        '{colA}{row}:{colZ}{row}'.format(
-            colA=DATA_FIRST_COL,
-            row=CSTATUS_ROW,
-            colZ=col_letter),
-        openpyxl.formatting.FormulaRule([
-            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
-                rnum=resource_num,
-                colA=DATA_FIRST_COL,
-                row1=CSTATUS_ROW)],
-        stopIfTrue=True,
-        fill=required_fill,
-        font=required_font))
-    sheet.conditional_formatting.add(
-        '{col}{row1}:{col}{rowN}'.format(
-            col=RSTATUS_COL,
-            row1=DATA_FIRST_ROW,
             rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
         openpyxl.formatting.FormulaRule([
             'e{rnum}!{colA}{row1}>0'.format(
                 rnum=resource_num,
                 colA=RSTATUS_COL,
-                row1=DATA_FIRST_ROW)],
-        stopIfTrue=True,
-        fill=error_fill,
-        font=error_font))
-    sheet.conditional_formatting.add(
-        '{col}{row1}:{col}{rowN}'.format(
-            col=RSTATUS_COL,
-            row1=DATA_FIRST_ROW,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
-        openpyxl.formatting.FormulaRule([
-            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
-                rnum=resource_num,
-                colA=RSTATUS_COL,
-                row1=DATA_FIRST_ROW)],
-        stopIfTrue=True,
-        fill=required_fill,
-        font=required_font))
-    sheet.conditional_formatting.add(
-        '{colA}{row1}:{colZ}{rowN}'.format(
-            colA=DATA_FIRST_COL,
-            row1=DATA_FIRST_ROW,
-            colZ=col_letter,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
-        openpyxl.formatting.FormulaRule([
-            'e{rnum}!{colA}{row1}>0'.format(
-                rnum=resource_num,
-                colA=DATA_FIRST_COL,
-                row1=DATA_FIRST_ROW)],
+                row1=CSTATUS_ROW)],
         stopIfTrue=True,
         fill=error_fill,
         font=error_font))
     sheet.conditional_formatting.add(
         '{colA}{row1}:{colZ}{rowN}'.format(
             colA=DATA_FIRST_COL,
-            row1=DATA_FIRST_ROW,
+            row1=CSTATUS_ROW,
             colZ=col_letter,
             rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
         openpyxl.formatting.FormulaRule([
             'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
                 rnum=resource_num,
                 colA=DATA_FIRST_COL,
-                row1=DATA_FIRST_ROW)],
+                row1=CSTATUS_ROW)],
         stopIfTrue=True,
         fill=required_fill,
         font=required_font))
