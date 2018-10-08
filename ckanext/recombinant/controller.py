@@ -303,9 +303,11 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
         pk = chromo.get('datastore_primary_key', [])
-        single_choice_fields = [
+        full_text_choice_fields = [
             f['datastore_id'] for f in chromo['fields']
-            if ('choices' in f or 'choices_file' in f) and f['datastore_type'] != '_text']
+            if ('choices' in f or 'choices_file' in f)
+                and f['datastore_type'] != '_text'
+                and f.get('excel_full_text_choices', False)]
 
         records = get_records(
             rows,

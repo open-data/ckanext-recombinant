@@ -172,7 +172,7 @@ def excel_data_dictionary(geno):
                     _append_field_choices_rows(
                         refs,
                         choice_fields[field['datastore_id']],
-                        style2)
+                        full_text_choices=False)
 
         _populate_reference_sheet(sheet, geno, refs)
         sheet = None
@@ -298,7 +298,9 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
             ref1 = len(refs) + REF_FIRST_ROW
             _append_field_choices_rows(
                 refs,
-                choice_fields[field['datastore_id']])
+                choice_fields[field['datastore_id']],
+                field['datastore_type'] != '_text' and field.get(
+                    'excel_full_text_choices', False))
             refN = len(refs) + REF_FIRST_ROW - 2
 
             choice_range = 'reference!${col}${ref1}:${col}${refN}'.format(
@@ -380,13 +382,15 @@ def _append_field_ref_rows(refs, field, link):
             _('Format'),
             recombinant_language_text(field['format_type'])]))
 
-def _append_field_choices_rows(refs, choices):
+def _append_field_choices_rows(refs, choices, full_text_choices):
     refs.append(('choice heading', [_('Values')]))
     for key, value in choices:
-        if unicode(key) != value:
-            refs.append(('choice', [unicode(key), value]))
-        else:
+        if unicode(key) == value:
             refs.append(('choice', [unicode(key)]))
+        elif full_text_choices:
+            refs.append(('choice', [u'{0}: {1}'.format(key, value)]
+        else:
+            refs.append(('choice', [unicode(key), value]))
 
 def _populate_reference_sheet(sheet, geno, refs):
     field_count = 1
