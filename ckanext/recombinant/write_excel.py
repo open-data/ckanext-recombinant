@@ -390,10 +390,10 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
     refs.append(('choice heading', [_('Values')]))
     max_width = 0
     for key, value in choices:
-        if unicode(key) == value:
-            choice = [unicode(key)]
-        elif full_text_choices:
+        if full_text_choices:
             choice = [u'{0}: {1}'.format(key, value)]
+        elif unicode(key) == value:
+            choice = [unicode(key)]
         else:
             choice = [unicode(key), value]
         refs.append(('choice', choice))
@@ -525,6 +525,13 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
                 '*(LEN(SUBSTITUTE({{cell}}," ",""))+1-SUMPRODUCT(--ISNUMBER('
                     'SEARCH(","&{r}&",",SUBSTITUTE(","&{{cell}}&","," ",""))),'
                     'LEN({r})+1))').format(r=crange)
+        elif crange and field.get('excel_full_text_choices', False):
+            # 'code:text'-style choices, accept 'code' and 'code:anything'
+            fmla = (
+                '=NOT(TRIM({{cell}})="")'
+                '*(COUNTIF({r},IFERROR('
+                    'LEFT({{cell}},FIND(":",{{cell}})-1),{{cell}})&":*")=0)'
+                ).format(r=crange)
         elif crange:
             # single choice
             fmla = (
