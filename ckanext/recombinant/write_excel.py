@@ -33,7 +33,9 @@ RSTATUS_WIDTH = 1
 RPAD_COL, RPAD_COL_NUM = 'B', 2
 RPAD_WIDTH = 3
 DATA_FIRST_COL, DATA_FIRST_COL_NUM = 'C', 3
-ESTIMATE_WIDTH_MULTIPLE = 1.2
+ESTIMATE_WIDTH_MULTIPLE_1 = 1.3
+ESTIMATE_WIDTH_MULTIPLE_1_CHARS = 20
+ESTIMATE_WIDTH_MULTIPLE_2 = 1.0
 EDGE_RANGE = 'A1:A4'
 
 REF_HEADER1_ROW, REF_HEADER1_HEIGHT = 1, 27
@@ -180,11 +182,20 @@ def excel_data_dictionary(geno):
     return book
 
 
+def estimate_width_from_length(length):
+    range1 = max(length, ESTIMATE_WIDTH_MULTIPLE_1_CHARS)
+    range2 = length - range1
+    return (
+        range1 * ESTIMATE_WIDTH_MULTIPLE_1 +
+        range2 * ESTIMATE_WIDTH_MULTIPLE_2)
+
 def estimate_width(text):
-    return max(len(s) for s in text.split('\n')) * ESTIMATE_WIDTH_MULTIPLE
+    return max(estimate_width_from_length(len(s)) for s in text.split('\n'))
 
 def wrap_text_to_width(text, width):
-    cwidth = width // ESTIMATE_WIDTH_MULTIPLE
+    # assuming width > ESTIMATE_WIDTH_MULTIPLE_1_CHARS
+    width -= ESTIMATE_WIDTH_MULTIPLE_1_CHARS * ESTIMATE_WIDTH_MULTIPLE_1
+    cwidth = width // ESTIMATE_WIDTH_MULTIPLE_2 + ESTIMATE_WIDTH_MULTIPLE_1_CHARS
     return '\n'.join(
         '\n'.join(textwrap.wrap(line, cwidth))
         for line in text.split('\n'))
@@ -393,7 +404,7 @@ def _append_field_ref_rows(refs, field, link):
 
 def _append_field_choices_rows(refs, choices, full_text_choices):
     refs.append(('choice heading', [_('Values')]))
-    max_width = 0
+    max_length = 0
     for key, value in choices:
         if full_text_choices:
             choice = [u'{0}: {1}'.format(key, value)]
@@ -402,8 +413,8 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
         else:
             choice = [unicode(key), value]
         refs.append(('choice', choice))
-        max_width = max(max_width, estimate_width(choice[0]))
-    return max_width
+        max_length = max(max_length, len(choice[0]))
+    return estimate_width_from_length(max_length)
 
 def _populate_reference_sheet(sheet, geno, refs):
     field_count = 1
