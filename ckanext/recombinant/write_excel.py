@@ -717,7 +717,8 @@ def _add_conditional_formatting(
             colZ=col_letter,
             rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
         openpyxl.formatting.FormulaRule([
-            'e{rnum}!{colA}{row1}>0'.format(
+            'AND(ISNUMBER(e{rnum}!{colA}{row1}),'
+            'e{rnum}!{colA}{row1}>0)'.format(
                 rnum=resource_num,
                 colA=RSTATUS_COL,
                 row1=CSTATUS_ROW)],
@@ -731,7 +732,8 @@ def _add_conditional_formatting(
             colZ=col_letter,
             rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
         openpyxl.formatting.FormulaRule([
-            'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
+            'AND(ISNUMBER(r{rnum}!{colA}{row1}),'
+            'e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
                 rnum=resource_num,
                 colA=DATA_FIRST_COL,
                 row1=CSTATUS_ROW)],
