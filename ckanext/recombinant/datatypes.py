@@ -33,7 +33,8 @@ datastore_type = {
 }
 
 
-def canonicalize(dirty, dstore_tag, primary_key, full_text_choice_field):
+def canonicalize(
+        dirty, dstore_tag, primary_key, full_text_choice_field=False):
     """
     Canonicalize dirty input from xlrd to align with
     recombinant.json datastore type specified in dstore_tag.
