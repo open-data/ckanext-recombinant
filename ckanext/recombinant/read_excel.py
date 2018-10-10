@@ -3,7 +3,8 @@ import openpyxl
 from ckanext.recombinant.datatypes import canonicalize
 from ckanext.recombinant.errors import BadExcelData
 
-HEADER_ROWS = 3
+HEADER_ROWS_V2 = 3
+HEADER_ROWS_V3 = 5
 
 def read_excel(f, file_contents=None):
     """
@@ -29,15 +30,26 @@ def read_excel(f, file_contents=None):
         label_row = next(rowiter)
         names_row = next(rowiter)
 
+        org_name = organization_row[0].value
+        if org_name and names_row[0].value != 'v3':
+            # v2 template
+            yield (
+                sheetname,
+                org_name,
+                [c.value for c in names_row],
+                _filter_bumf(rowiter, HEADER_ROWS_V2))
+
+        cstatus_row = next(rowiter)
+        example_row = next(rowiter)
         yield (
             sheetname,
-            organization_row[0].value,
-            [c.value for c in names_row],
-            _filter_bumf(rowiter))
+            names_row[1].value,
+            [c.value for c in names_row[2:]],
+            _filter_bumf((row[2:] for row in rowiter), HEADER_ROWS_V3))
 
 
-def _filter_bumf(rowiter):
-    i = HEADER_ROWS
+def _filter_bumf(rowiter, header_rows):
+    i = header_rows
     for row in rowiter:
         i += 1
         values = [c.value for c in row]
@@ -61,7 +73,7 @@ def _is_bumf(value):
     return value is None
 
 
-def get_records(rows, fields, primary_key_fields):
+def get_records(rows, fields, primary_key_fields, full_text_choice_fields):
     """
     Truncate/pad empty/missing records to expected row length, canonicalize
     cell content, and return resulting record list.
@@ -93,7 +105,8 @@ def get_records(rows, fields, primary_key_fields):
                     canonicalize(
                         v,
                         f['datastore_type'],
-                        f['datastore_id'] in primary_key_fields))
+                        f['datastore_id'] in primary_key_fields,
+                        f['datastore_id'] in full_text_choice_fields))
                 for f, v in zip(fields, row))))
         except BadExcelData, e:
             raise BadExcelData(u'Row {0}:'.format(n) + u' ' + e.message)

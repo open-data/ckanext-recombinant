@@ -14,7 +14,8 @@ from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.write_excel import (
     excel_template, excel_data_dictionary)
 from ckanext.recombinant.tables import get_chromo, get_geno
-from ckanext.recombinant.helpers import recombinant_primary_key_fields
+from ckanext.recombinant.helpers import (
+    recombinant_primary_key_fields, recombinant_choice_fields)
 
 from cStringIO import StringIO
 
@@ -181,19 +182,19 @@ class UploadController(PackageController):
         return blob.getvalue()
 
 
-    def data_dictionary(self, resource_name):
+    def data_dictionary(self, dataset_type):
         try:
-            chromo = get_chromo(resource_name)
+            geno = get_geno(dataset_type)
         except RecombinantException:
-            abort(404, _('Recombinant resource_name not found'))
+            abort(404, _('Recombinant dataset_type not found'))
 
-        book = excel_data_dictionary(chromo)
+        book = excel_data_dictionary(geno)
         blob = StringIO()
         book.save(blob)
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response.headers['Content-Disposition'] = (
             'inline; filename="{0}.xlsx"'.format(
-                resource_name))
+                dataset_type))
         return blob.getvalue()
 
 
@@ -302,10 +303,17 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
         pk = chromo.get('datastore_primary_key', [])
+        full_text_choice_fields = [
+            f['datastore_id'] for f in chromo['fields']
+            if ('choices' in f or 'choices_file' in f)
+                and f['datastore_type'] != '_text'
+                and f.get('excel_full_text_choices', False)]
+
         records = get_records(
             rows,
-            [f for f in chromo['fields'] if f.get('import_template_include', True)]
-            , pk)
+            [f for f in chromo['fields'] if f.get('import_template_include', True)],
+            pk,
+            full_text_choice_fields)
         method = 'upsert' if pk else 'insert'
         total_records += len(records)
         if not records:

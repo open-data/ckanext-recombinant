@@ -3,6 +3,7 @@ ckanext-recombinant table management commands
 
 Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
+  paster recombinant template DATASET_TYPE ORG_NAME OUTPUT_FILE [-c CONFIG]
   paster recombinant create [-f] (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-csv CSV_FILE ... [-c CONFIG]
@@ -39,6 +40,7 @@ from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
     get_dataset_types, get_chromo, get_geno, get_target_datasets,
     get_resource_names)
 from ckanext.recombinant.read_csv import csv_data_batch
+from ckanext.recombinant.write_excel import excel_template
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 
@@ -87,6 +89,11 @@ class TableCommand(CkanCommand):
             return self._remove_broken(opts['DATASET_TYPE'])
         elif opts['update']:
             return self._update(opts['DATASET_TYPE'])
+        elif opts['template']:
+            return self._template(
+                opts['DATASET_TYPE'][0],
+                opts['ORG_NAME'],
+                opts['OUTPUT_FILE'])
         else:
             print opts
             return -1
@@ -373,3 +380,10 @@ class TableCommand(CkanCommand):
         for t in self._expand_dataset_types():
             print t + ': ' + ' '.join(
                 c['resource_name'] for c in get_geno(t)['resources'])
+
+    def _template(self, dataset_type, org_name, output_file):
+        lc = LocalCKAN()
+        org = lc.action.organization_show(id=org_name)
+        tmpl = excel_template(dataset_type, org)
+        with open(output_file, 'w') as out:
+            tmpl.save(out)

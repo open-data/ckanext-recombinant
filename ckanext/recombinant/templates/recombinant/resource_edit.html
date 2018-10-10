@@ -63,7 +63,8 @@
           <summary><span class="glyphicon glyphicon-th-list"></span>
             {{ _("Reference") }}
           </summary>
-          {% snippet "recombinant/snippets/choices_reference.html", refs=refs %}
+          {% snippet "recombinant/snippets/choices_reference.html",
+            refs=refs, dataset_type=dataset.type %}
         </details>
       {% endif %}
       <details id="api">
