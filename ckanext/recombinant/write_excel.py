@@ -3,6 +3,7 @@ Excel v3 template and data-dictionary generation code
 """
 
 import textwrap
+import string
 
 import openpyxl
 
@@ -512,56 +513,63 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
 
     for col_num, field in template_cols_fields(chromo):
         crange = cranges.get(field['datastore_id'])
-        fmla = field.get('excel_cell_error_formula')
-
-        if fmla:
-            pass
-        elif field['datastore_type'] == 'date':
-            fmla = (
-                '=NOT(ISNUMBER({cell}+0))'
-                '*NOT(ISBLANK({cell}))')
+        fmla = None
+        if field['datastore_type'] == 'date':
+            fmla = 'NOT(ISNUMBER({cell}+0))'
         elif field['datastore_type'] == 'int':
-            fmla = (
-                '=NOT(IFERROR(INT({cell})={cell},FALSE))'
-                '*NOT(ISBLANK({cell}))')
+            fmla = 'NOT(IFERROR(INT({cell})={cell},FALSE))'
         elif field['datastore_type'] == 'numeric':
-            fmla = (
-                '=NOT(ISNUMBER({cell}))'
-                '*NOT(ISBLANK({cell}))')
+            fmla = 'NOT(ISNUMBER({cell}))'
         elif field['datastore_type'] == 'money':
-            # isblank doesnt work. sometimes. trim()="" is more permissive
-            fmla = (
-                '=NOT(IFERROR(ROUND({cell},2)={cell},FALSE))'
-                '*NOT(TRIM({cell})="")')
+            fmla = 'NOT(IFERROR(ROUND({cell},2)={cell},FALSE))'
         elif crange and field['datastore_type'] == '_text':
             # multiple comma-separated choices
             # validate by counting choices against matches
             fmla = (
-                '=NOT(TRIM({{cell}})="")'
-                '*(LEN(SUBSTITUTE({{cell}}," ",""))+1-SUMPRODUCT(--ISNUMBER('
-                    'SEARCH(","&{r}&",",SUBSTITUTE(","&{{cell}}&","," ",""))),'
-                    'LEN({r})+1))').format(r=crange)
+                'LEN(SUBSTITUTE({{cell}}," ",""))+1-SUMPRODUCT(--ISNUMBER('
+                'SEARCH(","&{r}&",",SUBSTITUTE(","&{{cell}}&","," ",""))),'
+                'LEN({r})+1)').format(r=crange)
         elif crange and field.get('excel_full_text_choices', False):
             # 'code:text'-style choices, accept 'code' and 'code:anything'
             fmla = (
-                '=NOT(TRIM({{cell}})="")'
-                '*(COUNTIF({r},LEFT({{cell}},FIND(":",{{cell}}&":")-1)&":*")=0)'
+                'COUNTIF({r},LEFT({{cell}},FIND(":",{{cell}}&":")-1)&":*")=0'
                 ).format(r=crange)
         elif crange:
             # single choice
-            fmla = (
-                '=NOT(TRIM({{cell}})="")'
-                '*(COUNTIF({r},{{cell}})=0)').format(r=crange)
-        else:
+            fmla = 'COUNTIF({r},{{cell}})=0'.format(r=crange)
+
+        user_fmla = field.get('excel_error_formula')
+        if user_fmla:
+            if not fmla:
+                fmla = 'FALSE()'
+            fmla = user_fmla.replace('{default_formula}', '(' + fmla + ')')
+
+        if not fmla:
             continue
+
+        fmla_keys = set(
+            key for (_i, key, _i, _i) in string.Formatter().parse(fmla)
+            if key != 'cell' and key != 'default_formula')
+        if fmla_keys:
+            fmla_values = {
+                f['datastore_id']: '{sheet}!{col}{{num}}'.format(
+                    sheet=chromo['resource_name'],
+                    col=openpyxl.cell.get_column_letter(cn))
+                for cn, f in template_cols_fields(chromo)
+                if f['datastore_id'] in fmla_keys}
 
         col = openpyxl.cell.get_column_letter(col_num)
         cell = '{sheet}!{col}{{num}}'.format(
             sheet=chromo['resource_name'],
             col=col)
+        fmla = '=NOT(ISBLANK({cell}))*(' + fmla + ')'
         for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
-            sheet.cell(row=i, column=col_num).value = fmla.format(
-                cell=cell.format(num=i))
+            try:
+                sheet.cell(row=i, column=col_num).value = fmla.format(
+                    cell=cell,
+                    **fmla_values).format(num=i)
+            except KeyError:
+                assert 0, (fmla, fmla_values)
 
         sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
             '=SUM({col}{row1}:{col}{rowN})'.format(
@@ -596,10 +604,10 @@ def _populate_excel_r_sheet(sheet, chromo):
     col = None
 
     for col_num, field in template_cols_fields(chromo):
-        fmla = field.get('excel_cell_required_formula')
+        fmla = field.get('excel_required_formula')
 
         if fmla:
-            pass
+            fmla = '={has_data}*ISBLANK({cell})*' + fmla
         elif (
                 field['datastore_id'] in chromo['datastore_primary_key']
                 or field.get('excel_required', False)):
@@ -611,10 +619,24 @@ def _populate_excel_r_sheet(sheet, chromo):
         cell = '{sheet}!{col}{{num}}'.format(
             sheet=chromo['resource_name'],
             col=col)
+
+        fmla_keys = set(
+            key for (_i, key, _i, _i) in string.Formatter().parse(fmla)
+            if key != 'cell' and key != 'has_data')
+        fmla_values = {}
+        if fmla_keys:
+            fmla_values = {
+                f['datastore_id']: '{sheet}!{col}{{num}}'.format(
+                    sheet=chromo['resource_name'],
+                    col=openpyxl.cell.get_column_letter(cn))
+                for cn, f in template_cols_fields(chromo)
+                if f['datastore_id'] in fmla_keys}
+
         for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
             sheet.cell(row=i, column=col_num).value = fmla.format(
-                cell=cell.format(num=i),
-                has_data='{col}{num}'.format(col=RPAD_COL, num=i))
+                cell=cell,
+                has_data='{col}{{num}}'.format(col=RPAD_COL),
+                **fmla_values).format(num=i)
 
         sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
             '=SUM({col}{row1}:{col}{rowN})'.format(
@@ -623,7 +645,7 @@ def _populate_excel_r_sheet(sheet, chromo):
                 rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1))
 
     if col is None:
-        return  # no required columns?!
+        return  # no required columns
 
     for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
         sheet.cell(row=i, column=RPAD_COL_NUM).value = (
