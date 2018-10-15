@@ -256,12 +256,24 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
         cheadings_dimensions.height = max(
             cheadings_dimensions.height,
             field_heading.count('\n') * LINE_HEIGHT + CHEADINGS_HEIGHT)
+
+        col_heading_style = cheadings_style
+        if 'excel_column_heading_style' in field:
+            # use geno column heading style as base, just override keys
+            col_heading_style = dict(
+                cheadings_style,
+                **field['excel_column_heading_style'])
+            apply_styles(col_heading_style, sheet.cell(
+                row=HEADER_ROW, column=col_num))
+            apply_styles(col_heading_style, sheet.cell(
+                row=CSTATUS_ROW, column=col_num))
+
         fill_cell(
             sheet,
             CHEADINGS_ROW,
             col_num,
             field_heading,
-            cheadings_style)
+            col_heading_style)
 
         reference_row1 = len(refs) + REF_FIRST_ROW
 
