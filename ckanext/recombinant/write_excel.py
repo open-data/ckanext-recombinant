@@ -24,11 +24,11 @@ CHEADINGS_MIN_WIDTH = 10
 LINE_HEIGHT = 15  # extra lines of text in same cell
 CODE_ROW = 3
 CSTATUS_ROW, CSTATUS_HEIGHT = 4, 6
-EXAMPLE_ROW, EXAMPLE_HEIGHT = 5, 15
+EXAMPLE_ROW, DEFAULT_EXAMPLE_HEIGHT = 5, 15
 EXAMPLE_MERGE = 'A5:B5'
 FREEZE_PANES = 'C5'
-DATA_FIRST_ROW, DATA_HEIGHT = 6, 24
-DATA_NUM_ROWS = 2000
+DATA_FIRST_ROW, DEFAULT_DATA_HEIGHT = 6, 24
+DEFAULT_DATA_NUM_ROWS = 2000
 RSTATUS_COL, RSTATUS_COL_NUM = 'A', 1
 RSTATUS_WIDTH = 1
 RPAD_COL, RPAD_COL_NUM = 'B', 2
@@ -223,9 +223,10 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     error_style = geno.get('excel_error_style', DEFAULT_ERROR_STYLE)
 
     cranges = {}
+    data_num_rows = chromo.get('excel_data_num_rows', DEFAULT_DATA_NUM_ROWS)
 
     # create rows so we can set all heights
-    for i in xrange(1, DATA_FIRST_ROW + DATA_NUM_ROWS):
+    for i in xrange(1, DATA_FIRST_ROW + data_num_rows):
         sheet.append([])
 
     sheet.merge_cells(EXAMPLE_MERGE)
@@ -267,15 +268,14 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
         # match against db columns
         sheet.cell(row=CODE_ROW, column=col_num).value = field['datastore_id']
 
-        example = chromo['examples']['record'].get(field['datastore_id'])
-        if example:
-            fill_cell(
-                sheet,
-                EXAMPLE_ROW,
-                col_num,
-                u','.join(example) if isinstance(example, list)
-                else example,
-                example_style)
+        example = chromo['examples']['record'].get(field['datastore_id'], '')
+        fill_cell(
+            sheet,
+            EXAMPLE_ROW,
+            col_num,
+            u','.join(example) if isinstance(example, list)
+            else example,
+            example_style)
 
         col_letter = openpyxl.cell.get_column_letter(col_num)
         col_letter_before = openpyxl.cell.get_column_letter(max(1, col_num-1))
@@ -290,7 +290,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
         validation_range = '{col}{row1}:{col}{rowN}'.format(
             col=col_letter,
             row1=DATA_FIRST_ROW,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1)
+            rowN=DATA_FIRST_ROW + data_num_rows - 1)
 
         xl_format = datastore_type[field['datastore_type']].xl_format
         alignment = openpyxl.styles.Alignment(wrap_text=True)
@@ -354,14 +354,21 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
                 rowN=len(refs) + REF_FIRST_ROW - 2))
 
     _add_conditional_formatting(
-        sheet, col_letter, resource_num, error_style, required_style)
+        sheet,
+        col_letter,
+        resource_num,
+        error_style,
+        required_style,
+        data_num_rows)
 
     sheet.row_dimensions[HEADER_ROW].height = HEADER_HEIGHT
     sheet.row_dimensions[CODE_ROW].hidden = True
     sheet.row_dimensions[CSTATUS_ROW].height = CSTATUS_HEIGHT
-    sheet.row_dimensions[EXAMPLE_ROW].height = EXAMPLE_HEIGHT
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
-        sheet.row_dimensions[i].height = DATA_HEIGHT
+    sheet.row_dimensions[EXAMPLE_ROW].height = chromo.get(
+        'excel_example_height', DEFAULT_EXAMPLE_HEIGHT)
+    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+        sheet.row_dimensions[i].height = chromo.get(
+            'excel_data_height', DEFAULT_DATA_HEIGHT)
 
     sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
     sheet.column_dimensions[RPAD_COL].width = RPAD_WIDTH
@@ -510,6 +517,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
     in the corresponding cell on the data entry sheet.
     """
     col = None
+    data_num_rows = chromo.get('excel_data_num_rows', DEFAULT_DATA_NUM_ROWS)
 
     for col_num, field in template_cols_fields(chromo):
         crange = cranges.get(field['datastore_id'])
@@ -563,7 +571,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             sheet=chromo['resource_name'],
             col=col)
         fmla = '=NOT(ISBLANK({cell}))*(' + fmla + ')'
-        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
             try:
                 sheet.cell(row=i, column=col_num).value = fmla.format(
                     cell=cell,
@@ -575,12 +583,12 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             '=SUM({col}{row1}:{col}{rowN})'.format(
                 col=col,
                 row1=DATA_FIRST_ROW,
-                rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1))
+                rowN=DATA_FIRST_ROW + data_num_rows - 1))
 
     if col is None:
         return  # no errors to report on!
 
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
             '=SUM({colA}{row}:{colZ}{row})'.format(
                 colA=DATA_FIRST_COL,
@@ -602,6 +610,7 @@ def _populate_excel_r_sheet(sheet, chromo):
     data entry sheet
     """
     col = None
+    data_num_rows = chromo.get('excel_data_num_rows', DEFAULT_DATA_NUM_ROWS)
 
     for col_num, field in template_cols_fields(chromo):
         fmla = field.get('excel_required_formula')
@@ -632,7 +641,7 @@ def _populate_excel_r_sheet(sheet, chromo):
                 for cn, f in template_cols_fields(chromo)
                 if f['datastore_id'] in fmla_keys}
 
-        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
             sheet.cell(row=i, column=col_num).value = fmla.format(
                 cell=cell,
                 has_data='{col}{{num}}'.format(col=RPAD_COL),
@@ -642,12 +651,12 @@ def _populate_excel_r_sheet(sheet, chromo):
             '=SUM({col}{row1}:{col}{rowN})'.format(
                 col=col,
                 row1=DATA_FIRST_ROW,
-                rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1))
+                rowN=DATA_FIRST_ROW + data_num_rows - 1))
 
     if col is None:
         return  # no required columns
 
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RPAD_COL_NUM).value = (
             '=SUMPRODUCT(LEN({sheet}!{colA}{row}:{colZ}{row}))>0'.format(
                 sheet=chromo['resource_name'],
@@ -655,7 +664,7 @@ def _populate_excel_r_sheet(sheet, chromo):
                 colZ=col,
                 row=i))
 
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + DATA_NUM_ROWS):
+    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
             '=SUM({colA}{row}:{colZ}{row})'.format(
                 colA=DATA_FIRST_COL,
@@ -706,7 +715,8 @@ def template_cols_fields(chromo):
             'import_template_include', True)), DATA_FIRST_COL_NUM)
 
 def _add_conditional_formatting(
-        sheet, col_letter, resource_num, error_style, required_style):
+        sheet, col_letter, resource_num, error_style, required_style,
+        data_num_rows):
     '''
     Error and required cell hilighting based on e/r sheets
     '''
@@ -723,7 +733,7 @@ def _add_conditional_formatting(
         '{col}{row1}:{col}{rowN}'.format(
             col=RSTATUS_COL,
             row1=DATA_FIRST_ROW,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+            rowN=DATA_FIRST_ROW + data_num_rows - 1),
         openpyxl.formatting.FormulaRule([
             'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
                 rnum=resource_num,
@@ -737,7 +747,7 @@ def _add_conditional_formatting(
             colA=RSTATUS_COL,
             row1=CSTATUS_ROW,
             colZ=col_letter,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+            rowN=DATA_FIRST_ROW + data_num_rows - 1),
         openpyxl.formatting.FormulaRule([
             'AND(ISNUMBER(e{rnum}!{colA}{row1}),'
             'e{rnum}!{colA}{row1}>0)'.format(
@@ -752,7 +762,7 @@ def _add_conditional_formatting(
             colA=DATA_FIRST_COL,
             row1=CSTATUS_ROW,
             colZ=col_letter,
-            rowN=DATA_FIRST_ROW + DATA_NUM_ROWS - 1),
+            rowN=DATA_FIRST_ROW + data_num_rows - 1),
         openpyxl.formatting.FormulaRule([
             'AND(ISNUMBER(r{rnum}!{colA}{row1}),'
             'e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
