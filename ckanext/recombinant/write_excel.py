@@ -215,12 +215,12 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     """
     sheet.title = chromo['resource_name']
 
-    edge_style = geno.get('excel_edge_style', DEFAULT_EDGE_STYLE)
-    required_style = geno.get('excel_required_style', edge_style)
-    header_style = geno.get('excel_header_style', DEFAULT_HEADER_STYLE)
-    cheadings_style = geno.get('excel_column_heading_style', DEFAULT_CHEADING_STYLE)
-    example_style = geno.get('excel_example_style', DEFAULT_EXAMPLE_STYLE)
-    error_style = geno.get('excel_error_style', DEFAULT_ERROR_STYLE)
+    edge_style = dict(DEFAULT_EDGE_STYLE, **geno.get('excel_edge_style', {}))
+    required_style = dict(edge_style, **geno.get('excel_required_style', {}))
+    header_style = dict(DEFAULT_HEADER_STYLE, **geno.get('excel_header_style', {}))
+    cheadings_style = dict(DEFAULT_CHEADING_STYLE, **geno.get('excel_column_heading_style', {}))
+    example_style = dict(DEFAULT_EXAMPLE_STYLE, **geno.get('excel_example_style', {}))
+    error_style = dict(DEFAULT_ERROR_STYLE, **geno.get('excel_error_style', {}))
 
     cranges = {}
     data_num_rows = chromo.get('excel_data_num_rows', DEFAULT_DATA_NUM_ROWS)
