@@ -38,6 +38,7 @@ def read_excel(f, file_contents=None):
                 org_name,
                 [c.value for c in names_row],
                 _filter_bumf(rowiter, HEADER_ROWS_V2))
+            continue
 
         cstatus_row = next(rowiter)
         example_row = next(rowiter)
