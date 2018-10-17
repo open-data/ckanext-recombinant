@@ -332,7 +332,8 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
             refN = len(refs) + REF_FIRST_ROW - 2
 
             if full_text_choices:
-                col.width = max(col.width, max_choice_width)
+                if 'excel_column_width' not in field:
+                    col.width = max(col.width, max_choice_width)
                 # expand example
                 for ck, cv in choice_fields[field['datastore_id']]:
                     if ck == example:
