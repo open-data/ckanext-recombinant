@@ -103,7 +103,7 @@ def excel_template(dataset_type, org):
         elif version == 3:
             choice_ranges.append(_populate_excel_sheet(
                 sheet, geno, chromo, org, refs, rnum))
-        sheet.protection.enabled = True
+            sheet.protection.enabled = True
         sheet = book.create_sheet()
 
     if version == 2:
