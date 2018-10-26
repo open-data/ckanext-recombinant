@@ -631,7 +631,7 @@ def _populate_excel_r_sheet(sheet, chromo):
         fmla = field.get('excel_required_formula')
 
         if fmla:
-            fmla = '={has_data}*ISBLANK({cell})*' + fmla
+            fmla = '={has_data}*ISBLANK({cell})*(' + fmla +')'
         elif (
                 field['datastore_id'] in chromo['datastore_primary_key']
                 or field.get('excel_required', False)):
