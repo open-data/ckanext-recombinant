@@ -6,6 +6,8 @@ import textwrap
 import string
 
 import openpyxl
+from openpyxl.utils import get_column_letter
+from openpyxl.formatting.rule import FormulaRule
 
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
@@ -291,9 +293,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
             else example,
             example_style)
 
-        col_letter = openpyxl.cell.get_column_letter(col_num)
-        col_letter_before = openpyxl.cell.get_column_letter(max(1, col_num-1))
-        col_letter_after = openpyxl.cell.get_column_letter(col_num+1)
+        col_letter = get_column_letter(col_num)
 
         col = sheet.column_dimensions[col_letter]
         if 'excel_column_width' in field:
@@ -359,7 +359,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
                     v.error = (u'Please enter one of the valid keys shown on '
                         'sheet "reference" rows {0}-{1}'.format(ref1, refN))
                 sheet.add_data_validation(v)
-                v.ranges.append(validation_range)
+                v.add(validation_range)
 
         sheet.cell(row=CHEADINGS_ROW, column=col_num).hyperlink = (
             '#reference!{colA}{row1}:{colZ}{rowN}'.format(
@@ -578,11 +578,11 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             fmla_values = {
                 f['datastore_id']: '{sheet}!{col}{{num}}'.format(
                     sheet=chromo['resource_name'],
-                    col=openpyxl.cell.get_column_letter(cn))
+                    col=get_column_letter(cn))
                 for cn, f in template_cols_fields(chromo)
                 if f['datastore_id'] in fmla_keys}
 
-        col = openpyxl.cell.get_column_letter(col_num)
+        col = get_column_letter(col_num)
         cell = '{sheet}!{col}{{num}}'.format(
             sheet=chromo['resource_name'],
             col=col)
@@ -640,7 +640,7 @@ def _populate_excel_r_sheet(sheet, chromo):
         else:
             continue
 
-        col = openpyxl.cell.get_column_letter(col_num)
+        col = get_column_letter(col_num)
         cell = '{sheet}!{col}{{num}}'.format(
             sheet=chromo['resource_name'],
             col=col)
@@ -653,7 +653,7 @@ def _populate_excel_r_sheet(sheet, chromo):
             fmla_values = {
                 f['datastore_id']: '{sheet}!{col}{{num}}'.format(
                     sheet=chromo['resource_name'],
-                    col=openpyxl.cell.get_column_letter(cn))
+                    col=get_column_letter(cn))
                 for cn, f in template_cols_fields(chromo)
                 if f['datastore_id'] in fmla_keys}
 
@@ -750,7 +750,7 @@ def _add_conditional_formatting(
             col=RSTATUS_COL,
             row1=DATA_FIRST_ROW,
             rowN=DATA_FIRST_ROW + data_num_rows - 1),
-        openpyxl.formatting.FormulaRule([
+        FormulaRule([
             'AND(e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
                 rnum=resource_num,
                 colA=RSTATUS_COL,
@@ -764,7 +764,7 @@ def _add_conditional_formatting(
             row1=CSTATUS_ROW,
             colZ=col_letter,
             rowN=DATA_FIRST_ROW + data_num_rows - 1),
-        openpyxl.formatting.FormulaRule([
+        FormulaRule([
             'AND(ISNUMBER(e{rnum}!{colA}{row1}),'
             'e{rnum}!{colA}{row1}>0)'.format(
                 rnum=resource_num,
@@ -779,7 +779,7 @@ def _add_conditional_formatting(
             row1=CSTATUS_ROW,
             colZ=col_letter,
             rowN=DATA_FIRST_ROW + data_num_rows - 1),
-        openpyxl.formatting.FormulaRule([
+        FormulaRule([
             'AND(ISNUMBER(r{rnum}!{colA}{row1}),'
             'e{rnum}!{colA}{row1}=0,r{rnum}!{colA}{row1}>0)'.format(
                 rnum=resource_num,

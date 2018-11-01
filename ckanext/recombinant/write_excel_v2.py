@@ -3,6 +3,8 @@ Old excel v2 template code, remove when no longer used
 """
 
 import openpyxl
+from openpyxl.utils import get_column_letter
+from openpyxl.formatting.rule import FormulaRule
 
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
@@ -63,7 +65,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
         for f in recombinant_choice_fields(chromo['resource_name']))
 
     pk_cells = [
-        openpyxl.cell.get_column_letter(n)+'4' for
+        get_column_letter(n)+'4' for
         n, field in enumerate((f for f in chromo['fields'] if f.get(
                     'import_template_include', True)), 1)
         if field['datastore_id'] in chromo['datastore_primary_key']]
@@ -73,9 +75,9 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
         fill_cell(sheet, 2, n, recombinant_language_text(field['label']), header_style)
         fill_cell(sheet, 3, n, field['datastore_id'], header_style)
         # jumping through openpyxl hoops:
-        col_letter = openpyxl.cell.get_column_letter(n)
-        col_letter_before = openpyxl.cell.get_column_letter(max(1, n-1))
-        col_letter_after = openpyxl.cell.get_column_letter(n+1)
+        col_letter = get_column_letter(n)
+        col_letter_before = get_column_letter(max(1, n-1))
+        col_letter_after = get_column_letter(n+1)
         col = sheet.column_dimensions[col_letter]
         col.width = field['excel_column_width']
         col.alignment = openpyxl.styles.Alignment(
@@ -87,10 +89,10 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
         _append_field_ref_rows_v2(refs, field, org_style, header_style)
 
         if field['datastore_type'] == 'boolean':
-            boolean_validator.ranges.append(validation_range)
+            boolean_validator.add(validation_range)
         if field['datastore_type'] == 'date':
             sheet.conditional_formatting.add(validation_range,
-                openpyxl.formatting.FormulaRule([
+                FormulaRule([
                         # +0 is needed by excel to recognize dates. sometimes.
                         'AND(NOT(ISBLANK({cell})),NOT(ISNUMBER({cell}+0)))'
                         .format(cell=col_letter + '4',)],
@@ -99,7 +101,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                     font=white_font,
                     ))
             sheet.conditional_formatting.add("{0}2".format(col_letter),
-                openpyxl.formatting.FormulaRule([
+                FormulaRule([
                         # +0 is needed by excel to recognize dates. sometimes.
                         'SUMPRODUCT(--NOT(ISBLANK({cells})),'
                         '--NOT(ISNUMBER({cells}+0)))'
@@ -110,7 +112,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                     ))
         if field['datastore_type'] == 'int':
             sheet.conditional_formatting.add(validation_range,
-                openpyxl.formatting.FormulaRule([
+                FormulaRule([
                         'AND(NOT(ISBLANK({cell})),NOT(IFERROR(INT({cell})={cell},FALSE)))'
                         .format(cell=col_letter + '4',)],
                     stopIfTrue=True,
@@ -118,7 +120,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                     font=white_font,
                     ))
             sheet.conditional_formatting.add("{0}2".format(col_letter),
-                openpyxl.formatting.FormulaRule([
+                FormulaRule([
                         'SUMPRODUCT(--NOT(ISBLANK({cells})),'
                         '--NOT(IFERROR(INT({cells})={cells},FALSE)))'
                         .format(cells=validation_range,)],
@@ -128,7 +130,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                     ))
         if field['datastore_type'] == 'money':
             sheet.conditional_formatting.add(validation_range,
-                openpyxl.formatting.FormulaRule([
+                FormulaRule([
                         # isblank doesnt work. sometimes. trim()="" is more permissive
                         'AND(NOT(TRIM({cell})=""),NOT(IFERROR(ROUND({cell},2)={cell},FALSE)))'
                         .format(cell=col_letter + '4',)],
@@ -137,7 +139,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                     font=white_font,
                     ))
             sheet.conditional_formatting.add("{0}2".format(col_letter),
-                openpyxl.formatting.FormulaRule([
+                FormulaRule([
                         # isblank doesnt work. sometimes. trim()="" is more permissive
                         'SUMPRODUCT(--NOT(TRIM({cells})=""),'
                         '--NOT(IFERROR(ROUND({cells},2)={cells},FALSE)))'
@@ -165,7 +167,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                 # custom validation only works in Excel, use conditional
                 # formatting for libre office compatibility
                 sheet.conditional_formatting.add(validation_range,
-                    openpyxl.formatting.FormulaRule([(
+                    FormulaRule([(
                         # count characters in the cell
                         'IF(SUBSTITUTE({col}4," ","")="",0,'
                         'LEN(SUBSTITUTE({col}4," ",""))+1)-'
@@ -195,13 +197,13 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                     v.error = (u'Please enter one of the valid keys shown on '
                         'sheet "reference" rows {0}-{1}'.format(ref1, refN))
                 sheet.add_data_validation(v)
-                v.ranges.append(validation_range)
+                v.add(validation_range)
 
             # hilight header if bad values pasted below
             if field['datastore_type'] == '_text':
                 choice_counts = 'reference!$J${0}:$J${1}'.format(ref1, refN)
                 sheet.conditional_formatting.add("{0}2".format(col_letter),
-                    openpyxl.formatting.FormulaRule([(
+                    FormulaRule([(
                             # count characters in the validation range
                             'SUMPRODUCT(IF(SUBSTITUTE({v}," ","")="",0,'
                             'LEN(SUBSTITUTE({v}," ",""))+1))-'
@@ -219,7 +221,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                         ))
             else:
                 sheet.conditional_formatting.add("{0}2".format(col_letter),
-                    openpyxl.formatting.FormulaRule([(
+                    FormulaRule([(
                             'SUMPRODUCT(--NOT(TRIM({0})=""))'
                             '-SUMPRODUCT(COUNTIF({1},TRIM({0})))'
                             .format(validation_range, choice_range))],
@@ -230,7 +232,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
 
         if field.get('excel_cell_required_formula'):
             sheet.conditional_formatting.add(validation_range,
-                openpyxl.formatting.FormulaRule([
+                FormulaRule([
                         field['excel_cell_required_formula'].format(
                             column=col_letter,
                             column_before=col_letter_before,
@@ -244,7 +246,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                 field['datastore_id'] in chromo['datastore_primary_key']):
             # hilight missing values
             sheet.conditional_formatting.add(validation_range,
-                openpyxl.formatting.FormulaRule([(
+                FormulaRule([(
                         'AND({col}4="",SUMPRODUCT(LEN(A4:Z4)))'
                         .format(col=col_letter)
                         )],
@@ -253,7 +255,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                     ))
         if field.get('excel_cell_error_formula'):
             sheet.conditional_formatting.add(validation_range,
-                openpyxl.formatting.FormulaRule([
+                FormulaRule([
                     field['excel_cell_error_formula'].format(
                         cell=col_letter + '4',)
                     ],
@@ -263,7 +265,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                 ))
         if field.get('excel_header_error_formula'):
             sheet.conditional_formatting.add("{0}2".format(col_letter),
-                openpyxl.formatting.FormulaRule([
+                FormulaRule([
                         field['excel_header_error_formula'].format(
                             cells=validation_range,
                             column=col_letter,
