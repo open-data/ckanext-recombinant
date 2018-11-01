@@ -229,7 +229,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
 
     # create rows so we can set all heights
     for i in xrange(1, DATA_FIRST_ROW + data_num_rows):
-        sheet.append([])
+        sheet.cell(row=i, column=1).value = None
 
     sheet.merge_cells(EXAMPLE_MERGE)
     fill_cell(sheet, EXAMPLE_ROW, 1, _('e.g.'), example_style)
@@ -476,7 +476,8 @@ def _populate_reference_sheet(sheet, geno, refs):
             link, value = ref_line[0]
             ref_line = [value]
 
-        sheet.append([None, None] + [v.replace('\n', '\r\n') for v in ref_line])
+        for cnum, cval in enumerate(ref_line, REF_KEY_COL_NUM):
+            sheet.cell(row=row_number, column=cnum).value = cval.replace('\n', '\r\n')
 
         if len(ref_line) == 2:
             sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
