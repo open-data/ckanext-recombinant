@@ -53,6 +53,8 @@ REF_VALUE_WIDTH = 114
 REF_CHOICE_HEADING_HEIGHT = 24
 REF_EDGE_RANGE = 'A1:A2'
 
+DEFAULT_YEAR_MIN, DEFAULT_YEAR_MAX = '2018-50', '2018+50'
+
 DEFAULT_EDGE_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FF336B87'},
     'Font': {'color': 'FFFFFF'}}
@@ -517,6 +519,7 @@ def _populate_reference_sheet(sheet, geno, refs):
         apply_styles(REF_PAPER_STYLE, sheet.row_dimensions[row_number])
 
     sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
+    sheet.cell(row=1, column=RPAD_COL_NUM).value = None  # make sure rpad col exists
     sheet.column_dimensions[RPAD_COL].width = RPAD_WIDTH
     sheet.column_dimensions[REF_KEY_COL].width = REF_KEY_WIDTH
     sheet.column_dimensions[REF_VALUE_COL].width = REF_VALUE_WIDTH
@@ -542,6 +545,13 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             fmla = 'NOT(ISNUMBER({cell}+0))'
         elif field['datastore_type'] == 'int':
             fmla = 'NOT(IFERROR(INT({cell})={cell},FALSE))'
+        elif field['datastore_type'] == 'year':
+            fmla = (
+                'NOT(IFERROR(AND(INT({{cell}})={{cell}},'
+                '{{cell}}>={year_min},{{cell}}<={year_max}),FALSE))'
+                ).format(
+                    year_min = chromo.get('year_min', DEFAULT_YEAR_MIN),
+                    year_max = chromo.get('year_max', DEFAULT_YEAR_MAX))
         elif field['datastore_type'] == 'numeric':
             fmla = 'NOT(ISNUMBER({cell}))'
         elif field['datastore_type'] == 'money':
