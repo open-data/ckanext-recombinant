@@ -539,6 +539,8 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
     data_num_rows = chromo.get('excel_data_num_rows', DEFAULT_DATA_NUM_ROWS)
 
     for col_num, field in template_cols_fields(chromo):
+        pk_field = field['datastore_id'] in chromo['datastore_primary_key']
+
         crange = cranges.get(field['datastore_id'])
         fmla = None
         if field['datastore_type'] == 'date':
@@ -578,6 +580,19 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
                 fmla = 'FALSE()'
             fmla = user_fmla.replace('{default_formula}', '(' + fmla + ')')
 
+        if pk_field:
+            # repeated primary (composite) keys are errors
+            pk_fmla = 'SUMPRODUCT(' + ','.join(
+                'TRIM({sheet}!{col}{top}:{col}{{num}})'
+                '=TRIM({sheet}!{col}{{num}})'.format(
+                    sheet=chromo['resource_name'],
+                    col=openpyxl.cell.get_column_letter(cn),
+                    top=DATA_FIRST_ROW)
+                for cn, f in template_cols_fields(chromo)
+                if f['datastore_id'] in chromo['datastore_primary_key']
+                ) +')>1'
+            fmla = ('OR(' + fmla + ',' + pk_fmla + ')') if fmla else pk_fmla
+
         if not fmla:
             continue
 
@@ -601,6 +616,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             try:
                 sheet.cell(row=i, column=col_num).value = fmla.format(
                     cell=cell,
+                    num='{num}',
                     **fmla_values).format(num=i)
             except KeyError:
                 assert 0, (fmla, fmla_values)
@@ -640,12 +656,11 @@ def _populate_excel_r_sheet(sheet, chromo):
 
     for col_num, field in template_cols_fields(chromo):
         fmla = field.get('excel_required_formula')
+        pk_field = field['datastore_id'] in chromo['datastore_primary_key']
 
         if fmla:
             fmla = '={has_data}*ISBLANK({cell})*(' + fmla +')'
-        elif (
-                field['datastore_id'] in chromo['datastore_primary_key']
-                or field.get('excel_required', False)):
+        elif pk_field or field.get('excel_required', False):
             fmla = '={has_data}*ISBLANK({cell})'
         else:
             continue
