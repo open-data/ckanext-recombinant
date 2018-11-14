@@ -70,6 +70,10 @@ class RecombinantPlugin(
             '/recombinant-dictionary/{dataset_type}',
             action='data_dictionary',
             controller='ckanext.recombinant.controller:UploadController')
+        map.connect('recombinant_schema_json',
+            '/recombinant-schema/{dataset_type}.json',
+            action='schema_json',
+            controller='ckanext.recombinant.controller:UploadController')
         map.connect('recombinant_resource',
             '/recombinant/{resource_name}/{owner_org}',
             action='preview_table',

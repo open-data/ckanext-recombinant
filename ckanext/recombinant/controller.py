@@ -1,4 +1,6 @@
 import re
+from collections import OrderedDict
+import simplejson as json
 
 from pylons.i18n import _
 from pylons import config
@@ -192,8 +194,66 @@ class UploadController(PackageController):
         blob = StringIO()
         book.save(blob)
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        return blob.getvalue()
+
+    def schema_json(self, dataset_type):
+        try:
+            geno = get_geno(dataset_type)
+        except RecombinantException:
+            abort(404, _('Recombinant dataset_type not found'))
+
+        schema = OrderedDict()
+        for k in ['dataset_type', 'title', 'notes']:
+            if k in geno:
+                schema[k] = geno[k]
+
+        schema['resources'] = []
+        for chromo in geno['resources']:
+            resource = OrderedDict()
+            schema['resources'].append(resource)
+            choice_fields = dict(
+                (f['datastore_id'], f['choices'])
+                for f in recombinant_choice_fields(
+                    chromo['resource_name'],
+                    all_languages=True))
+
+            for k in ['title', 'resource_name']:
+                if k in chromo:
+                    resource[k] = chromo[k]
+
+            resource['fields'] = []
+            for field in chromo['fields']:
+                if not field.get('visible_to_public', True):
+                    continue
+                fld = OrderedDict()
+                resource['fields'].append(fld)
+                fld['id'] = field['datastore_id']
+                for k in ['label', 'description', 'obligation', 'format_type']:
+                    if k in field:
+                        fld[k] = field[k]
+
+                if fld['id'] in choice_fields:
+                    choices = OrderedDict()
+                    fld['choices'] = choices
+                    for ck, cv in choice_fields[fld['id']]:
+                        choices[ck] = cv
+
+            resource['primary_key'] = chromo['datastore_primary_key']
+
+            if 'examples' in chromo:
+                ex_record = chromo['examples']['record']
+                example = OrderedDict()
+                for field in chromo['fields']:
+                    if field['datastore_id'] in ex_record:
+                        example[field['datastore_id']] = ex_record[
+                            field['datastore_id']]
+                resource['example'] = example
+
+        blob = StringIO()
+        json.dump(schema, blob)
+        response.headers['Content-Type'] = 'application/json'
         response.headers['Content-Disposition'] = (
-            'inline; filename="{0}.xlsx"'.format(
+            'inline; filename="{0}.json"'.format(
                 dataset_type))
         return blob.getvalue()
 
