@@ -247,7 +247,7 @@ class UploadController(PackageController):
                     if field['datastore_id'] in ex_record:
                         example[field['datastore_id']] = ex_record[
                             field['datastore_id']]
-                resource['example'] = example
+                resource['example_record'] = example
 
         blob = StringIO()
         json.dump(schema, blob, indent=2)
