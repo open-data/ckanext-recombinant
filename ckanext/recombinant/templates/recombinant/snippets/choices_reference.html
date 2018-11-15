@@ -2,9 +2,18 @@
 
   <div class="form-group control-medium">
     <div class="form-control">
-      <a class="button" href="{% url_for 'recombinant_data_dictionary',
-        dataset_type=dataset_type %}"><span class="glyphicon glyphicon-download-alt"></span>
-        {{ _('Download data dictionary') }}</a>
+      <a class="button" href="{{ h.url_for(
+        controller='ckanext.recombinant.controller:UploadController',
+        action='data_dictionary',
+        dataset_type=dataset_type) }}"><span class="glyphicon glyphicon-download-alt"></span>
+        {{ _('Download data dictionary') }} XLSX</a>
+    </div>
+    <div class="form-control">
+      <a class="button" href="{{ h.url_for(
+        controller='ckanext.recombinant.controller:UploadController',
+        action='schema_json',
+        dataset_type=dataset_type) }}"><span class="glyphicon glyphicon-download-alt"></span>
+        {{ _('Download data dictionary') }} JSON</a>
     </div>
   </div>
 
