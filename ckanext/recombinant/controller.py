@@ -250,7 +250,7 @@ class UploadController(PackageController):
                 resource['example'] = example
 
         blob = StringIO()
-        json.dump(schema, blob)
+        json.dump(schema, blob, indent=2)
         response.headers['Content-Type'] = 'application/json'
         response.headers['Content-Disposition'] = (
             'inline; filename="{0}.json"'.format(
