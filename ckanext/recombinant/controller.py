@@ -249,13 +249,11 @@ class UploadController(PackageController):
                             field['datastore_id']]
                 resource['example_record'] = example
 
-        blob = StringIO()
-        json.dump(schema, blob, indent=2)
         response.headers['Content-Type'] = 'application/json'
         response.headers['Content-Disposition'] = (
             'inline; filename="{0}.json"'.format(
                 dataset_type))
-        return blob.getvalue()
+        return json.dumps(schema, indent=2, ensure_ascii=False).encode('utf-8')
 
 
     def type_redirect(self, resource_name):
