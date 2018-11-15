@@ -1,3 +1,5 @@
+import re
+
 import openpyxl
 
 from ckanext.recombinant.datatypes import canonicalize
@@ -53,7 +55,9 @@ def _filter_bumf(rowiter, header_rows):
     i = header_rows
     for row in rowiter:
         i += 1
-        values = [c.value for c in row]
+        values = [
+            unescape(c.value) if isinstance(c.value, unicode) else c.value
+            for c in row]
         # return next non-empty row
         if not all(_is_bumf(v) for v in values):
             yield i, values
@@ -113,3 +117,22 @@ def get_records(rows, fields, primary_key_fields, full_text_choice_fields):
             raise BadExcelData(u'Row {0}:'.format(n) + u' ' + e.message)
 
     return records
+
+
+# XXX remove this function once we upgrade to openpyxl 2.4
+def unescape(value):
+    """
+    copy of unescape from openpyxl.utils.escape, openpyxl version 2.4.x
+    """
+    ESCAPED_REGEX = re.compile("_x([0-9A-Fa-f]{4})_")
+
+    def _sub(match):
+        """
+        Callback to unescape chars
+        """
+        return chr(int(match.group(1), 16))
+
+    if "_x" in value:
+        value = ESCAPED_REGEX.sub(_sub, value)
+
+    return value
