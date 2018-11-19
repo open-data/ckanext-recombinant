@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 Excel v3 template and data-dictionary generation code
 """
@@ -85,6 +86,8 @@ REF_VALUE_STYLE = {
     'Alignment': {'wrapText': True, 'vertical': 'top'}}
 REF_PAPER_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFFFFFFF'}}
+TYPE_HERE_STYLE = {
+    'Font': {'bold': True, 'size': 16}}
 
 
 def excel_template(dataset_type, org):
@@ -235,6 +238,16 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
 
     sheet.merge_cells(EXAMPLE_MERGE)
     fill_cell(sheet, EXAMPLE_ROW, 1, _('e.g.'), example_style)
+
+    fill_cell(
+        sheet,
+        DATA_FIRST_ROW,
+        RPAD_COL_NUM,
+        u'=IF(r{rnum}!{col}{row},"","▶")'.format(
+            rnum=resource_num,
+            col=RPAD_COL,
+            row=DATA_FIRST_ROW),
+        TYPE_HERE_STYLE)
 
     fill_cell(
         sheet,
