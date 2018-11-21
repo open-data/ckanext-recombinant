@@ -332,7 +332,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
         ex_cell.number_format = xl_format
         ex_cell.alignment = alignment
 
-        _append_field_ref_rows(refs, field, '#{sheet}!{col}{row}'.format(
+        _append_field_ref_rows(refs, field, "#'{sheet}'!{col}{row}".format(
             sheet=sheet.title, col=col_letter, row=CHEADINGS_ROW))
 
         if field['datastore_id'] in choice_fields:
