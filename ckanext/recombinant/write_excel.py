@@ -485,14 +485,16 @@ def _populate_reference_sheet(sheet, geno, refs):
     for row_number, (style, ref_line) in enumerate(refs, REF_FIRST_ROW - 1):
         link = None
         if len(ref_line) == 2:
-            value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH)
+            value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH).strip()
             ref_line = [ref_line[0], value]
         elif len(ref_line) == 1 and isinstance(ref_line[0], tuple):
             link, value = ref_line[0]
+            value = value.strip()
             ref_line = [value]
 
         for cnum, cval in enumerate(ref_line, REF_KEY_COL_NUM):
-            sheet.cell(row=row_number, column=cnum).value = cval.replace('\n', '\r\n')
+            sheet.cell(row=row_number, column=cnum).value = (
+                cval.strip().replace('\n', '\r\n'))
 
         if len(ref_line) == 2:
             sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
