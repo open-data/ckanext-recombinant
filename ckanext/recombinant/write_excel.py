@@ -116,7 +116,7 @@ def excel_template(dataset_type, org):
     if version == 2:
         _populate_reference_sheet_v2(sheet, chromo, refs)
     elif version == 3:
-        _populate_reference_sheet(sheet, chromo, refs)
+        _populate_reference_sheet(sheet, geno, refs)
     sheet.title = 'reference'
     sheet.protection.enabled = True
 
@@ -457,10 +457,10 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
 def _populate_reference_sheet(sheet, geno, refs):
     field_count = 1
 
-    edge_style = geno.get('excel_edge_style', DEFAULT_EDGE_STYLE)
-    header1_style = geno.get('excel_header_style', DEFAULT_HEADER_STYLE)
-    header2_style = geno.get('excel_ref_header2_style', DEFAULT_REF_HEADER2_STYLE)
-    choice_style = geno.get('excel_example_style', DEFAULT_EXAMPLE_STYLE)
+    edge_style = dict(DEFAULT_EDGE_STYLE, **geno.get('excel_edge_style', {}))
+    header1_style = dict(DEFAULT_HEADER_STYLE, **geno.get('excel_header_style', {}))
+    header2_style = dict(DEFAULT_REF_HEADER2_STYLE, **geno.get('excel_header_style', {}))
+    choice_style = dict(DEFAULT_EXAMPLE_STYLE, **geno.get('excel_example_style', {}))
 
     fill_cell(
         sheet,
