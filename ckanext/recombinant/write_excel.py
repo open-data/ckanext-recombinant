@@ -596,8 +596,8 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         if pk_field:
             # repeated primary (composite) keys are errors
             pk_fmla = 'SUMPRODUCT(' + ','.join(
-                'TRIM({sheet}!{col}{top}:{col}{{num}})'
-                '=TRIM({sheet}!{col}{{num}})'.format(
+                "TRIM('{sheet}'!{col}{top}:{col}{{num}})"
+                "=TRIM('{sheet}'!{col}{{num}})".format(
                     sheet=chromo['resource_name'],
                     col=openpyxl.cell.get_column_letter(cn),
                     top=DATA_FIRST_ROW)
@@ -614,14 +614,14 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             if key != 'cell' and key != 'default_formula')
         if fmla_keys:
             fmla_values = {
-                f['datastore_id']: '{sheet}!{col}{{num}}'.format(
+                f['datastore_id']: "'{sheet}'!{col}{{num}}".format(
                     sheet=chromo['resource_name'],
                     col=openpyxl.cell.get_column_letter(cn))
                 for cn, f in template_cols_fields(chromo)
                 if f['datastore_id'] in fmla_keys}
 
         col = openpyxl.cell.get_column_letter(col_num)
-        cell = '{sheet}!{col}{{num}}'.format(
+        cell = "'{sheet}'!{col}{{num}}".format(
             sheet=chromo['resource_name'],
             col=col)
         fmla = '=NOT(ISBLANK({cell}))*(' + fmla + ')'
@@ -679,7 +679,7 @@ def _populate_excel_r_sheet(sheet, chromo):
             continue
 
         col = openpyxl.cell.get_column_letter(col_num)
-        cell = '{sheet}!{col}{{num}}'.format(
+        cell = "'{sheet}'!{col}{{num}}".format(
             sheet=chromo['resource_name'],
             col=col)
 
@@ -689,7 +689,7 @@ def _populate_excel_r_sheet(sheet, chromo):
         fmla_values = {}
         if fmla_keys:
             fmla_values = {
-                f['datastore_id']: '{sheet}!{col}{{num}}'.format(
+                f['datastore_id']: "'{sheet}'!{col}{{num}}".format(
                     sheet=chromo['resource_name'],
                     col=openpyxl.cell.get_column_letter(cn))
                 for cn, f in template_cols_fields(chromo)
@@ -712,7 +712,7 @@ def _populate_excel_r_sheet(sheet, chromo):
 
     for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RPAD_COL_NUM).value = (
-            '=SUMPRODUCT(LEN({sheet}!{colA}{row}:{colZ}{row}))>0'.format(
+            "=SUMPRODUCT(LEN('{sheet}'!{colA}{row}:{colZ}{row}))>0".format(
                 sheet=chromo['resource_name'],
                 colA=DATA_FIRST_COL,
                 colZ=col,
