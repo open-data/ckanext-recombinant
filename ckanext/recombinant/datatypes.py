@@ -34,7 +34,7 @@ datastore_type = {
 
 
 def canonicalize(
-        dirty, dstore_tag, primary_key, full_text_choice_field=False):
+        dirty, dstore_tag, primary_key, choice_field=False):
     """
     Canonicalize dirty input from xlrd to align with
     recombinant.json datastore type specified in dstore_tag.
@@ -50,8 +50,9 @@ def canonicalize(
     :type dstore_tag: str
     :param primary_key: True if this field is part of the PK
     :type primary_key: bool
-    :padam full_text_choice_field: True if this field is a full-text-choice field
-    :type full_text_choice_field: bool
+    :padam choice_field: 'full' if this field is a full-text choice field,
+        True if this is a normal choice field, False otherwise
+    :type choice_field: 'full', True or False
 
     :return: Canonicalized cell input
     :rtype: unicode, None or list of unicode values (_text)
@@ -107,8 +108,10 @@ def canonicalize(
 
     dirty = unicode(dirty)
 
-    if full_text_choice_field:  # "code:full-text" style, just need code
-        dirty = dirty.split(':')[0]
+    if choice_field == 'full':  # "code:full-text" style, just need code
+        dirty = dirty.split(':')[0].strip()
+    elif choice_field:
+        dirty = dirty.strip()
 
     # accidental control characters and whitespace around primary keys
     # leads to unpleasantness

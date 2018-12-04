@@ -219,3 +219,10 @@ def test_primary_key():
     assert_equal(canonicalize('\t OGP-324\n', dt, True), 'OGP-324')
     assert_equal(canonicalize('OGP-\r\n\r\n324', dt, True), 'OGP-324')
     assert_equal(canonicalize('OGP- 324', dt, True), 'OGP- 324')
+
+def test_choice_field():
+    assert_equal(canonicalize('C1 ', 'text', False, False), 'C1 ')
+    assert_equal(canonicalize('C1 ', 'text', False, True), 'C1')
+    assert_equal(canonicalize(' C1: Value', 'text', False, False), ' C1: Value')
+    assert_equal(canonicalize(' C1: Value', 'text', False, True), 'C1: Value')
+    assert_equal(canonicalize(' C1: Value', 'text', False, 'full'), 'C1')
