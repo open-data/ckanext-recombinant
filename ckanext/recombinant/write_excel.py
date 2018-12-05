@@ -583,11 +583,11 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         elif crange and field.get('excel_full_text_choices', False):
             # 'code:text'-style choices, accept 'code' and 'code:anything'
             fmla = (
-                'COUNTIF({r},LEFT({{cell}},FIND(":",{{cell}}&":")-1)&":*")=0'
+                'COUNTIF({r},TRIM(LEFT({{cell}},FIND(":",{{cell}}&":")-1))&":*")=0'
                 ).format(r=crange)
         elif crange:
             # single choice
-            fmla = 'COUNTIF({r},{{cell}})=0'.format(r=crange)
+            fmla = 'COUNTIF({r},TRIM({{cell}}))=0'.format(r=crange)
 
         user_fmla = field.get('excel_error_formula')
         if user_fmla:
