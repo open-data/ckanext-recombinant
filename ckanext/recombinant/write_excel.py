@@ -129,11 +129,13 @@ def excel_template(dataset_type, org):
         _populate_excel_e_sheet(sheet, chromo, cranges)
         sheet.title = 'e{i}'.format(i=i)
         sheet.protection.enabled = True
+        sheet.sheet_state = 'hidden'
 
         sheet = book.create_sheet()
         _populate_excel_r_sheet(sheet, chromo)
         sheet.title = 'r{i}'.format(i=i)
         sheet.protection.enabled = True
+        sheet.sheet_state = 'hidden'
     return book
 
 
