@@ -597,6 +597,10 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
                 fmla = 'FALSE()'
             fmla = user_fmla.replace('{default_formula}', '(' + fmla + ')')
 
+        if field.get('excel_error_cell_filter_formula'):
+            fmla = fmla.replace(
+                '{cell}', '(' + field.get('excel_error_cell_filter_formula') + ')')
+
         if pk_field:
             # repeated primary (composite) keys are errors
             pk_fmla = 'SUMPRODUCT(' + ','.join(
