@@ -64,7 +64,8 @@ class RecombinantPlugin(
             conditions=dict(method=['POST']),
             controller='ckanext.recombinant.controller:UploadController')
         map.connect('recombinant_template',
-            '/recombinant-template/{id}', action='template',
+            '/recombinant-template/{dataset_type}_{lang}_{owner_org}.xlsx',
+            action='template',
             controller='ckanext.recombinant.controller:UploadController')
         map.connect('recombinant_data_dictionary',
             '/recombinant-dictionary/{dataset_type}',
