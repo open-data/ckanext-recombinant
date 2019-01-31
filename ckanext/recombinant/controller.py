@@ -187,9 +187,9 @@ class UploadController(PackageController):
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response.headers['Content-Disposition'] = (
             'inline; filename="{0}_{1}_{2}.xlsx"'.format(
-                dataset['organization']['name'],
+                dataset['owner_org'],
                 lang,
-                dataset['type']))
+                dataset['dataset_type']))
         return blob.getvalue()
 
 
