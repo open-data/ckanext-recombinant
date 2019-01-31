@@ -166,21 +166,30 @@ class UploadController(PackageController):
             ))
 
 
-    def template(self, id):
-        lc = ckanapi.LocalCKAN(username=c.user)
-        dataset = lc.action.package_show(id=id)
-        org = lc.action.organization_show(
-            id=dataset['owner_org'],
-            include_datasets=False)
+    def template(self, dataset_type, lang, owner_org):
+        if lang != h.lang():
+            abort(404, _('Not found'))
 
-        book = excel_template(dataset['type'], org)
+        lc = ckanapi.LocalCKAN(username=c.user)
+        try:
+            dataset = lc.action.recombinant_show(
+                dataset_type=dataset_type,
+                owner_org=owner_org)
+            org = lc.action.organization_show(
+                id=owner_org,
+                include_datasets=False)
+        except NotFound:
+            abort(404, _('Not found'))
+
+        book = excel_template(dataset_type, org)
         blob = StringIO()
         book.save(blob)
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response.headers['Content-Disposition'] = (
-            'inline; filename="{0}.{1}.xlsx"'.format(
-                dataset['organization']['name'],
-                dataset['type']))
+            'inline; filename="{0}_{1}_{2}.xlsx"'.format(
+                dataset['owner_org'],
+                lang,
+                dataset['dataset_type']))
         return blob.getvalue()
 
 
