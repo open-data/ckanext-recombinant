@@ -1,0 +1,103 @@
+{
+  "$id": "https://github.com/open-data/ckanext-recombinant/blob/recombinant-schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "json-schema for ckanext-recombinant definition files",
+  "type": "object",
+  "required": ["dataset_type", "title", "notes"],
+  "properties": {
+    "dataset_type": {
+      "type": "string",
+      "pattern": "^[\\w-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "upload_warn": {
+      "type": "string"
+    },
+    "upload_info": {
+      "type": "string"
+    },
+    "template_version": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 3
+    },
+    "datastore_text_types": {
+      "type": "boolean"
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "resource_name": {
+            "type": "string",
+            "pattern": "^[\\w-]+$"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/recombinant-field"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "resource_name",
+          "fields"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "recombinant-text": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[\\w-]+$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "recombinant-field": {
+      "type": "object",
+      "required": ["datastore_id", "label", "description", "datastore_type"],
+      "properties": {
+        "datastore_id": {
+          "type": "string",
+          "pattern": "^[\\w-]+$"
+        },
+        "label": {
+          "$ref": "#/definitions/recombinant-text"
+        },
+        "excel_heading": {
+          "$ref": "#/definitions/recombinant-text"
+        },
+        "description": {
+          "$ref": "#/definitions/recombinant-text"
+        },
+        "excel_required": {
+          "type": "boolean"
+        },
+        "datastore_type": {
+          "type": "string",
+          "enum": ["text", "int", "year", "month", "date", "bigint", "numeric", "money", "boolean", "_text", "timestamp"]
+        }
+      }
+    }
+  }
+}
