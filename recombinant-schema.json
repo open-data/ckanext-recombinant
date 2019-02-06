@@ -76,6 +76,16 @@
     "recombinant-field": {
       "type": "object",
       "required": ["datastore_id", "label", "description", "datastore_type"],
+      "not": {
+        "allOf": [
+          {
+            "required": ["choices"]
+          },
+          {
+            "required": ["choices_file"]
+          }
+        ]
+      },
       "properties": {
         "datastore_id": {
           "type": "string",
@@ -96,6 +106,18 @@
         "datastore_type": {
           "type": "string",
           "enum": ["text", "int", "year", "month", "date", "bigint", "numeric", "money", "boolean", "_text", "timestamp"]
+        },
+        "choices_file": {
+          "type": "string"
+        },
+        "choices": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[\\w-]+$"
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/recombinant-text"
+          }
         }
       }
     }
