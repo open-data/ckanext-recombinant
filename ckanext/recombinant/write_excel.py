@@ -574,7 +574,8 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         elif field['datastore_type'] == 'numeric':
             fmla = 'NOT(ISNUMBER({cell}))'
         elif field['datastore_type'] == 'money':
-            fmla = 'NOT(IFERROR(ROUND({cell},2)={cell},FALSE))'
+            fmla = (
+                'NOT(IFERROR(ROUND(VALUE({cell}),2)=VALUE({cell}),FALSE))')
         elif crange and field['datastore_type'] == '_text':
             # multiple comma-separated choices
             # validate by counting choices against matches
