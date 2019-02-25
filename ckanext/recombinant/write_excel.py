@@ -221,10 +221,8 @@ def _build_styles(book, geno):
     """
     Add styles to workbook
     """
-    edge_style = build_named_style(book, 'reco_edge', dict(
+    build_named_style(book, 'reco_edge', dict(
         DEFAULT_EDGE_STYLE, **geno.get('excel_edge_style', {})))
-    build_named_style(book, 'reco_required', dict(
-        edge_style, **geno.get('excel_required_style', {})))
     build_named_style(book, 'reco_header', dict(
         DEFAULT_HEADER_STYLE, **geno.get('excel_header_style', {})))
     build_named_style(book, 'reco_header2', dict(
@@ -256,6 +254,19 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
 
     cranges = {}
     data_num_rows = chromo.get('excel_data_num_rows', DEFAULT_DATA_NUM_ROWS)
+
+    required_style = dict(
+        dict(DEFAULT_EDGE_STYLE, **geno.get('excel_edge_style', {})),
+        **geno.get('excel_required_style', {}))
+    error_style = dict(
+        DEFAULT_ERROR_STYLE, **geno.get('excel_error_style', {}))
+    header_style = dict(
+        DEFAULT_HEADER_STYLE, **geno.get('excel_header_style', {}))
+    cheadings_style = dict(
+        DEFAULT_CHEADING_STYLE,
+        **geno.get('excel_column_heading_style', {}))
+    example_style = dict(
+        DEFAULT_EXAMPLE_STYLE, **geno.get('excel_example_style', {}))
 
     # create rows so we can set all heights
     for i in xrange(1, DATA_FIRST_ROW + data_num_rows):
@@ -429,12 +440,12 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
 
     sheet.freeze_panes = sheet[FREEZE_PANES]
 
-    apply_styles(header_style, sheet.row_dimensions[HEADER_ROW])
-    apply_styles(cheadings_style, sheet.row_dimensions[CHEADINGS_ROW])
-    apply_styles(cheadings_style, sheet.row_dimensions[CSTATUS_ROW])
-    apply_styles(example_style, sheet.row_dimensions[EXAMPLE_ROW])
+    apply_style(sheet.row_dimensions[HEADER_ROW], header_style)
+    apply_style(sheet.row_dimensions[CHEADINGS_ROW], cheadings_style)
+    apply_style(sheet.row_dimensions[CSTATUS_ROW], cheadings_style)
+    apply_style(sheet.row_dimensions[EXAMPLE_ROW], example_style)
     for (c,) in sheet[EDGE_RANGE]:
-        apply_styles(edge_style, c)
+        c.style = 'reco_edge'
 
     # trying to set the active cell (not working yet)
     select = "{col}{row}".format(col=DATA_FIRST_COL, row=DATA_FIRST_ROW)
@@ -627,7 +638,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
                 "TRIM('{sheet}'!{col}{top}:{col}{{num}})"
                 "=TRIM('{sheet}'!{col}{{num}})".format(
                     sheet=chromo['resource_name'],
-                    col=openpyxl.cell.get_column_letter(cn),
+                    col=get_column_letter(cn),
                     top=DATA_FIRST_ROW)
                 for cn, f in template_cols_fields(chromo)
                 if f['datastore_id'] in chromo['datastore_primary_key']
@@ -769,7 +780,7 @@ def fill_cell(sheet, row, column, value, style):
     if isinstance(style, basestring):
         c.style = style
     else:
-        apply_style(c.style, styles)
+        apply_style(c, style)
 
 
 def build_named_style(book, name, config):
@@ -777,7 +788,7 @@ def build_named_style(book, name, config):
     :param book: workbook to assign style
     :param name: style name
     :param config: dict with style configuration
-    :return: config
+    :return: None
     """
     style = openpyxl.styles.NamedStyle(name=name)
     apply_style(style, config)
