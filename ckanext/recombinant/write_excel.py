@@ -102,6 +102,9 @@ def excel_template(dataset_type, org):
     sheet = book.active
     refs = []
     choice_ranges = []
+
+    if version == 3:
+        _build_styles(book, geno)
     for rnum, chromo in enumerate(geno['resources'], 1):
         if version == 2:
             _populate_excel_sheet_v2(sheet, chromo, org, refs)
@@ -162,6 +165,7 @@ def excel_data_dictionary(geno):
     from ckan.lib.i18n import handle_request, get_lang
     from ckan.common import c, request
 
+    _build_styles(book, geno)
     for lang in config['ckan.locales_offered'].split():
         if sheet is None:
             sheet = book.create_sheet()
@@ -211,6 +215,30 @@ def wrap_text_to_width(text, width):
         for line in text.split('\n'))
 
 
+def _build_styles(book, geno):
+    """
+    Add styles to workbook
+    """
+    edge_style = build_named_style(book, 'reco_edge', dict(
+        DEFAULT_EDGE_STYLE, **geno.get('excel_edge_style', {})))
+    build_named_style(book, 'reco_required', dict(
+        edge_style, **geno.get('excel_required_style', {})))
+    build_named_style(book, 'reco_header', dict(
+        DEFAULT_HEADER_STYLE, **geno.get('excel_header_style', {})))
+    build_named_style(book, 'reco_header2', dict(
+        DEFAULT_REF_HEADER2_STYLE, **geno.get('excel_header_style', {})))
+    build_named_style(book, 'reco_cheading', dict(
+        DEFAULT_CHEADING_STYLE, **geno.get('excel_column_heading_style', {})))
+    build_named_style(book, 'reco_example', dict(
+        DEFAULT_EXAMPLE_STYLE, **geno.get('excel_example_style', {})))
+    build_named_style(book, 'reco_error', dict(
+        DEFAULT_ERROR_STYLE, **geno.get('excel_error_style', {})))
+    build_named_style(book, 'reco_ref_number', REF_NUMBER_STYLE)
+    build_named_style(book, 'reco_ref_title', REF_TITLE_STYLE)
+    build_named_style(book, 'reco_ref_attr', REF_ATTR_STYLE)
+    build_named_style(book, 'reco_ref_value', REF_VALUE_STYLE)
+
+
 def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     """
     Format openpyxl sheet for the resource definition chromo and org.
@@ -224,13 +252,6 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     """
     sheet.title = chromo['resource_name']
 
-    edge_style = dict(DEFAULT_EDGE_STYLE, **geno.get('excel_edge_style', {}))
-    required_style = dict(edge_style, **geno.get('excel_required_style', {}))
-    header_style = dict(DEFAULT_HEADER_STYLE, **geno.get('excel_header_style', {}))
-    cheadings_style = dict(DEFAULT_CHEADING_STYLE, **geno.get('excel_column_heading_style', {}))
-    example_style = dict(DEFAULT_EXAMPLE_STYLE, **geno.get('excel_example_style', {}))
-    error_style = dict(DEFAULT_ERROR_STYLE, **geno.get('excel_error_style', {}))
-
     cranges = {}
     data_num_rows = chromo.get('excel_data_num_rows', DEFAULT_DATA_NUM_ROWS)
 
@@ -239,7 +260,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
         sheet.cell(row=i, column=1).value = None
 
     sheet.merge_cells(EXAMPLE_MERGE)
-    fill_cell(sheet, EXAMPLE_ROW, 1, _('e.g.'), example_style)
+    fill_cell(sheet, EXAMPLE_ROW, 1, _('e.g.'), 'reco_example')
 
     fill_cell(
         sheet,
@@ -257,7 +278,7 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
         DATA_FIRST_COL_NUM,
         recombinant_language_text(chromo['title'])
             + u' \N{em dash} ' + org_title_lang_hack(org['title']),
-        header_style)
+        'reco_header')
 
     sheet.cell(row=CODE_ROW, column=1).value = 'v3'  # template version
     # allow only upload to this org
@@ -276,16 +297,18 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
             cheadings_dimensions.height,
             field_heading.count('\n') * LINE_HEIGHT + CHEADINGS_HEIGHT)
 
-        col_heading_style = cheadings_style
+        col_heading_style = 'reco_cheading'
         if 'excel_column_heading_style' in field:
             # use geno column heading style as base, just override keys
             col_heading_style = dict(
-                cheadings_style,
+                dict(
+                    DEFAULT_CHEADING_STYLE,
+                    **geno.get('excel_column_heading_style', {})),
                 **field['excel_column_heading_style'])
-            apply_styles(col_heading_style, sheet.cell(
-                row=HEADER_ROW, column=col_num))
-            apply_styles(col_heading_style, sheet.cell(
-                row=CSTATUS_ROW, column=col_num))
+            apply_style(sheet.cell(
+                row=HEADER_ROW, column=col_num), col_heading_style)
+            apply_style(sheet.cell(
+                row=CSTATUS_ROW, column=col_num), col_heading_style)
 
         fill_cell(
             sheet,
@@ -304,9 +327,8 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
             sheet,
             EXAMPLE_ROW,
             col_num,
-            u','.join(example) if isinstance(example, list)
-            else example,
-            example_style)
+            u','.join(example) if isinstance(example, list) else example,
+            'reco_example')
 
         col_letter = openpyxl.cell.get_column_letter(col_num)
         col_letter_before = openpyxl.cell.get_column_letter(max(1, col_num-1))
@@ -459,27 +481,24 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
 def _populate_reference_sheet(sheet, geno, refs):
     field_count = 1
 
-    edge_style = dict(DEFAULT_EDGE_STYLE, **geno.get('excel_edge_style', {}))
     header1_style = dict(DEFAULT_HEADER_STYLE, **geno.get('excel_header_style', {}))
     header2_style = dict(DEFAULT_REF_HEADER2_STYLE, **geno.get('excel_header_style', {}))
-    choice_style = dict(DEFAULT_EXAMPLE_STYLE, **geno.get('excel_example_style', {}))
-
     fill_cell(
         sheet,
         REF_HEADER1_ROW,
         REF_KEY_COL_NUM,
         recombinant_language_text(geno['title']),
-        header1_style)
-    apply_styles(header1_style, sheet.row_dimensions[REF_HEADER1_ROW])
+        'reco_header')
+    apply_style(sheet.row_dimensions[REF_HEADER1_ROW], header1_style)
     fill_cell(
         sheet,
         REF_HEADER2_ROW,
         REF_KEY_COL_NUM,
         _('Reference'),
-        header2_style)
-    apply_styles(header2_style, sheet.row_dimensions[REF_HEADER2_ROW])
+        'reco_header2')
+    apply_style(sheet.row_dimensions[REF_HEADER2_ROW], header2_style)
     for (c,) in sheet[REF_EDGE_RANGE]:
-        apply_styles(edge_style, c)
+        c.style = 'reco_edge'
     sheet.row_dimensions[REF_HEADER1_ROW].height = REF_HEADER1_HEIGHT
     sheet.row_dimensions[REF_HEADER2_ROW].height = REF_HEADER2_HEIGHT
 
@@ -513,27 +532,27 @@ def _populate_reference_sheet(sheet, geno, refs):
                 row_number,
                 REF_FIELD_NUM_COL_NUM,
                 field_count,
-                REF_NUMBER_STYLE)
+                'reco_ref_number')
             title_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
             if link:
                 title_cell.hyperlink = link
-            apply_styles(REF_TITLE_STYLE, title_cell)
+            title_cell.style = 'reco_ref_title'
             sheet.row_dimensions[row_number].height = REF_FIELD_TITLE_HEIGHT
             field_count += 1
         elif style == 'choice':
             pad_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
-            apply_styles(choice_style, pad_cell)
-            apply_styles(choice_style, key_cell)
-            apply_styles(choice_style, value_cell)
+            pad_cell.style = 'reco_example'
+            key_cell.style = 'reco_example'
+            value_cell.style = 'reco_example'
         elif style == 'attr':
-            apply_styles(REF_ATTR_STYLE, key_cell)
-            apply_styles(REF_VALUE_STYLE, value_cell)
+            key_cell.style = 'reco_ref_attr'
+            value_cell.style = 'reco_ref_value'
         elif style == 'choice heading':
-            apply_styles(REF_ATTR_STYLE, key_cell)
-            apply_styles(REF_VALUE_STYLE, value_cell)
+            key_cell.style = 'reco_ref_attr'
+            value_cell.style = 'reco_ref_value'
             sheet.row_dimensions[row_number].height = REF_CHOICE_HEADING_HEIGHT
 
-        apply_styles(REF_PAPER_STYLE, sheet.row_dimensions[row_number])
+        apply_style(sheet.row_dimensions[row_number], REF_PAPER_STYLE)
 
     sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
     sheet.cell(row=1, column=RPAD_COL_NUM).value = None  # make sure rpad col exists
@@ -734,19 +753,44 @@ def _populate_excel_r_sheet(sheet, chromo):
                 colZ=col,
                 row=i))
 
-def fill_cell(sheet, row, column, value, styles):
+def fill_cell(sheet, row, column, value, style):
+    """
+    :param sheet: worksheet
+    :param row: 1-based row number
+    :param column: 1-based column number
+    :param value: value to store (unicode, int, date, ..)
+    :param style: style name as string or dict for apply_style
+    :return: None
+    """
     c = sheet.cell(row=row, column=column)
     if isinstance(value, basestring):
         value = value.replace(u'\n', u'\r\n')
     c.value = value
-    apply_styles(styles, c)
+    if isinstance(style, basestring):
+        c.style = style
+    else:
+        apply_style(c.style, styles)
 
 
-def apply_styles(config, target):
+def build_named_style(book, name, config):
     """
-    apply styles from config to target
+    :param book: workbook to assign style
+    :param name: style name
+    :param config: dict with style configuration
+    :return: config
+    """
+    style = openpyxl.styles.NamedStyle(name=name)
+    apply_style(style, config)
+    book.add_named_style(style)
+
+
+def apply_style(target, config):
+    """
+    apply style from config to target
 
     currently supports PatternFill, Font, Alignment
+    :param target: object to assign
+    :param config:
     """
     pattern_fill = config.get('PatternFill')
     if pattern_fill:
@@ -757,6 +801,7 @@ def apply_styles(config, target):
     alignment = config.get('Alignment')
     if alignment:
         target.alignment = openpyxl.styles.Alignment(**alignment)
+
 
 def org_title_lang_hack(title):
     """
