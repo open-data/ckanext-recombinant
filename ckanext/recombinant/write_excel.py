@@ -9,6 +9,7 @@ import string
 import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.formatting.rule import FormulaRule
+from openpyxl.styles import NamedStyle
 
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
@@ -112,7 +113,7 @@ def excel_template(dataset_type, org):
             _populate_excel_sheet_v2(sheet, chromo, org, refs)
         elif version == 3:
             choice_ranges.append(_populate_excel_sheet(
-                sheet, geno, chromo, org, refs, rnum))
+                book, sheet, geno, chromo, org, refs, rnum))
             sheet.protection.enabled = True
             sheet.protection.formatRows = False
             sheet.protection.formatColumns = False
@@ -239,7 +240,7 @@ def _build_styles(book, geno):
     build_named_style(book, 'reco_ref_value', REF_VALUE_STYLE)
 
 
-def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
+def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
     """
     Format openpyxl sheet for the resource definition chromo and org.
     (Version 3)
@@ -358,11 +359,14 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
 
         xl_format = datastore_type[field['datastore_type']].xl_format
         alignment = openpyxl.styles.Alignment(wrap_text=True)
-        protection = openpyxl.styles.Protection(locked=False)
+        col_style = NamedStyle(
+            name='reco_{0}{1}'.format(resource_num, col_letter),
+            number_format=xl_format,
+            alignment=alignment,
+            protection=openpyxl.styles.Protection(locked=False))
+        book.add_named_style(col_style)
         for (c,) in sheet[validation_range]:
-            c.number_format = xl_format
-            c.alignment = alignment
-            c.protection = protection
+            c.style = col_style
         ex_cell = sheet.cell(row=EXAMPLE_ROW, column=col_num)
         ex_cell.number_format = xl_format
         ex_cell.alignment = alignment
@@ -790,7 +794,7 @@ def build_named_style(book, name, config):
     :param config: dict with style configuration
     :return: None
     """
-    style = openpyxl.styles.NamedStyle(name=name)
+    style = NamedStyle(name=name)
     apply_style(style, config)
     book.add_named_style(style)
 
