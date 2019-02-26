@@ -366,7 +366,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
             protection=openpyxl.styles.Protection(locked=False))
         book.add_named_style(col_style)
         for (c,) in sheet[validation_range]:
-            c.style = col_style
+            c.style = col_style.name
         ex_cell = sheet.cell(row=EXAMPLE_ROW, column=col_num)
         ex_cell.number_format = xl_format
         ex_cell.alignment = alignment
