@@ -633,7 +633,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         cell = "'{sheet}'!{col}{{num}}".format(
             sheet=chromo['resource_name'],
             col=col)
-        fmla = '=NOT(ISBLANK({cell}))*(' + fmla + ')'
+        fmla = '=NOT({cell}="")*(' + fmla + ')'
         for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
             try:
                 sheet.cell(row=i, column=col_num).value = fmla.format(
@@ -681,9 +681,9 @@ def _populate_excel_r_sheet(sheet, chromo):
         pk_field = field['datastore_id'] in chromo['datastore_primary_key']
 
         if fmla:
-            fmla = '={has_data}*ISBLANK({cell})*(' + fmla +')'
+            fmla = '={has_data}*({cell}="")*(' + fmla +')'
         elif pk_field or field.get('excel_required', False):
-            fmla = '={has_data}*ISBLANK({cell})'
+            fmla = '={has_data}*({cell}="")'
         else:
             continue
 
