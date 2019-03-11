@@ -605,11 +605,11 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         if pk_field:
             # repeated primary (composite) keys are errors
             pk_fmla = 'SUMPRODUCT(' + ','.join(
-                "TRIM('{sheet}'!{col}{top}:{col}{{num}})"
+                "TRIM('{sheet}'!{col}{top_m1}:{col}{{num}})"
                 "=TRIM('{sheet}'!{col}{{num}})".format(
                     sheet=chromo['resource_name'],
                     col=openpyxl.cell.get_column_letter(cn),
-                    top=DATA_FIRST_ROW)
+                    top_m1=DATA_FIRST_ROW-1)
                 for cn, f in template_cols_fields(chromo)
                 if f['datastore_id'] in chromo['datastore_primary_key']
                 ) +')>1'
