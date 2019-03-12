@@ -309,8 +309,12 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
             example_style)
 
         col_letter = openpyxl.cell.get_column_letter(col_num)
-        col_letter_before = openpyxl.cell.get_column_letter(max(1, col_num-1))
-        col_letter_after = openpyxl.cell.get_column_letter(col_num+1)
+
+        # jump to first error/required cell in column
+        sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
+            '=IF(e{rnum}!{col}{row}>0,HYPERLINK("#{col}"&e{rnum}!{col}{row},"")'
+            ',IF(r{rnum}!{col}{row}>0,HYPERLINK("#{col}"&r{rnum}!{col}{row},""),""))'
+            .format(rnum=resource_num, col=col_letter, row=CSTATUS_ROW))
 
         col = sheet.column_dimensions[col_letter]
         if 'excel_column_width' in field:
@@ -401,6 +405,14 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
     for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.row_dimensions[i].height = chromo.get(
             'excel_data_height', DEFAULT_DATA_HEIGHT)
+
+        # jump to first error/required cell in row
+        sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
+            '=IF(e{rnum}!{col}{row}>0,'
+                'HYPERLINK("#"&ADDRESS({row},e{rnum}!{col}{row}),""),'
+                'IF(r{rnum}!{col}{row}>0,'
+                    'HYPERLINK("#"&ADDRESS({row},r{rnum}!{col}{row}),""),""))'
+            .format(rnum=resource_num, col=RSTATUS_COL, row=i))
 
     sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
     sheet.column_dimensions[RPAD_COL].width = RPAD_WIDTH
@@ -644,9 +656,11 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
                 assert 0, (fmla, fmla_values)
 
         sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
-            '=SUM({col}{row1}:{col}{rowN})'.format(
+            '=IFERROR(MATCH(TRUE,INDEX({col}{row1}:{col}{rowN}<>0,),)+{row0},0)'
+            .format(
                 col=col,
                 row1=DATA_FIRST_ROW,
+                row0=DATA_FIRST_ROW - 1,
                 rowN=DATA_FIRST_ROW + data_num_rows - 1))
 
     if col is None:
@@ -654,8 +668,9 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
 
     for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
-            '=SUM({colA}{row}:{colZ}{row})'.format(
+            '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'.format(
                 colA=DATA_FIRST_COL,
+                col0=DATA_FIRST_COL_NUM - 1,
                 colZ=col,
                 row=i))
 
@@ -711,9 +726,11 @@ def _populate_excel_r_sheet(sheet, chromo):
                 **fmla_values).format(num=i)
 
         sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
-            '=SUM({col}{row1}:{col}{rowN})'.format(
+            '=IFERROR(MATCH(TRUE,INDEX({col}{row1}:{col}{rowN}<>0,),)+{row0},0)'
+            .format(
                 col=col,
                 row1=DATA_FIRST_ROW,
+                row0=DATA_FIRST_ROW - 1,
                 rowN=DATA_FIRST_ROW + data_num_rows - 1))
 
     if col is None:
@@ -729,8 +746,10 @@ def _populate_excel_r_sheet(sheet, chromo):
 
     for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
-            '=SUM({colA}{row}:{colZ}{row})'.format(
+            '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'
+            .format(
                 colA=DATA_FIRST_COL,
+                col0=DATA_FIRST_COL_NUM - 1,
                 colZ=col,
                 row=i))
 
