@@ -363,13 +363,30 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
 
             choice_range = 'reference!${col}${ref1}:${col}${refN}'.format(
                 col=REF_KEY_COL, ref1=ref1, refN=refN)
+            user_choice_range = field.get('excel_choice_range_formula')
+            if user_choice_range:
+                choice_keys = set(
+                    key for (_i, key, _i, _i) in string.Formatter().parse(user_choice_range)
+                    if key != 'range' and key != 'range_top')
+                choice_values = {}
+                if choice_keys:
+                    choice_values = {
+                        f['datastore_id']: "{col}{num}".format(
+                            col=openpyxl.cell.get_column_letter(cn),
+                            num=DATA_FIRST_ROW)
+                        for cn, f in template_cols_fields(chromo)
+                        if f['datastore_id'] in choice_keys}
+                user_choice_range = user_choice_range.format(
+                    range=choice_range,
+                    range_top=choice_range.split(':')[0],
+                    **choice_values)
             cranges[field['datastore_id']] = choice_range
 
             choices = [c[0] for c in choice_fields[field['datastore_id']]]
             if field['datastore_type'] != '_text':
                 v = openpyxl.worksheet.datavalidation.DataValidation(
                     type="list",
-                    formula1=choice_range,
+                    formula1=user_choice_range or choice_range,
                     allow_blank=True)
                 v.errorTitle = u'Invalid choice'
                 valid_keys = u', '.join(unicode(c) for c in choices)
