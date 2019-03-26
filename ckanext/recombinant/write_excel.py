@@ -311,10 +311,14 @@ def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
         col_letter = openpyxl.cell.get_column_letter(col_num)
 
         # jump to first error/required cell in column
-        sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
+        fill_cell(
+            sheet,
+            CSTATUS_ROW,
+            col_num,
             '=IF(e{rnum}!{col}{row}>0,HYPERLINK("#{col}"&e{rnum}!{col}{row},"")'
-            ',IF(r{rnum}!{col}{row}>0,HYPERLINK("#{col}"&r{rnum}!{col}{row},""),""))'
-            .format(rnum=resource_num, col=col_letter, row=CSTATUS_ROW))
+                ',IF(r{rnum}!{col}{row}>0,HYPERLINK("#{col}"&r{rnum}!{col}{row},""),""))'
+                .format(rnum=resource_num, col=col_letter, row=CSTATUS_ROW),
+            col_heading_style)
 
         col = sheet.column_dimensions[col_letter]
         if 'excel_column_width' in field:
