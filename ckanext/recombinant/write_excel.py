@@ -602,8 +602,8 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
                 'NOT(IFERROR(AND(INT({{cell}})={{cell}},'
                 '{{cell}}>={year_min},{{cell}}<={year_max}),FALSE))'
                 ).format(
-                    year_min = chromo.get('year_min', DEFAULT_YEAR_MIN),
-                    year_max = chromo.get('year_max', DEFAULT_YEAR_MAX))
+                    year_min=chromo.get('year_min', DEFAULT_YEAR_MIN),
+                    year_max=chromo.get('year_max', DEFAULT_YEAR_MAX))
         elif field['datastore_type'] == 'numeric':
             fmla = 'NOT(ISNUMBER({cell}))'
         elif field['datastore_type'] == 'money':
@@ -638,11 +638,11 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         if pk_field:
             # repeated primary (composite) keys are errors
             pk_fmla = 'SUMPRODUCT(' + ','.join(
-                "TRIM('{sheet}'!{col}{top_m1}:{col}{{num}})"
-                "=TRIM('{sheet}'!{col}{{num}})".format(
+                "--(TRIM('{sheet}'!{col}{top}:{col}{{num}})"
+                "=TRIM('{sheet}'!{col}{{num}}))".format(
                     sheet=chromo['resource_name'],
                     col=openpyxl.cell.get_column_letter(cn),
-                    top_m1=DATA_FIRST_ROW-1)
+                    top=DATA_FIRST_ROW)
                 for cn, f in template_cols_fields(chromo)
                 if f['datastore_id'] in chromo['datastore_primary_key']
                 ) +')>1'
