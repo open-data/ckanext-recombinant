@@ -4,6 +4,9 @@
 {% endblock %}
   <div class="col-md-9">
     <div class="form-group control-medium">
+      {% if pkg.template_updated %}
+        <div class='text-info'>{{ _('Last Updated') }}: {{ pkg.template_updated }}</div>
+      {% endif %}
       <div class="form-control">
         <a class="button" href="{% url_for 'recombinant_template',
           dataset_type=pkg.dataset_type,
@@ -15,5 +18,4 @@
   {% block upload_submit %}
   {% endblock %}
   </div>
-
 </form>

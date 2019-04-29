@@ -124,6 +124,7 @@ def recombinant_show(context, data_dict):
         'all_correct': (metadata_correct and resources_correct
             and len(dataset['resources']) == len(chromos)),
         'resources': resources,
+        'template_updated': geno.get('template_updated'),
         }
 
 
