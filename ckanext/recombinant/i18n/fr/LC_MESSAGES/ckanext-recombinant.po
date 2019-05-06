@@ -326,15 +326,15 @@ msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/choices_reference.html:1
 msgid "Data dictionary"
-msgstr ""
+msgstr "Dictionnaire de données"
 
 #: ckanext/recombinant/templates/recombinant/snippets/choices_reference.html:9
 msgid "Download data dictionary"
-msgstr ""
+msgstr "Télécharger le dictionnaire de données"
 
 #: ckanext/recombinant/templates/recombinant/snippets/choices_reference.html:16
 msgid "Schema as JSON"
-msgstr ""
+msgstr "Schéma en JSON"
 
 #: ckanext/recombinant/templates/recombinant/snippets/choices_reference.html:20
 msgid "Field choices reference"
