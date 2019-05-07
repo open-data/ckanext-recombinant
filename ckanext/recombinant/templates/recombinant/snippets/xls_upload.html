@@ -38,7 +38,5 @@
 {% endblock %}
 
 {% block messages %}
-  <div class="alert alert-info" role="alert">
-    <p>{% trans %}To ensure the validation rules within the template are maintained, please paste your data using the “Paste Values” function. This can be done by right-clicking, selecting <kbd>Paste Special</kbd> and then clicking <kbd>Values</kbd>.{% endtrans %}</p>
-  </div>
+  <p id="paste-special" class="wb-dismissable">{% trans %}To ensure the validation rules within the template are maintained, please paste your data using the “Paste Values” function. This can be done by right-clicking, selecting <kbd>Paste Special</kbd> and then clicking <kbd>Values</kbd>.{% endtrans %}</p>
 {% endblock %}
