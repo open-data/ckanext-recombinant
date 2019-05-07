@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-05-06 17:24+0000\n"
+"POT-Creation-Date: 2019-05-07 17:24+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -340,5 +340,13 @@ msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:36
 msgid "Check for Errors"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:42
+msgid ""
+"To ensure the validation rules within the template are maintained, please "
+"paste your data using the “Paste Values” function. This can be done by right-"
+"clicking, selecting <kbd>Paste Special</kbd> and then clicking "
+"<kbd>Values</kbd>."
 msgstr ""
 
