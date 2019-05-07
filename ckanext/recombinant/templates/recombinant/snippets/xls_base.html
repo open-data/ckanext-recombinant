@@ -15,7 +15,11 @@
           {{ _('Download template Excel spreadsheet') }}</a>
       </div>
     </div>
-  {% block upload_submit %}
-  {% endblock %}
+    {% block upload_submit %}
+    {% endblock %}
+  </div>
+  <div class="col-md-12">
+    {% block messages %}
+    {% endblock %}
   </div>
 </form>
