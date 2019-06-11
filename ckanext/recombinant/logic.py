@@ -332,6 +332,8 @@ def datastore_column_type(t, text_types):
     """
     if text_types:
         return 'bigint' if datastore_type[t].whole_number else 'text'
+    if t == 'money':
+        return 'numeric'
     return 'int' if t in ('year', 'month') else t
 
 
