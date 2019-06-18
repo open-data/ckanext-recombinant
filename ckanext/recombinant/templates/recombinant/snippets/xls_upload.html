@@ -7,34 +7,38 @@
 {% endblock %}
 
 {% block upload_submit %}
-  <div class="form-group control-medium {% if errors %}has-error{% endif %}">
-    <label for="xls_update" class="required" aria-required="true">{{ _('Upload') }}:
-      <strong aria-required="true" class="required">{{ _('(required)') }}</strong>
-    </label>
-    {% block file_input %}
-    <input required
-      class="form-control"
-      style="height: auto"
-      type="file"
-      name="xls_update"
-      id="xls_update"
-      oninvalid="setCustomValidity(' {{ _('You must provide a valid file') }} ')" onchange="setCustomValidity('')"
-      accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-    {% endblock %}
-    {% if errors %}
-      {% block errors %}
-        <div class="span-3 text-danger">
-          {% for error in errors %}
-            {{ error }}
-          {% endfor %}
-        </div>
+<div class="col-md-6">
+  <div class="col-md-12">
+    <div class="form-group control-medium {% if errors %}has-error{% endif %}">
+      <label for="xls_update" class="required" aria-required="true">{{ _('Upload') }}:
+        <strong aria-required="true" class="required">{{ _('(required)') }}</strong>
+      </label>
+      {% block file_input %}
+      <input required
+        class="form-control"
+        style="height: auto"
+        type="file"
+        name="xls_update"
+        id="xls_update"
+        oninvalid="setCustomValidity(' {{ _('You must provide a valid file') }} ')" onchange="setCustomValidity('')"
+        accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
       {% endblock %}
-    {% endif %}
+      {% if errors %}
+        {% block errors %}
+          <div class="span-3 text-danger">
+            {% for error in errors %}
+              {{ error }}
+            {% endfor %}
+          </div>
+        {% endblock %}
+      {% endif %}
+    </div>
+    <div class="form-actions form-group">
+      <button type="submit" class="btn btn-primary" name="upload">{{_('Submit')}}</button>
+      <button type="submit" class="btn btn-default" name="validate">{{_('Check for Errors')}}</button>
+    </div>
   </div>
-  <div class="form-actions form-group">
-    <button type="submit" class="btn btn-primary" name="upload">{{_('Submit')}}</button>
-    <button type="submit" class="btn btn-default" name="validate">{{_('Check for Errors')}}</button>
-  </div>
+</div>
 {% endblock %}
 
 {% block messages %}
