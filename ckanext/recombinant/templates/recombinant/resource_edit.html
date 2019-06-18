@@ -43,7 +43,7 @@
           </summary>
           {% if h.check_access('package_update', {'id': dataset.id }) %}
             {% snippet "recombinant/snippets/xls_upload.html",
-              pkg=dataset, errors=errors %}
+              pkg=dataset, resource=resource, errors=errors %}
           {% else %}
             {% snippet "recombinant/snippets/xls_download.html",
               pkg=dataset, errors=errors %}

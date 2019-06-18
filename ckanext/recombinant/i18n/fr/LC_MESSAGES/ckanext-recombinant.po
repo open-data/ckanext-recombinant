@@ -371,8 +371,8 @@ msgid "Download template Excel spreadsheet"
 msgstr "Télécharger modèle Excel"
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
-msgid "Create and update records from Excel spreadsheet"
-msgstr "Créer et mettre à jour les données de la feuille de calcul Excel"
+msgid "Create and update records"
+msgstr "Créer et mettre à jour les données"
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:11
 msgid "Upload"
