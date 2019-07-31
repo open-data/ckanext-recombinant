@@ -9,7 +9,7 @@
   <div class="form-group control-medium {% if errors %}has-error{% endif %}">
     <label for="bulk-delete-field" class="required" aria-required="true">
       {%- for f in h.recombinant_primary_key_fields(res.name) -%}
-        {{- h.recombinant_language_text(f.label) }} {{ n -}}
+        {{- h.recombinant_language_text(f.label) -}}
         {%- if not loop.last -%},{% endif -%}
       {%- endfor -%}
 
