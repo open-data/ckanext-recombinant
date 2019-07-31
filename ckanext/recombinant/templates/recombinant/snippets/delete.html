@@ -9,8 +9,8 @@
   <div class="form-group control-medium {% if errors %}has-error{% endif %}">
     <label for="bulk-delete-field" class="required" aria-required="true">
       {%- for f in h.recombinant_primary_key_fields(res.name) -%}
-        {{- h.recombinant_language_text(f.label) }} {{ n }}
-        {%- if not loop.last -%}, {% endif -%}
+        {{- h.recombinant_language_text(f.label) }} {{ n -}}
+        {%- if not loop.last -%},{% endif -%}
       {%- endfor -%}
 
       <strong aria-required="true" class="required">{{ _('(required)') }}</strong>
@@ -32,8 +32,8 @@
       <small class="text-info">{{ _('Enter one record per line, e.g:') }}<br/><br/>
         {%- for n in range(1, 4) -%}
           {%- for f in h.recombinant_primary_key_fields(res.name) -%}
-            {{- h.recombinant_language_text(f.label) }} {{ n }}
-            {%- if not loop.last -%}, {% endif -%}
+            {{- h.recombinant_language_text(f.label) }} {{ n -}}
+            {%- if not loop.last -%},{% endif -%}
           {%- endfor -%}
           <br/>
         {%- endfor -%}
