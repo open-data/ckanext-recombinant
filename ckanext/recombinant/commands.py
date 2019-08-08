@@ -4,7 +4,7 @@ ckanext-recombinant table management commands
 Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
   paster recombinant template DATASET_TYPE ORG_NAME OUTPUT_FILE [-c CONFIG]
-  paster recombinant create [-f] (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant create [-f | -t] (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-csv CSV_FILE ... [-c CONFIG]
   paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
@@ -22,6 +22,7 @@ Options:
                        of streaming to STDOUT
   -f --force-update    Force update of tables (required for changes
                        to only primary keys/indexes)
+  -t --triggers-only   Update triggers, not tables themselves
 """
 import os
 import csv
@@ -41,6 +42,7 @@ from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
     get_resource_names)
 from ckanext.recombinant.read_csv import csv_data_batch
 from ckanext.recombinant.write_excel import excel_template
+from ckanext.recombinant.logic import _update_triggers
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 
@@ -58,6 +60,8 @@ class TableCommand(CkanCommand):
     parser.add_option('-d', '--output-dir', dest='output_dir')
     parser.add_option('-f', '--force-update', action='store_true',
         dest='force_update', help='force update of tables')
+    parser.add_option('-t', '--triggers-only', action='store_true',
+        dest='triggers_only', help='update triggers only')
 
     _orgs = None
 
@@ -174,6 +178,10 @@ class TableCommand(CkanCommand):
         orgs = self._get_orgs()
         lc = LocalCKAN()
         for dtype in self._expand_dataset_types(dataset_types):
+            if self.options.triggers_only:
+                for chromo in get_geno(dtype)['resources']:
+                    _update_triggers(lc, chromo)
+                continue
             packages = self._get_packages(dtype, orgs)
             existing = dict((p['owner_org'], p) for p in packages)
             for o in orgs:
