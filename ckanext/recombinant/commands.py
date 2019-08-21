@@ -4,14 +4,15 @@ ckanext-recombinant table management commands
 Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
   paster recombinant template DATASET_TYPE ORG_NAME OUTPUT_FILE [-c CONFIG]
-  paster recombinant create [-f | -t] (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant create-triggers (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-csv CSV_FILE ... [-c CONFIG]
   paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
   paster recombinant dataset-types [DATASET_TYPE ...] [-c CONFIG]
   paster recombinant remove-broken DATASET_TYPE ... [-c CONFIG]
-  paster recombinant update DATASET_TYPE ... [-c CONFIG]
+  paster recombinant remove-empty (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant run-triggers DATASET_TYPE ... [-c CONFIG]
   paster recombinant -h
 
 Options:
@@ -22,7 +23,6 @@ Options:
                        of streaming to STDOUT
   -f --force-update    Force update of tables (required for changes
                        to only primary keys/indexes)
-  -t --triggers-only   Update triggers, not tables themselves
 """
 import os
 import csv
@@ -60,8 +60,6 @@ class TableCommand(CkanCommand):
     parser.add_option('-d', '--output-dir', dest='output_dir')
     parser.add_option('-f', '--force-update', action='store_true',
         dest='force_update', help='force update of tables')
-    parser.add_option('-t', '--triggers-only', action='store_true',
-        dest='triggers_only', help='update triggers only')
 
     _orgs = None
 
@@ -76,8 +74,10 @@ class TableCommand(CkanCommand):
             if opts['DATASET_TYPE']:
                 dataset_type = opts['DATASET_TYPE'][0]
             return self._show(dataset_type, opts['ORG_NAME'])
-        elif opts['create']:
-            return self._create(opts['DATASET_TYPE'])
+        elif opts['create-triggers']:
+            return self._create_triggers(opts['DATASET_TYPE'])
+        elif opts['remove-empty']:
+            return self._remove_empty(opts['DATASET_TYPE'])
         elif opts['delete']:
             return self._delete(opts['DATASET_TYPE'])
         elif opts['load-csv']:
@@ -91,8 +91,8 @@ class TableCommand(CkanCommand):
             return self._dataset_types(opts['DATASET_TYPE'])
         elif opts['remove-broken']:
             return self._remove_broken(opts['DATASET_TYPE'])
-        elif opts['update']:
-            return self._update(opts['DATASET_TYPE'])
+        elif opts['run-triggers']:
+            return self._run_triggers(opts['DATASET_TYPE'])
         elif opts['template']:
             return self._template(
                 opts['DATASET_TYPE'][0],
@@ -152,11 +152,8 @@ class TableCommand(CkanCommand):
                             if not r['metadata_correct']:
                                 print '   ! metadata needs to be updated'
 
-            if len(packages) != len(orgs):
-                print (' > %d orgs but %d records found' %
-                    (len(orgs), len(packages)))
-            else:
-                print (' > %d datasets found' % (len(packages),))
+            print (' > %d orgs with %d records found' %
+                (len(orgs), len(packages)))
             need_update = sum(1 for p in packages if not p['all_correct'])
             if need_update:
                 print (' --> %d need to be updated' % need_update)
@@ -171,32 +168,32 @@ class TableCommand(CkanCommand):
             return get_resource_names()
         return resource_names
 
-    def _create(self, dataset_types):
+    def _create_triggers(self, dataset_types):
         """
-        Create and update recombinant datasets
+        Create and update triggers
         """
         orgs = self._get_orgs()
         lc = LocalCKAN()
         for dtype in self._expand_dataset_types(dataset_types):
-            if self.options.triggers_only:
-                for chromo in get_geno(dtype)['resources']:
-                    _update_triggers(lc, chromo)
-                continue
-            packages = self._get_packages(dtype, orgs)
-            existing = dict((p['owner_org'], p) for p in packages)
-            for o in orgs:
-                if o in existing:
-                    if existing[o]['all_correct']:
-                        if not self.options.force_update:
-                            continue
-                    print dtype, o, 'updating'
-                    lc.action.recombinant_update(
-                        owner_org=o, dataset_type=dtype,
-                        force_update=self.options.force_update)
-                else:
-                    print dtype, o
-                    lc.action.recombinant_create(owner_org=o, dataset_type=dtype)
+            for chromo in get_geno(dtype)['resources']:
+                _update_triggers(lc, chromo)
 
+    def _remove_empty(self, dataset_types):
+        orgs = self._get_orgs()
+        lc = LocalCKAN()
+        for dtype in self._expand_dataset_types(dataset_types):
+            packages = self._get_packages(dtype, orgs)
+            for p in packages:
+                if not any(r['datastore_rows'] for r in p['resources']):
+                    print 'deleting %s %s' % (dtype, p['owner_org'])
+                    for r in p['resources']:
+                        try:
+                            lc.action.datastore_delete(
+                                force=True,
+                                resource_id=r['id'])
+                        except NotFound:
+                            pass
+                    lc.action.package_delete(id=p['id'])
 
     def _delete(self, dataset_types):
         """
@@ -367,9 +364,9 @@ class TableCommand(CkanCommand):
                         lc.action.package_delete(id=d['id'])
                         break
 
-    def _update(self, target_datasets):
+    def _run_triggers(self, target_datasets):
         """
-        Low-level command to update field value in datasets' datastore tables
+        Low-level command to run triggers on datasets' datastore tables
         """
         lc = LocalCKAN()
         for dtype in target_datasets:

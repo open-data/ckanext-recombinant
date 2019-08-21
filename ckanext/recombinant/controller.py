@@ -291,7 +291,11 @@ class UploadController(PackageController):
             dataset = lc.action.recombinant_show(
                 dataset_type=chromo['dataset_type'], owner_org=owner_org)
         except ckanapi.NotFound:
-            abort(404, _('Table for this organization not found'))
+            # lazily create dataset
+            lc.action.recombinant_create(
+                dataset_type=chromo['dataset_type'], owner_org=owner_org)
+            dataset = lc.action.recombinant_show(
+                dataset_type=chromo['dataset_type'], owner_org=owner_org)
         org = lc.action.organization_show(id=owner_org)
 
         for r in dataset['resources']:
