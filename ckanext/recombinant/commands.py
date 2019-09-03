@@ -314,7 +314,7 @@ class TableCommand(CkanCommand):
                     resource_id=res['id'],
                 )
                 records = result['records']
-                assert len(records) == result['total'], (chromo['resource_name'], pkg['owner_org'])
+                assert len(records) == result.get('total', 0), (chromo['resource_name'], pkg['owner_org'])
             except NotFound:
                 print 'resource {0} table missing for {1}'.format(
                     chromo['resource_name'], pkg['owner_org'])
