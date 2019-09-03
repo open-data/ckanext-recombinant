@@ -309,10 +309,12 @@ class TableCommand(CkanCommand):
                 continue
 
             try:
-                records = lc.action.datastore_search(
+                result = lc.action.datastore_search(
                     limit=RECORDS_PER_ORGANIZATION,
                     resource_id=res['id'],
-                    )['records']
+                )
+                records = result['records']
+                assert len(records) == result['total'], (chromo['resource_name'], pkg['owner_org'])
             except NotFound:
                 print 'resource {0} table missing for {1}'.format(
                     chromo['resource_name'], pkg['owner_org'])
