@@ -305,7 +305,7 @@ class TableCommand(CkanCommand):
                     break
             else:
                 print 'resource {0} not found for {1}'.format(
-                    chromo['resource_name'], pkg['organization']['name'])
+                    chromo['resource_name'], pkg['owner_org'])
                 continue
 
             try:
