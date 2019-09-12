@@ -5,6 +5,7 @@ Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
   paster recombinant template DATASET_TYPE ORG_NAME OUTPUT_FILE [-c CONFIG]
   paster recombinant create-triggers (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant update (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-csv CSV_FILE ... [-c CONFIG]
   paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
@@ -78,6 +79,8 @@ class TableCommand(CkanCommand):
             return self._create_triggers(opts['DATASET_TYPE'])
         elif opts['remove-empty']:
             return self._remove_empty(opts['DATASET_TYPE'])
+        elif opts['update']:
+            return self._update(opts['DATASET_TYPE'])
         elif opts['delete']:
             return self._delete(opts['DATASET_TYPE'])
         elif opts['load-csv']:
@@ -157,6 +160,22 @@ class TableCommand(CkanCommand):
             need_update = sum(1 for p in packages if not p['all_correct'])
             if need_update:
                 print (' --> %d need to be updated' % need_update)
+
+    def _update(self, dataset_types):
+        orgs = self._get_orgs()
+        lc = LocalCKAN()
+        for dtype in self._expand_dataset_types(dataset_types):
+            packages = self._get_packages(dtype, orgs)
+            existing = dict((p['owner_org'], p) for p in packages)
+            for o in orgs:
+                if o in existing:
+                    if existing[o]['all_correct']:
+                        if not self.options.force_update:
+                            continue
+                    print dtype, o, 'updating'
+                    lc.action.recombinant_update(
+                        owner_org=o, dataset_type=dtype,
+                        force_update=self.options.force_update)
 
     def _expand_dataset_types(self, dataset_types):
         if self.options.all_types:
