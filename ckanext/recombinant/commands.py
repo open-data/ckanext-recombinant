@@ -337,7 +337,7 @@ class TableCommand(CkanCommand):
             except NotFound:
                 print 'resource {0} table missing for {1}'.format(
                     chromo['resource_name'], pkg['owner_org'])
-                return
+                continue
 
             if not records:
                 continue
@@ -367,7 +367,7 @@ class TableCommand(CkanCommand):
                 except KeyError:
                     print 'resource {0} table missing keys for {1}'.format(
                         chromo['resource_name'], pkg['owner_org'])
-                    return
+                    continue
 
     def _remove_broken(self, target_datasets):
         """
