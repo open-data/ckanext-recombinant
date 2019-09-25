@@ -1,6 +1,6 @@
 from pylons.i18n import _
 
-from ckanapi import LocalCKAN, NotFound, ValidationError
+from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
 from paste.deploy.converters import asbool
 
@@ -275,13 +275,16 @@ def _update_triggers(lc, chromo):
             assert len(tr) == 1, 'inline trigger may have only one key:' + repr(tr.keys())
             ((trname, trcode),) = tr.items()
             trigger_names.append(trname)
-            lc.action.datastore_function_create(
-                name=unicode(trname),
-                or_replace=True,
-                rettype=u'trigger',
-                definition=unicode(trcode).format(**dict(
-                    (fkey, _pg_array(fchoices))
-                    for fkey, fchoices in field_choices.items())))
+            try:
+                lc.action.datastore_function_create(
+                    name=unicode(trname),
+                    or_replace=True,
+                    rettype=u'trigger',
+                    definition=unicode(trcode).format(**dict(
+                        (fkey, _pg_array(fchoices))
+                        for fkey, fchoices in field_choices.items())))
+            except NotAuthorized:
+                pass  # normal users won't be able to reset triggers
         else:
             trigger_names.append(tr)
     return trigger_names
