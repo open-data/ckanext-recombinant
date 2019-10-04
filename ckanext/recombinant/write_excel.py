@@ -596,7 +596,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         if field['datastore_type'] == 'date':
             fmla = 'NOT(ISNUMBER({cell}+0))'
         elif field['datastore_type'] == 'int':
-            fmla = 'NOT(IFERROR(INT({cell})={cell},FALSE))'
+            fmla = 'NOT(IFERROR(INT({cell})=VALUE({cell}),FALSE))'
         elif field['datastore_type'] == 'year':
             fmla = (
                 'NOT(IFERROR(AND(INT({{cell}})={{cell}},'
