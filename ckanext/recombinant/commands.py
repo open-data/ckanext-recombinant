@@ -7,7 +7,7 @@ Usage:
   paster recombinant create-triggers (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant update (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
-  paster recombinant load-csv CSV_FILE ... [-c CONFIG]
+  paster recombinant load-csv CSV_FILE ... [--lenient] [-c CONFIG]
   paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
   paster recombinant dataset-types [DATASET_TYPE ...] [-c CONFIG]
@@ -24,6 +24,8 @@ Options:
                        of streaming to STDOUT
   -f --force-update    Force update of tables (required for changes
                        to only primary keys/indexes)
+  --lenient            allow rebuild from csv files without checking
+                       that columns match expected columns
 """
 import os
 import csv
@@ -61,6 +63,7 @@ class TableCommand(CkanCommand):
     parser.add_option('-d', '--output-dir', dest='output_dir')
     parser.add_option('-f', '--force-update', action='store_true',
         dest='force_update', help='force update of tables')
+    parser.add_option('--lenient', action='store_false', default=False)
 
     _orgs = None
 
@@ -84,7 +87,7 @@ class TableCommand(CkanCommand):
         elif opts['delete']:
             return self._delete(opts['DATASET_TYPE'])
         elif opts['load-csv']:
-            return self._load_csv_files(opts['CSV_FILE'])
+            return self._load_csv_files(opts['CSV_FILE'], opts['--lenient'])
         elif opts['combine']:
             return self._combine_csv(
                 opts['--output-dir'], opts['RESOURCE_NAME'])
@@ -233,35 +236,47 @@ class TableCommand(CkanCommand):
                         pass
                 lc.action.package_delete(id=p['id'])
 
-    def _load_csv_files(self, csv_file_names):
+    def _load_csv_files(self, csv_file_names, lenient=False):
         errs = 0
         for n in csv_file_names:
-            errs |= self._load_one_csv_file(n)
+            errs |= self._load_one_csv_file(n, lenient)
         return errs
 
-    def _load_one_csv_file(self, name):
+    def _load_one_csv_file(self, name, lenient):
         path, csv_name = os.path.split(name)
         assert csv_name.endswith('.csv'), csv_name
         resource_name = csv_name[:-4]
         print resource_name
         chromo = get_chromo(resource_name)
+
+        if lenient:
+            # remove 'csv_org_extras' fields
+            if 'csv_org_extras' in chromo:
+                extra_fields = chromo['csv_org_extras']
+                del chromo['csv_org_extras']
+
         dataset_type = chromo['dataset_type']
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
         lc = LocalCKAN()
 
-        for org_name, records in csv_data_batch(name, chromo):
+        for org_name, records in csv_data_batch(name, chromo, strict=not lenient):
             results = lc.action.package_search(
                 q='type:%s organization:%s' % (dataset_type, org_name),
                 include_private=True,
                 rows=2)['results']
+
             if not results:
-                print 'type:%s organization:%s not found!' % (
-                    dataset_type, org_name)
-                return 1
+                lc.action.recombinant_create(dataset_type=dataset_type, owner_org=org_name)
+                results = lc.action.package_search(
+                    q='type:%s organization:%s' % (dataset_type, org_name),
+                    include_private=True,
+                    rows=2)['results']
+
             if len(results) > 1:
                 print 'type:%s organization:%s multiple found!' % (
                     dataset_type, org_name)
                 return 1
+
             for res in results[0]['resources']:
                 if res['name'] == resource_name:
                     break
@@ -282,6 +297,14 @@ class TableCommand(CkanCommand):
                             r[k] = r[k].split(',')
 
             print '-', org_name, len(records)
+
+            if lenient:
+                # remove 'csv_org_extras' fields from records
+                for r in records:
+                    for e in extra_fields:
+                        if e in r:
+                            del r[e]
+
             lc.action.datastore_upsert(
                 method=method,
                 resource_id=res['id'],
