@@ -249,12 +249,6 @@ class TableCommand(CkanCommand):
         print resource_name
         chromo = get_chromo(resource_name)
 
-        if lenient:
-            # remove 'csv_org_extras' fields
-            if 'csv_org_extras' in chromo:
-                extra_fields = chromo['csv_org_extras']
-                del chromo['csv_org_extras']
-
         dataset_type = chromo['dataset_type']
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
         lc = LocalCKAN()
@@ -298,12 +292,11 @@ class TableCommand(CkanCommand):
 
             print '-', org_name, len(records)
 
-            if lenient:
+            if 'csv_org_extras' in chromo:
                 # remove 'csv_org_extras' fields from records
                 for r in records:
-                    for e in extra_fields:
-                        if e in r:
-                            del r[e]
+                    for e in chromo['csv_org_extras']:
+                        del r[e]
 
             lc.action.datastore_upsert(
                 method=method,
