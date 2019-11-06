@@ -7,7 +7,7 @@ Usage:
   paster recombinant create-triggers (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant update (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
-  paster recombinant load-csv CSV_FILE ... [--lenient] [-c CONFIG]
+  paster recombinant load-csv CSV_FILE ... [-c CONFIG]
   paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
   paster recombinant dataset-types [DATASET_TYPE ...] [-c CONFIG]
@@ -24,8 +24,6 @@ Options:
                        of streaming to STDOUT
   -f --force-update    Force update of tables (required for changes
                        to only primary keys/indexes)
-  --lenient            allow rebuild from csv files without checking
-                       that columns match expected columns
 """
 import os
 import csv
@@ -63,7 +61,6 @@ class TableCommand(CkanCommand):
     parser.add_option('-d', '--output-dir', dest='output_dir')
     parser.add_option('-f', '--force-update', action='store_true',
         dest='force_update', help='force update of tables')
-    parser.add_option('--lenient', action='store_false', default=False)
 
     _orgs = None
 
@@ -87,7 +84,7 @@ class TableCommand(CkanCommand):
         elif opts['delete']:
             return self._delete(opts['DATASET_TYPE'])
         elif opts['load-csv']:
-            return self._load_csv_files(opts['CSV_FILE'], opts['--lenient'])
+            return self._load_csv_files(opts['CSV_FILE'])
         elif opts['combine']:
             return self._combine_csv(
                 opts['--output-dir'], opts['RESOURCE_NAME'])
@@ -236,13 +233,13 @@ class TableCommand(CkanCommand):
                         pass
                 lc.action.package_delete(id=p['id'])
 
-    def _load_csv_files(self, csv_file_names, lenient=False):
+    def _load_csv_files(self, csv_file_names):
         errs = 0
         for n in csv_file_names:
-            errs |= self._load_one_csv_file(n, lenient)
+            errs |= self._load_one_csv_file(n)
         return errs
 
-    def _load_one_csv_file(self, name, lenient):
+    def _load_one_csv_file(self, name):
         path, csv_name = os.path.split(name)
         assert csv_name.endswith('.csv'), csv_name
         resource_name = csv_name[:-4]
@@ -253,7 +250,7 @@ class TableCommand(CkanCommand):
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
         lc = LocalCKAN()
 
-        for org_name, records in csv_data_batch(name, chromo, strict=not lenient):
+        for org_name, records in csv_data_batch(name, chromo):
             results = lc.action.package_search(
                 q='type:%s organization:%s' % (dataset_type, org_name),
                 include_private=True,
