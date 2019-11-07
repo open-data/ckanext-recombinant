@@ -245,6 +245,7 @@ class TableCommand(CkanCommand):
         resource_name = csv_name[:-4]
         print resource_name
         chromo = get_chromo(resource_name)
+
         dataset_type = chromo['dataset_type']
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
         lc = LocalCKAN()
@@ -254,14 +255,19 @@ class TableCommand(CkanCommand):
                 q='type:%s organization:%s' % (dataset_type, org_name),
                 include_private=True,
                 rows=2)['results']
+
             if not results:
-                print 'type:%s organization:%s not found!' % (
-                    dataset_type, org_name)
-                return 1
+                lc.action.recombinant_create(dataset_type=dataset_type, owner_org=org_name)
+                results = lc.action.package_search(
+                    q='type:%s organization:%s' % (dataset_type, org_name),
+                    include_private=True,
+                    rows=2)['results']
+
             if len(results) > 1:
                 print 'type:%s organization:%s multiple found!' % (
                     dataset_type, org_name)
                 return 1
+
             for res in results[0]['resources']:
                 if res['name'] == resource_name:
                     break
@@ -282,6 +288,13 @@ class TableCommand(CkanCommand):
                             r[k] = r[k].split(',')
 
             print '-', org_name, len(records)
+
+            if 'csv_org_extras' in chromo:
+                # remove 'csv_org_extras' fields from records
+                for r in records:
+                    for e in chromo['csv_org_extras']:
+                        del r[e]
+
             lc.action.datastore_upsert(
                 method=method,
                 resource_id=res['id'],
