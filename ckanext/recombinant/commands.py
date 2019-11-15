@@ -5,7 +5,7 @@ Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
   paster recombinant template DATASET_TYPE ORG_NAME OUTPUT_FILE [-c CONFIG]
   paster recombinant create-triggers (-a | DATASET_TYPE ...) [-c CONFIG]
-  paster recombinant update (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant update (-a | DATASET_TYPE ...) [-f] [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-csv CSV_FILE ... [-c CONFIG]
   paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
