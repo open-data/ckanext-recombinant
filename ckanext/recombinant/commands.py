@@ -29,6 +29,7 @@ import os
 import csv
 import sys
 import logging
+import json
 
 from ckan.lib.cli import CkanCommand
 from ckan.logic import ValidationError
@@ -249,6 +250,7 @@ class TableCommand(CkanCommand):
         dataset_type = chromo['dataset_type']
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
         lc = LocalCKAN()
+        errors = 0
 
         for org_name, records in csv_data_batch(name, chromo):
             results = lc.action.package_search(
@@ -295,11 +297,24 @@ class TableCommand(CkanCommand):
                     for e in chromo['csv_org_extras']:
                         del r[e]
 
-            lc.action.datastore_upsert(
-                method=method,
-                resource_id=res['id'],
-                records=records)
-        return 0
+            offset = 0
+            while offset < len(records):
+                try:
+                    lc.action.datastore_upsert(
+                        method=method,
+                        resource_id=res['id'],
+                        records=records[offset:])
+                except ValidationError as err:
+                    if '_records_row' not in err.error_dict:
+                        raise
+                    bad = err.error_dict['_records_row']
+                    errors |= 2
+                    sys.stderr.write(json.dumps(
+                        [err.error_dict['records'], org_name, records[bad]]).encode('utf-8') + '\n')
+                    offset += bad + 1  # skip and continue
+                else:
+                    break
+        return errors
 
     def _combine_csv(self, target_dir, resource_names):
         if target_dir and not os.path.isdir(target_dir):
