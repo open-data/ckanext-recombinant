@@ -212,9 +212,16 @@ class UploadController(PackageController):
             abort(404, _('Recombinant dataset_type not found'))
 
         schema = OrderedDict()
-        for k in ['dataset_type', 'title', 'notes']:
-            if k in geno:
-                schema[k] = geno[k]
+        schema['dataset_type'] = geno['dataset_type']
+        schema['title'] = OrderedDict()
+        schema['notes'] = OrderedDict()
+
+        from ckan.lib.i18n import handle_request, get_lang
+        for lang in config['ckan.locales_offered'].split():
+            request.environ['CKAN_LANG'] = lang
+            handle_request(request, c)
+            schema['title'][lang] = _(geno['title'])
+            schema['notes'][lang] = _(geno['notes'])
 
         schema['resources'] = []
         for chromo in geno['resources']:
@@ -226,9 +233,12 @@ class UploadController(PackageController):
                     chromo['resource_name'],
                     all_languages=True))
 
-            for k in ['title', 'resource_name']:
-                if k in chromo:
-                    resource[k] = chromo[k]
+            resource['resource_name'] = chromo['resource_name']
+            resource['title'] = OrderedDict()
+            for lang in config['ckan.locales_offered'].split():
+                request.environ['CKAN_LANG'] = lang
+                handle_request(request, c)
+                resource['title'][lang] = _(chromo['title'])
 
             resource['fields'] = []
             for field in chromo['fields']:
