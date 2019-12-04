@@ -4,7 +4,7 @@ import simplejson as json
 
 from pylons.i18n import _
 from pylons import config
-from paste.deploy.converters import asbool
+from paste.deploy.converters import asbool, aslist, aslist
 
 from ckan.lib.base import (c, render, model, request, h, g,
     response, abort, redirect)
@@ -257,7 +257,7 @@ class UploadController(PackageController):
                     for ck, cv in choice_fields[fld['id']]:
                         choices[ck] = cv
 
-            resource['primary_key'] = chromo['datastore_primary_key']
+            resource['primary_key'] = aslist(chromo['datastore_primary_key'])
 
             if 'examples' in chromo:
                 ex_record = chromo['examples']['record']
