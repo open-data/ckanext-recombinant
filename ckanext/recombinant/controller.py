@@ -254,7 +254,14 @@ class UploadController(PackageController):
                 fld['id'] = field['datastore_id']
                 for k in ['label', 'description', 'obligation', 'format_type']:
                     if k in field:
-                        fld[k] = field[k]
+                        if isinstance(field[k], dict):
+                            fld[k] = field[k]
+                            continue
+                        fld[k] = OrderedDict()
+                        for lang in config['ckan.locales_offered'].split():
+                            request.environ['CKAN_LANG'] = lang
+                            handle_request(request, c)
+                            fld[k][lang] = _(field[k])
 
                 if fld['id'] in choice_fields:
                     choices = OrderedDict()
