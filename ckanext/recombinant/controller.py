@@ -223,6 +223,11 @@ class UploadController(PackageController):
             schema['title'][lang] = _(geno['title'])
             schema['notes'][lang] = _(geno['notes'])
 
+        if 'front_matter' in geno:
+            schema['front_matter'] = OrderedDict()
+            for lang in sorted(geno['front_matter']):
+                schema['front_matter'][lang] = geno['front_matter'][lang]
+
         schema['resources'] = []
         for chromo in geno['resources']:
             resource = OrderedDict()
