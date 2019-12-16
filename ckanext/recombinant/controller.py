@@ -245,6 +245,8 @@ class UploadController(PackageController):
                 handle_request(request, c)
                 resource['title'][lang] = _(chromo['title'])
 
+            resource['primary_key'] = aslist(chromo['datastore_primary_key'])
+
             resource['fields'] = []
             for field in chromo['fields']:
                 if not field.get('visible_to_public', True):
@@ -252,7 +254,7 @@ class UploadController(PackageController):
                 fld = OrderedDict()
                 resource['fields'].append(fld)
                 fld['id'] = field['datastore_id']
-                for k in ['label', 'description', 'obligation', 'format_type']:
+                for k in ['label', 'description', 'validation']:
                     if k in field:
                         if isinstance(field[k], dict):
                             fld[k] = field[k]
@@ -262,14 +264,22 @@ class UploadController(PackageController):
                             request.environ['CKAN_LANG'] = lang
                             handle_request(request, c)
                             fld[k][lang] = _(field[k])
+                if fld['id'] in resource['primary_key']:
+                    fld['obligation'] = 'mandatory'
+                elif field.get('excel_required'):
+                    fld['obligation'] = 'mandatory'
+                elif field.get('excel_required_formula'):
+                    fld['obligation'] = 'conditional'
+                else:
+                    fld['obligation'] = 'optional'
+
+                fld['datastore_type'] = field['datastore_type']
 
                 if fld['id'] in choice_fields:
                     choices = OrderedDict()
                     fld['choices'] = choices
                     for ck, cv in choice_fields[fld['id']]:
                         choices[ck] = cv
-
-            resource['primary_key'] = aslist(chromo['datastore_primary_key'])
 
             if 'examples' in chromo:
                 ex_record = chromo['examples']['record']
