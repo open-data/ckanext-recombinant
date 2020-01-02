@@ -291,7 +291,7 @@ def _update_triggers(lc, chromo):
 
 
 def _pg_array(choices):
-    from ckanext.datastore.helpers import literal_string
+    from ckanext.datastore.backend.postgres import literal_string
     return u'ARRAY[' + u','.join(
         literal_string(unicode(c)) for c in choices) + u']'
 
