@@ -5,7 +5,6 @@ Excel v3 template and data-dictionary generation code
 
 import textwrap
 import string
-
 import openpyxl
 
 from ckanext.recombinant.tables import get_geno
@@ -18,6 +17,7 @@ from ckanext.recombinant.write_excel_v2 import (
 
 
 from ckan.plugins.toolkit import _, h
+
 
 HEADER_ROW, HEADER_HEIGHT = 1, 27
 CHEADINGS_ROW, CHEADINGS_HEIGHT = 2, 22
@@ -139,6 +139,32 @@ def excel_template(dataset_type, org):
     return book
 
 
+def append_data(book, data, chromo):
+
+    """
+    fills rows of an openpyxl.Workbook with the selected data from the datastore resource
+
+    """
+    sheet = book.active
+
+    current_row = DATA_FIRST_ROW
+
+    column_fields = template_cols_fields(chromo)
+
+    for record in data:
+
+        for col_num, field in column_fields:
+            if isinstance(record[field['datastore_id']], list):
+                value = u','.join(record[field['datastore_id']])
+                sheet.cell(row = current_row, column = col_num).value = value
+            else:
+                sheet.cell(row = current_row, column = col_num).value = record[field['datastore_id']]
+
+        current_row += 1
+
+    return book
+
+
 def excel_data_dictionary(geno):
     """
     return an openpyxl.Workbook object containing the field reference
@@ -211,7 +237,7 @@ def wrap_text_to_width(text, width):
         for line in text.split('\n'))
 
 
-def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num):
+def _populate_excel_sheet(sheet, geno, chromo, org, refs, resource_num, data=None):
     """
     Format openpyxl sheet for the resource definition chromo and org.
     (Version 3)
