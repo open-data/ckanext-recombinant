@@ -2,12 +2,14 @@ import re
 from collections import OrderedDict
 import simplejson as json
 
+from ast import literal_eval
+
 from pylons.i18n import _
 from pylons import config
-from paste.deploy.converters import asbool
+from paste.deploy.converters import asbool, aslist, aslist
 
-from ckan.lib.base import (c, render, model, request, h, g,
-    response, abort, redirect)
+from ckan.lib.base import (c, render, model, request, h,
+    response, abort)
 from ckan.controllers.package import PackageController
 from ckan.logic import ValidationError, NotAuthorized
 
@@ -19,15 +21,9 @@ from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import (
     recombinant_primary_key_fields, recombinant_choice_fields)
 
-from ast import literal_eval
-
 from cStringIO import StringIO
 
-import logging
-
 import ckanapi
-
-log = logging.getLogger(__name__)
 
 
 class UploadController(PackageController):
@@ -62,7 +58,7 @@ class UploadController(PackageController):
                     "Your file was successfully uploaded into the central system."
                     ))
 
-            redirect(h.url_for(controller='package', action='read', id=id))
+            return h.redirect_to(controller='package', action='read', id=id)
         except BadExcelData, e:
             org = lc.action.organization_show(id=dataset['owner_org'])
             return self.preview_table(
@@ -164,17 +160,17 @@ class UploadController(PackageController):
 
         h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
 
-        redirect(h.url_for(
+        return h.redirect_to(
             controller='ckanext.recombinant.controller:UploadController',
             action='preview_table',
             resource_name=res['name'],
             owner_org=org['name'],
-            ))
+            )
+
 
     def template(self, dataset_type, lang, owner_org):
         if lang != h.lang():
             abort(404, _('Not found'))
-
 
         lc = ckanapi.LocalCKAN(username=c.user)
         try:
@@ -186,7 +182,6 @@ class UploadController(PackageController):
                 include_datasets=False)
         except NotFound:
             abort(404, _('Not found'))
-
 
         book = excel_template(dataset_type, org)
 
@@ -204,11 +199,11 @@ class UploadController(PackageController):
 
             if chromo.get('edit_form'):
                 for row in raw_data:
-                    log.debug(row)
                     primary_keys.append(row[2:(2 + len(pk_fields))])
 
             else:
                 for row in raw_data:
+
                     primary_keys.append(row[1:(1 + len(pk_fields))])
 
             data = []
@@ -220,9 +215,9 @@ class UploadController(PackageController):
 
                     data += result['records']
 
-            log.debug(data)
 
             append_data(book, data, chromo)
+
 
 
         blob = StringIO()
@@ -233,9 +228,6 @@ class UploadController(PackageController):
                 dataset['owner_org'],
                 lang,
                 dataset['dataset_type']))
-
-
-
         return blob.getvalue()
 
 
@@ -258,9 +250,21 @@ class UploadController(PackageController):
             abort(404, _('Recombinant dataset_type not found'))
 
         schema = OrderedDict()
-        for k in ['dataset_type', 'title', 'notes']:
-            if k in geno:
-                schema[k] = geno[k]
+        schema['dataset_type'] = geno['dataset_type']
+        schema['title'] = OrderedDict()
+        schema['notes'] = OrderedDict()
+
+        from ckan.lib.i18n import handle_request, get_lang
+        for lang in config['ckan.locales_offered'].split():
+            request.environ['CKAN_LANG'] = lang
+            handle_request(request, c)
+            schema['title'][lang] = _(geno['title'])
+            schema['notes'][lang] = _(geno['notes'])
+
+        if 'front_matter' in geno:
+            schema['front_matter'] = OrderedDict()
+            for lang in sorted(geno['front_matter']):
+                schema['front_matter'][lang] = geno['front_matter'][lang]
 
         schema['resources'] = []
         for chromo in geno['resources']:
@@ -272,9 +276,14 @@ class UploadController(PackageController):
                     chromo['resource_name'],
                     all_languages=True))
 
-            for k in ['title', 'resource_name']:
-                if k in chromo:
-                    resource[k] = chromo[k]
+            resource['resource_name'] = chromo['resource_name']
+            resource['title'] = OrderedDict()
+            for lang in config['ckan.locales_offered'].split():
+                request.environ['CKAN_LANG'] = lang
+                handle_request(request, c)
+                resource['title'][lang] = _(chromo['title'])
+
+            resource['primary_key'] = aslist(chromo['datastore_primary_key'])
 
             resource['fields'] = []
             for field in chromo['fields']:
@@ -283,17 +292,32 @@ class UploadController(PackageController):
                 fld = OrderedDict()
                 resource['fields'].append(fld)
                 fld['id'] = field['datastore_id']
-                for k in ['label', 'description', 'obligation', 'format_type']:
+                for k in ['label', 'description', 'validation']:
                     if k in field:
-                        fld[k] = field[k]
+                        if isinstance(field[k], dict):
+                            fld[k] = field[k]
+                            continue
+                        fld[k] = OrderedDict()
+                        for lang in config['ckan.locales_offered'].split():
+                            request.environ['CKAN_LANG'] = lang
+                            handle_request(request, c)
+                            fld[k][lang] = _(field[k])
+                if fld['id'] in resource['primary_key']:
+                    fld['obligation'] = 'mandatory'
+                elif field.get('excel_required'):
+                    fld['obligation'] = 'mandatory'
+                elif field.get('excel_required_formula'):
+                    fld['obligation'] = 'conditional'
+                else:
+                    fld['obligation'] = 'optional'
+
+                fld['datastore_type'] = field['datastore_type']
 
                 if fld['id'] in choice_fields:
                     choices = OrderedDict()
                     fld['choices'] = choices
                     for ck, cv in choice_fields[fld['id']]:
                         choices[ck] = cv
-
-            resource['primary_key'] = chromo['datastore_primary_key']
 
             if 'examples' in chromo:
                 ex_record = chromo['examples']['record']
@@ -321,8 +345,8 @@ class UploadController(PackageController):
         except RecombinantException:
             abort(404, _('Recombinant resource_name not found'))
 
-        return redirect(h.url_for('recombinant_resource',
-            resource_name=resource_name, owner_org=orgs[0]['name']))
+        return h.redirect_to('recombinant_resource',
+            resource_name=resource_name, owner_org=orgs[0]['name'])
 
     def preview_table(self, resource_name, owner_org, errors=None):
         if not c.user:
