@@ -209,7 +209,7 @@ class UploadController(PackageController):
             for f, pkf in zip(primary_keys, pk_fields):
                 filters[pkf['datastore_id']] = f
 
-                log.debug(filters)
+
 
             result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
 
