@@ -16,6 +16,9 @@ from ckanext.recombinant.helpers import (
 from ckanext.recombinant.write_excel_v2 import (
     _populate_excel_sheet_v2, _populate_reference_sheet_v2)
 
+from logging import getLogger
+log = getLogger(__name__)
+
 
 from ckan.plugins.toolkit import _, h
 
@@ -138,21 +141,20 @@ def excel_template(dataset_type, org):
         sheet.sheet_state = 'hidden'
     return book
 
-def append_data(book, data, chromo):
+def append_data(book, record_data, chromo):
 
     """
-    fills rows of an openpyxl.Workbook with the selected data from the datastore resource
+    fills rows of an openpyxl.Workbook with selected data from a datastore resource
 
     """
-    sheet = book.active
+    sheet = book[chromo['resource_name']]
 
     current_row = DATA_FIRST_ROW
 
-    column_fields = template_cols_fields(chromo)
+    for record in record_data:
 
-    for record in data:
+        for col_num, field in template_cols_fields(chromo):
 
-        for col_num, field in column_fields:
             sheet.cell(row = current_row, column = col_num).value = record[field['datastore_id']]
 
         current_row += 1

@@ -2,7 +2,7 @@ import re
 from collections import OrderedDict
 import simplejson as json
 
-from ast import literal_eval
+import logging
 
 from pylons.i18n import _
 from pylons import config
@@ -24,6 +24,8 @@ from ckanext.recombinant.helpers import (
 from cStringIO import StringIO
 
 import ckanapi
+
+log = logging.getLogger(__name__)
 
 
 class UploadController(PackageController):
@@ -183,40 +185,45 @@ class UploadController(PackageController):
         except NotFound:
             abort(404, _('Not found'))
 
+
         book = excel_template(dataset_type, org)
+
 
         if request.method == 'POST':
             filters = {}
+            resource_name = request.POST.get('resource_name','' )
             for r in dataset['resources']:
-                if (r['name'] == dataset_type):
+
+                if r['name'] == resource_name:
                     resource = r
+                    break
+            else:
+                abort(400,"Resource not found")
 
             pk_fields = recombinant_primary_key_fields(resource['name'])
-            req_body = request.POST.get('bulk-template','')
-            raw_data = literal_eval(req_body)
+            key_indices = request.POST.get('key_indices').split(",")
             primary_keys = []
+            for index in key_indices:
+                primary_keys.append(request.POST.get(index,'').split(","))
+
+
+            log.debug(primary_keys)
+
             chromo = get_chromo(resource['name'])
 
-            if chromo.get('edit_form'):
-                for row in raw_data:
-                    primary_keys.append(row[2:(2 + len(pk_fields))])
-
-            else:
-                for row in raw_data:
-
-                    primary_keys.append(row[1:(1 + len(pk_fields))])
-
-            data = []
-            for keys in primary_keys:
-                for f, pkf in zip(keys, pk_fields):
-                    filters[pkf['datastore_id']] = f
-
-                    result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
-
-                    data += result['records']
+            record_data = []
 
 
-            append_data(book, data, chromo)
+            for f, pkf in zip(primary_keys, pk_fields):
+                filters[pkf['datastore_id']] = f
+
+                log.debug(filters)
+
+            result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
+
+            record_data += result['records']
+
+            append_data(book, record_data, chromo)
 
 
 
@@ -378,7 +385,7 @@ class UploadController(PackageController):
             'dataset': dataset,
             'resource': r,
             'organization': org,
-            'errors': errors,
+            'errors':errors
             })
 
 
