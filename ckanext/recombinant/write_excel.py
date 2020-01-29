@@ -16,10 +16,6 @@ from ckanext.recombinant.helpers import (
 from ckanext.recombinant.write_excel_v2 import (
     _populate_excel_sheet_v2, _populate_reference_sheet_v2)
 
-from logging import getLogger
-log = getLogger(__name__)
-
-
 from ckan.plugins.toolkit import _, h
 
 HEADER_ROW, HEADER_HEIGHT = 1, 27

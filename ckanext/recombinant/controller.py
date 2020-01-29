@@ -2,8 +2,6 @@ import re
 from collections import OrderedDict
 import simplejson as json
 
-import logging
-
 from pylons.i18n import _
 from pylons import config
 from paste.deploy.converters import asbool, aslist, aslist
@@ -24,8 +22,6 @@ from ckanext.recombinant.helpers import (
 from cStringIO import StringIO
 
 import ckanapi
-
-log = logging.getLogger(__name__)
 
 
 class UploadController(PackageController):
@@ -206,13 +202,9 @@ class UploadController(PackageController):
             for index in key_indices:
                 primary_keys.append(request.POST.get(index,'').split(","))
 
-
-            log.debug(primary_keys)
-
             chromo = get_chromo(resource['name'])
 
             record_data = []
-
 
             for f, pkf in zip(primary_keys, pk_fields):
                 filters[pkf['datastore_id']] = f
@@ -224,8 +216,6 @@ class UploadController(PackageController):
             record_data += result['records']
 
             append_data(book, record_data, chromo)
-
-
 
         blob = StringIO()
         book.save(blob)
