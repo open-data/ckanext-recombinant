@@ -171,6 +171,14 @@ class UploadController(PackageController):
 
 
     def template(self, dataset_type, lang, owner_org):
+
+        """
+        POST requests to this endpoint contain primary keys of records that are to be included in the excel file
+        Parameters:
+            bulk-template -> an array of strings, each string contains primary keys separated by commas
+            resource_name -> the name of the resource containing the records
+        """
+
         if lang != h.lang():
             abort(404, _('Not found'))
 
@@ -187,16 +195,10 @@ class UploadController(PackageController):
 
         book = excel_template(dataset_type, org)
 
-        """
-        POST requests to this endpoint take the form of an array of strings containing comma-separated 
-        primary key values.
-        """
-
         if request.method == 'POST':
             filters = {}
             resource_name = request.POST.get('resource_name','' )
             for r in dataset['resources']:
-
                 if r['name'] == resource_name:
                     resource = r
                     break
