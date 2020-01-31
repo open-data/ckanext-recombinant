@@ -144,15 +144,10 @@ def append_data(book, record_data, chromo):
 
     """
     sheet = book[chromo['resource_name']]
-
     current_row = DATA_FIRST_ROW
-
     for record in record_data:
-
         for col_num, field in template_cols_fields(chromo):
-
-            sheet.cell(row = current_row, column = col_num).value = record[field['datastore_id']]
-
+            sheet.cell(row=current_row, column=col_num).value = record[field['datastore_id']]
         current_row += 1
 
     return book

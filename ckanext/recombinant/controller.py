@@ -2,6 +2,8 @@ import re
 from collections import OrderedDict
 import simplejson as json
 
+from logging import getLogger
+
 from pylons.i18n import _
 from pylons import config
 from paste.deploy.converters import asbool, aslist, aslist
@@ -20,6 +22,8 @@ from ckanext.recombinant.helpers import (
     recombinant_primary_key_fields, recombinant_choice_fields)
 
 from cStringIO import StringIO
+
+log = getLogger(__name__)
 
 import ckanapi
 
@@ -181,9 +185,12 @@ class UploadController(PackageController):
         except NotFound:
             abort(404, _('Not found'))
 
-
         book = excel_template(dataset_type, org)
 
+        """
+        POST requests to this endpoint take the form of an array of strings containing comma-separated 
+        primary key values.
+        """
 
         if request.method == 'POST':
             filters = {}
@@ -197,23 +204,16 @@ class UploadController(PackageController):
                 abort(400,"Resource not found")
 
             pk_fields = recombinant_primary_key_fields(resource['name'])
-            key_indices = request.POST.get('key_indices').split(",")
-            primary_keys = []
-            for index in key_indices:
-                primary_keys.append(request.POST.get(index,'').split(","))
-
+            primary_keys = request.POST.getall('bulk-template')
             chromo = get_chromo(resource['name'])
-
             record_data = []
 
-            for f, pkf in zip(primary_keys, pk_fields):
-                filters[pkf['datastore_id']] = f
-
-
-
-            result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
-
-            record_data += result['records']
+            for keys in primary_keys:
+                temp = keys.split(",")
+                for f, pkf in zip(temp, pk_fields):
+                    filters[pkf['datastore_id']] = f
+                result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
+                record_data += result['records']
 
             append_data(book, record_data, chromo)
 
@@ -375,7 +375,7 @@ class UploadController(PackageController):
             'dataset': dataset,
             'resource': r,
             'organization': org,
-            'errors':errors
+            'errors': errors,
             })
 
 
