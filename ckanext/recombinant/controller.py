@@ -2,6 +2,8 @@ import re
 from collections import OrderedDict
 import simplejson as json
 
+from logging import getLogger
+
 from pylons.i18n import _
 from pylons import config
 from paste.deploy.converters import asbool, aslist, aslist
@@ -14,12 +16,14 @@ from ckan.logic import ValidationError, NotAuthorized
 from ckanext.recombinant.errors import RecombinantException, BadExcelData
 from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.write_excel import (
-    excel_template, excel_data_dictionary)
+    excel_template, excel_data_dictionary, append_data)
 from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import (
     recombinant_primary_key_fields, recombinant_choice_fields)
 
 from cStringIO import StringIO
+
+log = getLogger(__name__)
 
 import ckanapi
 
@@ -167,6 +171,14 @@ class UploadController(PackageController):
 
 
     def template(self, dataset_type, lang, owner_org):
+
+        """
+        POST requests to this endpoint contain primary keys of records that are to be included in the excel file
+        Parameters:
+            bulk-template -> an array of strings, each string contains primary keys separated by commas
+            resource_name -> the name of the resource containing the records
+        """
+
         if lang != h.lang():
             abort(404, _('Not found'))
 
@@ -182,6 +194,31 @@ class UploadController(PackageController):
             abort(404, _('Not found'))
 
         book = excel_template(dataset_type, org)
+
+        if request.method == 'POST':
+            filters = {}
+            resource_name = request.POST.get('resource_name','' )
+            for r in dataset['resources']:
+                if r['name'] == resource_name:
+                    resource = r
+                    break
+            else:
+                abort(400,"Resource not found")
+
+            pk_fields = recombinant_primary_key_fields(resource['name'])
+            primary_keys = request.POST.getall('bulk-template')
+            chromo = get_chromo(resource['name'])
+            record_data = []
+
+            for keys in primary_keys:
+                temp = keys.split(",")
+                for f, pkf in zip(temp, pk_fields):
+                    filters[pkf['datastore_id']] = f
+                result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
+                record_data += result['records']
+
+            append_data(book, record_data, chromo)
+
         blob = StringIO()
         book.save(blob)
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

@@ -16,7 +16,6 @@ from ckanext.recombinant.helpers import (
 from ckanext.recombinant.write_excel_v2 import (
     _populate_excel_sheet_v2, _populate_reference_sheet_v2)
 
-
 from ckan.plugins.toolkit import _, h
 
 HEADER_ROW, HEADER_HEIGHT = 1, 27
@@ -137,6 +136,22 @@ def excel_template(dataset_type, org):
         sheet.protection.enabled = True
         sheet.sheet_state = 'hidden'
     return book
+
+def append_data(book, record_data, chromo):
+
+    """
+    fills rows of an openpyxl.Workbook with selected data from a datastore resource
+
+    """
+    sheet = book[chromo['resource_name']]
+    current_row = DATA_FIRST_ROW
+    for record in record_data:
+        for col_num, field in template_cols_fields(chromo):
+            sheet.cell(row=current_row, column=col_num).value = record[field['datastore_id']]
+        current_row += 1
+
+    return book
+
 
 
 def excel_data_dictionary(geno):
