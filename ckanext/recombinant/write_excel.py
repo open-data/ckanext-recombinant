@@ -481,11 +481,15 @@ def _append_field_ref_rows(refs, field, link):
         refs.append(('attr', [
             _('Description'),
             recombinant_language_text(field['description'])]))
-    if 'obligation' in field:
+    if 'obligation' in field:  # for old yaml files (merged with validation in new ones)
         refs.append(('attr', [
             _('Obligation'),
             recombinant_language_text(field['obligation'])]))
-    if 'format_type' in field:
+    if 'validation' in field:
+        refs.append(('attr', [
+            _('Validation'),
+            recombinant_language_text(field['validation'])]))
+    if 'format_type' in field:  # for old yaml files (merged with validation in new ones)
         refs.append(('attr', [
             _('Format'),
             recombinant_language_text(field['format_type'])]))
