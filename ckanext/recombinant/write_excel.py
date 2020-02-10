@@ -66,7 +66,8 @@ DEFAULT_CHEADING_STYLE = {
     'Alignment': {'wrapText': True},
     'Font': {'color': '000000', 'underline': 'single'}}
 DEFAULT_EXAMPLE_STYLE = {
-    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFDDD9C4'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFDDD9C4'},
+    'Alignment': {'vertical': 'top'}}
 DEFAULT_ERROR_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFC00000'},
     'Font': {'color': 'FFFFFF'}}
@@ -505,7 +506,7 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
         else:
             choice = [unicode(key), value]
         refs.append(('choice', choice))
-        max_length = max(max_length, len(choice[0]))
+        max_length = max(max_length, len(choice[0]))  # used for full_text_choices
     return estimate_width_from_length(max_length)
 
 def _populate_reference_sheet(sheet, geno, refs):
