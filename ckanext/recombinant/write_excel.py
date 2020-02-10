@@ -19,7 +19,6 @@ from ckanext.recombinant.helpers import (
 from ckanext.recombinant.write_excel_v2 import (
     _populate_excel_sheet_v2, _populate_reference_sheet_v2)
 
-
 from ckan.plugins.toolkit import _, h
 
 HEADER_ROW, HEADER_HEIGHT = 1, 27
@@ -70,7 +69,8 @@ DEFAULT_CHEADING_STYLE = {
     'Alignment': {'wrapText': True},
     'Font': {'color': '000000', 'underline': 'single'}}
 DEFAULT_EXAMPLE_STYLE = {
-    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFDDD9C4'}}
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFDDD9C4'},
+    'Alignment': {'wrapText': True, 'vertical': 'top'}}
 DEFAULT_ERROR_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFC00000'},
     'Font': {'color': 'FFFFFF'}}
@@ -143,6 +143,22 @@ def excel_template(dataset_type, org):
         sheet.protection.enabled = True
         sheet.sheet_state = 'hidden'
     return book
+
+def append_data(book, record_data, chromo):
+
+    """
+    fills rows of an openpyxl.Workbook with selected data from a datastore resource
+
+    """
+    sheet = book[chromo['resource_name']]
+    current_row = DATA_FIRST_ROW
+    for record in record_data:
+        for col_num, field in template_cols_fields(chromo):
+            sheet.cell(row=current_row, column=col_num).value = record[field['datastore_id']]
+        current_row += 1
+
+    return book
+
 
 
 def excel_data_dictionary(geno):
@@ -346,6 +362,16 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
 
         col_letter = get_column_letter(col_num)
 
+        # jump to first error/required cell in column
+        fill_cell(
+            sheet,
+            CSTATUS_ROW,
+            col_num,
+            '=IF(e{rnum}!{col}{row}>0,HYPERLINK("#{col}"&e{rnum}!{col}{row},"")'
+                ',IF(r{rnum}!{col}{row}>0,HYPERLINK("#{col}"&r{rnum}!{col}{row},""),""))'
+                .format(rnum=resource_num, col=col_letter, row=CSTATUS_ROW),
+            col_heading_style)
+
         col = sheet.column_dimensions[col_letter]
         if 'excel_column_width' in field:
             col.width = field['excel_column_width']
@@ -396,13 +422,30 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
 
             choice_range = 'reference!${col}${ref1}:${col}${refN}'.format(
                 col=REF_KEY_COL, ref1=ref1, refN=refN)
+            user_choice_range = field.get('excel_choice_range_formula')
+            if user_choice_range:
+                choice_keys = set(
+                    key for (_i, key, _i, _i) in string.Formatter().parse(user_choice_range)
+                    if key != 'range' and key != 'range_top')
+                choice_values = {}
+                if choice_keys:
+                    choice_values = {
+                        f['datastore_id']: "{col}{num}".format(
+                            col=openpyxl.cell.get_column_letter(cn),
+                            num=DATA_FIRST_ROW)
+                        for cn, f in template_cols_fields(chromo)
+                        if f['datastore_id'] in choice_keys}
+                user_choice_range = user_choice_range.format(
+                    range=choice_range,
+                    range_top=choice_range.split(':')[0],
+                    **choice_values)
             cranges[field['datastore_id']] = choice_range
 
             choices = [c[0] for c in choice_fields[field['datastore_id']]]
             if field['datastore_type'] != '_text':
                 v = openpyxl.worksheet.datavalidation.DataValidation(
                     type="list",
-                    formula1=choice_range,
+                    formula1=user_choice_range or choice_range,
                     allow_blank=True)
                 v.errorTitle = u'Invalid choice'
                 valid_keys = u', '.join(unicode(c) for c in choices)
@@ -439,6 +482,14 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
         sheet.row_dimensions[i].height = chromo.get(
             'excel_data_height', DEFAULT_DATA_HEIGHT)
 
+        # jump to first error/required cell in row
+        sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
+            '=IF(e{rnum}!{col}{row}>0,'
+                'HYPERLINK("#"&ADDRESS({row},e{rnum}!{col}{row}),""),'
+                'IF(r{rnum}!{col}{row}>0,'
+                    'HYPERLINK("#"&ADDRESS({row},r{rnum}!{col}{row}),""),""))'
+            .format(rnum=resource_num, col=RSTATUS_COL, row=i))
+
     sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
     sheet.column_dimensions[RPAD_COL].width = RPAD_WIDTH
 
@@ -470,11 +521,15 @@ def _append_field_ref_rows(refs, field, link):
         refs.append(('attr', [
             _('Description'),
             recombinant_language_text(field['description'])]))
-    if 'obligation' in field:
+    if 'obligation' in field:  # for old yaml files (merged with validation in new ones)
         refs.append(('attr', [
             _('Obligation'),
             recombinant_language_text(field['obligation'])]))
-    if 'format_type' in field:
+    if 'validation' in field:
+        refs.append(('attr', [
+            _('Validation'),
+            recombinant_language_text(field['validation'])]))
+    if 'format_type' in field:  # for old yaml files (merged with validation in new ones)
         refs.append(('attr', [
             _('Format'),
             recombinant_language_text(field['format_type'])]))
@@ -490,7 +545,7 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
         else:
             choice = [unicode(key), value]
         refs.append(('choice', choice))
-        max_length = max(max_length, len(choice[0]))
+        max_length = max(max_length, len(choice[0]))  # used for full_text_choices
     return estimate_width_from_length(max_length)
 
 def _populate_reference_sheet(sheet, geno, refs):
@@ -597,14 +652,14 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         if field['datastore_type'] == 'date':
             fmla = 'NOT(ISNUMBER({cell}+0))'
         elif field['datastore_type'] == 'int':
-            fmla = 'NOT(IFERROR(INT({cell})={cell},FALSE))'
+            fmla = 'NOT(IFERROR(INT({cell})=VALUE({cell}),FALSE))'
         elif field['datastore_type'] == 'year':
             fmla = (
                 'NOT(IFERROR(AND(INT({{cell}})={{cell}},'
                 '{{cell}}>={year_min},{{cell}}<={year_max}),FALSE))'
                 ).format(
-                    year_min = chromo.get('year_min', DEFAULT_YEAR_MIN),
-                    year_max = chromo.get('year_max', DEFAULT_YEAR_MAX))
+                    year_min=chromo.get('year_min', DEFAULT_YEAR_MIN),
+                    year_max=chromo.get('year_max', DEFAULT_YEAR_MAX))
         elif field['datastore_type'] == 'numeric':
             fmla = 'NOT(ISNUMBER({cell}))'
         elif field['datastore_type'] == 'money':
@@ -639,8 +694,8 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         if pk_field:
             # repeated primary (composite) keys are errors
             pk_fmla = 'SUMPRODUCT(' + ','.join(
-                "TRIM('{sheet}'!{col}{top}:{col}{{num}})"
-                "=TRIM('{sheet}'!{col}{{num}})".format(
+                "--(TRIM('{sheet}'!{col}{top}:{col}{{num}})"
+                "=TRIM('{sheet}'!{col}{{num}}))".format(
                     sheet=chromo['resource_name'],
                     col=get_column_letter(cn),
                     top=DATA_FIRST_ROW)
@@ -667,7 +722,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         cell = "'{sheet}'!{col}{{num}}".format(
             sheet=chromo['resource_name'],
             col=col)
-        fmla = '=NOT(ISBLANK({cell}))*(' + fmla + ')'
+        fmla = '=NOT({cell}="")*(' + fmla + ')'
         for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
             try:
                 sheet.cell(row=i, column=col_num).value = fmla.format(
@@ -678,9 +733,11 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
                 assert 0, (fmla, fmla_values)
 
         sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
-            '=SUM({col}{row1}:{col}{rowN})'.format(
+            '=IFERROR(MATCH(TRUE,INDEX({col}{row1}:{col}{rowN}<>0,),)+{row0},0)'
+            .format(
                 col=col,
                 row1=DATA_FIRST_ROW,
+                row0=DATA_FIRST_ROW - 1,
                 rowN=DATA_FIRST_ROW + data_num_rows - 1))
 
     if col is None:
@@ -688,8 +745,9 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
 
     for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
-            '=SUM({colA}{row}:{colZ}{row})'.format(
+            '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'.format(
                 colA=DATA_FIRST_COL,
+                col0=DATA_FIRST_COL_NUM - 1,
                 colZ=col,
                 row=i))
 
@@ -715,9 +773,9 @@ def _populate_excel_r_sheet(sheet, chromo):
         pk_field = field['datastore_id'] in chromo['datastore_primary_key']
 
         if fmla:
-            fmla = '={has_data}*ISBLANK({cell})*(' + fmla +')'
+            fmla = '={has_data}*({cell}="")*(' + fmla +')'
         elif pk_field or field.get('excel_required', False):
-            fmla = '={has_data}*ISBLANK({cell})'
+            fmla = '={has_data}*({cell}="")'
         else:
             continue
 
@@ -745,9 +803,11 @@ def _populate_excel_r_sheet(sheet, chromo):
                 **fmla_values).format(num=i)
 
         sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
-            '=SUM({col}{row1}:{col}{rowN})'.format(
+            '=IFERROR(MATCH(TRUE,INDEX({col}{row1}:{col}{rowN}<>0,),)+{row0},0)'
+            .format(
                 col=col,
                 row1=DATA_FIRST_ROW,
+                row0=DATA_FIRST_ROW - 1,
                 rowN=DATA_FIRST_ROW + data_num_rows - 1))
 
     if col is None:
@@ -763,8 +823,10 @@ def _populate_excel_r_sheet(sheet, chromo):
 
     for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
-            '=SUM({colA}{row}:{colZ}{row})'.format(
+            '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'
+            .format(
                 colA=DATA_FIRST_COL,
+                col0=DATA_FIRST_COL_NUM - 1,
                 colZ=col,
                 row=i))
 

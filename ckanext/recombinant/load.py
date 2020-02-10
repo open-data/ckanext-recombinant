@@ -9,13 +9,13 @@ except ImportError:
 
 def load(f):
     if is_yaml(f.name):
-        return yaml.load(f)
+        return yaml.safe_load(f)
     return json.load(f)
 
 
 def loads(s, url):
     if is_yaml(url):
-        return yaml.load(s)
+        return yaml.safe_load(s)
     return json.loads(s)
 
 

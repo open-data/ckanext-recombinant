@@ -4,14 +4,16 @@ ckanext-recombinant table management commands
 Usage:
   paster recombinant show [DATASET_TYPE [ORG_NAME]] [-c CONFIG]
   paster recombinant template DATASET_TYPE ORG_NAME OUTPUT_FILE [-c CONFIG]
-  paster recombinant create [-f] (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant create-triggers (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant update (-a | DATASET_TYPE ...) [-f] [-c CONFIG]
   paster recombinant delete (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant load-csv CSV_FILE ... [-c CONFIG]
   paster recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ] [-c CONFIG]
   paster recombinant target-datasets [-c CONFIG]
   paster recombinant dataset-types [DATASET_TYPE ...] [-c CONFIG]
   paster recombinant remove-broken DATASET_TYPE ... [-c CONFIG]
-  paster recombinant update DATASET_TYPE ... [-c CONFIG]
+  paster recombinant remove-empty (-a | DATASET_TYPE ...) [-c CONFIG]
+  paster recombinant run-triggers DATASET_TYPE ... [-c CONFIG]
   paster recombinant -h
 
 Options:
@@ -27,6 +29,7 @@ import os
 import csv
 import sys
 import logging
+import json
 
 from ckan.lib.cli import CkanCommand
 from ckan.logic import ValidationError
@@ -41,6 +44,7 @@ from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
     get_resource_names)
 from ckanext.recombinant.read_csv import csv_data_batch
 from ckanext.recombinant.write_excel import excel_template
+from ckanext.recombinant.logic import _update_triggers
 
 RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
 
@@ -72,8 +76,12 @@ class TableCommand(CkanCommand):
             if opts['DATASET_TYPE']:
                 dataset_type = opts['DATASET_TYPE'][0]
             return self._show(dataset_type, opts['ORG_NAME'])
-        elif opts['create']:
-            return self._create(opts['DATASET_TYPE'])
+        elif opts['create-triggers']:
+            return self._create_triggers(opts['DATASET_TYPE'])
+        elif opts['remove-empty']:
+            return self._remove_empty(opts['DATASET_TYPE'])
+        elif opts['update']:
+            return self._update(opts['DATASET_TYPE'])
         elif opts['delete']:
             return self._delete(opts['DATASET_TYPE'])
         elif opts['load-csv']:
@@ -87,8 +95,8 @@ class TableCommand(CkanCommand):
             return self._dataset_types(opts['DATASET_TYPE'])
         elif opts['remove-broken']:
             return self._remove_broken(opts['DATASET_TYPE'])
-        elif opts['update']:
-            return self._update(opts['DATASET_TYPE'])
+        elif opts['run-triggers']:
+            return self._run_triggers(opts['DATASET_TYPE'])
         elif opts['template']:
             return self._template(
                 opts['DATASET_TYPE'][0],
@@ -148,29 +156,13 @@ class TableCommand(CkanCommand):
                             if not r['metadata_correct']:
                                 print '   ! metadata needs to be updated'
 
-            if len(packages) != len(orgs):
-                print (' > %d orgs but %d records found' %
-                    (len(orgs), len(packages)))
-            else:
-                print (' > %d datasets found' % (len(packages),))
+            print (' > %d orgs with %d records found' %
+                (len(orgs), len(packages)))
             need_update = sum(1 for p in packages if not p['all_correct'])
             if need_update:
                 print (' --> %d need to be updated' % need_update)
 
-    def _expand_dataset_types(self, dataset_types):
-        if self.options.all_types:
-            return get_dataset_types()
-        return dataset_types
-
-    def _expand_resource_names(self, resource_names):
-        if self.options.all_types:
-            return get_resource_names()
-        return resource_names
-
-    def _create(self, dataset_types):
-        """
-        Create and update recombinant datasets
-        """
+    def _update(self, dataset_types):
         orgs = self._get_orgs()
         lc = LocalCKAN()
         for dtype in self._expand_dataset_types(dataset_types):
@@ -185,10 +177,43 @@ class TableCommand(CkanCommand):
                     lc.action.recombinant_update(
                         owner_org=o, dataset_type=dtype,
                         force_update=self.options.force_update)
-                else:
-                    print dtype, o
-                    lc.action.recombinant_create(owner_org=o, dataset_type=dtype)
 
+    def _expand_dataset_types(self, dataset_types):
+        if self.options.all_types:
+            return get_dataset_types()
+        return dataset_types
+
+    def _expand_resource_names(self, resource_names):
+        if self.options.all_types:
+            return get_resource_names()
+        return resource_names
+
+    def _create_triggers(self, dataset_types):
+        """
+        Create and update triggers
+        """
+        orgs = self._get_orgs()
+        lc = LocalCKAN()
+        for dtype in self._expand_dataset_types(dataset_types):
+            for chromo in get_geno(dtype)['resources']:
+                _update_triggers(lc, chromo)
+
+    def _remove_empty(self, dataset_types):
+        orgs = self._get_orgs()
+        lc = LocalCKAN()
+        for dtype in self._expand_dataset_types(dataset_types):
+            packages = self._get_packages(dtype, orgs)
+            for p in packages:
+                if not any(r['datastore_rows'] for r in p['resources']):
+                    print 'deleting %s %s' % (dtype, p['owner_org'])
+                    for r in p['resources']:
+                        try:
+                            lc.action.datastore_delete(
+                                force=True,
+                                resource_id=r['id'])
+                        except NotFound:
+                            pass
+                    lc.action.package_delete(id=p['id'])
 
     def _delete(self, dataset_types):
         """
@@ -221,23 +246,30 @@ class TableCommand(CkanCommand):
         resource_name = csv_name[:-4]
         print resource_name
         chromo = get_chromo(resource_name)
+
         dataset_type = chromo['dataset_type']
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
         lc = LocalCKAN()
+        errors = 0
 
         for org_name, records in csv_data_batch(name, chromo):
             results = lc.action.package_search(
                 q='type:%s organization:%s' % (dataset_type, org_name),
                 include_private=True,
                 rows=2)['results']
+
             if not results:
-                print 'type:%s organization:%s not found!' % (
-                    dataset_type, org_name)
-                return 1
+                lc.action.recombinant_create(dataset_type=dataset_type, owner_org=org_name)
+                results = lc.action.package_search(
+                    q='type:%s organization:%s' % (dataset_type, org_name),
+                    include_private=True,
+                    rows=2)['results']
+
             if len(results) > 1:
                 print 'type:%s organization:%s multiple found!' % (
                     dataset_type, org_name)
                 return 1
+
             for res in results[0]['resources']:
                 if res['name'] == resource_name:
                     break
@@ -258,11 +290,31 @@ class TableCommand(CkanCommand):
                             r[k] = r[k].split(',')
 
             print '-', org_name, len(records)
-            lc.action.datastore_upsert(
-                method=method,
-                resource_id=res['id'],
-                records=records)
-        return 0
+
+            if 'csv_org_extras' in chromo:
+                # remove 'csv_org_extras' fields from records
+                for r in records:
+                    for e in chromo['csv_org_extras']:
+                        del r[e]
+
+            offset = 0
+            while offset < len(records):
+                try:
+                    lc.action.datastore_upsert(
+                        method=method,
+                        resource_id=res['id'],
+                        records=records[offset:])
+                except ValidationError as err:
+                    if '_records_row' not in err.error_dict:
+                        raise
+                    bad = err.error_dict['_records_row']
+                    errors |= 2
+                    sys.stderr.write(json.dumps(
+                        [err.error_dict['records'], org_name, records[bad]]).encode('utf-8') + '\n')
+                    offset += bad + 1  # skip and continue
+                else:
+                    break
+        return errors
 
     def _combine_csv(self, target_dir, resource_names):
         if target_dir and not os.path.isdir(target_dir):
@@ -300,18 +352,20 @@ class TableCommand(CkanCommand):
                     break
             else:
                 print 'resource {0} not found for {1}'.format(
-                    chromo['resource_name'], pkg['organization']['name'])
+                    chromo['resource_name'], pkg['owner_org'])
                 continue
 
             try:
-                records = lc.action.datastore_search(
+                result = lc.action.datastore_search(
                     limit=RECORDS_PER_ORGANIZATION,
                     resource_id=res['id'],
-                    )['records']
+                )
+                records = result['records']
+                assert len(records) == result.get('total', 0), (chromo['resource_name'], pkg['owner_org'])
             except NotFound:
                 print 'resource {0} table missing for {1}'.format(
                     chromo['resource_name'], pkg['owner_org'])
-                return
+                continue
 
             if not records:
                 continue
@@ -341,7 +395,7 @@ class TableCommand(CkanCommand):
                 except KeyError:
                     print 'resource {0} table missing keys for {1}'.format(
                         chromo['resource_name'], pkg['owner_org'])
-                    return
+                    continue
 
     def _remove_broken(self, target_datasets):
         """
@@ -359,9 +413,9 @@ class TableCommand(CkanCommand):
                         lc.action.package_delete(id=d['id'])
                         break
 
-    def _update(self, target_datasets):
+    def _run_triggers(self, target_datasets):
         """
-        Low-level command to update field value in datasets' datastore tables
+        Low-level command to run triggers on datasets' datastore tables
         """
         lc = LocalCKAN()
         for dtype in target_datasets:

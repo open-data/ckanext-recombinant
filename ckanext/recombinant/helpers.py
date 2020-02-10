@@ -121,6 +121,7 @@ def recombinant_choice_fields(resource_name, all_languages=False,
     """
     Return a list of fields from the resource definition
     that contain lists of choices, with labels pre-translated
+    and sorted by key (or custom choice_order_expression)
 
     all_languages - set to True to return all label languages
     prefer_lang - set all_languages to False and use prefer_lang
@@ -131,21 +132,33 @@ def recombinant_choice_fields(resource_name, all_languages=False,
     if not chromo:
         return []
 
-    def choices(f, choices):
+    def build_choices(f, choices):
+        order_expr = f.get('choice_order_expression')
+        key_fn = None
+        if order_expr:
+            code = compile(order_expr, resource_name, 'eval')
+
+            def key_fn(v):
+                return eval(code, {}, {
+                    'code': v,
+                    'value': choices[v],
+                    'text': recombinant_language_text(choices[v], prefer_lang),
+                })
+
         out.append({
             'datastore_id': f['datastore_id'],
             'label': recombinant_language_text(f['label']),
             'choices': [(v,
                     choices[v] if all_languages else
                     recombinant_language_text(choices[v], prefer_lang))
-                for v in sorted(choices)],
+                for v in sorted(choices, key=key_fn)],
             })
 
     for f in chromo['fields']:
         if 'choices' in f:
-            choices(f, f['choices'])
+            build_choices(f, f['choices'])
         elif 'choices_file' in f and '_path' in chromo:
-            choices(f, _read_choices_file(chromo, f))
+            build_choices(f, _read_choices_file(chromo, f))
 
     return out
 
