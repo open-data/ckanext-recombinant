@@ -67,7 +67,7 @@ DEFAULT_CHEADING_STYLE = {
     'Font': {'color': '000000', 'underline': 'single'}}
 DEFAULT_EXAMPLE_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFDDD9C4'},
-    'Alignment': {'vertical': 'top'}}
+    'Alignment': {'wrapText': True, 'vertical': 'top'}}
 DEFAULT_ERROR_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFC00000'},
     'Font': {'color': 'FFFFFF'}}
