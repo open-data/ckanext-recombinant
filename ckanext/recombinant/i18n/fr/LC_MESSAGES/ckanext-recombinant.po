@@ -437,9 +437,6 @@ msgstr ""
 #~ msgid "label"
 #~ msgstr ""
 
-#~ msgid "Validation"
-#~ msgstr "Validation"
-
 #~ msgid "Table for this organization not found"
 #~ msgstr ""
 
