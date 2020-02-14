@@ -203,7 +203,7 @@ class UploadController(PackageController):
                     resource = r
                     break
             else:
-                abort(400,"Resource not found")
+                abort(404,"Resource not found")
 
             pk_fields = recombinant_primary_key_fields(resource['name'])
             primary_keys = request.POST.getall('bulk-template')
@@ -214,7 +214,10 @@ class UploadController(PackageController):
                 temp = keys.split(",")
                 for f, pkf in zip(temp, pk_fields):
                     filters[pkf['datastore_id']] = f
-                result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
+                try:
+                    result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
+                except NotAuthorized:
+                    abort(403, _("Not authorized"))
                 record_data += result['records']
 
             append_data(book, record_data, chromo)
