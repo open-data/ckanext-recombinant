@@ -147,7 +147,10 @@ def append_data(book, record_data, chromo):
     current_row = DATA_FIRST_ROW
     for record in record_data:
         for col_num, field in template_cols_fields(chromo):
-            sheet.cell(row=current_row, column=col_num).value = record[field['datastore_id']]
+            item = record[field['datastore_id']]
+            if isinstance(item, list):
+                item = u', '.join(unicode(e) for e in item)
+            sheet.cell(row=current_row, column=col_num).value = item
         current_row += 1
 
     return book
