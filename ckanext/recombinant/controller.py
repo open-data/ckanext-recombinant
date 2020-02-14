@@ -359,25 +359,42 @@ class UploadController(PackageController):
             chromo = get_chromo(resource_name)
         except RecombinantException:
             abort(404, _('Recombinant resource_name not found'))
+
+        if 'create' in request.POST:
+            try:
+                dataset = lc.action.recombinant_show(
+                    dataset_type=chromo['dataset_type'], owner_org=owner_org)
+            except ckanapi.NotFound:
+                lc.action.recombinant_create(
+                    dataset_type=chromo['dataset_type'], owner_org=owner_org)
+            return h.redirect_to(
+                controller='ckanext.recombinant.controller:UploadController',
+                action='preview_table',
+                resource_name=resource_name,
+                owner_org=owner_org,
+                )
+
         try:
             dataset = lc.action.recombinant_show(
                 dataset_type=chromo['dataset_type'], owner_org=owner_org)
         except ckanapi.NotFound:
-            # lazily create dataset
-            lc.action.recombinant_create(
-                dataset_type=chromo['dataset_type'], owner_org=owner_org)
-            dataset = lc.action.recombinant_show(
-                dataset_type=chromo['dataset_type'], owner_org=owner_org)
+            dataset = None
         org = lc.action.organization_show(id=owner_org)
 
-        for r in dataset['resources']:
-            if r['name'] == resource_name:
-                break
+        if dataset:
+            for r in dataset['resources']:
+                if r['name'] == resource_name:
+                    break
+            else:
+                abort(404, _('Resource not found'))
         else:
-            abort(404, _('Resource not found'))
+            r = None
 
         return render('recombinant/resource_edit.html', extra_vars={
             'dataset': dataset,
+            'dataset_type': chromo['dataset_type'],
+            'resource_description': chromo['title'],
+            'resource_name': chromo['resource_name'],
             'resource': r,
             'organization': org,
             'errors': errors,

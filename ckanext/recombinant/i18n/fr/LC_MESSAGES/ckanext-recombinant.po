@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-05-07 17:24+0000\n"
+"POT-Creation-Date: 2020-02-14 15:28-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -19,64 +19,72 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.3.4\n"
 
-#: ckanext/recombinant/controller.py:51
+#: ckanext/recombinant/controller.py:55
 msgid "No errors found."
 msgstr "Aucune erreur trouvée."
 
-#: ckanext/recombinant/controller.py:55
+#: ckanext/recombinant/controller.py:59
 msgid "Your file was successfully uploaded into the central system."
 msgstr "Votre fichier a été téléchargé avec succès dans le système central."
 
-#: ckanext/recombinant/controller.py:91
+#: ckanext/recombinant/controller.py:95
 msgid "Required field"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:109
+#: ckanext/recombinant/controller.py:113
 msgid "Wrong number of fields, expected {num}"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:121
+#: ckanext/recombinant/controller.py:125
 msgid "Invalid fields"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:124
+#: ckanext/recombinant/controller.py:128
 #, python-format
 msgid "No matching records found \"%s\""
 msgstr ""
 
-#: ckanext/recombinant/controller.py:127
+#: ckanext/recombinant/controller.py:131
 msgid "Multiple matching records found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:159
+#: ckanext/recombinant/controller.py:163
 msgid "{num} deleted."
 msgstr "{num} supprimé"
 
-#: ckanext/recombinant/controller.py:171 ckanext/recombinant/controller.py:182
+#: ckanext/recombinant/controller.py:183 ckanext/recombinant/controller.py:194
 msgid "Not found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:200 ckanext/recombinant/controller.py:212
+#: ckanext/recombinant/controller.py:220
+msgid "Not authorized"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:240 ckanext/recombinant/controller.py:252
 msgid "Recombinant dataset_type not found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:272
+#: ckanext/recombinant/controller.py:263 ckanext/recombinant/controller.py:286
+msgid "title"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:264
+msgid "notes"
+msgstr ""
+
+#: ckanext/recombinant/controller.py:344
 msgid "No organizations found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:276 ckanext/recombinant/controller.py:289
+#: ckanext/recombinant/controller.py:348 ckanext/recombinant/controller.py:361
 msgid "Recombinant resource_name not found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:294
-msgid "Table for this organization not found"
-msgstr ""
-
-#: ckanext/recombinant/controller.py:301
+#: ckanext/recombinant/controller.py:389
 msgid "Resource not found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:336
+#: ckanext/recombinant/controller.py:429
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try"
 " copying your data into the latest version of the template and uploading "
@@ -89,13 +97,13 @@ msgstr ""
 "persiste, envoyez votre fichier Excel à open-ouvert@… afin que nous "
 "puissions faire enquête."
 
-#: ckanext/recombinant/controller.py:343
+#: ckanext/recombinant/controller.py:436
 msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
 
-#: ckanext/recombinant/controller.py:350
+#: ckanext/recombinant/controller.py:443
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but "
 "you supplied a sheet for {1}"
@@ -103,7 +111,7 @@ msgstr ""
 "La feuille n'est pas valide pour cette organisation. La feuille doit être"
 " étiquetée pour {0}, mais vous avez fourni une feuille pour {1}"
 
-#: ckanext/recombinant/controller.py:366
+#: ckanext/recombinant/controller.py:459
 msgid ""
 "This template is out of date. Please try copying your data into the "
 "latest version of the template and uploading again. If this problem "
@@ -111,15 +119,15 @@ msgid ""
 "investigate."
 msgstr ""
 
-#: ckanext/recombinant/controller.py:412
+#: ckanext/recombinant/controller.py:505
 msgid "Sheet {0} Row {1}:"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:416
+#: ckanext/recombinant/controller.py:509
 msgid "Error while importing data: {0}"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:419
+#: ckanext/recombinant/controller.py:512
 msgid "The template uploaded is empty"
 msgstr "Le modèle que vous avez soumis est vide"
 
@@ -137,41 +145,45 @@ msgstr ""
 msgid "Multiple datasets exist for type %s"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:242
+#: ckanext/recombinant/write_excel.py:296
 msgid "e.g."
 msgstr "ex."
 
-#: ckanext/recombinant/write_excel.py:463
-#: ckanext/recombinant/write_excel_v2.py:291
+#: ckanext/recombinant/write_excel.py:521
+#: ckanext/recombinant/write_excel_v2.py:293
 msgid "ID"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:467
-#: ckanext/recombinant/write_excel_v2.py:295
+#: ckanext/recombinant/write_excel.py:525
+#: ckanext/recombinant/write_excel_v2.py:297
 msgid "Description"
 msgstr "Description"
 
-#: ckanext/recombinant/write_excel.py:471
-#: ckanext/recombinant/write_excel_v2.py:299
+#: ckanext/recombinant/write_excel.py:529
+#: ckanext/recombinant/write_excel_v2.py:301
 msgid "Obligation"
 msgstr "Obligation"
 
-#: ckanext/recombinant/write_excel.py:475
-#: ckanext/recombinant/write_excel_v2.py:303
+#: ckanext/recombinant/write_excel.py:533
+msgid "Validation"
+msgstr "Validation"
+
+#: ckanext/recombinant/write_excel.py:537
+#: ckanext/recombinant/write_excel_v2.py:305
 msgid "Format"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:479
-#: ckanext/recombinant/write_excel_v2.py:307
+#: ckanext/recombinant/write_excel.py:541
+#: ckanext/recombinant/write_excel_v2.py:309
 msgid "Values"
 msgstr "Valeurs"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:64
-#: ckanext/recombinant/write_excel.py:511
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:67
+#: ckanext/recombinant/write_excel.py:570
 msgid "Reference"
 msgstr "Référence"
 
-#: ckanext/recombinant/write_excel_v2.py:288
+#: ckanext/recombinant/write_excel_v2.py:290
 msgid "Field Name"
 msgstr "Nom de la zone"
 
@@ -198,26 +210,40 @@ msgstr[1] ""
 msgid "Cancel"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:25
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:26
 msgid "row"
 msgstr "ligne"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:25
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:26
 msgid "rows"
 msgstr "lignes"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:42
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:45
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:87
 msgid "Import"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:56
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:59
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:45
 msgid "Delete"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:72
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:75
 msgid "API Access"
 msgstr "Accès par API"
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:89
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
+msgid "Create and update records"
+msgstr "Créer et mettre à jour un dossier"
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:91
+msgid "No records have been created for this organization"
+msgstr "Aucun enregistrement n'a été créé pour cette organisation"
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:92
+msgid "Get started…"
+msgstr "Commencer…"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:3
 msgid "API access examples"
@@ -344,7 +370,7 @@ msgid "Delete existing records"
 msgstr "Supprimer les dossiers existants"
 
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:16
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:12
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:14
 msgid "(required)"
 msgstr "(obligatoire)"
 
@@ -356,47 +382,54 @@ msgstr ""
 msgid "Enter one record per line, e.g:"
 msgstr "Entrer un (1) dossier par ligne"
 
-#: ckanext/recombinant/templates/recombinant/snippets/org_select.html:2
+#: ckanext/recombinant/templates/recombinant/snippets/org_select.html:3
 msgid "Organization"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:8
+msgid "Download"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:14
+msgid "Template Excel spreadsheet"
+msgstr "Télécharger modèle Excel"
+
+#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:17
 msgid "Last Updated"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:15
 #: ckanext/recombinant/templates/recombinant/snippets/xls_download.html:3
 msgid "Download template Excel spreadsheet"
 msgstr "Télécharger modèle Excel"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
-msgid "Create and update records"
-msgstr "Créer et mettre à jour les données"
-
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:11
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:13
 msgid "Upload"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:21
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:23
 msgid "You must provide a valid file"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:35
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:37
 msgid "Submit"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:36
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:38
 msgid "Check for Errors"
 msgstr "Vérifier les erreurs"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:42
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:45
 msgid ""
 "To ensure the validation rules within the template are maintained, please"
 " paste your data using the “Paste Values” function. This can be done by "
 "right-clicking, selecting <kbd>Paste Special</kbd> and then clicking "
 "<kbd>Values</kbd>."
 msgstr ""
-"Pour garantir que les règles de validation à l’intérieur du gabarit soient conservées, veuillez coller vos données en utilisant la fonction « Coller valeurs ». Cela peut se faire en cliquant sur le bouton droit de la souris, en sélectionnant <kbd>Collage spécial</kbd> et ensuite, en cliquant sur <kbd>Valeurs</kbd>."
+"Pour garantir que les règles de validation à l’intérieur du gabarit "
+"soient conservées, veuillez coller vos données en utilisant la fonction «"
+" Coller valeurs ». Cela peut se faire en cliquant sur le bouton droit de "
+"la souris, en sélectionnant <kbd>Collage spécial</kbd> et ensuite, en "
+"cliquant sur <kbd>Valeurs</kbd>."
 
 #~ msgid "No matching records found %s"
 #~ msgstr ""
@@ -404,5 +437,12 @@ msgstr ""
 #~ msgid "label"
 #~ msgstr ""
 
-msgid "Validation"
-msgstr "Validation"
+#~ msgid "Validation"
+#~ msgstr "Validation"
+
+#~ msgid "Table for this organization not found"
+#~ msgstr ""
+
+#~ msgid "Create and update records from Excel spreadsheet"
+#~ msgstr "Créer et mettre à jour les données"
+
