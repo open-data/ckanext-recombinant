@@ -434,7 +434,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
                 if choice_keys:
                     choice_values = {
                         f['datastore_id']: "{col}{num}".format(
-                            col=openpyxl.cell.get_column_letter(cn),
+                            col=get_column_letter(cn),
                             num=DATA_FIRST_ROW)
                         for cn, f in template_cols_fields(chromo)
                         if f['datastore_id'] in choice_keys}
