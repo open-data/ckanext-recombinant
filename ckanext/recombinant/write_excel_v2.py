@@ -26,10 +26,6 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
 
     returns field information for reference sheet
     """
-    boolean_validator = openpyxl.worksheet.datavalidation.DataValidation(
-        type="list", formula1='"FALSE,TRUE"', allow_blank=True)
-    sheet.add_data_validation(boolean_validator)
-
     sheet.title = chromo['resource_name']
 
     org_style = dict(
@@ -89,7 +85,10 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
         _append_field_ref_rows_v2(refs, field, org_style, header_style)
 
         if field['datastore_type'] == 'boolean':
-            boolean_validator.add(validation_range)
+            v = openpyxl.worksheet.datavalidation.DataValidation(
+                type="list", formula1='"FALSE,TRUE"', allow_blank=True)
+            sheet.add_data_validation(v)
+            v.add(validation_range)
         if field['datastore_type'] == 'date':
             sheet.conditional_formatting.add(validation_range,
                 FormulaRule([
