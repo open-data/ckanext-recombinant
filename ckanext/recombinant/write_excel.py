@@ -21,6 +21,8 @@ from logging import getLogger
 from datetime import datetime
 from decimal import Decimal
 
+log = getLogger(__name__)
+
 HEADER_ROW, HEADER_HEIGHT = 1, 27
 CHEADINGS_ROW, CHEADINGS_HEIGHT = 2, 22
 CHEADINGS_MIN_WIDTH = 10
@@ -150,29 +152,24 @@ def append_data(book, record_data, chromo):
     current_row = DATA_FIRST_ROW
     for record in record_data:
         for col_num, field in template_cols_fields(chromo):
-            item = datastore_type_format(record[field['datastore_id']], field['datastore_id'], chromo)
+            item = datastore_type_format(record[field['datastore_id']], field['datastore_type'])
             sheet.cell(row=current_row, column=col_num).value = item
         current_row += 1
 
     return book
 
 
-def datastore_type_format(value, datastore_id, chromo):
+def datastore_type_format(value, datastore_type):
 
-    value_type = [f['datastore_type'] for f in chromo['fields'] if f['datastore_id'] == datastore_id]
     numeric_types = ['money', 'year', 'int', 'bigint', 'numeric']
     if isinstance(value, list):
         item = u', '.join(unicode(e) for e in value)
-
-    elif value_type[0] == 'date':
+    elif datastore_type == 'date':
         item = datetime.strptime(value, "%Y-%m-%d").date()
-
-    elif value_type[0] == 'timestamp':
+    elif datastore_type == 'timestamp':
         item = datetime.strptime(value, "%Y-%m-%d %H:%M:%S %Z")
-
-    elif value_type[0] in numeric_types:
+    elif datastore_type in numeric_types:
         item = Decimal(value)
-
     else:
         item = value
 
