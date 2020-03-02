@@ -17,11 +17,8 @@ from ckanext.recombinant.write_excel_v2 import (
 
 from ckan.plugins.toolkit import _, h
 
-from logging import getLogger
 from datetime import datetime
 from decimal import Decimal
-
-log = getLogger(__name__)
 
 HEADER_ROW, HEADER_HEIGHT = 1, 27
 CHEADINGS_ROW, CHEADINGS_HEIGHT = 2, 22
