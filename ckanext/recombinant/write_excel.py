@@ -5,7 +5,6 @@ Excel v3 template and data-dictionary generation code
 
 import textwrap
 import string
-
 import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.formatting.rule import FormulaRule
@@ -20,6 +19,9 @@ from ckanext.recombinant.write_excel_v2 import (
     _populate_excel_sheet_v2, _populate_reference_sheet_v2)
 
 from ckan.plugins.toolkit import _, h
+
+from datetime import datetime
+from decimal import Decimal
 
 HEADER_ROW, HEADER_HEIGHT = 1, 27
 CHEADINGS_ROW, CHEADINGS_HEIGHT = 2, 22
@@ -144,24 +146,38 @@ def excel_template(dataset_type, org):
         sheet.sheet_state = 'hidden'
     return book
 
+
 def append_data(book, record_data, chromo):
 
     """
     fills rows of an openpyxl.Workbook with selected data from a datastore resource
-
     """
     sheet = book[chromo['resource_name']]
     current_row = DATA_FIRST_ROW
     for record in record_data:
         for col_num, field in template_cols_fields(chromo):
-            item = record[field['datastore_id']]
-            if isinstance(item, list):
-                item = u', '.join(unicode(e) for e in item)
+            item = datastore_type_format(record[field['datastore_id']], field['datastore_type'])
             sheet.cell(row=current_row, column=col_num).value = item
         current_row += 1
 
     return book
 
+
+def datastore_type_format(value, datastore_type):
+
+    numeric_types = ['money', 'year', 'int', 'bigint', 'numeric']
+    if isinstance(value, list):
+        item = u', '.join(unicode(e) for e in value)
+    elif datastore_type == 'date':
+        item = datetime.strptime(value, "%Y-%m-%d").date()
+    elif datastore_type == 'timestamp':
+        item = datetime.strptime(value, "%Y-%m-%d %H:%M:%S %Z")
+    elif datastore_type in numeric_types:
+        item = Decimal(value)
+    else:
+        item = value
+
+    return item
 
 
 def excel_data_dictionary(geno):
