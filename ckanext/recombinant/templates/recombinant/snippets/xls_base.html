@@ -10,7 +10,9 @@
           <a id="xls_download" class="button" href="{% url_for 'recombinant_template',
             dataset_type=pkg.dataset_type,
             lang=h.lang(),
-            owner_org=pkg.owner_org %}"><span class="glyphicon glyphicon-download-alt"></span>
+            owner_org=pkg.owner_org %}"
+            {% block xls_event %}
+            {% endblock %}><span class="glyphicon glyphicon-download-alt"></span>
             {{ _('Template Excel spreadsheet') }}</a>
         </div>
         {% if pkg.template_updated %}
