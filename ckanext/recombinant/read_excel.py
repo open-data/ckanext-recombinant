@@ -4,6 +4,7 @@ import openpyxl
 
 from ckanext.recombinant.datatypes import canonicalize
 from ckanext.recombinant.errors import BadExcelData
+from ckan.lib.base import request
 
 HEADER_ROWS_V2 = 3
 HEADER_ROWS_V3 = 5
@@ -16,7 +17,7 @@ def read_excel(f, file_contents=None):
 
     :return: Generator that opens the excel file f
     and then produces:
-        (sheet-name, org-name, column_names, data_rows_generator)
+        (sheet-name, org-name, column_names, example_values, data_rows_generator)
         ...
     :rtype: generator
     """
@@ -39,15 +40,19 @@ def read_excel(f, file_contents=None):
                 sheetname,
                 org_name,
                 [c.value for c in names_row],
+                None,  # example row does not exist for template version 2
                 _filter_bumf(rowiter, HEADER_ROWS_V2))
             continue
 
         cstatus_row = next(rowiter)
         example_row = next(rowiter)
+        columns = [c.value for c in names_row[2:]]
         yield (
             sheetname,
             names_row[1].value,
-            [c.value for c in names_row[2:]],
+            columns,
+            # create dict of example values in order to validate example row
+            {d: example_row[i].value for i, d in enumerate(columns, start=2)},
             _filter_bumf((row[2:] for row in rowiter), HEADER_ROWS_V3))
 
 
