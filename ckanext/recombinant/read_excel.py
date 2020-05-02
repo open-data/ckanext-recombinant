@@ -4,7 +4,6 @@ import openpyxl
 
 from ckanext.recombinant.datatypes import canonicalize
 from ckanext.recombinant.errors import BadExcelData
-from ckan.lib.base import request
 
 HEADER_ROWS_V2 = 3
 HEADER_ROWS_V3 = 5
