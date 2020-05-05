@@ -417,7 +417,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
     total_records = 0
     while True:
         try:
-            sheet_name, org_name, column_names, example_row_values, rows = next(upload_data)
+            sheet_name, org_name, column_names, rows = next(upload_data)
         except StopIteration:
             break
         except Exception:
@@ -468,24 +468,6 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 'full' if f.get('excel_full_text_choices') else True
             for f in chromo['fields']
             if ('choices' in f or 'choices_file' in f)}
-
-        # validate example row if exists
-        if example_row_values:
-            for key in chromo['examples']['record']:
-                val = example_row_values[key]
-                if chromo['examples']['record'][key] != val:
-                    # check if it is a controlled list
-                    # e.g. example record in template is 'M' while in Excel is 'M: value'
-                    # since both are same, trim val and compare again
-                    for field in chromo['fields']:
-                        if field['datastore_id'] == key \
-                                and 'choices' in field \
-                                and example_row_values[key].find(':') != -1:
-                            val = val.split(":")[0]
-                            break
-                    # check again
-                    if chromo['examples']['record'][key] != val:
-                        raise BadExcelData(_("Example record on row 5 deleted or modified"))
 
         records = get_records(
             rows,
