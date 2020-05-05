@@ -44,7 +44,7 @@ def read_excel(f, file_contents=None):
 
         cstatus_row = next(rowiter)
         example_row = next(rowiter)
-        if example_row[0].value != 'e.g.' or example_row[0].value != 'ex.':
+        if example_row[0].value != 'e.g.' and example_row[0].value != 'ex.':
             raise BadExcelData(u'Example record on row 5 is missing')
 
         yield (
