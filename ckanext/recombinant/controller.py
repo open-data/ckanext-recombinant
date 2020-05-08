@@ -420,6 +420,8 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
             sheet_name, org_name, column_names, rows = next(upload_data)
         except StopIteration:
             break
+        except BadExcelData as e:
+            raise e
         except Exception:
             # unfortunately this can fail in all sorts of ways
             if asbool(config.get('debug', False)):
