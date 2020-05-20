@@ -42,7 +42,7 @@ msgstr "Champs non valides"
 #: ckanext/recombinant/controller.py:128
 #, python-format
 msgid "No matching records found \"%s\""
-msgstr "Aucun document correspondant n’a été trouvé"
+msgstr "Aucun document correspondant n’a été trouvé \"%s\""
 
 #: ckanext/recombinant/controller.py:131
 msgid "Multiple matching records found"
