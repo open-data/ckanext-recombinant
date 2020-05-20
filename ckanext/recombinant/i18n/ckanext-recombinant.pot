@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-02-14 15:28-0500\n"
+"POT-Creation-Date: 2020-05-14 13:59-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -83,7 +83,7 @@ msgstr ""
 msgid "Resource not found"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:429
+#: ckanext/recombinant/controller.py:431
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try "
 "copying your data into the latest version of the template and uploading "
@@ -91,34 +91,34 @@ msgid ""
 "sct.gc.ca so we may investigate."
 msgstr ""
 
-#: ckanext/recombinant/controller.py:436
+#: ckanext/recombinant/controller.py:438
 msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
 
-#: ckanext/recombinant/controller.py:443
+#: ckanext/recombinant/controller.py:445
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but you "
 "supplied a sheet for {1}"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:459
+#: ckanext/recombinant/controller.py:461
 msgid ""
 "This template is out of date. Please try copying your data into the latest "
 "version of the template and uploading again. If this problem continues, send "
 "your Excel file to open-ouvert@tbs-sct.gc.ca so we may investigate."
 msgstr ""
 
-#: ckanext/recombinant/controller.py:505
+#: ckanext/recombinant/controller.py:507
 msgid "Sheet {0} Row {1}:"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:509
+#: ckanext/recombinant/controller.py:511
 msgid "Error while importing data: {0}"
 msgstr ""
 
-#: ckanext/recombinant/controller.py:512
+#: ckanext/recombinant/controller.py:514
 msgid "The template uploaded is empty"
 msgstr ""
 
@@ -136,40 +136,40 @@ msgstr ""
 msgid "Multiple datasets exist for type %s"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:296
+#: ckanext/recombinant/write_excel.py:312
 msgid "e.g."
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:521 ckanext/recombinant/write_excel_v2.py:293
+#: ckanext/recombinant/write_excel.py:537 ckanext/recombinant/write_excel_v2.py:292
 msgid "ID"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:525 ckanext/recombinant/write_excel_v2.py:297
+#: ckanext/recombinant/write_excel.py:541 ckanext/recombinant/write_excel_v2.py:296
 msgid "Description"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:529 ckanext/recombinant/write_excel_v2.py:301
+#: ckanext/recombinant/write_excel.py:545 ckanext/recombinant/write_excel_v2.py:300
 msgid "Obligation"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:533
+#: ckanext/recombinant/write_excel.py:549
 msgid "Validation"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:537 ckanext/recombinant/write_excel_v2.py:305
+#: ckanext/recombinant/write_excel.py:553 ckanext/recombinant/write_excel_v2.py:304
 msgid "Format"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:541 ckanext/recombinant/write_excel_v2.py:309
+#: ckanext/recombinant/write_excel.py:557 ckanext/recombinant/write_excel_v2.py:308
 msgid "Values"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:67
-#: ckanext/recombinant/write_excel.py:570
+#: ckanext/recombinant/write_excel.py:586
 msgid "Reference"
 msgstr ""
 
-#: ckanext/recombinant/write_excel_v2.py:290
+#: ckanext/recombinant/write_excel_v2.py:289
 msgid "Field Name"
 msgstr ""
 
