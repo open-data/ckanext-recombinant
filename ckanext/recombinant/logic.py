@@ -161,7 +161,8 @@ def _action_get_dataset(context, data_dict):
         raise NotFound()
     if len(results) > 1 and not data_dict.get('ignore_errors'):
         raise ValidationError({'owner_org':
-            _("Multiple datasets exist for type %s") % data_dict['dataset_type']})
+            _("Multiple datasets exist for type {0} org {1}").format(
+                 data_dict['dataset_type'], data_dict['owner_org'])})
 
     return lc, geno, results[0]
 
