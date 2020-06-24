@@ -83,12 +83,13 @@ class UploadController(PackageController):
         def delete_error(err):
             return render('recombinant/resource_edit.html',
                 extra_vars={
-                    'delete_errors':[err],
-                    'dataset':dataset,
-                    'resource':res,
-                    'organization':org,
-                    'filters':filters,
-                    'action':'edit'})
+                    'delete_errors': [err],
+                    'dataset': dataset,
+                    'dataset_type': dataset['dataset_type'],
+                    'resource': res,
+                    'organization': org,
+                    'filters': filters,
+                    'action': 'edit'})
 
         form_text = request.POST.get('bulk-delete', '')
         if not form_text:
@@ -137,12 +138,13 @@ class UploadController(PackageController):
         if 'cancel' in request.POST:
             return render('recombinant/resource_edit.html',
                 extra_vars={
-                    'delete_errors':[],
-                    'dataset':dataset,
-                    'resource':res,
-                    'organization':org,
-                    'filters':{'bulk-delete':u'\n'.join(ok_records)},
-                    'action':'edit'})
+                    'delete_errors': [],
+                    'dataset': dataset,
+                    'dataset_type': dataset['dataset_type'],
+                    'resource': res,
+                    'organization': org,
+                    'filters': {'bulk-delete': u'\n'.join(ok_records)},
+                    'action': 'edit'})
         if not 'confirm' in request.POST:
             return render('recombinant/confirm_delete.html',
                 extra_vars={
