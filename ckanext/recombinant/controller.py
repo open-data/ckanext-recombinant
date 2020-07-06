@@ -192,7 +192,7 @@ class UploadController(PackageController):
             org = lc.action.organization_show(
                 id=owner_org,
                 include_datasets=False)
-        except NotFound:
+        except ckanapi.NotFound:
             abort(404, _('Not found'))
 
         book = excel_template(dataset_type, org)
