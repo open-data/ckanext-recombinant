@@ -144,7 +144,7 @@ def _action_find_dataset(context, data_dict):
 
     lc = LocalCKAN(username=context['user'])
     result = lc.action.package_search(
-        q="type:%s organization:%s" % (dataset_type, owner_org),
+        q="type:%s AND organization:%s" % (dataset_type, owner_org),
         include_private=True,
         rows=2)
     return lc, geno, result['results']
