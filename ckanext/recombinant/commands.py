@@ -254,14 +254,14 @@ class TableCommand(CkanCommand):
 
         for org_name, records in csv_data_batch(name, chromo):
             results = lc.action.package_search(
-                q='type:%s organization:%s' % (dataset_type, org_name),
+                q='type:%s AND organization:%s' % (dataset_type, org_name),
                 include_private=True,
                 rows=2)['results']
 
             if not results:
                 lc.action.recombinant_create(dataset_type=dataset_type, owner_org=org_name)
                 results = lc.action.package_search(
-                    q='type:%s organization:%s' % (dataset_type, org_name),
+                    q='type:%s AND organization:%s' % (dataset_type, org_name),
                     include_private=True,
                     rows=2)['results']
 
