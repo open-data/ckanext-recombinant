@@ -24,8 +24,10 @@
     <details><summary>{{ f.label }}</summary>
       <dl class="mrgn-tp-md mrgn-bttm-0">
         {% for value, label in f.choices[:1000] %}
-          <dt>{{ value }}</dt>
-          <dd>{{ label }}</dd>
+          {% if 'Reporting Period' != f.label  %}
+            <dt>{{ value }}</dt>
+          {% endif %}
+        <dd>{{ label }}</dd>
         {% endfor %}
       </dl>
     </details>
