@@ -309,8 +309,10 @@ class TableCommand(CkanCommand):
                         raise
                     bad = err.error_dict['_records_row']
                     errors |= 2
-                    sys.stderr.write(json.dumps(
-                        [err.error_dict['records'], org_name, records[bad]]).encode('utf-8') + '\n')
+                    sys.stderr.write(json.dumps([
+                        err.error_dict['records'],
+                        org_name,
+                        records[offset + bad]]).encode('utf-8') + '\n')
                     offset += bad + 1  # skip and continue
                 else:
                     break
