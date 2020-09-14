@@ -313,6 +313,13 @@ class TableCommand(CkanCommand):
                         err.error_dict['records'],
                         org_name,
                         records[offset + bad]]).encode('utf-8') + '\n')
+                    # retry records that passed validation
+                    good = records[offset: offset+bad]
+                    if good:
+                        lc.action.datastore_upsert(
+                            method=method,
+                            resource_id=res['id'],
+                            records=good)
                     offset += bad + 1  # skip and continue
                 else:
                     break
