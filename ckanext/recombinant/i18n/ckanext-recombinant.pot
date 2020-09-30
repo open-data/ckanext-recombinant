@@ -376,6 +376,6 @@ msgid ""
 "To ensure the validation rules within the template are maintained, please "
 "paste your data using the “Paste Values” function. This can be done by right-"
 "clicking, selecting <kbd>Paste Special</kbd> and then clicking "
-"<kbd>Values</kbd>."
+"<kbd>Unicode Text</kbd>."
 msgstr ""
 
