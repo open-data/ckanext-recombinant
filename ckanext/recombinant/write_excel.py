@@ -569,6 +569,9 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
 
 def _populate_reference_sheet(sheet, geno, refs):
     field_count = 1
+    resource_field_count = -1
+    if (len(geno['resources'])) == 2:
+        resource_field_count = len([f for f in geno['resources'][0]['fields'] if f.get('import_template_include', True)])
 
     header1_style = dict(DEFAULT_HEADER_STYLE, **geno.get('excel_header_style', {}))
     header2_style = dict(DEFAULT_REF_HEADER2_STYLE, **geno.get('excel_header_style', {}))
@@ -593,6 +596,19 @@ def _populate_reference_sheet(sheet, geno, refs):
 
 
     for row_number, (style, ref_line) in enumerate(refs, REF_FIRST_ROW - 1):
+        # If a nil-report resource exists, add a resource header row
+        if field_count == resource_field_count+1 and style == 'title':
+            sheet.merge_cells('B{row}:D{row}'.format(row=row_number-1))
+            fill_cell(
+                sheet,
+                row_number-1,
+                2,
+                recombinant_language_text(geno['resources'][1]['title']),
+                'reco_header')
+            apply_style(sheet.row_dimensions[row_number], header1_style)
+            sheet.row_dimensions[row_number-1].height = HEADER_HEIGHT
+
+
         link = None
         if len(ref_line) == 2:
             value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH).strip()
