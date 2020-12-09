@@ -111,6 +111,7 @@ def excel_template(dataset_type, org):
     if version == 3:
         _build_styles(book, geno)
     for rnum, chromo in enumerate(geno['resources'], 1):
+        _append_resource_ref_header(geno, refs, rnum)
         if version == 2:
             _populate_excel_sheet_v2(sheet, chromo, org, refs)
         elif version == 3:
@@ -528,6 +529,12 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
 
     return cranges
 
+def _append_resource_ref_header(geno, refs, rnum):
+    #Add resource titles for all resources except the first one
+    if (rnum > 1):
+        refs.append((None, []))
+        resource_title = recombinant_language_text(geno['resources'][rnum-1]['title'])
+        refs.append(('resource_title', [resource_title]))
 
 def _append_field_ref_rows(refs, field, link):
     refs.append((None, []))
@@ -569,9 +576,6 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
 
 def _populate_reference_sheet(sheet, geno, refs):
     field_count = 1
-    resource_field_count = -1
-    if (len(geno['resources'])) == 2:
-        resource_field_count = len([f for f in geno['resources'][0]['fields'] if f.get('import_template_include', True)])
 
     header1_style = dict(DEFAULT_HEADER_STYLE, **geno.get('excel_header_style', {}))
     header2_style = dict(DEFAULT_REF_HEADER2_STYLE, **geno.get('excel_header_style', {}))
@@ -596,68 +600,67 @@ def _populate_reference_sheet(sheet, geno, refs):
 
 
     for row_number, (style, ref_line) in enumerate(refs, REF_FIRST_ROW - 1):
-        # If a nil-report resource exists, add a resource header row
-        if field_count == resource_field_count+1 and style == 'title':
-            sheet.merge_cells('B{row}:D{row}'.format(row=row_number-1))
-            fill_cell(
-                sheet,
-                row_number-1,
-                2,
-                recombinant_language_text(geno['resources'][1]['title']),
-                'reco_header')
-            apply_style(sheet.row_dimensions[row_number], header1_style)
-            sheet.row_dimensions[row_number-1].height = HEADER_HEIGHT
-
-
-        link = None
-        if len(ref_line) == 2:
-            value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH).strip()
-            ref_line = [ref_line[0], value]
-        elif len(ref_line) == 1 and isinstance(ref_line[0], tuple):
-            link, value = ref_line[0]
-            value = value.strip()
-            ref_line = [value]
-
-        for cnum, cval in enumerate(ref_line, REF_KEY_COL_NUM):
-            sheet.cell(row=row_number, column=cnum).value = (
-                cval.strip().replace('\n', '\r\n'))
-
-        if len(ref_line) == 2:
-            sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
-                value.count('\n') * LINE_HEIGHT)
-
-        key_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
-        value_cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
-
-        if style == 'title':
-            sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))
-            sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
+        if style == 'resource_title':
+            sheet.merge_cells('B{row}:D{row}'.format(row=row_number))
             fill_cell(
                 sheet,
                 row_number,
-                REF_FIELD_NUM_COL_NUM,
-                field_count,
-                'reco_ref_number')
-            title_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
-            if link:
-                title_cell.hyperlink = link
-            title_cell.style = 'reco_ref_title'
-            sheet.row_dimensions[row_number].height = REF_FIELD_TITLE_HEIGHT
-            field_count += 1
-        elif style == 'choice':
-            pad_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
-            pad_cell.style = 'reco_example'
-            key_cell.style = 'reco_example'
-            value_cell.style = 'reco_example'
-        elif style == 'attr':
-            key_cell.style = 'reco_ref_attr'
-            value_cell.style = 'reco_ref_value'
-        elif style == 'choice heading':
-            key_cell.style = 'reco_ref_attr'
-            value_cell.style = 'reco_ref_value'
-            sheet.row_dimensions[row_number].height = REF_CHOICE_HEADING_HEIGHT
+                2,
+                ref_line[0],
+                'reco_header')
+            apply_style(sheet.row_dimensions[row_number], header1_style)
+            sheet.row_dimensions[row_number].height = HEADER_HEIGHT
+        else:
+            link = None
+            if len(ref_line) == 2:
+                value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH).strip()
+                ref_line = [ref_line[0], value]
+            elif len(ref_line) == 1 and isinstance(ref_line[0], tuple):
+                link, value = ref_line[0]
+                value = value.strip()
+                ref_line = [value]
 
-        apply_style(sheet.row_dimensions[row_number], REF_PAPER_STYLE)
+            for cnum, cval in enumerate(ref_line, REF_KEY_COL_NUM):
+                sheet.cell(row=row_number, column=cnum).value = (
+                    cval.strip().replace('\n', '\r\n'))
+
+            if len(ref_line) == 2:
+                sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
+                    value.count('\n') * LINE_HEIGHT)
+
+            key_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+            value_cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
+
+
+            if style == 'title':
+                sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))
+                sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
+                fill_cell(
+                    sheet,
+                    row_number,
+                    REF_FIELD_NUM_COL_NUM,
+                    field_count,
+                    'reco_ref_number')
+                title_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+                if link:
+                    title_cell.hyperlink = link
+                title_cell.style = 'reco_ref_title'
+                sheet.row_dimensions[row_number].height = REF_FIELD_TITLE_HEIGHT
+                field_count += 1
+            elif style == 'choice':
+                pad_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
+                pad_cell.style = 'reco_example'
+                key_cell.style = 'reco_example'
+                value_cell.style = 'reco_example'
+            elif style == 'attr':
+                key_cell.style = 'reco_ref_attr'
+                value_cell.style = 'reco_ref_value'
+            elif style == 'choice heading':
+                key_cell.style = 'reco_ref_attr'
+                value_cell.style = 'reco_ref_value'
+                sheet.row_dimensions[row_number].height = REF_CHOICE_HEADING_HEIGHT
+
+            apply_style(sheet.row_dimensions[row_number], REF_PAPER_STYLE)
 
     sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
     sheet.cell(row=1, column=RPAD_COL_NUM).value = None  # make sure rpad col exists
