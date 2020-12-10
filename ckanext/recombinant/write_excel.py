@@ -111,10 +111,10 @@ def excel_template(dataset_type, org):
     if version == 3:
         _build_styles(book, geno)
     for rnum, chromo in enumerate(geno['resources'], 1):
-        _append_resource_ref_header(geno, refs, rnum)
         if version == 2:
             _populate_excel_sheet_v2(sheet, chromo, org, refs)
         elif version == 3:
+            _append_resource_ref_header(geno, refs, rnum)
             choice_ranges.append(_populate_excel_sheet(
                 book, sheet, geno, chromo, org, refs, rnum))
             sheet.protection.enabled = True
