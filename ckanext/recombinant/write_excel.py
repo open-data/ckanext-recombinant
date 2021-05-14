@@ -166,6 +166,9 @@ def append_data(book, record_data, chromo):
 
 def datastore_type_format(value, datastore_type):
 
+    if value is None:
+        return None
+
     numeric_types = ['money', 'year', 'int', 'bigint', 'numeric']
     if isinstance(value, list):
         item = u', '.join(unicode(e) for e in value)
