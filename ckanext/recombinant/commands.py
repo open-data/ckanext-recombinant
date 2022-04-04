@@ -387,10 +387,13 @@ class TableCommand(CkanCommand):
                 org = lc.action.organization_show(id=pkg['owner_org'])
                 for ename in chromo.get('csv_org_extras', []):
                     org_extras[ename] = u''
-                    for e in org['extras']:
-                        if e['key'] == ename:
-                            org_extras[ename] = e['value']
-                            break
+                    if ename in org:
+                        org_extras[ename] = org[ename]
+                    else:
+                        for e in org['extras']:
+                            if e['key'] == ename:
+                                org_extras[ename] = e['value']
+                                break
 
             for record in records:
                 record.update(org_extras)
