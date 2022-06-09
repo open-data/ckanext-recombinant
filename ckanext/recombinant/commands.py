@@ -46,7 +46,7 @@ from ckanext.recombinant.read_csv import csv_data_batch
 from ckanext.recombinant.write_excel import excel_template
 from ckanext.recombinant.logic import _update_triggers
 
-RECORDS_PER_ORGANIZATION = 1000000 # max records for single datastore query
+DATASTORE_PAGINATE = 100000 # max records for single datastore query
 
 class TableCommand(CkanCommand):
     summary = __doc__.split('\n')[0]
@@ -364,21 +364,6 @@ class TableCommand(CkanCommand):
                     chromo['resource_name'], pkg['owner_org'])
                 continue
 
-            try:
-                result = lc.action.datastore_search(
-                    limit=RECORDS_PER_ORGANIZATION,
-                    resource_id=res['id'],
-                )
-                records = result['records']
-                assert len(records) == result.get('total', 0), (chromo['resource_name'], pkg['owner_org'])
-            except NotFound:
-                print 'resource {0} table missing for {1}'.format(
-                    chromo['resource_name'], pkg['owner_org'])
-                continue
-
-            if not records:
-                continue
-
             org_extras = {
                 'owner_org': pkg['owner_org'],
                 'owner_org_title': pkg['org_title'],
@@ -395,19 +380,39 @@ class TableCommand(CkanCommand):
                                 org_extras[ename] = e['value']
                                 break
 
-            for record in records:
-                record.update(org_extras)
+            offs = 0
+            while True:
                 try:
-                    row = [unicode(
-                        u'' if record[col] is None else
-                        u','.join(record[col]) if isinstance(record[col], list) else
-                        record[col]
-                        ).encode('utf-8') for col in column_ids]
-                    out.writerow(['\r\n'.join(col.splitlines()) for col in row])
-                except KeyError:
-                    print 'resource {0} table missing keys for {1}'.format(
+                    result = lc.action.datastore_search(
+                        offset=offs,
+                        limit=DATASTORE_PAGINATE,
+                        sort='_id',
+                        resource_id=res['id'],
+                    )
+                    records = result['records']
+                    total = result.get('total')
+                except NotFound:
+                    print 'resource {0} table missing for {1}'.format(
                         chromo['resource_name'], pkg['owner_org'])
-                    continue
+                    break
+
+                for record in records:
+                    record.update(org_extras)
+                    try:
+                        row = [unicode(
+                            u'' if record[col] is None else
+                            u','.join(record[col]) if isinstance(record[col], list) else
+                            record[col]
+                            ).encode('utf-8') for col in column_ids]
+                        out.writerow(['\r\n'.join(col.splitlines()) for col in row])
+                    except KeyError:
+                        print 'resource {0} table missing keys for {1}'.format(
+                            chromo['resource_name'], pkg['owner_org'])
+                        break
+
+                if len(records) < DATASTORE_PAGINATE:
+                    break
+                offs += DATASTORE_PAGINATE
 
     def _remove_broken(self, target_datasets):
         """
