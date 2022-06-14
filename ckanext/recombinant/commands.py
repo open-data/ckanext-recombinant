@@ -46,7 +46,7 @@ from ckanext.recombinant.read_csv import csv_data_batch
 from ckanext.recombinant.write_excel import excel_template
 from ckanext.recombinant.logic import _update_triggers
 
-DATASTORE_PAGINATE = 100000 # max records for single datastore query
+DATASTORE_PAGINATE = 10000 # max records for single datastore query
 
 class TableCommand(CkanCommand):
     summary = __doc__.split('\n')[0]
