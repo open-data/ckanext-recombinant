@@ -12,3 +12,7 @@ function langBtnFn() {
     $(this).addClass("active");
   }
 };
+
+$('#activity-lnk').click(function() {
+  document.location.href = $("#activity-stream-link").attr('href');
+});

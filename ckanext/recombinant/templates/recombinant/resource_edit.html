@@ -78,6 +78,13 @@
           {% snippet "recombinant/snippets/api_access.html",
             pkg=dataset, username=c.userobj.name, resource=resource %}
         </details>
+        <details id="activity">
+          <summary><span class="glyphicon glyphicon-time"></span>
+            {{ _("Activity Stream") }}
+          </summary>
+          {% snippet "recombinant/snippets/activity_stream.html",
+            pkg=dataset, username=c.userobj.name %}
+        </details>
       </div>
     </div>
   {% else %}
