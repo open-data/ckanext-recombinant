@@ -78,6 +78,16 @@
           {% snippet "recombinant/snippets/api_access.html",
             pkg=dataset, username=c.userobj.name, resource=resource %}
         </details>
+        <details id="activity">
+          <summary><span class="glyphicon glyphicon-time"></span>
+            {{ _("Activity Stream") }}
+          </summary>
+          {% block activity_stream %}
+            <a id="activity-stream-link" href="{{ h.url_for(controller='package', action='activity', id=dataset.id) }}">
+              {{ _('Activity Stream') }}
+            </a>
+          {% endblock %}
+        </details>
       </div>
     </div>
   {% else %}
