@@ -1,8 +1,7 @@
 import json
 import os.path
 
-from pylons import c, config
-from pylons.i18n import gettext
+from ckan.plugins.toolkit import c, config, _ as gettext
 import ckanapi
 from ckan.lib.helpers import lang
 

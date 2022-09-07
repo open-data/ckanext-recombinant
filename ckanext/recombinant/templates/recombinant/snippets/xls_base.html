@@ -7,7 +7,7 @@
       <div class="form-group control-medium">
         <label for="xls_download">{{ _('Download') }}</label>
         <div class="form-control">
-          <a id="xls_download" class="button" href="{% url_for 'recombinant_template',
+          <a id="xls_download" class="button" href="{% url_for 'recombinant.template',
             dataset_type=pkg.dataset_type,
             lang=h.lang(),
             owner_org=pkg.owner_org %}"><span class="glyphicon glyphicon-download-alt"></span>

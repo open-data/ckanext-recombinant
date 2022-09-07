@@ -8,7 +8,7 @@ from pylons.i18n import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
-from ckanext.recombinant import logic, tables, helpers, load
+from ckanext.recombinant import logic, tables, helpers, load, views
 
 class RecombinantException(Exception):
     pass
@@ -19,7 +19,7 @@ class RecombinantPlugin(
     p.implements(tables.IRecombinant)
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
-    p.implements(p.IRoutes, inherit=True)
+    p.implements(p.IBlueprint)
     p.implements(p.ITemplateHelpers, inherit=True)
     p.implements(p.IActions)
     p.implements(p.ITranslation)
@@ -55,35 +55,8 @@ class RecombinantPlugin(
 
         return schema
 
-    def before_map(self, map):
-        map.connect('/recombinant/upload/{id}', action='upload',
-            conditions=dict(method=['POST']),
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('/recombinant/delete/{id}/{resource_id}',
-            action='delete_records',
-            conditions=dict(method=['POST']),
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_template',
-            '/recombinant-template/{dataset_type}_{lang}_{owner_org}.xlsx',
-            action='template',
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_data_dictionary',
-            '/recombinant-dictionary/{dataset_type}',
-            action='data_dictionary',
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_schema_json',
-            '/recombinant-schema/{dataset_type}.json',
-            action='schema_json',
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_resource',
-            '/recombinant/{resource_name}/{owner_org}',
-            action='preview_table',
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_type',
-            '/recombinant/{resource_name}',
-            action='type_redirect',
-            controller='ckanext.recombinant.controller:UploadController')
-        return map
+    def get_blueprint(self):
+        return [views.recombinant]
 
     def get_helpers(self):
         return {
