@@ -41,12 +41,6 @@ class RecombinantPlugin(
     def package_types(self):
         return tables.get_dataset_types()
 
-    def read_template(self):
-        return 'recombinant/edit.html'
-
-    def edit_template(self):
-        return 'recombinant/edit.html'
-
     def create_package_schema(self):
         schema = super(RecombinantPlugin, self).create_package_schema()
         schema['id'] = [generate_uuid]
@@ -57,6 +51,10 @@ class RecombinantPlugin(
 
     def get_blueprint(self):
         return [views.recombinant]
+
+    def prepare_dataset_blueprint(self, package_type, bp):
+        bp.add_url_rule('/<id>', 'dataset_redirect', views.dataset_redirect)
+        return bp
 
     def get_helpers(self):
         return {

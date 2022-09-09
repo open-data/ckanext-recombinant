@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, Response
 import re
 from collections import OrderedDict
 import simplejson as json
@@ -8,7 +8,7 @@ from logging import getLogger
 from ckan.plugins.toolkit import _, asbool, aslist, config
 
 from ckan.lib.base import (c, render, model, request, h,
-    response, abort)
+    abort)
 from ckan.controllers.package import PackageController
 from ckan.logic import ValidationError, NotAuthorized
 
@@ -32,7 +32,7 @@ import ckanapi
 recombinant = Blueprint('recombinant', __name__)
 
 
-@recombinant.route('/recombinant/upload/<id>')
+@recombinant.route('/recombinant/upload/<id>', methods=['POST'])
 def upload(id):
     package_type = _get_package_type(id)
     geno = get_geno(package_type)
@@ -40,13 +40,13 @@ def upload(id):
     dataset = lc.action.package_show(id=id)
     dry_run = 'validate' in request.form
     try:
-        if request.form['xls_update'] == '':
+        if not request.files['xls_update']:
             raise BadExcelData('You must provide a valid file')
 
         _process_upload_file(
             lc,
             dataset,
-            request.form['xls_update'].file,
+            request.files['xls_update'],
             geno,
             dry_run)
 
@@ -59,7 +59,7 @@ def upload(id):
                 "Your file was successfully uploaded into the central system."
                 ))
 
-        return h.redirect_to(controller='package', action='read', id=id)
+        return h.redirect_to(dataset.type + '.read', id=id)
     except BadExcelData, e:
         org = lc.action.organization_show(id=dataset['owner_org'])
         return preview_table(
@@ -171,7 +171,7 @@ def delete_records(id, resource_id):
         )
 
 
-@recombinant.route('/recombinant/delete/<id>/<resource_id>')
+@recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx', methods=['GET', 'POST'])
 def template(dataset_type, lang, owner_org):
 
     """
@@ -208,7 +208,7 @@ def template(dataset_type, lang, owner_org):
             abort(404,"Resource not found")
 
         pk_fields = recombinant_primary_key_fields(resource['name'])
-        primary_keys = request.form.getall('bulk-template')
+        primary_keys = request.form.getlist('bulk-template')
         chromo = get_chromo(resource['name'])
         record_data = []
 
@@ -226,13 +226,14 @@ def template(dataset_type, lang, owner_org):
 
     blob = StringIO()
     book.save(blob)
+    response = Response(blob.getvalue())
     response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     response.headers['Content-Disposition'] = (
         'inline; filename="{0}_{1}_{2}.xlsx"'.format(
             dataset['owner_org'],
             lang,
             dataset['dataset_type']))
-    return blob.getvalue()
+    return response
 
 
 @recombinant.route('/recombinant-dictionary/<dataset_type>')
@@ -245,8 +246,9 @@ def data_dictionary(dataset_type):
     book = excel_data_dictionary(geno)
     blob = StringIO()
     book.save(blob)
+    response = Response(blob.getvalue())
     response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    return blob.getvalue()
+    return response
 
 
 @recombinant.route('/recombinant-schema/<dataset_type>.json')
@@ -335,11 +337,12 @@ def schema_json(dataset_type):
                         field['datastore_id']]
             resource['example_record'] = example
 
+    response = Response(json.dumps(schema, indent=2, ensure_ascii=False).encode('utf-8'))
     response.headers['Content-Type'] = 'application/json'
     response.headers['Content-Disposition'] = (
         'inline; filename="{0}.json"'.format(
             dataset_type))
-    return json.dumps(schema, indent=2, ensure_ascii=False).encode('utf-8')
+    return response
 
 
 @recombinant.route('/recombinant/<resource_name>')
@@ -357,6 +360,16 @@ def type_redirect(resource_name):
         'recombinant.preview_table',
         resource_name=resource_name,
         owner_org=orgs[0]['name'],
+    )
+
+
+def dataset_redirect(package_type, id):
+    lc = ckanapi.LocalCKAN(username=c.user)
+    dataset = lc.action.package_show(id=id)
+    return h.redirect_to(
+        'recombinant.preview_table',
+        resource_name=package_type,
+        owner_org=dataset['organization']['name'],
     )
 
 

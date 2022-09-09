@@ -3,7 +3,7 @@
 {% block title %}{{_('Create and update records')}}{% endblock %}
 
 {% block form %}
-<form enctype="multipart/form-data" id="dataset-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action='{% url_for controller='ckanext.recombinant.controller:UploadController', action='upload', id=pkg.id %}'>
+<form enctype="multipart/form-data" id="dataset-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action='{% url_for 'recombinant.upload', id=pkg.id %}'>
 {% endblock %}
 
 {% block upload_submit %}
