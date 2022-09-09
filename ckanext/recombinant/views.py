@@ -59,7 +59,7 @@ def upload(id):
                 "Your file was successfully uploaded into the central system."
                 ))
 
-        return h.redirect_to(dataset.type + '.read', id=id)
+        return h.redirect_to(dataset['type'] + '.read', id=id)
     except BadExcelData, e:
         org = lc.action.organization_show(id=dataset['owner_org'])
         return preview_table(
