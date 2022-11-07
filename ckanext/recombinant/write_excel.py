@@ -203,7 +203,7 @@ def excel_data_dictionary(geno):
             'patternType': 'solid',
             'fgColor': 'FFDFE2DB'}}
 
-    from pylons import config
+    from ckan.plugins.toolkit import config
     from ckan.lib.i18n import handle_request, get_lang
     from ckan.common import c, request
 
