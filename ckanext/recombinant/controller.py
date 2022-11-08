@@ -4,8 +4,7 @@ import simplejson as json
 
 from logging import getLogger
 
-from pylons.i18n import _
-from pylons import config
+from ckan.plugins.toolkit import _, config
 from paste.deploy.converters import asbool, aslist, aslist
 
 from ckan.lib.base import (c, render, model, request, h,

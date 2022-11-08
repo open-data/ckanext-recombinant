@@ -1,4 +1,4 @@
-from pylons.i18n import _
+from ckan.plugins.toolkit import _
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
