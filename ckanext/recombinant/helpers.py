@@ -1,7 +1,8 @@
 import json
 import os.path
 
-from ckan.plugins.toolkit import c, config, _ as gettext
+from ckan.plugins.toolkit import c, config
+from ckan.plugins.toolkit import _ as gettext
 import ckanapi
 from ckan.lib.helpers import lang
 

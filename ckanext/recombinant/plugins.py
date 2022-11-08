@@ -4,7 +4,7 @@ import uuid
 
 from paste.reloader import watch_file
 from paste.deploy.converters import asbool
-from pylons.i18n import _
+from ckan.plugins.toolkit import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
