@@ -14,6 +14,7 @@ Usage:
   paster recombinant remove-broken DATASET_TYPE ... [-c CONFIG]
   paster recombinant remove-empty (-a | DATASET_TYPE ...) [-c CONFIG]
   paster recombinant run-triggers DATASET_TYPE ... [-c CONFIG]
+  paster recombinant clear-datastore RESOURCE_ID ... [-l FILTER] [-c CONFIG]
   paster recombinant -h
 
 Options:
@@ -24,6 +25,11 @@ Options:
                        of streaming to STDOUT
   -f --force-update    Force update of tables (required for changes
                        to only primary keys/indexes)
+  -l --filters=FILTERS Filters to apply before deleting in an escaped json
+                       format (eg {\"ref_number\":\"001-2018-2019-Q2-00045\"}).
+                       If missing delete all rows but keep table.
+                       If filters are invalid, fails with Exception.
+                       (optional)
 """
 import os
 import csv
@@ -33,6 +39,7 @@ import json
 
 from ckan.lib.cli import CkanCommand
 from ckan.logic import ValidationError
+from ckan.plugins.toolkit import _
 import paste.script
 from ckanapi import LocalCKAN, NotFound
 import unicodecsv
@@ -45,6 +52,7 @@ from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
 from ckanext.recombinant.read_csv import csv_data_batch
 from ckanext.recombinant.write_excel import excel_template
 from ckanext.recombinant.logic import _update_triggers
+from ckanext.datastore.backend import DatastoreBackend
 
 DATASTORE_PAGINATE = 10000 # max records for single datastore query
 
@@ -59,6 +67,8 @@ class TableCommand(CkanCommand):
         dest='all_types', help='create all registered dataset types')
     parser.add_option('-c', '--config', dest='config',
         default='development.ini', help='Config file to use.')
+    parser.add_option('-l', '--filters', dest='filters',
+        default=None, help='Filters to apply before deleting.')
     parser.add_option('-d', '--output-dir', dest='output_dir')
     parser.add_option('-f', '--force-update', action='store_true',
         dest='force_update', help='force update of tables')
@@ -97,6 +107,8 @@ class TableCommand(CkanCommand):
             return self._remove_broken(opts['DATASET_TYPE'])
         elif opts['run-triggers']:
             return self._run_triggers(opts['DATASET_TYPE'])
+        elif opts['clear-datastore']:
+            return self._clear_datastore(opts['RESOURCE_ID'])
         elif opts['template']:
             return self._template(
                 opts['DATASET_TYPE'][0],
@@ -443,6 +455,32 @@ class TableCommand(CkanCommand):
                 rowcount = sum(results)
                 print ' '.join([d['owner_org'], d['organization']['name'],
                                'updated', str(rowcount), 'records'])
+
+
+    def _clear_datastore(self, target_resources):
+        backend = DatastoreBackend.get_active_backend()
+
+        if self.options.filters is not None:
+            if isinstance(self.options.filters, str):
+                try:
+                    self.options.filters = json.loads(self.options.filters)
+                except ValueError:
+                    raise ValueError({'filters': ['unable to parse the json object.']})
+            if not isinstance(self.options.filters, dict):
+                raise ValidationError({'filters': ['filters must be either a dict or null.']})
+        else:
+           self.options.filters = {}
+
+        for resource_id in target_resources:
+            if not backend.resource_exists(resource_id):
+                raise NotFound(_(u'Resource "{0}" was not found.'.format(resource_id)))
+            result = backend.delete({}, 
+                        {'resource_id': resource_id, 
+                         'filters': self.options.filters})
+            result.pop('id', None)
+            result.pop('connection_url', None)
+            print(result)
+
 
     def _target_datasets(self):
         print ' '.join(get_target_datasets())

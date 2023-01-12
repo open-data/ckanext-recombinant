@@ -104,6 +104,7 @@ class RecombinantPlugin(
             'recombinant_create': logic.recombinant_create,
             'recombinant_update': logic.recombinant_update,
             'recombinant_show': logic.recombinant_show,
+            'clear_datastore': logic.clear_datastore,
             }
 
 

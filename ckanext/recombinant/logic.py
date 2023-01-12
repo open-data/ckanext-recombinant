@@ -1,4 +1,4 @@
-from ckan.plugins.toolkit import _
+from ckan.plugins.toolkit import _, check_access
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
@@ -8,6 +8,10 @@ from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
+
+import ckanext.datastore.logic.schema as dsschema
+from ckanext.datastore.backend import DatastoreBackend
+from ckanext.datastore.logic.action import _check_read_only, _validate
 
 
 def recombinant_create(context, data_dict):
@@ -363,3 +367,59 @@ def _datastore_match(fs, fields):
     # XXX: does not check types or extra columns at this time
     existing = set(c['id'] for c in fields)
     return all(f['datastore_id'] in existing for f in fs)
+
+
+def clear_datastore(context, data_dict):
+    '''Clears rows in a table or a set of rows from the DataStore.
+
+    :param resource_id: resource id that the data will be deleted from.
+                        (required)
+    :type resource_id: string
+    :param force: set to True to edit a read-only resource
+    :type force: bool (optional, default: False)
+    :param filters: filters to apply before deleting 
+                    (eg {"ref_number": "001-2018-2019-Q2-00045"}).
+                    If missing delete all rows but keep table.
+                    If filters are invalid, fails with Exception.
+                    (optional)
+    :type filters: dictionary
+
+    **Results:**
+
+    :returns: Original filters sent with resource_id
+    :rtype: dictionary
+
+    '''
+    schema = context.get('schema', dsschema.datastore_upsert_schema())
+    backend = DatastoreBackend.get_active_backend()
+
+    # Remove any applied filters before running validation.
+    filters = data_dict.pop('filters', None)
+    data_dict, errors = _validate(data_dict, schema, context)
+
+    if filters is not None:
+        if not isinstance(filters, dict):
+            raise ValidationError({'filters': ['filters must be either a dict or null.']})
+        data_dict['filters'] = filters
+    else:
+        data_dict['filters'] = {}
+
+    if errors:
+        raise ValidationError(errors)
+
+    check_access('datastore_delete', context, data_dict)
+
+    if not data_dict.pop('force', False):
+        resource_id = data_dict['resource_id']
+        _check_read_only(context, resource_id)
+
+    resource_id = data_dict['resource_id']
+
+    if not backend.resource_exists(resource_id):
+        raise NotFound(_(u'Resource "{0}" was not found.'.format(resource_id)))
+
+    result = backend.delete(context, data_dict)
+
+    result.pop('id', None)
+    result.pop('connection_url', None)
+    return result
