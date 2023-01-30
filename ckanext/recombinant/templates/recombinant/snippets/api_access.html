@@ -1,5 +1,5 @@
 {% set resource_id = resource.id %}
-{% set profile_url = h.url_for(controller='user', action='read', id=username) %}
+{% set profile_url = h.url_for('user.read', id=username) %}
 <h3>{{ _("API access examples") }}</h3>
 <div class="wb-prettify all-pre">
   <button type="button" class="btn btn-default btn-code-lang lang-curl active" onclick="langBtnFn.apply(this)"><span class="sr-only">Show </span>curl<span class="sr-only"> Examples</span></button>
