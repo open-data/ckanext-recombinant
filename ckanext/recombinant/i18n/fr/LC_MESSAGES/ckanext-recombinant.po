@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-05-14 13:59-0400\n"
+"POT-Creation-Date: 2023-01-26 15:39+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -19,11 +19,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.3.4\n"
 
-#: ckanext/recombinant/controller.py:55
+#: ckanext/recombinant/controller.py:54
 msgid "No errors found."
 msgstr "Aucune erreur trouvée."
 
-#: ckanext/recombinant/controller.py:59
+#: ckanext/recombinant/controller.py:58
 msgid "Your file was successfully uploaded into the central system."
 msgstr "Votre fichier a été téléchargé avec succès dans le système central."
 
@@ -48,43 +48,43 @@ msgstr "Aucun document correspondant n’a été trouvé \"%s\""
 msgid "Multiple matching records found"
 msgstr "Plusieurs documents correspondants trouvés"
 
-#: ckanext/recombinant/controller.py:163
+#: ckanext/recombinant/controller.py:164
 msgid "{num} deleted."
 msgstr "{num} supprimé"
 
-#: ckanext/recombinant/controller.py:183 ckanext/recombinant/controller.py:194
+#: ckanext/recombinant/controller.py:184 ckanext/recombinant/controller.py:195
 msgid "Not found"
 msgstr "Non trouvé"
 
-#: ckanext/recombinant/controller.py:220
+#: ckanext/recombinant/controller.py:221
 msgid "Not authorized"
 msgstr "Non autorisé"
 
-#: ckanext/recombinant/controller.py:240 ckanext/recombinant/controller.py:252
+#: ckanext/recombinant/controller.py:241 ckanext/recombinant/controller.py:253
 msgid "Recombinant dataset_type not found"
 msgstr "Type de jeux de données recombinant_non trouvé"
 
-#: ckanext/recombinant/controller.py:263 ckanext/recombinant/controller.py:286
+#: ckanext/recombinant/controller.py:264 ckanext/recombinant/controller.py:287
 msgid "title"
 msgstr "titre"
 
-#: ckanext/recombinant/controller.py:264
+#: ckanext/recombinant/controller.py:265
 msgid "notes"
 msgstr "notes"
 
-#: ckanext/recombinant/controller.py:344
+#: ckanext/recombinant/controller.py:345
 msgid "No organizations found"
 msgstr "Aucune organisation trouvée"
 
-#: ckanext/recombinant/controller.py:348 ckanext/recombinant/controller.py:361
+#: ckanext/recombinant/controller.py:349 ckanext/recombinant/controller.py:362
 msgid "Recombinant resource_name not found"
 msgstr "Nom de la ressource recombinante_non trouvé"
 
-#: ckanext/recombinant/controller.py:389
+#: ckanext/recombinant/controller.py:390
 msgid "Resource not found"
 msgstr "Ressource non trouvée"
 
-#: ckanext/recombinant/controller.py:431
+#: ckanext/recombinant/controller.py:432
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try"
 " copying your data into the latest version of the template and uploading "
@@ -97,13 +97,13 @@ msgstr ""
 "persiste, envoyez votre fichier Excel à open-ouvert@… afin que nous "
 "puissions faire enquête."
 
-#: ckanext/recombinant/controller.py:438
+#: ckanext/recombinant/controller.py:439
 msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
 
-#: ckanext/recombinant/controller.py:445
+#: ckanext/recombinant/controller.py:446
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but "
 "you supplied a sheet for {1}"
@@ -111,26 +111,27 @@ msgstr ""
 "La feuille n'est pas valide pour cette organisation. La feuille doit être"
 " étiquetée pour {0}, mais vous avez fourni une feuille pour {1}"
 
-#: ckanext/recombinant/controller.py:461
+#: ckanext/recombinant/controller.py:462
 msgid ""
 "This template is out of date. Please try copying your data into the "
 "latest version of the template and uploading again. If this problem "
 "continues, send your Excel file to open-ouvert@tbs-sct.gc.ca so we may "
 "investigate."
-msgstr "Ce modèle est obsolète. Veuillez essayer de copier vos données dans "
-"la dernière version du modèle et de le téléverser à nouveau. Si ce problème "
-"persiste, envoyez votre fichier Excel à open-ouvert@tbs-sct.gc.ca afin que "
-"nous puissions trouver le problème."
+msgstr ""
+"Ce modèle est obsolète. Veuillez essayer de copier vos données dans la "
+"dernière version du modèle et de le téléverser à nouveau. Si ce problème "
+"persiste, envoyez votre fichier Excel à open-ouvert@tbs-sct.gc.ca afin "
+"que nous puissions trouver le problème."
 
-#: ckanext/recombinant/controller.py:507
+#: ckanext/recombinant/controller.py:508
 msgid "Sheet {0} Row {1}:"
 msgstr "Feuille {0} Rangée {1} :"
 
-#: ckanext/recombinant/controller.py:511
+#: ckanext/recombinant/controller.py:512
 msgid "Error while importing data: {0}"
 msgstr "Erreur lors de l’importation des données: {0}"
 
-#: ckanext/recombinant/controller.py:514
+#: ckanext/recombinant/controller.py:515
 msgid "The template uploaded is empty"
 msgstr "Le modèle que vous avez soumis est vide"
 
@@ -145,44 +146,44 @@ msgstr "Type de jeux de données recombinant non trouvé"
 
 #: ckanext/recombinant/logic.py:164
 #, python-format
-msgid "Multiple datasets exist for type %s"
-msgstr "Plusieurs jeux de données existent pour le type %s."
+msgid "Multiple datasets exist for type {0} org {1}"
+msgstr "Plusieurs jeux de données existent pour le type {0} org {1}."
 
-#: ckanext/recombinant/write_excel.py:312
+#: ckanext/recombinant/write_excel.py:316
 msgid "e.g."
 msgstr "ex."
 
-#: ckanext/recombinant/write_excel.py:537
+#: ckanext/recombinant/write_excel.py:547
 #: ckanext/recombinant/write_excel_v2.py:292
 msgid "ID"
 msgstr "Identifiant"
 
-#: ckanext/recombinant/write_excel.py:541
+#: ckanext/recombinant/write_excel.py:551
 #: ckanext/recombinant/write_excel_v2.py:296
 msgid "Description"
 msgstr "Description"
 
-#: ckanext/recombinant/write_excel.py:545
+#: ckanext/recombinant/write_excel.py:555
 #: ckanext/recombinant/write_excel_v2.py:300
 msgid "Obligation"
 msgstr "Obligation"
 
-#: ckanext/recombinant/write_excel.py:549
+#: ckanext/recombinant/write_excel.py:559
 msgid "Validation"
 msgstr "Validation"
 
-#: ckanext/recombinant/write_excel.py:553
+#: ckanext/recombinant/write_excel.py:563
 #: ckanext/recombinant/write_excel_v2.py:304
 msgid "Format"
 msgstr "Format"
 
-#: ckanext/recombinant/write_excel.py:557
+#: ckanext/recombinant/write_excel.py:567
 #: ckanext/recombinant/write_excel_v2.py:308
 msgid "Values"
 msgstr "Valeurs"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:67
-#: ckanext/recombinant/write_excel.py:586
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:68
+#: ckanext/recombinant/write_excel.py:596
 msgid "Reference"
 msgstr "Référence"
 
@@ -222,29 +223,34 @@ msgid "rows"
 msgstr "lignes"
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:45
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:87
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:98
 msgid "Import"
 msgstr "Importer"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:59
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:60
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:45
 msgid "Delete"
 msgstr "Supprimer"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:75
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:76
 msgid "API Access"
 msgstr "Accès par API"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:89
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:83
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:87
+msgid "Activity Stream"
+msgstr "Flux d'Activités"
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:100
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
 msgid "Create and update records"
 msgstr "Créer et mettre à jour un dossier"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:91
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:102
 msgid "No records have been created for this organization"
 msgstr "Aucun enregistrement n'a été créé pour cette organisation"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:92
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:104
 msgid "Get started…"
 msgstr "Commencer…"
 
@@ -335,12 +341,13 @@ msgstr ""
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:137
 msgid ""
 "Remove the record returned by passing the same parameters to the "
-"\"datastore_delete\" endpoint instead of \"datastore_search\"."
+"\"datastore_records_delete\" endpoint instead of \"datastore_search\"."
 msgstr ""
 "Supprimez le dossier retourné en appliquant les mêmes paramètres au point"
-" de terminaison « datastore_delete » plutôt que « datastore_search »."
+" de terminaison « datastore_records_delete » plutôt que « "
+"datastore_search »."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:163
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:172
 msgid ""
 "If you have modified these API Access instructions for another "
 "programming language please send them to <a href=\"mailto:open-ouvert"
