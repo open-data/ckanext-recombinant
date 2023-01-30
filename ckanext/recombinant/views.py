@@ -7,9 +7,14 @@ from logging import getLogger
 
 from ckan.plugins.toolkit import _, asbool, aslist, config
 
-from ckan.lib.base import (c, render, model, request, h,
-    abort)
-from ckan.controllers.package import PackageController
+from ckan.lib.base import (
+    c,
+    render,
+    model,
+    request,
+    h,
+    abort
+)
 from ckan.logic import ValidationError, NotAuthorized
 
 from ckan.views.dataset import _get_package_type
@@ -376,7 +381,7 @@ def dataset_redirect(package_type, id):
 @recombinant.route('/recombinant/<resource_name>/<owner_org>', methods=['GET', 'POST'])
 def preview_table(resource_name, owner_org, errors=None):
     if not c.user:
-        h.redirect_to(controller='user', action='login')
+        h.redirect_to('user.login')
 
     lc = ckanapi.LocalCKAN(username=c.user)
     try:
