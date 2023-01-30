@@ -65,7 +65,7 @@ def upload(id):
                 ))
 
         return h.redirect_to(dataset['type'] + '.read', id=id)
-    except BadExcelData, e:
+    except BadExcelData as e:
         org = lc.action.organization_show(id=dataset['owner_org'])
         return preview_table(
             resource_name=dataset['resources'][0]['name'],
@@ -381,7 +381,7 @@ def dataset_redirect(package_type, id):
 @recombinant.route('/recombinant/<resource_name>/<owner_org>', methods=['GET', 'POST'])
 def preview_table(resource_name, owner_org, errors=None):
     if not c.user:
-        h.redirect_to('user.login')
+        return h.redirect_to('user.login')
 
     lc = ckanapi.LocalCKAN(username=c.user)
     try:
