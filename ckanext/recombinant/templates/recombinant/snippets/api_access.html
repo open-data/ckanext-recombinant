@@ -101,7 +101,7 @@ result = ckan.action.datastore_upsert(
   <h5>{{ _("Example:") }}</h5>
   <pre class="curl"
 >curl {{ g.site_url }}/api/action/datastore_search \
- -H"Authorization:$API_KEY" -d '
+  -H"Authorization:$API_KEY" -d '
 {
   "resource_id": "{{ resource_id }}",
   "filters": {
@@ -134,11 +134,11 @@ result = ckan.action.datastore_search(
 )
 pprint(result['records'])</code></pre>
 
-  <p>{% trans %}Remove the record returned by passing the same parameters to the "datastore_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
+  <p>{% trans %}Remove the record returned by passing the same parameters to the "datastore_records_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
 
   <h5>{{ _("Example:") }}</h5>
-  <pre class="bash"
->curl {{ g.site_url }}/api/action/datastore_delete \
+  <pre class="curl"
+>curl {{ g.site_url }}/api/action/datastore_records_delete \
  -H"Authorization:$API_KEY" -d '
 {
   "resource_id": "{{ resource_id }}",
@@ -148,11 +148,20 @@ pprint(result['records'])</code></pre>
 }'
 </pre>
   <pre class="powershell"
->$response = Invoke-RestMethod {{ g.site_url }}/api/action/datastore_delete `
+>$json = @'
+{
+  "resource_id": "{{ resource_id }}",
+  "filters": {
+{{ h.recombinant_example(resource.name, 'filter_one', indent=4) }}
+  }
+'@
+>$response = Invoke-RestMethod {{ g.site_url }}/api/action/datastore_records_delete `
   -Method Post -Body $json -Headers @{"Authorization"="$API_KEY"}
 </pre>
   <pre class="python"
->ckan.action.datastore_delete(
+>from ckanapi import RemoteCKAN
+ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
+ckan.action.datastore_records_delete(
     resource_id="{{ resource_id }}",
     filters={
 {{ h.recombinant_example(resource.name, 'filter_one', indent=8) }}

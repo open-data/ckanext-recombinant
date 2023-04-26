@@ -22,7 +22,7 @@
     <ul class="nav nav-pills mrgn-bttm-sm">
       {% for r in dataset.resources %}
         <li {% if r.id == resource.id %}class="active"{% endif %}>{%
-          link_for _(r.description) ~ ': ' ~ 
+          link_for _(r.description) ~ ': ' ~
             ngettext("%(num)d "+_('row'), "%(num)d "+_('rows'), r.datastore_rows)
             |format(num=r.datastore_rows),
           named_route='recombinant.preview_table',
@@ -100,7 +100,7 @@
           <h3>{{_("Create and update records")}}</h3>
           <div class="col-md-12">
             <p>{{_("No records have been created for this organization")}}</p>
-            <form method="post">
+            <form id="create-pd-resource" method="post">
               <button type="submit" class="btn btn-default" name="create">{{_('Get started…')}}</button>
             </form>
             {{ self.notices() }}
