@@ -210,7 +210,7 @@ def template(dataset_type, lang, owner_org):
                 resource = r
                 break
         else:
-            abort(404,"Resource not found")
+            abort(404, _("Resource not found"))
 
         pk_fields = recombinant_primary_key_fields(resource['name'])
         primary_keys = request.form.getlist('bulk-template')
@@ -224,7 +224,7 @@ def template(dataset_type, lang, owner_org):
             try:
                 result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
             except NotAuthorized:
-                abort(403, _("Not authorized"))
+                abort(403, _(u'Unauthorized to read resource %s') % resource['id'])
             record_data += result['records']
 
         append_data(book, record_data, chromo)
