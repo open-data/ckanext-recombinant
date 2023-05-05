@@ -72,7 +72,7 @@ def upload(id):
             owner_org=org['name'],
             errors=[e.message])
 
-@recombinant.route('/recombinant/delete/<id>/<resource_id>')
+@recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['POST'])
 def delete_records(id, resource_id):
     lc = ckanapi.LocalCKAN(username=c.user)
     filters = {}
