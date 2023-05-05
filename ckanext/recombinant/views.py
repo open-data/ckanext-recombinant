@@ -398,8 +398,11 @@ def preview_table(resource_name, owner_org, errors=None):
             dataset = lc.action.recombinant_show(
                 dataset_type=chromo['dataset_type'], owner_org=owner_org)
         except ckanapi.NotFound:
-            lc.action.recombinant_create(
-                dataset_type=chromo['dataset_type'], owner_org=owner_org)
+            try:
+                lc.action.recombinant_create(
+                    dataset_type=chromo['dataset_type'], owner_org=owner_org)
+            except NotAuthorized as e:
+                abort(403, e.message)
         return h.redirect_to(
             'recombinant.preview_table',
             resource_name=resource_name,
@@ -472,6 +475,10 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 'but you supplied a sheet labeled "{1}"').format(
                     '"/"'.join(sorted(expected_sheet_names)),
                     sheet_name))
+
+        if not h.check_access('datastore_upsert', {'resource_id': expected_sheet_names[sheet_name]}):
+            abort(403, _('User {0} not authorized to update resource {1}'
+                        .format(str(c.user), expected_sheet_names[sheet_name])))
 
         if org_name != owner_org:
             raise BadExcelData(_(
