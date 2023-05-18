@@ -203,9 +203,8 @@ def excel_data_dictionary(geno):
             'patternType': 'solid',
             'fgColor': 'FFDFE2DB'}}
 
-    from ckan.plugins.toolkit import config
-    from ckan.lib.i18n import handle_request, get_lang
-    from ckan.common import c, request
+    from ckan.plugins.toolkit import config, c, request
+    from ckan.lib.i18n import handle_request
 
     _build_styles(book, geno)
     for lang in config['ckan.locales_offered'].split():

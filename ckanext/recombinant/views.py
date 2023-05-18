@@ -5,16 +5,18 @@ import simplejson as json
 
 from logging import getLogger
 
-from ckan.plugins.toolkit import _, asbool, aslist, config
-
-from ckan.lib.base import (
+from ckan.plugins.toolkit import (
+    _,
     c,
-    render,
-    model,
-    request,
     h,
-    abort
+    asbool,
+    abort,
+    aslist,
+    config,
+    request,
+    render
 )
+
 from ckan.logic import ValidationError, NotAuthorized
 
 from ckan.views.dataset import _get_package_type
