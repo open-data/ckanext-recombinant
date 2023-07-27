@@ -45,6 +45,7 @@ def upload(id):
     geno = get_geno(package_type)
     lc = ckanapi.LocalCKAN(username=c.user)
     dataset = lc.action.package_show(id=id)
+    org = lc.action.organization_show(id=dataset['owner_org'])
     dry_run = 'validate' in request.form
     try:
         if not request.files['xls_update']:
@@ -66,13 +67,14 @@ def upload(id):
                 "Your file was successfully uploaded into the central system."
                 ))
 
-        return h.redirect_to(dataset['type'] + '.read', id=id)
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=dataset['resources'][0]['name'],
+                             owner_org=org['name'])
     except BadExcelData as e:
-        org = lc.action.organization_show(id=dataset['owner_org'])
-        return preview_table(
-            resource_name=dataset['resources'][0]['name'],
-            owner_org=org['name'],
-            errors=[e.message])
+        h.flash_error(_(e.message))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=dataset['resources'][0]['name'],
+                             owner_org=org['name'])
 
 @recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['POST'])
 def delete_records(id, resource_id):
@@ -82,7 +84,7 @@ def delete_records(id, resource_id):
     if not h.check_access('datastore_delete', {'resource_id': resource_id}):
         abort(403, _('User {0} not authorized to update resource {1}'
                     .format(str(c.user), resource_id)))
-    
+
     x_vars = {'filters': filters, 'action': 'edit'}
     pkg = lc.action.package_show(id=id)
     res = lc.action.resource_show(id=resource_id)
