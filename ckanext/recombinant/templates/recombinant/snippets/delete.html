@@ -2,7 +2,7 @@
 <div class="col-md-9">
 <form id="delete-form"
   class="dataset-form dataset-resource-form form-horizontal" method="post"
-  action="{% url_for 'recombinant.delete_records', id=pkg.id, resource_id=res.id %}">
+  action="{{ h.url_for('recombinant.delete_records', id=pkg.id, resource_id=res.id) }}">
 
   <div class="form-group control-medium {% if errors %}has-error{% endif %}">
     <label for="bulk-delete-field" class="required" aria-required="true">
