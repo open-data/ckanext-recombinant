@@ -386,6 +386,10 @@ def dataset_redirect(package_type, id):
     )
 
 
+def resource_redirect(package_type, id, resource_id):
+    return dataset_redirect(package_type, id)
+
+
 @recombinant.route('/recombinant/<resource_name>/<owner_org>', methods=['GET', 'POST'])
 def preview_table(resource_name, owner_org, errors=None):
     if not c.user:
