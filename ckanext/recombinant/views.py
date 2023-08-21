@@ -7,7 +7,7 @@ from logging import getLogger
 
 from ckan.plugins.toolkit import (
     _,
-    c,
+    g,
     h,
     asbool,
     abort,
@@ -43,7 +43,7 @@ recombinant = Blueprint('recombinant', __name__)
 def upload(id):
     package_type = _get_package_type(id)
     geno = get_geno(package_type)
-    lc = ckanapi.LocalCKAN(username=c.user)
+    lc = ckanapi.LocalCKAN(username=g.user)
     dataset = lc.action.package_show(id=id)
     org = lc.action.organization_show(id=dataset['owner_org'])
     dry_run = 'validate' in request.form
@@ -78,12 +78,12 @@ def upload(id):
 
 @recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['POST'])
 def delete_records(id, resource_id):
-    lc = ckanapi.LocalCKAN(username=c.user)
+    lc = ckanapi.LocalCKAN(username=g.user)
     filters = {}
 
     if not h.check_access('datastore_delete', {'resource_id': resource_id}):
         abort(403, _('User {0} not authorized to update resource {1}'
-                    .format(str(c.user), resource_id)))
+                    .format(str(g.user), resource_id)))
 
     x_vars = {'filters': filters, 'action': 'edit'}
     pkg = lc.action.package_show(id=id)
@@ -197,7 +197,7 @@ def template(dataset_type, lang, owner_org):
     if lang != h.lang():
         abort(404, _('Not found'))
 
-    lc = ckanapi.LocalCKAN(username=c.user)
+    lc = ckanapi.LocalCKAN(username=g.user)
     try:
         dataset = lc.action.recombinant_show(
             dataset_type=dataset_type,
@@ -279,7 +279,7 @@ def schema_json(dataset_type):
     from ckan.lib.i18n import handle_request, get_lang
     for lang in config['ckan.locales_offered'].split():
         request.environ['CKAN_LANG'] = lang
-        handle_request(request, c)
+        handle_request(request, g)
         schema['title'][lang] = _(geno['title'])
         schema['notes'][lang] = _(geno['notes'])
 
@@ -302,7 +302,7 @@ def schema_json(dataset_type):
         resource['title'] = OrderedDict()
         for lang in config['ckan.locales_offered'].split():
             request.environ['CKAN_LANG'] = lang
-            handle_request(request, c)
+            handle_request(request, g)
             resource['title'][lang] = _(chromo['title'])
 
         resource['primary_key'] = aslist(chromo['datastore_primary_key'])
@@ -322,7 +322,7 @@ def schema_json(dataset_type):
                     fld[k] = OrderedDict()
                     for lang in config['ckan.locales_offered'].split():
                         request.environ['CKAN_LANG'] = lang
-                        handle_request(request, c)
+                        handle_request(request, g)
                         fld[k][lang] = _(field[k])
             if fld['id'] in resource['primary_key']:
                 fld['obligation'] = 'mandatory'
@@ -377,7 +377,7 @@ def type_redirect(resource_name):
 
 
 def dataset_redirect(package_type, id):
-    lc = ckanapi.LocalCKAN(username=c.user)
+    lc = ckanapi.LocalCKAN(username=g.user)
     dataset = lc.action.package_show(id=id)
     return h.redirect_to(
         'recombinant.preview_table',
@@ -392,10 +392,10 @@ def resource_redirect(package_type, id, resource_id):
 
 @recombinant.route('/recombinant/<resource_name>/<owner_org>', methods=['GET', 'POST'])
 def preview_table(resource_name, owner_org, errors=None):
-    if not c.user:
+    if not g.user:
         return h.redirect_to('user.login')
 
-    lc = ckanapi.LocalCKAN(username=c.user)
+    lc = ckanapi.LocalCKAN(username=g.user)
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
@@ -486,7 +486,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
 
         if not h.check_access('datastore_upsert', {'resource_id': expected_sheet_names[sheet_name]}):
             abort(403, _('User {0} not authorized to update resource {1}'
-                        .format(str(c.user), expected_sheet_names[sheet_name])))
+                        .format(str(g.user), expected_sheet_names[sheet_name])))
 
         if org_name != owner_org:
             raise BadExcelData(_(
