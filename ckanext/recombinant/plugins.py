@@ -7,7 +7,7 @@ from ckan.plugins.toolkit import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
-from ckanext.recombinant import logic, tables, helpers, load, views
+from ckanext.recombinant import logic, tables, helpers, load, views, auth
 
 class RecombinantException(Exception):
     pass
@@ -22,6 +22,7 @@ class RecombinantPlugin(
     p.implements(p.ITemplateHelpers, inherit=True)
     p.implements(p.IActions)
     p.implements(p.ITranslation)
+    p.implements(p.IAuthFunctions)
 
     def update_config(self, config):
         # add our templates
@@ -80,6 +81,14 @@ class RecombinantPlugin(
             'recombinant_update': logic.recombinant_update,
             'recombinant_show': logic.recombinant_show,
             }
+
+    # IAuthFunctions
+
+    def get_auth_functions(self):
+        return {
+            'package_update': auth.package_update,
+            'package_create': auth.package_create,
+        }
 
 
 def generate_uuid(value):
