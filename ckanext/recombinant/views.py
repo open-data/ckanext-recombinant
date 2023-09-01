@@ -18,6 +18,7 @@ from ckan.plugins.toolkit import (
 )
 
 from ckan.logic import ValidationError, NotAuthorized
+from ckan.model.group import Group
 
 from ckan.views.dataset import _get_package_type
 
@@ -394,6 +395,14 @@ def resource_redirect(package_type, id, resource_id):
 def preview_table(resource_name, owner_org, errors=None):
     if not g.user:
         return h.redirect_to('user.login')
+
+    org_object = Group.get(owner_org)
+    if org_object.name != owner_org:
+        return h.redirect_to(
+            'recombinant.preview_table',
+            resource_name=resource_name,
+            owner_org=org_object.name,
+        )
 
     lc = ckanapi.LocalCKAN(username=g.user)
     try:
