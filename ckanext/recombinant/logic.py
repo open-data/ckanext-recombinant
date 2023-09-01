@@ -2,7 +2,7 @@ from ckan.plugins.toolkit import _
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
-from ckan.model.group import Group as Organization
+from ckan.model.group import Group
 from paste.deploy.converters import asbool
 
 from ckanext.recombinant.tables import get_geno
@@ -135,7 +135,7 @@ def _action_find_dataset(context, data_dict):
     the dataset type and organization name or id
     '''
     dataset_type = get_or_bust(data_dict, 'dataset_type')
-    owner_org = Organization.get(get_or_bust(data_dict, 'owner_org'))
+    owner_org = Group.get(get_or_bust(data_dict, 'owner_org'))
 
     try:
         geno = get_geno(dataset_type)
