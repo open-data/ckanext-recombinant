@@ -395,11 +395,16 @@ def preview_table(resource_name, owner_org, errors=None):
     if not g.user:
         return h.redirect_to('user.login')
 
-    lc = ckanapi.LocalCKAN(username=g.user)
+    lc = ckanapi.LocalCKAN(username=g.user, context={'ignore_auth':True})
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
         abort(404, _('Recombinant resource_name not found'))
+
+    if not h.check_access('package_create',
+                          {'type': chromo['dataset_type'],
+                           'owner_org': owner_org}):
+        abort(403, _('User %s not authorized to create packages') % (str(g.user)))
 
     if 'create' in request.form:
         try:

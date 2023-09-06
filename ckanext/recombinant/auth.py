@@ -28,15 +28,7 @@ def package_create(up_func, context, data_dict):
     of the same type for a single organization.
     """
     if data_dict.get(u'type') in h.recombinant_get_types():
-        dataset_type = data_dict.get(u'type')
-        owner_org = Group.get(data_dict.get(u'owner_org'))
-        lc = LocalCKAN(username=context['user'])
-        result = lc.action.package_search(
-            q="type:%s AND organization:%s" % (dataset_type, owner_org.name),
-            include_private=True,
-            rows=2)
-        if result['results']:
-            raise ValidationError({'owner_org':
-                _("dataset type %s already exists for this organization")
-                % dataset_type})
+        return {'success': False,
+                'msg': _('User %s not authorized to create Recombinant packages: %s') %
+                            (str(context[u'user']), data_dict.get(u'type'))}
     return up_func(context, data_dict)
