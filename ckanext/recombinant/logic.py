@@ -2,6 +2,7 @@ from ckan.plugins.toolkit import _
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
+from ckan.model.group import Group
 from paste.deploy.converters import asbool
 
 from ckanext.recombinant.tables import get_geno
@@ -66,7 +67,7 @@ def recombinant_show(context, data_dict):
     and checking that its metadata is up to date.
 
     :param dataset_type: recombinant dataset type
-    :param owner_org: organization name
+    :param owner_org: organization name or id
     '''
     lc, geno, dataset = _action_get_dataset(context, data_dict)
 
@@ -134,7 +135,7 @@ def _action_find_dataset(context, data_dict):
     the dataset type and organization name or id
     '''
     dataset_type = get_or_bust(data_dict, 'dataset_type')
-    owner_org = get_or_bust(data_dict, 'owner_org')
+    owner_org = Group.get(get_or_bust(data_dict, 'owner_org'))
 
     try:
         geno = get_geno(dataset_type)
@@ -144,7 +145,7 @@ def _action_find_dataset(context, data_dict):
 
     lc = LocalCKAN(username=context['user'])
     result = lc.action.package_search(
-        q="type:%s AND organization:%s" % (dataset_type, owner_org),
+        q="type:%s AND organization:%s" % (dataset_type, owner_org.name),
         include_private=True,
         rows=2)
     return lc, geno, result['results']
