@@ -302,7 +302,7 @@ def _pg_value(value):
         from ckanext.datastore.helpers import literal_string
 
     if isinstance(value, string_types):
-        return u'{}'.format(literal_string(unicode(value)))
+        return literal_string(unicode(value))
 
     return u'ARRAY[' + u','.join(
         literal_string(unicode(c)) for c in value) + u']'
