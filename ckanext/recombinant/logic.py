@@ -264,11 +264,8 @@ def _update_datastore(lc, geno, dataset, force_update=False):
 
 
 def _update_triggers(lc, chromo):
-    definitions = {}
+    definitions = chromo.get('trigger_strings', {})
     trigger_names = []
-
-    if u'trigger_strings' in chromo:
-        definitions = chromo['trigger_strings']
 
     for f in chromo['fields']:
         if 'choices' in f:
