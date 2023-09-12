@@ -410,12 +410,11 @@ def preview_table(resource_name, owner_org, errors=None):
     except RecombinantException:
         abort(404, _('Recombinant resource_name not found'))
 
-    if not h.check_access('package_create',
+    if 'create' in request.form:
+        if not h.check_access('package_create',
                           {'type': chromo['dataset_type'],
                            'owner_org': owner_org}):
-        abort(403, _('User %s not authorized to create packages') % (str(g.user)))
-
-    if 'create' in request.form:
+            abort(403, _('User %s not authorized to create packages') % (str(g.user)))
         try:
             dataset = lc.action.recombinant_show(
                 dataset_type=chromo['dataset_type'], owner_org=owner_org)
