@@ -11,7 +11,7 @@ def package_update(up_func, context, data_dict):
 
     Affects update, patch, and delete.
     """
-    if data_dict.get(u'type') in h.recombinant_get_types():
+    if data_dict and data_dict.get(u'type') in h.recombinant_get_types():
         return {'success': False,
                 'msg': _('User %s not authorized to modify Recombinant type: %s') %
                             (str(context[u'user']), data_dict.get(u'type'))}
@@ -27,7 +27,7 @@ def package_create(up_func, context, data_dict):
     However, users should not be allowed to create multiple packages
     of the same type for a single organization.
     """
-    if data_dict.get(u'type') in h.recombinant_get_types():
+    if data_dict and data_dict.get(u'type') in h.recombinant_get_types():
         return {'success': False,
                 'msg': _('User %s not authorized to create Recombinant packages: %s') %
                             (str(context[u'user']), data_dict.get(u'type'))}
