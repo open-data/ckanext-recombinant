@@ -7,7 +7,7 @@ from ckan.model.group import Group
 from paste.deploy.converters import asbool
 
 from ckanext.recombinant.tables import get_geno
-from ckanext.recombinant.errors import RecombinantException
+from ckanext.recombinant.errors import RecombinantException, RecombinantConfigurationError
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
 
@@ -269,15 +269,20 @@ def _update_triggers(lc, chromo):
 
     for f in chromo['fields']:
         if 'choices' in f:
-            assert f['datastore_id'] not in definitions, '{} already defined in trigger_strings'.format(f['datastore_id'])
+            if f['datastore_id'] in definitions:
+                raise RecombinantConfigurationError("trigger_string {name} can't be used because that name is required for the {name} field choices"
+                                                        .format(name=f['datastore_id']))
             definitions[f['datastore_id']] = sorted(f['choices'])
         elif 'choices_file' in f and '_path' in chromo:
-            assert f['datastore_id'] not in definitions, '{} already defined in trigger_strings'.format(f['datastore_id'])
+            if f['datastore_id'] in definitions:
+                raise RecombinantConfigurationError("trigger_string {name} can't be used because that name is required for the {name} field choices"
+                                                        .format(name=f['datastore_id']))
             definitions[f['datastore_id']] = sorted(_read_choices_file(chromo, f))
 
     for tr in chromo.get('triggers', []):
         if isinstance(tr, dict):
-            assert len(tr) == 1, 'inline trigger may have only one key:' + repr(tr.keys())
+            if len(tr) != 1:
+                raise RecombinantConfigurationError("inline trigger may have only one key: " + repr(tr.keys()))
             ((trname, trcode),) = tr.items()
             trigger_names.append(trname)
             try:
