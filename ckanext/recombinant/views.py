@@ -411,7 +411,9 @@ def preview_table(resource_name, owner_org, errors=None):
         abort(404, _('Recombinant resource_name not found'))
 
     if 'create' in request.form:
-        if not h.check_access('package_create',
+        # check if the user can initialize recombinant records
+        # admin and editors should be able to init records
+        if not h.check_access('package_update',
                           {'type': chromo['dataset_type'],
                            'owner_org': owner_org}):
             abort(403, _('User %s not authorized to create packages') % (str(g.user)))
