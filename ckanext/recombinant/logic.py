@@ -1,3 +1,4 @@
+from six import string_types
 from ckan.plugins.toolkit import _
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
@@ -6,7 +7,7 @@ from ckan.model.group import Group
 from paste.deploy.converters import asbool
 
 from ckanext.recombinant.tables import get_geno
-from ckanext.recombinant.errors import RecombinantException
+from ckanext.recombinant.errors import RecombinantException, RecombinantConfigurationError
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
 
@@ -263,18 +264,25 @@ def _update_datastore(lc, geno, dataset, force_update=False):
 
 
 def _update_triggers(lc, chromo):
-    field_choices = {}
+    definitions = chromo.get('trigger_strings', {})
     trigger_names = []
 
     for f in chromo['fields']:
         if 'choices' in f:
-            field_choices[f['datastore_id']] = sorted(f['choices'])
+            if f['datastore_id'] in definitions:
+                raise RecombinantConfigurationError("trigger_string {name} can't be used because that name is required for the {name} field choices"
+                                                        .format(name=f['datastore_id']))
+            definitions[f['datastore_id']] = sorted(f['choices'])
         elif 'choices_file' in f and '_path' in chromo:
-            field_choices[f['datastore_id']] = sorted(_read_choices_file(chromo, f))
+            if f['datastore_id'] in definitions:
+                raise RecombinantConfigurationError("trigger_string {name} can't be used because that name is required for the {name} field choices"
+                                                        .format(name=f['datastore_id']))
+            definitions[f['datastore_id']] = sorted(_read_choices_file(chromo, f))
 
     for tr in chromo.get('triggers', []):
         if isinstance(tr, dict):
-            assert len(tr) == 1, 'inline trigger may have only one key:' + repr(tr.keys())
+            if len(tr) != 1:
+                raise RecombinantConfigurationError("inline trigger may have only one key: " + repr(tr.keys()))
             ((trname, trcode),) = tr.items()
             trigger_names.append(trname)
             try:
@@ -283,8 +291,8 @@ def _update_triggers(lc, chromo):
                     or_replace=True,
                     rettype=u'trigger',
                     definition=unicode(trcode).format(**dict(
-                        (fkey, _pg_array(fchoices))
-                        for fkey, fchoices in field_choices.items())))
+                        (dkey, _pg_value(dvalue))
+                        for dkey, dvalue in definitions.items())))
             except NotAuthorized:
                 pass  # normal users won't be able to reset triggers
         else:
@@ -292,14 +300,17 @@ def _update_triggers(lc, chromo):
     return trigger_names
 
 
-def _pg_array(choices):
+def _pg_value(value):
     try:
         from ckanext.datastore.backend.postgres import literal_string
     except ImportError:
         from ckanext.datastore.helpers import literal_string
 
+    if isinstance(value, string_types):
+        return literal_string(unicode(value))
+
     return u'ARRAY[' + u','.join(
-        literal_string(unicode(c)) for c in choices) + u']'
+        literal_string(unicode(c)) for c in value) + u']'
 
 
 def _dataset_fields(geno):
