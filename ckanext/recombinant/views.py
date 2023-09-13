@@ -19,6 +19,7 @@ from ckan.plugins.toolkit import (
 
 from ckan.logic import ValidationError, NotAuthorized
 from ckan.model.group import Group
+from ckan.authz import has_user_permission_for_group_or_org
 
 from ckan.views.dataset import _get_package_type
 
@@ -411,11 +412,9 @@ def preview_table(resource_name, owner_org, errors=None):
         abort(404, _('Recombinant resource_name not found'))
 
     if 'create' in request.form:
-        # check if the user can initialize recombinant records
-        # admin and editors should be able to init records
-        if not h.check_access('package_update',
-                          {'type': chromo['dataset_type'],
-                           'owner_org': owner_org}):
+        # check if the user can update datasets for organization
+        # admin and editors should be able to init recombinant records
+        if not has_user_permission_for_group_or_org(org_object.id, g.user, 'update_dataset'):
             abort(403, _('User %s not authorized to create packages') % (str(g.user)))
         try:
             dataset = lc.action.recombinant_show(

@@ -144,7 +144,11 @@ def _action_find_dataset(context, data_dict):
         raise ValidationError({'dataset_type':
             _("Recombinant dataset type not found")})
 
-    lc = LocalCKAN(username=context['user'])
+    fresh_context = {}
+    if u'ignore_auth' in context:
+        fresh_context['ignore_auth'] = context['ignore_auth']
+
+    lc = LocalCKAN(username=context['user'], context=fresh_context)
     result = lc.action.package_search(
         q="type:%s AND organization:%s" % (dataset_type, owner_org.name),
         include_private=True,
