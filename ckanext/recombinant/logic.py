@@ -268,7 +268,7 @@ def _update_datastore(lc, geno, dataset, force_update=False):
 
 
 def _update_triggers(lc, chromo):
-    definitions = chromo.get('trigger_strings', {})
+    definitions = dict(chromo.get('trigger_strings', {}))
     trigger_names = []
 
     for f in chromo['fields']:
