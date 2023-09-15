@@ -1,3 +1,5 @@
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/open-data/ckanext-recombinant/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/open-data/ckanext-recombinant/tree/master)
+
 ckanext-recombinant
 ===================
 
