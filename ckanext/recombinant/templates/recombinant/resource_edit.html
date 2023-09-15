@@ -12,7 +12,7 @@
 {% block breadcrumb_content_selected %}{% endblock %}
 
 {% block breadcrumb_content %}
-  <li>{% link_for _(resource_description), named_route='recombinant_type',
+  <li>{% link_for _(resource_description), named_route='recombinant.type_redirect',
     resource_name=resource_name %}</li>
   <li class="active">{{ organization_display_name(organization) }}</li>
 {% endblock %}
@@ -25,7 +25,7 @@
           link_for _(r.description) ~ ': ' ~
             ngettext("%(num)d "+_('row'), "%(num)d "+_('rows'), r.datastore_rows)
             |format(num=r.datastore_rows),
-          named_route='recombinant_resource',
+          named_route='recombinant.preview_table',
           resource_name=r.name, owner_org=dataset.owner_org %}</li>
       {% endfor %}
     </ul>
@@ -83,7 +83,7 @@
             {{ _("Activity Stream") }}
           </summary>
           {% block activity_stream %}
-            <a id="activity-stream-link" href="{{ h.url_for(controller='package', action='activity', id=dataset.id) }}">
+            <a id="activity-stream-link" href="{{ h.url_for(dataset.dataset_type ~ '.activity', id=dataset.id) }}">
               {{ _('Activity Stream') }}
             </a>
           {% endblock %}

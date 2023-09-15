@@ -203,9 +203,8 @@ def excel_data_dictionary(geno):
             'patternType': 'solid',
             'fgColor': 'FFDFE2DB'}}
 
-    from ckan.plugins.toolkit import config
-    from ckan.lib.i18n import handle_request, get_lang
-    from ckan.common import c, request
+    from ckan.plugins.toolkit import config, g, request
+    from ckan.lib.i18n import handle_request
 
     _build_styles(book, geno)
     for lang in config['ckan.locales_offered'].split():
@@ -215,7 +214,7 @@ def excel_data_dictionary(geno):
         sheet.title = lang.upper()
         # switch language (FIXME: this is harder than it should be)
         request.environ['CKAN_LANG'] = lang
-        handle_request(request, c)
+        handle_request(request, g)
         choice_fields = dict(
             (f['datastore_id'], f['choices'])
             for chromo in geno['resources']

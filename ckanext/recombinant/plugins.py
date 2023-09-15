@@ -3,12 +3,11 @@ import os
 import uuid
 
 from paste.reloader import watch_file
-from paste.deploy.converters import asbool
 from ckan.plugins.toolkit import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
-from ckanext.recombinant import logic, tables, helpers, load
+from ckanext.recombinant import logic, tables, helpers, load, views, auth
 
 class RecombinantException(Exception):
     pass
@@ -19,10 +18,11 @@ class RecombinantPlugin(
     p.implements(tables.IRecombinant)
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
-    p.implements(p.IRoutes, inherit=True)
+    p.implements(p.IBlueprint)
     p.implements(p.ITemplateHelpers, inherit=True)
     p.implements(p.IActions)
     p.implements(p.ITranslation)
+    p.implements(p.IAuthFunctions)
 
     def update_config(self, config):
         # add our templates
@@ -41,12 +41,6 @@ class RecombinantPlugin(
     def package_types(self):
         return tables.get_dataset_types()
 
-    def read_template(self):
-        return 'recombinant/edit.html'
-
-    def edit_template(self):
-        return 'recombinant/edit.html'
-
     def create_package_schema(self):
         schema = super(RecombinantPlugin, self).create_package_schema()
         schema['id'] = [generate_uuid]
@@ -55,35 +49,17 @@ class RecombinantPlugin(
 
         return schema
 
-    def before_map(self, map):
-        map.connect('/recombinant/upload/{id}', action='upload',
-            conditions=dict(method=['POST']),
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('/recombinant/delete/{id}/{resource_id}',
-            action='delete_records',
-            conditions=dict(method=['POST']),
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_template',
-            '/recombinant-template/{dataset_type}_{lang}_{owner_org}.xlsx',
-            action='template',
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_data_dictionary',
-            '/recombinant-dictionary/{dataset_type}',
-            action='data_dictionary',
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_schema_json',
-            '/recombinant-schema/{dataset_type}.json',
-            action='schema_json',
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_resource',
-            '/recombinant/{resource_name}/{owner_org}',
-            action='preview_table',
-            controller='ckanext.recombinant.controller:UploadController')
-        map.connect('recombinant_type',
-            '/recombinant/{resource_name}',
-            action='type_redirect',
-            controller='ckanext.recombinant.controller:UploadController')
-        return map
+    def get_blueprint(self):
+        return [views.recombinant]
+
+    def prepare_dataset_blueprint(self, package_type, bp):
+        bp.add_url_rule('/<id>', 'dataset_redirect', views.dataset_redirect)
+        bp.add_url_rule('/edit/<id>', 'dataset_edit_redirect', views.dataset_redirect)
+        return bp
+
+    def prepare_resource_blueprint(self, package_type, bp):
+        bp.add_url_rule('/<resource_id>/edit', 'resource_edit_redirect', views.resource_redirect)
+        return bp
 
     def get_helpers(self):
         return {
@@ -105,6 +81,14 @@ class RecombinantPlugin(
             'recombinant_update': logic.recombinant_update,
             'recombinant_show': logic.recombinant_show,
             }
+
+    # IAuthFunctions
+
+    def get_auth_functions(self):
+        return {
+            'package_update': auth.package_update,
+            'package_create': auth.package_create,
+        }
 
 
 def generate_uuid(value):
