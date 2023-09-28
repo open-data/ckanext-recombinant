@@ -31,7 +31,7 @@ from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import (
     recombinant_primary_key_fields, recombinant_choice_fields)
 
-from cStringIO import StringIO
+from io import StringIO
 
 log = getLogger(__name__)
 
@@ -562,8 +562,8 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
             else:
                 # remove some postgres-isms that won't help the user
                 # when we render this as an error in the form
-                pgerror = re.sub(ur'\nLINE \d+:', u'', pgerror)
-                pgerror = re.sub(ur'\n *\^\n$', u'', pgerror)
+                pgerror = re.sub(r'\nLINE \d+:', u'', pgerror)
+                pgerror = re.sub(r'\n *\^\n$', u'', pgerror)
             if '_records_row' in e.error_dict:
                 raise BadExcelData(_(u'Sheet {0} Row {1}:').format(
                     sheet_name, records[e.error_dict['_records_row']][0])

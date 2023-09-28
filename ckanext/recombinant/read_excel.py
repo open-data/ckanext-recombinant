@@ -118,7 +118,7 @@ def get_records(rows, fields, primary_key_fields, choice_fields):
                         f['datastore_id'] in primary_key_fields,
                         choice_fields.get(f['datastore_id'], False)))
                 for f, v in zip(fields, row))))
-        except BadExcelData, e:
+        except BadExcelData as e:
             raise BadExcelData(u'Row {0}:'.format(n) + u' ' + e.message)
 
     return records
