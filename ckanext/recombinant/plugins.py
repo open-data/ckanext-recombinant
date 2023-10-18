@@ -2,7 +2,6 @@ import importlib
 import os
 import uuid
 
-from paste.reloader import watch_file
 from ckan.plugins.toolkit import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
@@ -151,7 +150,6 @@ def _load_tables_module_path(url):
     p = m.__path__[0]
     p = os.path.join(p, file_name)
     if os.path.exists(p):
-        watch_file(p)
         return load.load(open(p)), p
 
 
