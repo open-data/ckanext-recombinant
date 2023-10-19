@@ -45,8 +45,6 @@ def recombinant_language_text(text, prefer_lang=None):
         return v
 
     t = gettext(text)
-    if isinstance(t, str):
-        return t.decode('utf-8')
     return t
 
 
