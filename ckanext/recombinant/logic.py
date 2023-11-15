@@ -4,7 +4,7 @@ from ckan.plugins.toolkit import _
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
 from ckan.model.group import Group
-from paste.deploy.converters import asbool
+from ckan.common import asbool
 
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException, RecombinantConfigurationError
