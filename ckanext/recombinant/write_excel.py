@@ -171,7 +171,7 @@ def datastore_type_format(value, datastore_type):
 
     numeric_types = ['money', 'year', 'int', 'bigint', 'numeric']
     if isinstance(value, list):
-        item = u', '.join(unicode(e) for e in value)
+        item = u', '.join(str(e) for e in value)
     elif datastore_type == 'date':
         item = datetime.strptime(value, "%Y-%m-%d").date()
     elif datastore_type == 'timestamp':
@@ -470,7 +470,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
                     formula1=user_choice_range or choice_range,
                     allow_blank=True)
                 v.errorTitle = u'Invalid choice'
-                valid_keys = u', '.join(unicode(c) for c in choices)
+                valid_keys = u', '.join(str(c) for c in choices)
                 if len(valid_keys) < 40:
                     v.error = (u'Please enter one of the valid keys: '
                         + valid_keys)
@@ -568,10 +568,10 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
     for key, value in choices:
         if full_text_choices:
             choice = [u'{0}: {1}'.format(key, value)]
-        elif unicode(key) == value:
-            choice = [unicode(key)]
+        elif str(key) == value:
+            choice = [str(key)]
         else:
-            choice = [unicode(key), value]
+            choice = [str(key), value]
         refs.append(('choice', choice))
         max_length = max(max_length, len(choice[0]))  # used for full_text_choices
     return estimate_width_from_length(max_length)

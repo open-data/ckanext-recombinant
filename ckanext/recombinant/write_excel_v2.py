@@ -188,7 +188,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
                     formula1=choice_range,
                     allow_blank=True)
                 v.errorTitle = u'Invalid choice'
-                valid_keys = u', '.join(unicode(c) for c in choices)
+                valid_keys = u', '.join(str(c) for c in choices)
                 if len(valid_keys) < 40:
                     v.error = (u'Please enter one of the valid keys: '
                         + valid_keys)
@@ -308,7 +308,7 @@ def _append_field_choices_rows_v2(refs, choices, style2, count_range=None):
     label = _('Values')
     a1 = (style2, None, 24)
     for key, value in choices:
-        r = [label, unicode(key), value]
+        r = [label, str(key), value]
         if count_range: # used by _text choices validation
             r.extend([None]*6 + ['=SUMPRODUCT(--ISNUMBER(SEARCH('
                 '","&B{n}&",",SUBSTITUTE(","&{r}&","," ",""))))'.format(
