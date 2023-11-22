@@ -65,7 +65,7 @@ def canonicalize(
         # use common value for blank cells
         dirty = u""
 
-    if isinstance(dirty, basestring):
+    if isinstance(dirty, str):
         if not dirty.strip():
             # whitespace-only values
             dirty = u""

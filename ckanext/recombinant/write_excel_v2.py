@@ -342,7 +342,7 @@ def _populate_reference_sheet_v2(sheet, chromo, refs):
 
 def fill_cell(sheet, row, column, value, styles):
     c = sheet.cell(row=row, column=column)
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         value = value.replace(u'\n', u'\r\n')
     c.value = value
     apply_styles(styles, c)

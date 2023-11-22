@@ -880,10 +880,10 @@ def fill_cell(sheet, row, column, value, style):
     :return: None
     """
     c = sheet.cell(row=row, column=column)
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         value = value.replace(u'\n', u'\r\n')
     c.value = value
-    if isinstance(style, basestring):
+    if isinstance(style, str):
         c.style = style
     else:
         apply_style(c, style)
