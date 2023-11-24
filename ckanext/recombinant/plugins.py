@@ -55,10 +55,12 @@ class RecombinantPlugin(
     def prepare_dataset_blueprint(self, package_type, bp):
         bp.add_url_rule('/<id>', 'dataset_redirect', views.dataset_redirect)
         bp.add_url_rule('/edit/<id>', 'dataset_edit_redirect', views.dataset_redirect)
+        bp.add_url_rule('/<id>/dictionary/<resource_id>', 'resource_data_dict_redirect', views.resource_redirect)
         return bp
 
     def prepare_resource_blueprint(self, package_type, bp):
         bp.add_url_rule('/<resource_id>/edit', 'resource_edit_redirect', views.resource_redirect)
+        bp.add_url_rule('/<resource_id>', 'resource_view_redirect', views.resource_redirect)
         return bp
 
     def get_helpers(self):
