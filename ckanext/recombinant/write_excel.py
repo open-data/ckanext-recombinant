@@ -308,7 +308,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
         DEFAULT_EXAMPLE_STYLE, **geno.get('excel_example_style', {}))
 
     # create rows so we can set all heights
-    for i in xrange(1, DATA_FIRST_ROW + data_num_rows):
+    for i in range(1, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=1).value = None
 
     sheet.merge_cells(EXAMPLE_MERGE)
@@ -500,7 +500,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
     sheet.row_dimensions[CSTATUS_ROW].height = CSTATUS_HEIGHT
     sheet.row_dimensions[EXAMPLE_ROW].height = chromo.get(
         'excel_example_height', DEFAULT_EXAMPLE_HEIGHT)
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+    for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.row_dimensions[i].height = chromo.get(
             'excel_data_height', DEFAULT_DATA_HEIGHT)
 
@@ -763,7 +763,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             sheet=chromo['resource_name'],
             col=col)
         fmla = '=NOT({cell}="")*(' + fmla + ')'
-        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+        for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
             try:
                 sheet.cell(row=i, column=col_num).value = fmla.format(
                     cell=cell,
@@ -783,7 +783,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
     if col is None:
         return  # no errors to report on!
 
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+    for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
             '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'.format(
                 colA=DATA_FIRST_COL,
@@ -836,7 +836,7 @@ def _populate_excel_r_sheet(sheet, chromo):
                 for cn, f in template_cols_fields(chromo)
                 if f['datastore_id'] in fmla_keys}
 
-        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+        for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
             sheet.cell(row=i, column=col_num).value = fmla.format(
                 cell=cell,
                 has_data='{col}{{num}}'.format(col=RPAD_COL),
@@ -853,7 +853,7 @@ def _populate_excel_r_sheet(sheet, chromo):
     if col is None:
         return  # no required columns
 
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+    for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RPAD_COL_NUM).value = (
             "=SUMPRODUCT(LEN('{sheet}'!{colA}{row}:{colZ}{row}))>0".format(
                 sheet=chromo['resource_name'],
@@ -861,7 +861,7 @@ def _populate_excel_r_sheet(sheet, chromo):
                 colZ=col,
                 row=i))
 
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+    for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
             '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'
             .format(
