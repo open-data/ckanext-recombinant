@@ -337,6 +337,9 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
     sheet.cell(row=CODE_ROW, column=2).value = org['name']
 
     cheadings_dimensions = sheet.row_dimensions[CHEADINGS_ROW]
+    cheadings_default_height = cheadings_dimensions.height if cheadings_dimensions.height \
+            else sheet.sheet_format.customHeight if sheet.sheet_format.customHeight \
+            else sheet.sheet_format.defaultRowHeight
 
     choice_fields = dict(
         (f['datastore_id'], f['choices'])
@@ -346,7 +349,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
         field_heading = recombinant_language_text(
             field.get('excel_heading', field['label'])).strip()
         cheadings_dimensions.height = max(
-            cheadings_dimensions.height,
+            cheadings_default_height + CHEADINGS_HEIGHT,
             field_heading.count('\n') * LINE_HEIGHT + CHEADINGS_HEIGHT)
 
         col_heading_style = 'reco_cheading'

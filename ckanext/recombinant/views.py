@@ -31,7 +31,7 @@ from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import (
     recombinant_primary_key_fields, recombinant_choice_fields)
 
-from io import StringIO
+from io import BytesIO
 
 log = getLogger(__name__)
 
@@ -239,7 +239,7 @@ def template(dataset_type, lang, owner_org):
 
         append_data(book, record_data, chromo)
 
-    blob = StringIO()
+    blob = BytesIO()
     book.save(blob)
     response = Response(blob.getvalue())
     response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -259,7 +259,7 @@ def data_dictionary(dataset_type):
         abort(404, _('Recombinant dataset_type not found'))
 
     book = excel_data_dictionary(geno)
-    blob = StringIO()
+    blob = BytesIO()
     book.save(blob)
     response = Response(blob.getvalue())
     response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
