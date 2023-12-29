@@ -33,14 +33,15 @@ def recombinant():
 @recombinant.command(short_help="Display some information about the status of recombinant datasets.")
 @click.argument("dataset_type", required=False)
 @click.argument("org_name", required=False)
-def show(dataset_type=None, org_name=None):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def show(dataset_type=None, org_name=None, verbose=False):
     """
     Display some information about the status of recombinant datasets
 
     Full Usage:\n
         recombinant show [DATASET_TYPE [ORG_NAME]]
     """
-    _show(dataset_type[0], org_name[0])
+    _show(dataset_type[0], org_name[0], verbose=verbose)
 
 
 @recombinant.command(short_help="Create and update triggers.")
@@ -51,14 +52,15 @@ def show(dataset_type=None, org_name=None):
     is_flag=True,
     help="All dataset types/resource names",
 )
-def create_triggers(dataset_type=None, all_types=False):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def create_triggers(dataset_type=None, all_types=False, verbose=False):
     """
     Create and update triggers
 
     Full Usage:\n
         recombinant create-triggers (-a | DATASET_TYPE ...)
     """
-    _create_triggers(dataset_type, all_types)
+    _create_triggers(dataset_type, all_types, verbose=verbose)
 
 
 @recombinant.command(short_help="Delete datastore tables and packages for empty recombinant resources.")
@@ -69,14 +71,15 @@ def create_triggers(dataset_type=None, all_types=False):
     is_flag=True,
     help="All dataset types/resource names",
 )
-def remove_empty(dataset_type=None, all_types=False):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def remove_empty(dataset_type=None, all_types=False, verbose=False):
     """
     Delete datastore tables and packages for empty recombinant resources
 
     Full Usage:\n
         recombinant remove-empty (-a | DATASET_TYPE ...)
     """
-    _remove_empty(dataset_type, all_types)
+    _remove_empty(dataset_type, all_types, verbose=verbose)
 
 
 @recombinant.command(short_help="Triggers recombinant update for recombinant resources.")
@@ -93,14 +96,15 @@ def remove_empty(dataset_type=None, all_types=False):
     is_flag=True,
     help="Force update of tables (required for changes to only primary keys/indexes)",
 )
-def update(dataset_type=None, all_types=False, force_update=False):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def update(dataset_type=None, all_types=False, force_update=False, verbose=False):
     """
     Triggers recombinant update for recombinant resources
 
     Full Usage:\n
         recombinant update (-a | DATASET_TYPE ...) [-f]
     """
-    _update(dataset_type, all_types, force_update)
+    _update(dataset_type, all_types, force_update, verbose=verbose)
 
 
 @recombinant.command(short_help="Delete recombinant datasets and all their data.")
@@ -111,26 +115,28 @@ def update(dataset_type=None, all_types=False, force_update=False):
     is_flag=True,
     help="All dataset types/resource names",
 )
-def delete(dataset_type=None, all_types=False):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def delete(dataset_type=None, all_types=False, verbose=False):
     """
     Delete recombinant datasets and all their data
 
     Full Usage:\n
         recombinant delete (-a | DATASET_TYPE ...)
     """
-    _delete(dataset_type, all_types)
+    _delete(dataset_type, all_types, verbose=verbose)
 
 
 @recombinant.command(short_help="Load CSV file(s) rows into recombinant resources datastore.")
 @click.argument("csv_file")
-def load_csv(csv_file):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def load_csv(csv_file, verbose=False):
     """
     Load CSV file(s) rows into recombinant resources datastore
 
     Full Usage:\n
         recombinant load-csv CSV_FILE ...
     """
-    _load_csv_files(csv_file)
+    _load_csv_files(csv_file, verbose=verbose)
 
 
 @recombinant.command(short_help="Output all datastore data to CSV for given resource names.")
@@ -147,18 +153,20 @@ def load_csv(csv_file):
     default=None,
     help="Save CSV files to DIR/RESOURCE_NAME.csv instead of streaming to STDOUT",
 )
-def combine(resource_name, all_types=False, output_dir=None):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def combine(resource_name, all_types=False, output_dir=None, verbose=False):
     """
     Output all datastore data to CSV for given resource names
 
     Full Usage:\n
         recombinant combine (-a | RESOURCE_NAME ...) [-d DIR ]
     """
-    _combine_csv(output_dir, resource_name, all_types)
+    _combine_csv(output_dir, resource_name, all_types, verbose=verbose)
 
 
 @recombinant.command(short_help="Output configured target datasets.")
-def target_datasets():
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def target_datasets(verbose=False):
     """
     Find the RecombinantPlugin instance and output its
     configured target datasets (e.g., ['ati', 'pd', ...])
@@ -166,57 +174,61 @@ def target_datasets():
     Full Usage:\n
         recombinant target-datasets
     """
-    _target_datasets()
+    _target_datasets(verbose=verbose)
 
 
 @recombinant.command(short_help="Output dataset types of recombinant resources.")
 @click.argument("dataset_type", required=False)
-def dataset_types(dataset_type=None):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def dataset_types(dataset_type=None, verbose=False):
     """
     Output dataset types of recombinant resources
 
     Full Usage:\n
         recombinant dataset-types [DATASET_TYPE ...]
     """
-    _dataset_types(dataset_type)
+    _dataset_types(dataset_type, verbose=verbose)
 
 
 @recombinant.command(short_help="Low-level command to remove datasets with missing datastore tables.")
 @click.argument("dataset_type")
-def remove_broken(dataset_type):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def remove_broken(dataset_type, verbose=False):
     """
     Low-level command to remove datasets with missing datastore tables
 
     Full Usage:\n
         recombinant remove-broken DATASET_TYPE ...
     """
-    _remove_broken(dataset_type)
+    _remove_broken(dataset_type, verbose=verbose)
 
 
 @recombinant.command(short_help="Low-level command to run triggers on datasets' datastore tables.")
 @click.argument("dataset_type")
-def run_triggers(dataset_type):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def run_triggers(dataset_type, verbose=False):
     """
     Low-level command to run triggers on datasets' datastore tables
 
     Full Usage:\n
         recombinant run-triggers DATASET_TYPE ...
     """
-    _run_triggers(dataset_type)
+    _run_triggers(dataset_type, verbose=verbose)
 
 
 @recombinant.command(short_help="Output the recombinant excel template to a file path.")
 @click.argument("dataset_type")
 @click.argument("org_name")
 @click.argument("output_file")
-def template(dataset_type, org_name, output_file):
+@click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
+def template(dataset_type, org_name, output_file, verbose=False):
     """
     Output the recombinant excel template to a file path
 
     Full Usage:\n
         recombinant DATASET_TYPE ORG_NAME OUTPUT_FILE
     """
-    _template(dataset_type[0], org_name[0], output_file[0])
+    _template(dataset_type[0], org_name[0], output_file[0], verbose=verbose)
 
 
 def _get_orgs():
@@ -239,7 +251,7 @@ def _get_packages(dataset_type, orgs, ignore_errors=False):
     return packages
 
 
-def _show(dataset_type, org_name):
+def _show(dataset_type, org_name, verbose=False):
     """
     Display some information about the status of recombinant datasets
     """
@@ -247,36 +259,36 @@ def _show(dataset_type, org_name):
     types = [dataset_type] if dataset_type else get_dataset_types()
 
     for dtype in types:
-        print(u'{geno[title]} ({dtype})'.format(
+        click.echo(u'{geno[title]} ({dtype})'.format(
             geno=get_geno(dtype), dtype=dtype).encode('utf-8'))
 
         packages = _get_packages(dtype, orgs)
         if dataset_type:
             for p in packages:
-                print(p['owner_org'])
+                click.echo(p['owner_org'])
                 if 'error' in p:
-                    print('  *** {p[error]}'.format(p=p))
+                    click.echo('  *** {p[error]}'.format(p=p))
                 elif not p['metadata_correct']:
-                    print('  ! metadata needs to be updated')
+                    click.echo('  ! metadata needs to be updated')
                 for r in p['resources']:
-                    print(' - id:{r[id]} {r[name]}'.format(r=r))
+                    click.echo(' - id:{r[id]} {r[name]}'.format(r=r))
                     if 'error' in r:
-                        print('    *** {r[error]}'.format(r=r))
+                        click.echo('    *** {r[error]}'.format(r=r))
                     else:
-                        print('rows:{r[datastore_rows]}'.format(r=r))
+                        click.echo('rows:{r[datastore_rows]}'.format(r=r))
                         if not r['datastore_correct']:
-                            print('   ! datastore needs to be updated')
+                            click.echo('   ! datastore needs to be updated')
                         if not r['metadata_correct']:
-                            print('   ! metadata needs to be updated')
+                            click.echo('   ! metadata needs to be updated')
 
-        print(' > %d orgs with %d records found' %
+        click.echo(' > %d orgs with %d records found' %
             (len(orgs), len(packages)))
         need_update = sum(1 for p in packages if not p['all_correct'])
         if need_update:
-            print(' --> %d need to be updated' % need_update)
+            click.echo(' --> %d need to be updated' % need_update)
 
 
-def _update(dataset_types, all_types=False, force_update=False):
+def _update(dataset_types, all_types=False, force_update=False, verbose=False):
     """
     Triggers recombinant update for recombinant resources
     """
@@ -290,7 +302,7 @@ def _update(dataset_types, all_types=False, force_update=False):
                 if existing[o]['all_correct']:
                     if not force_update:
                         continue
-                print(dtype, o, 'updating')
+                click.echo(dtype, o, 'updating')
                 lc.action.recombinant_update(
                     owner_org=o, dataset_type=dtype,
                     force_update=force_update)
@@ -308,7 +320,7 @@ def _expand_resource_names(resource_names, all_types=False):
     return resource_names
 
 
-def _create_triggers(dataset_types, all_types=False):
+def _create_triggers(dataset_types, all_types=False, verbose=False):
     """
     Create and update triggers
     """
@@ -318,7 +330,7 @@ def _create_triggers(dataset_types, all_types=False):
             _update_triggers(lc, chromo)
 
 
-def _remove_empty(dataset_types, all_types=False):
+def _remove_empty(dataset_types, all_types=False, verbose=False):
     """
     Delete datastore tables and packages for empty recombinant resources
     """
@@ -328,7 +340,7 @@ def _remove_empty(dataset_types, all_types=False):
         packages = _get_packages(dtype, orgs)
         for p in packages:
             if not any(r['datastore_rows'] for r in p['resources']):
-                print('deleting %s %s' % (dtype, p['owner_org']))
+                click.echo('deleting %s %s' % (dtype, p['owner_org']))
                 for r in p['resources']:
                     try:
                         lc.action.datastore_delete(
@@ -339,7 +351,7 @@ def _remove_empty(dataset_types, all_types=False):
                 lc.action.package_delete(id=p['id'])
 
 
-def _delete(dataset_types, all_types=False):
+def _delete(dataset_types, all_types=False, verbose=False):
     """
     Delete recombinant datasets and all their data
     """
@@ -348,7 +360,7 @@ def _delete(dataset_types, all_types=False):
     for dtype in _expand_dataset_types(dataset_types, all_types):
         packages = _get_packages(dtype, orgs, ignore_errors=True)
         for p in packages:
-            print('deleting %s %s' % (dtype, p['owner_org']))
+            click.echo('deleting %s %s' % (dtype, p['owner_org']))
             for r in p['resources']:
                 try:
                     lc.action.datastore_delete(
@@ -359,7 +371,7 @@ def _delete(dataset_types, all_types=False):
             lc.action.package_delete(id=p['id'])
 
 
-def _load_csv_files(csv_file_names):
+def _load_csv_files(csv_file_names, verbose=False):
     """
     Load CSV file(s) rows into recombinant resources datastore
     """
@@ -376,7 +388,7 @@ def _load_one_csv_file(name):
     path, csv_name = os.path.split(name)
     assert csv_name.endswith('.csv'), csv_name
     resource_name = csv_name[:-4]
-    print(resource_name)
+    click.echo(resource_name)
     chromo = get_chromo(resource_name)
 
     dataset_type = chromo['dataset_type']
@@ -398,7 +410,7 @@ def _load_one_csv_file(name):
                 rows=2)['results']
 
         if len(results) > 1:
-            print('type:%s organization:%s multiple found!' % (
+            click.echo('type:%s organization:%s multiple found!' % (
                 dataset_type, org_name))
             return 1
 
@@ -406,7 +418,7 @@ def _load_one_csv_file(name):
             if res['name'] == resource_name:
                 break
         else:
-            print('type:%s organization:%s missing resource:%s' % (
+            click.echo('type:%s organization:%s missing resource:%s' % (
                 dataset_type, org_name, resource_name))
             return 1
 
@@ -421,7 +433,7 @@ def _load_one_csv_file(name):
                     else:
                         r[k] = r[k].split(',')
 
-        print('-', org_name, len(records))
+        click.echo('-', org_name, len(records))
 
         if 'csv_org_extras' in chromo:
             # remove 'csv_org_extras' fields from records
@@ -458,12 +470,12 @@ def _load_one_csv_file(name):
     return errors
 
 
-def _combine_csv(target_dir, resource_names, all_types=False):
+def _combine_csv(target_dir, resource_names, all_types=False, verbose=False):
     """
     Output all datastore data to CSV for given resource names
     """
     if target_dir and not os.path.isdir(target_dir):
-        print('"{0}" is not a directory'.format(target_dir))
+        click.echo('"{0}" is not a directory'.format(target_dir))
         return 1
 
     orgs = _get_orgs()
@@ -497,7 +509,7 @@ def _write_one_csv(lc, pkgs, chromo, outfile):
             if res['name'] == chromo['resource_name']:
                 break
         else:
-            print('resource {0} not found for {1}'.format(
+            click.echo('resource {0} not found for {1}'.format(
                 chromo['resource_name'], pkg['owner_org']))
             continue
 
@@ -529,7 +541,7 @@ def _write_one_csv(lc, pkgs, chromo, outfile):
                 records = result['records']
                 total = result.get('total')
             except NotFound:
-                print('resource {0} table missing for {1}'.format(
+                click.echo('resource {0} table missing for {1}'.format(
                     chromo['resource_name'], pkg['owner_org']))
                 break
 
@@ -543,7 +555,7 @@ def _write_one_csv(lc, pkgs, chromo, outfile):
                         ).encode('utf-8') for col in column_ids]
                     out.writerow(['\r\n'.join(col.splitlines()) for col in row])
                 except KeyError:
-                    print('resource {0} table missing keys for {1}'.format(
+                    click.echo('resource {0} table missing keys for {1}'.format(
                         chromo['resource_name'], pkg['owner_org']))
                     break
 
@@ -552,7 +564,7 @@ def _write_one_csv(lc, pkgs, chromo, outfile):
             offs += DATASTORE_PAGINATE
 
 
-def _remove_broken(target_datasets):
+def _remove_broken(target_datasets, verbose=False):
     """
     Low-level command to remove datasets with missing datastore tables
     """
@@ -564,12 +576,12 @@ def _remove_broken(target_datasets):
                 try:
                     lc.action.datastore_search(resource_id=r['id'], rows=1)
                 except NotFound:
-                    print('removing', d['name'], d['title'])
+                    click.echo('removing', d['name'], d['title'])
                     lc.action.package_delete(id=d['id'])
                     break
 
 
-def _run_triggers(target_datasets):
+def _run_triggers(target_datasets, verbose=False):
     """
     Low-level command to run triggers on datasets' datastore tables
     """
@@ -580,28 +592,28 @@ def _run_triggers(target_datasets):
             results = [lc.action.datastore_trigger_each_row(resource_id=r['id'])
                         for r in d['resources']]
             rowcount = sum(results)
-            print(' '.join([d['owner_org'], d['organization']['name'],
+            click.echo(' '.join([d['owner_org'], d['organization']['name'],
                             'updated', str(rowcount), 'records']))
 
 
-def _target_datasets():
+def _target_datasets(verbose=False):
     """
     Find the RecombinantPlugin instance and output its
     configured target datasets (e.g., ['ati', 'pd', ...])
     """
-    print(' '.join(get_target_datasets()))
+    click.echo(' '.join(get_target_datasets()))
 
 
-def _dataset_types(dataset_types):
+def _dataset_types(dataset_types, verbose=False):
     """
     Output dataset types of recombinant resources
     """
     for t in _expand_dataset_types(dataset_types, all_types=False):
-        print(t + ': ' + ' '.join(
+        click.echo(t + ': ' + ' '.join(
             c['resource_name'] for c in get_geno(t)['resources']))
 
 
-def _template(dataset_type, org_name, output_file):
+def _template(dataset_type, org_name, output_file, verbose=False):
     """
     Output the recombinant excel template to a file path
     """
