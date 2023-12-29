@@ -88,7 +88,7 @@ def remove_empty(dataset_type=None, all_types=False):
     help="All dataset types/resource names",
 )
 @click.option(
-    "-f"
+    "-f",
     "--force-update",
     is_flag=True,
     help="Force update of tables (required for changes to only primary keys/indexes)",
@@ -142,7 +142,7 @@ def load_csv(csv_file):
     help="All dataset types/resource names",
 )
 @click.option(
-    "-d"
+    "-d",
     "--output-dir",
     default=None,
     help="Save CSV files to DIR/RESOURCE_NAME.csv instead of streaming to STDOUT",
