@@ -220,10 +220,8 @@ def template(dataset_type, org_name, output_file):
 
 
 def _get_orgs():
-        if not _orgs:
-            lc = LocalCKAN()
-            _orgs = lc.action.organization_list()
-        return _orgs
+    lc = LocalCKAN()
+    return lc.action.organization_list()
 
 
 def _get_packages(dataset_type, orgs, ignore_errors=False):
