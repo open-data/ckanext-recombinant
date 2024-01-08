@@ -311,12 +311,16 @@ def _update(dataset_types, all_types=False, force_update=False, verbose=False):
 def _expand_dataset_types(dataset_types, all_types=False):
     if all_types:
         return get_dataset_types()
+    if isinstance(dataset_types, str):
+        return [dataset_types]
     return dataset_types
 
 
 def _expand_resource_names(resource_names, all_types=False):
     if all_types:
         return get_resource_names()
+    if isinstance(resource_names, str):
+        return [resource_names]
     return resource_names
 
 
