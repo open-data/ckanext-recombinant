@@ -6,7 +6,6 @@ import json
 
 from ckan.logic import ValidationError
 from ckanapi import LocalCKAN, NotFound
-import codecs
 
 from ckanext.recombinant.tables import (get_dataset_type_for_resource_name,
     get_dataset_types, get_chromo, get_geno, get_target_datasets,
@@ -151,6 +150,7 @@ def load_csv(csv_file, verbose=False):
     "-d",
     "--output-dir",
     default=None,
+    required=True,
     help="Save CSV files to DIR/RESOURCE_NAME.csv instead of streaming to STDOUT",
 )
 @click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
@@ -478,20 +478,19 @@ def _combine_csv(target_dir, resource_names, all_types=False, verbose=False):
     """
     Output all datastore data to CSV for given resource names
     """
-    if target_dir and not os.path.isdir(target_dir):
+    if not os.path.isdir(target_dir):
         click.echo('"{0}" is not a directory'.format(target_dir))
         return 1
 
     orgs = _get_orgs()
     lc = LocalCKAN()
-    outf = sys.stdout
     for resource_name in _expand_resource_names(resource_names, all_types):
         if verbose:
             click.echo("Combining {} resources into csv...".format(resource_name))
         if target_dir:
             outf = open(os.path.join(target_dir,
-                resource_name + '.csv'), 'wb')
-        outf.write(codecs.BOM_UTF8)
+                resource_name + '.csv'), 'w', encoding='utf-8')
+        outf.write("\N{bom}")
         dataset_type = get_dataset_type_for_resource_name(resource_name)
         if verbose:
             click.echo("Writing packages of type {} into csv...".format(dataset_type))
@@ -510,7 +509,7 @@ def _write_one_csv(lc, pkgs, chromo, outfile):
     column_ids = [f['datastore_id'] for f in chromo['fields']
         ] + chromo.get('csv_org_extras', []) + [
         'owner_org', 'owner_org_title']
-    out.writerow([id.encode('utf-8') for id in column_ids])
+    out.writerow(column_ids)
 
     for pkg in pkgs:
         for res in pkg['resources']:
@@ -556,12 +555,10 @@ def _write_one_csv(lc, pkgs, chromo, outfile):
             for record in records:
                 record.update(org_extras)
                 try:
-                    row = [str(
-                        u'' if record[col] is None else
-                        u','.join(record[col]) if isinstance(record[col], list) else
-                        record[col]
-                        ).encode('utf-8') for col in column_ids]
-                    out.writerow(['\r\n'.join(col.splitlines()).encode('utf-8') for col in row])
+                    row = [str(u'' if record[col] is None else
+                           u','.join(record[col]) if isinstance(record[col], list) else
+                           record[col]) for col in column_ids]
+                    out.writerow(['\r\n'.join(col.splitlines()) for col in row])
                 except KeyError:
                     click.echo('resource {0} table missing keys for {1}'.format(
                         chromo['resource_name'], pkg['owner_org']))
