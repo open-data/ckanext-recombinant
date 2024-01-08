@@ -510,7 +510,7 @@ def _write_one_csv(lc, pkgs, chromo, outfile):
     column_ids = [f['datastore_id'] for f in chromo['fields']
         ] + chromo.get('csv_org_extras', []) + [
         'owner_org', 'owner_org_title']
-    out.writerow(column_ids)
+    out.writerow([id.encode('utf-8') for id in column_ids])
 
     for pkg in pkgs:
         for res in pkg['resources']:
@@ -561,7 +561,7 @@ def _write_one_csv(lc, pkgs, chromo, outfile):
                         u','.join(record[col]) if isinstance(record[col], list) else
                         record[col]
                         ).encode('utf-8') for col in column_ids]
-                    out.writerow(['\r\n'.join(col.splitlines()) for col in row])
+                    out.writerow(['\r\n'.join(col.splitlines()).encode('utf-8') for col in row])
                 except KeyError:
                     click.echo('resource {0} table missing keys for {1}'.format(
                         chromo['resource_name'], pkg['owner_org']))
