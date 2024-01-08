@@ -483,7 +483,7 @@ def _combine_csv(target_dir, resource_names, all_types=False, verbose=False):
     outf = sys.stdout
     for resource_name in _expand_resource_names(resource_names, all_types):
         if verbose:
-            click.echo("Combining {} into csv...".format(resource_name))
+            click.echo("Combining {} resources into csv...".format(resource_name))
         if target_dir:
             outf = open(os.path.join(target_dir,
                 resource_name + '.csv'), 'wb')
