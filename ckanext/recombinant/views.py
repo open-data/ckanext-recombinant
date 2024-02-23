@@ -186,6 +186,29 @@ def delete_records(id, resource_id):
         )
 
 
+def _xlsx_response_headers():
+    """
+    Returns tuple of content type and disposition type.
+
+    If the request is from MS Edge user agent, we force the XLSX
+    download to prevent Edge from cowboying into Office Apps Online
+    """
+    content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    disposition_type = 'inline'
+    user_agent_legacy = getattr(request, 'headers', {}).get('User-Agent')
+    user_agent = getattr(request, 'headers', {}).get('Sec-CH-UA', user_agent_legacy)
+    if user_agent and (
+        "Microsoft Edge" in user_agent or
+        "Edg/" in user_agent or
+        "EdgA/" in user_agent
+        ):
+            # force the XLSX file to be downloaded in MS Edge,
+            # and not open in Office Apps Online.
+            content_type = 'application/octet-stream'
+            disposition_type = 'attachment'
+    return content_type, disposition_type
+
+
 @recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx', methods=['GET', 'POST'])
 def template(dataset_type, lang, owner_org):
 
@@ -242,9 +265,11 @@ def template(dataset_type, lang, owner_org):
     blob = StringIO()
     book.save(blob)
     response = Response(blob.getvalue())
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    content_type, disposition_type = _xlsx_response_headers()
+    response.headers['Content-Type'] = content_type
     response.headers['Content-Disposition'] = (
-        'inline; filename="{0}_{1}_{2}.xlsx"'.format(
+        '{}; filename="{}_{}_{}.xlsx"'.format(
+            disposition_type,
             dataset['owner_org'],
             lang,
             dataset['dataset_type']))
@@ -262,7 +287,11 @@ def data_dictionary(dataset_type):
     blob = StringIO()
     book.save(blob)
     response = Response(blob.getvalue())
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    content_type, disposition_type = _xlsx_response_headers()
+    response.headers['Content-Type'] = content_type
+    response.headers['Content-Disposition'] = '{}; filename="{}.xlsx"'.format(
+        disposition_type,
+        dataset_type)
     return response
 
 
