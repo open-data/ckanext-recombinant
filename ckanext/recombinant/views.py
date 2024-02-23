@@ -242,9 +242,22 @@ def template(dataset_type, lang, owner_org):
     blob = StringIO()
     book.save(blob)
     response = Response(blob.getvalue())
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    # (canada fork only): modify response headers for Microsoft Edge
+    content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    disposition_type = 'inline'
+    user_agent_legacy = request.get('headers', {}).get('User-Agent')
+    user_agent = request.get('headers', {}).get('Sec-CH-UA', user_agent_legacy)
+    if user_agent and (
+        "Microsoft Edge" in user_agent or
+        "Edg/" in user_agent or
+        "EdgA/" in user_agent
+        ):
+            content_type = 'application/octet-stream'
+            disposition_type = 'attachment'
+    response.headers['Content-Type'] = content_type
     response.headers['Content-Disposition'] = (
-        'inline; filename="{0}_{1}_{2}.xlsx"'.format(
+        '{}; filename="{0}_{1}_{2}.xlsx"'.format(
+            disposition_type,
             dataset['owner_org'],
             lang,
             dataset['dataset_type']))
@@ -262,7 +275,22 @@ def data_dictionary(dataset_type):
     blob = StringIO()
     book.save(blob)
     response = Response(blob.getvalue())
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    # (canada fork only): modify response headers for Microsoft Edge
+    content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    disposition_type = 'inline'
+    user_agent_legacy = request.get('headers', {}).get('User-Agent')
+    user_agent = request.get('headers', {}).get('Sec-CH-UA', user_agent_legacy)
+    if user_agent and (
+        "Microsoft Edge" in user_agent or
+        "Edg/" in user_agent or
+        "EdgA/" in user_agent
+        ):
+            content_type = 'application/octet-stream'
+            disposition_type = 'attachment'
+    response.headers['Content-Type'] = content_type
+    response.headers['Content-Disposition'] = '{}; filename="{}.xlxs"'.format(
+        disposition_type,
+        dataset_type)
     return response
 
 
