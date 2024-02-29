@@ -126,7 +126,7 @@ def delete(dataset_type=None, all_types=False, verbose=False):
 
 
 @recombinant.command(short_help="Load CSV file(s) rows into recombinant resources datastore.")
-@click.argument("csv_file")
+@click.argument("csv_file", type=click.File('r'), nargs=-1)
 @click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
 def load_csv(csv_file, verbose=False):
     """
@@ -381,7 +381,8 @@ def _load_csv_files(csv_file_names, verbose=False):
     """
     errs = 0
     for n in csv_file_names:
-        errs |= _load_one_csv_file(n)
+        # pass click.File prop
+        errs |= _load_one_csv_file(n.name)
     return errs
 
 
