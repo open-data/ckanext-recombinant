@@ -302,7 +302,7 @@ def _update(dataset_types, all_types=False, force_update=False, verbose=False):
                 if existing[o]['all_correct']:
                     if not force_update:
                         continue
-                click.echo(dtype, o, 'updating')
+                click.echo('%s %s updating' % (dtype, o))
                 lc.action.recombinant_update(
                     owner_org=o, dataset_type=dtype,
                     force_update=force_update)
@@ -438,7 +438,7 @@ def _load_one_csv_file(name):
                     else:
                         r[k] = r[k].split(',')
 
-        click.echo('-', org_name, len(records))
+        click.echo('- %s %s' % (org_name, len(records)))
 
         if 'csv_org_extras' in chromo:
             # remove 'csv_org_extras' fields from records
