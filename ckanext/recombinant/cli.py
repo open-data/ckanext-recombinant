@@ -582,7 +582,7 @@ def _remove_broken(target_datasets, verbose=False):
                 try:
                     lc.action.datastore_search(resource_id=r['id'], rows=1)
                 except NotFound:
-                    click.echo('removing', d['name'], d['title'])
+                    click.echo('removing %s %s' % (d['name'], d['title']))
                     lc.action.package_delete(id=d['id'])
                     break
 
