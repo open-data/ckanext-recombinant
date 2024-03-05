@@ -1,5 +1,5 @@
 from six import string_types
-from ckan.plugins.toolkit import _
+from ckan.plugins.toolkit import _, chained_action, h
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
@@ -379,3 +379,18 @@ def _datastore_match(fs, fields):
     # XXX: does not check types or extra columns at this time
     existing = set(c['id'] for c in fields)
     return all(f['datastore_id'] in existing for f in fs)
+
+
+@chained_action
+def datastore_delete(original_action, context, data_dict):
+    res = context['model'].Resource.get(data_dict.get('resource_id'))
+    pkg = context['model'].Package.get(res.package_id)
+    if not res or not pkg or pkg.type not in h.recombinant_get_types():
+        return original_action(context, data_dict)
+    if 'filters' not in data_dict:
+        # if there are no filters, the Datastore table will be deleted.
+        # we do not want that to happen for Recombinant types.
+        raise NotAuthorized(_("Cannot delete Datastore for type: %s. "
+                            "Use datastore_records_delete instead.")
+                            % pkg.type)
+    return original_action(context, data_dict)
