@@ -384,7 +384,7 @@ def _datastore_match(fs, fields):
 @chained_action
 def datastore_delete(original_action, context, data_dict):
     res = context['model'].Resource.get(data_dict.get('resource_id'))
-    pkg = context['model'].Package.get(res.package_id)
+    pkg = context['model'].Package.get(getattr(res, 'package_id', None))
     if not res or not pkg or pkg.type not in h.recombinant_get_types():
         return original_action(context, data_dict)
     if 'filters' not in data_dict:
