@@ -82,7 +82,6 @@ class RecombinantPlugin(
             'recombinant_create': logic.recombinant_create,
             'recombinant_update': logic.recombinant_update,
             'recombinant_show': logic.recombinant_show,
-            'datastore_delete': logic.datastore_delete,
             }
 
     # IAuthFunctions
@@ -91,6 +90,7 @@ class RecombinantPlugin(
         return {
             'package_update': auth.package_update,
             'package_create': auth.package_create,
+            'datastore_delete': auth.datastore_delete,
         }
 
 
