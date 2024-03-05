@@ -1,6 +1,5 @@
 from six import string_types
-from ckan.plugins.toolkit import _, chained_action, h
-from ckan.authz import is_sysadmin
+from ckan.plugins.toolkit import _
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
