@@ -90,6 +90,7 @@ class RecombinantPlugin(
         return {
             'package_update': auth.package_update,
             'package_create': auth.package_create,
+            'datastore_delete': auth.datastore_delete,
         }
 
 
