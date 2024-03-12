@@ -305,9 +305,9 @@ class TableCommand(CkanCommand):
                         resource_id=res['id'],
                         records=records[offset:])
                 except ValidationError as err:
-                    if '_records_row' not in err.error_dict:
+                    if 'records_row' not in err.error_dict:
                         raise
-                    bad = err.error_dict['_records_row']
+                    bad = err.error_dict['records_row']
                     errors |= 2
                     sys.stderr.write(json.dumps([
                         err.error_dict['records'],
