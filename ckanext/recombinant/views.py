@@ -83,7 +83,7 @@ def delete_records(id, resource_id):
     lc = ckanapi.LocalCKAN(username=g.user)
     filters = {}
 
-    if not h.check_access('datastore_delete', {'resource_id': resource_id}):
+    if not h.check_access('datastore_delete', {'resource_id': resource_id, 'filters': filters}):
         abort(403, _('User {0} not authorized to update resource {1}'
                     .format(str(g.user), resource_id)))
 
