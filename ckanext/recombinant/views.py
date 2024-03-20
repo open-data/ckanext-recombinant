@@ -479,33 +479,21 @@ def preview_table(resource_name, owner_org, errors=None):
         dataset = None
     org = lc.action.organization_show(id=owner_org)
 
-    # store a dict of (str, bool) of resource ids
-    # and if they have a datastore table or not
-    has_datastore_table = {}
-
     if dataset:
         for r in dataset['resources']:
             if r['name'] == resource_name:
-                current_resource = r
-            try:
-                lc.action.datastore_search(
-                    resource_id=r['id'], limit=0)
-                has_datastore_table[r['id']] = True
-            except ckanapi.NotFound:
-                has_datastore_table[r['id']] = False
-                pass
-        if not current_resource:
+                break
+        else:
             abort(404, _('Resource not found'))
     else:
-        current_resource = None
+        r = None
 
     return render('recombinant/resource_edit.html', extra_vars={
         'dataset': dataset,
         'dataset_type': chromo['dataset_type'],
         'resource_description': chromo['title'],
         'resource_name': chromo['resource_name'],
-        'resource': current_resource,
-        'has_datastore_table': has_datastore_table,
+        'resource': r,
         'organization': org,
         'errors': errors,
         })

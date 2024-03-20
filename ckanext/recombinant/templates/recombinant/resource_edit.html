@@ -22,8 +22,8 @@
     <ul class="nav nav-pills mrgn-bttm-sm">
       {% set separator = ' : ' if h.lang() == 'fr' else ': ' %}
       {% for r in dataset.resources %}
-        {% set num_label = separator ~ ngettext("%(num)d "+_('row'), "%(num)d "+_('rows'), r.get('datastore_rows', 0)) | format(num=r.get('datastore_rows', 0)) %}
-        {% if not has_datastore_table.get(r.id) %}
+        {% set num_label = separator ~ ungettext('{num} row', '{num} rows', r.get('datastore_rows', 0)).format(num=r.get('datastore_rows', 0)) %}
+        {% if 'error' in r %}
           {% set num_label = separator ~ _('Error') %}
         {% endif %}
         <li {% if r.id == resource.id %}class="active"{% endif %}>{%
@@ -39,7 +39,7 @@
     organization_display_name=organization_display_name %}
 
   {% if dataset %}
-    {% if has_datastore_table.get(resource.id) %}
+    {% if 'error' not in resource %}
       {% set refs = h.recombinant_choice_fields(resource.name) %}
       <div class="wb-tabs">
         <div class="tabpanels">
