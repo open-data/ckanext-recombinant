@@ -449,12 +449,10 @@ def preview_table(resource_name, owner_org, errors=None):
             # check if the dataset exists
             dataset = lc.action.recombinant_show(
                 dataset_type=chromo['dataset_type'], owner_org=owner_org)
-            # check that the resource has datastore tables
+            # check that the resource has errors
             for _r in dataset['resources']:
-                if _r['name'] == resource_name:
-                    lc.action.datastore_search(
-                        resource_id=_r['id'], limit=0)
-                    break
+                if _r['name'] == resource_name and 'error' in _r:
+                    raise ckanapi.NotFound
         except ckanapi.NotFound:
             try:
                 if 'create' in request.form:
