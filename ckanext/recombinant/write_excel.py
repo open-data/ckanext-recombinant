@@ -215,13 +215,10 @@ def excel_data_dictionary(geno):
         # switch language (FIXME: this is harder than it should be)
         request.environ['CKAN_LANG'] = lang
         handle_request(request, g)
-        choice_fields = dict(
-            (f['datastore_id'], f['choices'])
-            for chromo in geno['resources']
-            for f in recombinant_choice_fields(chromo['resource_name']))
 
         refs = []
         for chromo in geno['resources']:
+            choice_fields = recombinant_choice_fields(chromo['resource_name'])
             for field in chromo['fields']:
                 _append_field_ref_rows(refs, field, link=None)
 
@@ -341,9 +338,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
             else sheet.sheet_format.customHeight if sheet.sheet_format.customHeight \
             else sheet.sheet_format.defaultRowHeight
 
-    choice_fields = dict(
-        (f['datastore_id'], f['choices'])
-        for f in recombinant_choice_fields(chromo['resource_name']))
+    choice_fields = recombinant_choice_fields(chromo['resource_name'])
 
     for col_num, field in template_cols_fields(chromo):
         field_heading = recombinant_language_text(

@@ -56,9 +56,7 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
         required_side, required_side, required_side, required_side)
 
 
-    choice_fields = dict(
-        (f['datastore_id'], f['choices'])
-        for f in recombinant_choice_fields(chromo['resource_name']))
+    choice_fields = recombinant_choice_fields(chromo['resource_name'])
 
     pk_cells = [
         get_column_letter(n)+'4' for

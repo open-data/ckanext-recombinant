@@ -37,6 +37,11 @@ class RecombinantPlugin(
                 "recombinant.definitions")
         self._chromos, self._genos = (
             _load_table_definitions(self._tables_urls))
+        self._published_resource_ids = {}
+        for chname, ch in self._chromos.items():
+            pubid = ch.get('published_resource_id')
+            if pubid:
+                self._published_resource_ids[pubid] = chname
 
     def package_types(self):
         return tables.get_dataset_types()
@@ -75,6 +80,8 @@ class RecombinantPlugin(
             'recombinant_choice_fields': helpers.recombinant_choice_fields,
             'recombinant_show_package': helpers.recombinant_show_package,
             'recombinant_get_field': helpers.recombinant_get_field,
+            'recombinant_published_resource_chromo':
+                helpers.recombinant_published_resource_chromo,
             }
 
     def get_actions(self):

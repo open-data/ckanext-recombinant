@@ -323,11 +323,9 @@ def schema_json(dataset_type):
     for chromo in geno['resources']:
         resource = OrderedDict()
         schema['resources'].append(resource)
-        choice_fields = dict(
-            (f['datastore_id'], f['choices'])
-            for f in recombinant_choice_fields(
-                chromo['resource_name'],
-                all_languages=True))
+        choice_fields = recombinant_choice_fields(
+            chromo['resource_name'],
+            all_languages=True)
 
         resource['resource_name'] = chromo['resource_name']
         resource['title'] = OrderedDict()

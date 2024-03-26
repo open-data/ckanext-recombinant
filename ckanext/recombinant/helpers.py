@@ -6,7 +6,10 @@ from ckan.plugins.toolkit import _ as gettext
 import ckanapi
 from ckan.lib.helpers import lang
 
-from ckanext.recombinant.tables import get_chromo, get_geno, get_dataset_types
+from ckanext.recombinant.tables import (
+    get_chromo, get_geno, get_dataset_types,
+    get_published_resource_resource_name
+)
 from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant import load
 
@@ -117,7 +120,7 @@ def recombinant_example(resource_name, doc_type, indent=2, lang='json'):
 def recombinant_choice_fields(resource_name, all_languages=False,
         prefer_lang=None):
     """
-    Return a list of fields from the resource definition
+    Return a datastore_id: choices dict from the resource definition
     that contain lists of choices, with labels pre-translated
     and sorted by key (or custom choice_order_expression)
 
@@ -125,10 +128,10 @@ def recombinant_choice_fields(resource_name, all_languages=False,
     prefer_lang - set all_languages to False and use prefer_lang
         to request translations for a specific language
     """
-    out = []
+    out = {}
     chromo = recombinant_get_chromo(resource_name)
     if not chromo:
-        return []
+        return {}
 
     def build_choices(f, choices):
         order_expr = f.get('choice_order_expression')
@@ -143,14 +146,11 @@ def recombinant_choice_fields(resource_name, all_languages=False,
                     'text': recombinant_language_text(choices[v], prefer_lang),
                 })
 
-        out.append({
-            'datastore_id': f['datastore_id'],
-            'label': recombinant_language_text(f['label']),
-            'choices': [(v,
-                    choices[v] if all_languages else
-                    recombinant_language_text(choices[v], prefer_lang))
-                for v in sorted(choices, key=key_fn)],
-            })
+        out[f['datastore_id']] = [
+            (v, choices[v] if all_languages
+                else recombinant_language_text(choices[v], prefer_lang))
+            for v in sorted(choices, key=key_fn)
+        ]
 
     for f in chromo['fields']:
         if 'choices' in f:
@@ -184,3 +184,11 @@ def recombinant_get_field(resource_name, datastore_id):
     for f in chromo['fields']:
         if f['datastore_id'] == datastore_id:
             return f
+
+
+def recombinant_published_resource_chromo(res_id):
+    try:
+        resource_name = get_published_resource_resource_name(res_id)
+        return recombinant_get_chromo(resource_name)
+    except RecombinantException:
+        return {}

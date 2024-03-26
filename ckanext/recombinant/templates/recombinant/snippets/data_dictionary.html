@@ -1,0 +1,107 @@
+{% set choice_fields=h.recombinant_choice_fields(chromo.resource_name) %}
+
+<h3>{{ _("Data Dictionary") }}</h3>
+
+<div class="form-group control-medium row">
+  <div class="col-md-6">
+    <a class="button" href="{{ h.url_for(
+      'recombinant.data_dictionary',
+      dataset_type=chromo.dataset_type) }}"><span class="glyphicon glyphicon-download-alt"></span>
+      {{ _('Download data dictionary') }} XLSX</a>
+  </div>
+  <div class="col-md-6">
+    <a class="button" href="{{ h.url_for(
+      'recombinant.schema_json',
+      dataset_type=chromo.dataset_type) }}"><span class="glyphicon glyphicon-wrench"></span>
+      {{ _('Schema as JSON') }}</a>
+  </div>
+</div>
+
+{% macro dictionary_field(label) %}
+  {% set content = caller().strip() %}
+  {% if content %}
+    <dt class="col-md-3 text-secondary">{{ label }}</dt>
+    <dd class="col-md-9">{{ content }}</dd>
+  {% endif %}
+{% endmacro %}
+
+<div class="panel-group">
+  {% for field in chromo.fields %}
+    {% if field.get('visible_to_public', true) %}
+
+      {% set field_type %}{{
+        field.datastore_type[1:] ~ '[]' if field.datastore_type[0] == '_'
+        else field.datastore_type }}{% endset %}
+
+      {% set extra_info -%}
+        {% call dictionary_field(_('Label')) %}
+          {{ h.recombinant_language_text(field.label) }}
+        {% endcall %}
+        {% call dictionary_field(_('Description')) %}
+          {{ h.render_markdown(h.recombinant_language_text(field.description)) |
+            replace('\n', '<br>' | safe) }}
+        {% endcall %}
+        {% call dictionary_field(_('Obligation')) %}
+          {{ _('Primary key') if field.datastore_id in chromo.datastore_primary_key
+          else _('Required') if field.excel_required
+          else '' }}
+        {% endcall %}
+        {% set choices = choice_fields.get(field.datastore_id) %}
+        {% if choices %}
+          {% call dictionary_field(_('Choices')) %}
+            <table class="table table-striped table-bordered table-condensed" data-module="table-toggle-more">
+              <thead>
+                <tr>
+                  <th scope="col">{{ _('Code') }}</th>
+                  <th scope="col">{{ _('Description') }}</th>
+                </tr>
+              </thead>
+              {% for code, desc in choices %}
+                <tr>
+                  <td>{{ code }}</td>
+                  <td>{{ desc }}</td>
+                </tr>
+              {% endfor %}
+            </table>
+          {% endcall %}
+        {% endif %}
+
+      {%- endset %}
+      {# render_markdown to strip snippet comments and whitespace #}
+      {% set has_extra=not all_expanded and h.render_markdown(extra_info) %}
+
+      <div class="panel{% if has_extra %} panel-default{% endif %}">
+        <div class="panel-heading">
+          <div class="row panel-title{% if has_extra %} collapsed{% endif %}"
+          {% if has_extra %}
+            role="button" data-toggle="collapse" aria-expanded="false"
+            href="#collapse{{ prefix }}-{{ loop.index }}"
+          {% endif %}>
+            <div class="col-md-1">{{ loop.index }}.</div>
+            <div class="col-md-6">{{
+            h.recombinant_language_text(field.label)
+            or field.datastore_id
+            }}</div>
+            <div class="col-md-4">{{ field_type }}</div>
+            <div class="col-md-1">{% if has_extra  %}»{% endif %}</div>
+          </div>
+        </div>
+        {% if has_extra or all_expanded %}
+          <div id="collapse{{ prefix }}-{{ loop.index }}" role="tabpanel"
+            class="panel-collapse {% if not all_expanded %}collapse{% endif %}"
+            aria-labelledby="field-{{ loop.index }}">
+            <div class="panel-body">
+              <dl class="row">
+                {% block resource_data_dictionary_field scoped %}
+                  {% call dictionary_field(_('ID')) %}{{ field.datastore_id }}{% endcall %}
+                  {% call dictionary_field(_('Type')) %}{{ field_type }}{% endcall %}
+                  {{ extra_info }}
+                {% endblock %}
+              </dl>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% endfor %}
+</div>
