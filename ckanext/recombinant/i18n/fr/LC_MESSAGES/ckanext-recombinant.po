@@ -404,11 +404,11 @@ msgstr "Schéma en JSON"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:37
 msgid "Label"
-msgstr ""
+msgstr "Étiquette"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:45
 msgid "Primary key"
-msgstr ""
+msgstr "Clé principale"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:46
 msgid "Required"
@@ -416,15 +416,15 @@ msgstr "obligatoire"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:51
 msgid "Choices"
-msgstr ""
+msgstr "Choix"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:55
 msgid "Code"
-msgstr ""
+msgstr "Code"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:97
 msgid "Type"
-msgstr ""
+msgstr "Type"
 
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:1
 msgid "Delete existing records"
