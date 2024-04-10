@@ -69,6 +69,13 @@ def get_resource_names():
         for chromo in get_geno(t)['resources']]
 
 
+def get_published_resource_resource_name(res_id):
+    try:
+        return _get_plugin()._published_resource_ids[res_id]
+    except KeyError:
+        raise RecombinantException('resource id not found')
+
+
 def get_dataset_type_for_resource_name(resource_name):
     """
     Get the dataset type that contains resource_name,
