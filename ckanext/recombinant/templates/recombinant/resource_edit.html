@@ -98,19 +98,18 @@
       <div class="wb-tabs">
         <div class="tabpanels">
           <details id="update" {% if errors %}open="open"{% endif %}>
-            <summary><span class="glyphicon glyphicon-import"></span>
-              {{ _("Import") }}
+            <summary><span class="glyphicon glyphicon-warning-sign"></span>
+              {{ _("Error") }}
             </summary>
             <h3>{{_("Something went wrong with retrieving your records")}}</h3>
             <div class="col-md-12">
-              <p>{{_("We were unable to find your records in our database. Please contact support to inquire about this.")}}</p>
+              <p>{{_("We were unable to find your records in our database. Please contact <a href=\"open-ouvert@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a> to have your records restored.")}}</p>
               {% if g.userobj.sysadmin %}
                 {# only let sysadmins refresh the recombinant record via UI #}
                 <form id="create-pd-resource" method="post">
                   <button type="submit" class="btn btn-default mrgn-bttm-md m-b-3" name="refresh">{{_('Refresh…')}}</button>
                 </form>
               {% endif %}
-              {{ self.notices() }}
             </div>
           </details>
         </div>
