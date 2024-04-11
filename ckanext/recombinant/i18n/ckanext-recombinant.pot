@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-04-10 14:37+0000\n"
+"POT-Creation-Date: 2024-04-11 13:12+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -192,8 +192,7 @@ msgstr ""
 msgid "Values"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:71
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:103
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:70
 #: ckanext/recombinant/write_excel.py:590
 msgid "Reference"
 msgstr ""
@@ -203,10 +202,8 @@ msgid "Field Name"
 msgstr ""
 
 #: ckanext/recombinant/templates/package/activity.html:6
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:85
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:89
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:118
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:122
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:84
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:88
 msgid "Activity Stream"
 msgstr ""
 
@@ -232,51 +229,49 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:27
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:133
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:99
 msgid "Error"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:49
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:154
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:48
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:120
 msgid "Import"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:64
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:95
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:63
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:43
 msgid "Delete"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:78
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:111
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:77
 msgid "API Access"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:135
-msgid "Something went wrong with retrieving your records"
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:101
+msgid "Error loading your records"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:137
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:103
 msgid ""
-"We were unable to find your records in our database. Please contact <a href"
-"=\"open-ouvert@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a> to have your "
-"records restored."
+"We were unable to retrieve your proactive publication records from our "
+"database. Please contact <a href=\"open-ouvert@tbs-sct.gc.ca\">open-ouvert"
+"@tbs-sct.gc.ca</a>."
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:141
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:107
 msgid "Refresh…"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:156
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:122
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
 msgid "Create and update records"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:158
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:124
 msgid "No records have been created for this organization"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:160
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:126
 msgid "Get started…"
 msgstr ""
 
