@@ -438,18 +438,28 @@ def preview_table(resource_name, owner_org, errors=None):
     except RecombinantException:
         abort(404, _('Recombinant resource_name not found'))
 
-    if 'create' in request.form:
+    if 'create' in request.form or 'refresh' in request.form:
         # check if the user can update datasets for organization
         # admin and editors should be able to init recombinant records
         if not has_user_permission_for_group_or_org(org_object.id, g.user, 'update_dataset'):
             abort(403, _('User %s not authorized to create packages') % (str(g.user)))
         try:
+            # check if the dataset exists
             dataset = lc.action.recombinant_show(
                 dataset_type=chromo['dataset_type'], owner_org=owner_org)
+            # check that the resource has errors
+            for _r in dataset['resources']:
+                if _r['name'] == resource_name and 'error' in _r:
+                    raise ckanapi.NotFound
         except ckanapi.NotFound:
             try:
-                lc.action.recombinant_create(
-                    dataset_type=chromo['dataset_type'], owner_org=owner_org)
+                if 'create' in request.form:
+                    lc.action.recombinant_create(
+                        dataset_type=chromo['dataset_type'], owner_org=owner_org)
+                else:
+                    lc.action.recombinant_update(
+                        dataset_type=chromo['dataset_type'], owner_org=owner_org,
+                        force_update=True)
             except NotAuthorized as e:
                 abort(403, e.message)
         return h.redirect_to(

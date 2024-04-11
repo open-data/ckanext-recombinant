@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-03-26 17:47+0000\n"
+"POT-Creation-Date: 2024-04-11 13:12+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -57,7 +57,7 @@ msgstr "Aucune erreur trouvée."
 msgid "Your file was successfully uploaded into the central system."
 msgstr "Votre fichier a été téléchargé avec succès dans le système central."
 
-#: ckanext/recombinant/views.py:88 ckanext/recombinant/views.py:530
+#: ckanext/recombinant/views.py:88 ckanext/recombinant/views.py:540
 msgid "User {0} not authorized to update resource {1}"
 msgstr ""
 
@@ -90,7 +90,7 @@ msgstr "{num} supprimé"
 msgid "Not found"
 msgstr "Non trouvé"
 
-#: ckanext/recombinant/views.py:246 ckanext/recombinant/views.py:473
+#: ckanext/recombinant/views.py:246 ckanext/recombinant/views.py:483
 msgid "Resource not found"
 msgstr "Ressource non trouvée"
 
@@ -124,7 +124,7 @@ msgstr "Nom de la ressource recombinante_non trouvé"
 msgid "User %s not authorized to create packages"
 msgstr ""
 
-#: ckanext/recombinant/views.py:515
+#: ckanext/recombinant/views.py:525
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try"
 " copying your data into the latest version of the template and uploading "
@@ -137,13 +137,13 @@ msgstr ""
 "persiste, envoyez votre fichier Excel à open-ouvert@… afin que nous "
 "puissions faire enquête."
 
-#: ckanext/recombinant/views.py:522
+#: ckanext/recombinant/views.py:532
 msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
 
-#: ckanext/recombinant/views.py:533
+#: ckanext/recombinant/views.py:543
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but "
 "you supplied a sheet for {1}"
@@ -151,7 +151,7 @@ msgstr ""
 "La feuille n'est pas valide pour cette organisation. La feuille doit être"
 " étiquetée pour {0}, mais vous avez fourni une feuille pour {1}"
 
-#: ckanext/recombinant/views.py:549
+#: ckanext/recombinant/views.py:559
 msgid ""
 "This template is out of date. Please try copying your data into the "
 "latest version of the template and uploading again. If this problem "
@@ -163,15 +163,15 @@ msgstr ""
 "persiste, envoyez votre fichier Excel à open-ouvert@tbs-sct.gc.ca afin "
 "que nous puissions trouver le problème."
 
-#: ckanext/recombinant/views.py:595
+#: ckanext/recombinant/views.py:605
 msgid "Sheet {0} Row {1}:"
 msgstr "Feuille {0} Rangée {1} :"
 
-#: ckanext/recombinant/views.py:599
+#: ckanext/recombinant/views.py:609
 msgid "Error while importing data: {0}"
 msgstr "Erreur lors de l’importation des données: {0}"
 
-#: ckanext/recombinant/views.py:602
+#: ckanext/recombinant/views.py:612
 msgid "The template uploaded is empty"
 msgstr "Le modèle que vous avez soumis est vide"
 
@@ -212,7 +212,7 @@ msgstr "Format"
 msgid "Values"
 msgstr "Valeurs"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:66
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:70
 #: ckanext/recombinant/write_excel.py:590
 msgid "Reference"
 msgstr "Référence"
@@ -222,8 +222,8 @@ msgid "Field Name"
 msgstr "Nom de la zone"
 
 #: ckanext/recombinant/templates/package/activity.html:6
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:80
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:84
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:88
 msgid "Activity Stream"
 msgstr "Flux d'Activités"
 
@@ -250,38 +250,59 @@ msgstr[1] ""
 msgid "Cancel"
 msgstr "Annuler"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:26
-msgid "row"
-msgstr "ligne"
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:25
+msgid "{num} row"
+msgid_plural "{num} rows"
+msgstr[0] "{num} ligne"
+msgstr[1] "{num} lignes"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:26
-msgid "rows"
-msgstr "lignes"
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:27
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:99
+msgid "Error"
+msgstr "Erreur"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:44
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:95
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:48
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:120
 msgid "Import"
 msgstr "Importer"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:59
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:63
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:43
 msgid "Delete"
 msgstr "Supprimer"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:73
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:77
 msgid "API Access"
 msgstr "Accès par API"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:97
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:101
+msgid "Error loading your records"
+msgstr "Erreur lors du chargement de vos enregistrements"
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:103
+msgid ""
+"We were unable to retrieve your proactive publication records from our "
+"database. Please contact <a href=\"open-ouvert@tbs-sct.gc.ca\">open-"
+"ouvert@tbs-sct.gc.ca</a>."
+msgstr ""
+"Nous n'avons pas été en mesure de récupérer vos dossiers de publication "
+"proactive à partir de notre base de données. Veuillez <a href=\"open-"
+"ouvert@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a> contacter."
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:107
+msgid "Refresh…"
+msgstr "Rafraîchir…"
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:122
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
 msgid "Create and update records"
 msgstr "Créer et mettre à jour un dossier"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:99
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:124
 msgid "No records have been created for this organization"
 msgstr "Aucun enregistrement n'a été créé pour cette organisation"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:101
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:126
 msgid "Get started…"
 msgstr "Commencer…"
 
@@ -531,4 +552,21 @@ msgstr ""
 
 #~ msgid "Field choices reference"
 #~ msgstr "Listes de choix pour les champs"
+
+#~ msgid "row"
+#~ msgstr "ligne"
+
+#~ msgid "rows"
+#~ msgstr "lignes"
+
+#~ msgid "Something went wrong with retrieving your records"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "We were unable to find your "
+#~ "records in our database. Please contact"
+#~ " <a href=\"open-ouvert@tbs-sct.gc.ca\">open-"
+#~ "ouvert@tbs-sct.gc.ca</a> to have your "
+#~ "records restored."
+#~ msgstr ""
 

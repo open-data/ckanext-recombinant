@@ -4,11 +4,12 @@
 # project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
 #
+#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-03-26 17:47+0000\n"
+"POT-Creation-Date: 2024-04-11 13:12+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -53,7 +54,7 @@ msgstr ""
 msgid "Your file was successfully uploaded into the central system."
 msgstr ""
 
-#: ckanext/recombinant/views.py:88 ckanext/recombinant/views.py:530
+#: ckanext/recombinant/views.py:88 ckanext/recombinant/views.py:540
 msgid "User {0} not authorized to update resource {1}"
 msgstr ""
 
@@ -86,7 +87,7 @@ msgstr ""
 msgid "Not found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:246 ckanext/recombinant/views.py:473
+#: ckanext/recombinant/views.py:246 ckanext/recombinant/views.py:483
 msgid "Resource not found"
 msgstr ""
 
@@ -120,7 +121,7 @@ msgstr ""
 msgid "User %s not authorized to create packages"
 msgstr ""
 
-#: ckanext/recombinant/views.py:515
+#: ckanext/recombinant/views.py:525
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try "
 "copying your data into the latest version of the template and uploading "
@@ -128,34 +129,34 @@ msgid ""
 "sct.gc.ca so we may investigate."
 msgstr ""
 
-#: ckanext/recombinant/views.py:522
+#: ckanext/recombinant/views.py:532
 msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
 
-#: ckanext/recombinant/views.py:533
+#: ckanext/recombinant/views.py:543
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but you "
 "supplied a sheet for {1}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:549
+#: ckanext/recombinant/views.py:559
 msgid ""
 "This template is out of date. Please try copying your data into the latest "
 "version of the template and uploading again. If this problem continues, send "
 "your Excel file to open-ouvert@tbs-sct.gc.ca so we may investigate."
 msgstr ""
 
-#: ckanext/recombinant/views.py:595
+#: ckanext/recombinant/views.py:605
 msgid "Sheet {0} Row {1}:"
 msgstr ""
 
-#: ckanext/recombinant/views.py:599
+#: ckanext/recombinant/views.py:609
 msgid "Error while importing data: {0}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:602
+#: ckanext/recombinant/views.py:612
 msgid "The template uploaded is empty"
 msgstr ""
 
@@ -191,7 +192,7 @@ msgstr ""
 msgid "Values"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:66
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:70
 #: ckanext/recombinant/write_excel.py:590
 msgid "Reference"
 msgstr ""
@@ -201,8 +202,8 @@ msgid "Field Name"
 msgstr ""
 
 #: ckanext/recombinant/templates/package/activity.html:6
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:80
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:84
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:88
 msgid "Activity Stream"
 msgstr ""
 
@@ -221,38 +222,56 @@ msgstr[1] ""
 msgid "Cancel"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:26
-msgid "row"
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:25
+msgid "{num} row"
+msgid_plural "{num} rows"
+msgstr[0] ""
+msgstr[1] ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:27
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:99
+msgid "Error"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:26
-msgid "rows"
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:44
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:95
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:48
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:120
 msgid "Import"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:59
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:63
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:43
 msgid "Delete"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:73
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:77
 msgid "API Access"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:97
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:101
+msgid "Error loading your records"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:103
+msgid ""
+"We were unable to retrieve your proactive publication records from our "
+"database. Please contact <a href=\"open-ouvert@tbs-sct.gc.ca\">open-ouvert"
+"@tbs-sct.gc.ca</a>."
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:107
+msgid "Refresh…"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:122
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
 msgid "Create and update records"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:99
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:124
 msgid "No records have been created for this organization"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:101
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:126
 msgid "Get started…"
 msgstr ""
 
