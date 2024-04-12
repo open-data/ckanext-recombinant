@@ -438,7 +438,7 @@ class TableCommand(CkanCommand):
         for dtype in target_datasets:
             datasets = lc.action.package_search(q="type:%s" % dtype, include_private=True, rows=5000)
             for d in datasets['results']:
-                results = [lc.action.datastore_trigger_each_row(resource_id=r['id'])
+                results = [lc.action.datastore_run_triggers(resource_id=r['id'])
                            for r in d['resources']]
                 rowcount = sum(results)
                 print ' '.join([d['owner_org'], d['organization']['name'],
