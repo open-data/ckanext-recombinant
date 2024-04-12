@@ -40,11 +40,11 @@ def show(dataset_type=None, org_name=None, verbose=False):
     Full Usage:\n
         recombinant show [DATASET_TYPE [ORG_NAME]]
     """
-    _show(dataset_type[0], org_name[0], verbose=verbose)
+    _show(dataset_type, org_name, verbose=verbose)
 
 
 @recombinant.command(short_help="Create and update triggers.")
-@click.argument("dataset_type", required=False)
+@click.argument("dataset_type", required=False, nargs=-1)
 @click.option(
     "-a",
     "--all-types",
@@ -63,7 +63,7 @@ def create_triggers(dataset_type=None, all_types=False, verbose=False):
 
 
 @recombinant.command(short_help="Delete datastore tables and packages for empty recombinant resources.")
-@click.argument("dataset_type", required=False)
+@click.argument("dataset_type", required=False, nargs=-1)
 @click.option(
     "-a",
     "--all-types",
@@ -82,7 +82,7 @@ def remove_empty(dataset_type=None, all_types=False, verbose=False):
 
 
 @recombinant.command(short_help="Triggers recombinant update for recombinant resources.")
-@click.argument("dataset_type", required=False)
+@click.argument("dataset_type", required=False, nargs=-1)
 @click.option(
     "-a",
     "--all-types",
@@ -107,7 +107,7 @@ def update(dataset_type=None, all_types=False, force_update=False, verbose=False
 
 
 @recombinant.command(short_help="Delete recombinant datasets and all their data.")
-@click.argument("dataset_type", required=False)
+@click.argument("dataset_type", required=False, nargs=-1)
 @click.option(
     "-a",
     "--all-types",
@@ -139,7 +139,7 @@ def load_csv(csv_file, verbose=False):
 
 
 @recombinant.command(short_help="Output all datastore data to CSV for given resource names.")
-@click.argument("resource_name", required=False)
+@click.argument("resource_name", required=False, nargs=-1)
 @click.option(
     "-a",
     "--all-types",
@@ -178,7 +178,7 @@ def target_datasets(verbose=False):
 
 
 @recombinant.command(short_help="Output dataset types of recombinant resources.")
-@click.argument("dataset_type", required=False)
+@click.argument("dataset_type", required=False, nargs=-1)
 @click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
 def dataset_types(dataset_type=None, verbose=False):
     """
@@ -191,7 +191,7 @@ def dataset_types(dataset_type=None, verbose=False):
 
 
 @recombinant.command(short_help="Low-level command to remove datasets with missing datastore tables.")
-@click.argument("dataset_type")
+@click.argument("dataset_type", nargs=-1)
 @click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
 def remove_broken(dataset_type, verbose=False):
     """
@@ -204,7 +204,7 @@ def remove_broken(dataset_type, verbose=False):
 
 
 @recombinant.command(short_help="Low-level command to run triggers on datasets' datastore tables.")
-@click.argument("dataset_type")
+@click.argument("dataset_type", nargs=-1)
 @click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
 def run_triggers(dataset_type, verbose=False):
     """
@@ -228,7 +228,7 @@ def template(dataset_type, org_name, output_file, verbose=False):
     Full Usage:\n
         recombinant DATASET_TYPE ORG_NAME OUTPUT_FILE
     """
-    _template(dataset_type[0], org_name[0], output_file[0], verbose=verbose)
+    _template(dataset_type, org_name, output_file, verbose=verbose)
 
 
 def _get_orgs():
