@@ -424,9 +424,10 @@ class TableCommand(CkanCommand):
             for d in datasets['results']:
                 for r in d['resources']:
                     try:
-                        lc.action.datastore_search(resource_id=r['id'], rows=1)
+                        lc.action.datastore_search(resource_id=r['id'], limit=0)
                     except NotFound:
                         print 'removing', d['name'], d['title']
+                        lc.action.resource_delete(id=r['id'])
                         lc.action.package_delete(id=d['id'])
                         break
 
