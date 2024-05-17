@@ -8,7 +8,7 @@
     {% set chromo_keyed = {} %}
     {% for recombinant_field in chromo.fields %}
       {% do chromo_keyed.update({recombinant_field.datastore_id: {'description': recombinant_field.description,
-                                                                       'label': recombinant_field.label}}) %}
+                                                                  'label': recombinant_field.label}}) %}
     {% endfor %}
 
     {%- set datadictionary_fields = h.datastore_dictionary(resource.id) -%}
