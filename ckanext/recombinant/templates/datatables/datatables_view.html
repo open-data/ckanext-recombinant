@@ -50,7 +50,7 @@
           {% endif %}
           <th scope="col">
             {{ label }}&nbsp;
-            {% if description|length %}
+            {% if description %}
               <i class="fa fa-info-circle" title="{{ h.markdown_extract(description, 300) }}"></i>
             {% endif %}
             &nbsp;
