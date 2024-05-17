@@ -1,0 +1,70 @@
+{% ckan_extends %}
+
+{%- block datatable_field_headers -%}
+
+  {% set chromo = h.recombinant_published_resource_chromo(resource.id) %}
+  {% if chromo %}
+
+    {% set chromo_keyed = {} %}
+    {% for recombinant_field in chromo.fields %}
+      {% do chromo_keyed.update({recombinant_field.datastore_id: {'description': recombinant_field.description,
+                                                                  'label': recombinant_field.label}}) %}
+    {% endfor %}
+
+    {%- set datadictionary_fields = h.datastore_dictionary(resource.id) -%}
+
+    {% for field in datadictionary_fields %}
+
+      {% if 'show_fields' not in resource_view or field.id in resource_view.show_fields -%}
+
+        {% if field.id in chromo_keyed %}
+        {# the DS field is a Recombinant field, use chromo #}
+          {% set description = h.recombinant_language_text(chromo_keyed[field.id].description) | replace('\n', '<br>' | safe) %}
+          {% set label = h.recombinant_language_text(chromo_keyed[field.id].label) | trim %}
+          <th scope="col">
+            {{ label }}&nbsp;
+            {% if description %}
+              <i class="fa fa-info-circle" title="{{ h.markdown_extract(description, 300) }}"></i>
+            {% endif %}
+            &nbsp;
+          </th>
+        {% else %}
+        {# the DS field is NOT a Recombinant field, use normal data dictionary (with lang support) #}
+          {% set translated_label = 'label_' + h.lang() %}
+          {% set translated_description = 'notes_' + h.lang() %}
+          {% set label = field.id|replace(" ", nbspval) %}
+          {% set description = '' %}
+          {% if data_dictionary_labels and field.info is defined %}
+            {# set label #}
+            {% if field.info[translated_label]|length %}
+              {% set label = field.info[translated_label] | trim %}
+            {% elif field.info['label']|length %}
+              {% set label = field.info['label'] | trim %}
+            {% endif %}
+            {# set description #}
+            {% if field.info[translated_description]|length %}
+              {% set description = field.info[translated_description] %}
+            {% elif field.info['notes']|length %}
+              {% set description = field.info['notes'] %}
+            {% endif %}
+          {% endif %}
+          <th scope="col">
+            {{ label }}&nbsp;
+            {% if description %}
+              <i class="fa fa-info-circle" title="{{ h.markdown_extract(description, 300) }}"></i>
+            {% endif %}
+            &nbsp;
+          </th>
+        {% endif %}
+
+      {%- endif %}
+
+    {% endfor %}
+
+  {% else %}
+
+    {{ super() }}
+
+  {% endif %}
+
+{%- endblock -%}
