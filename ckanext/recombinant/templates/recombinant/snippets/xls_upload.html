@@ -33,6 +33,7 @@
         {% endblock %}
       {% endif %}
     </div>
+    <input type="hidden" name="resource_id" value="{{ resource.get('id') }}"/>
     <div class="form-actions form-group">
       <button type="submit" class="btn btn-primary" name="upload">{{_('Submit')}}</button>
       <button type="submit" class="btn btn-default" name="validate">{{_('Check for Errors')}}</button>
