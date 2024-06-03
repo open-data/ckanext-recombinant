@@ -25,7 +25,7 @@ def csv_data_batch(csv_path, chromo, strict=True):
 
         csv_in = DictReader(f)
         cols = [
-            f for f in csv_in.unicode_fieldnames
+            f for f in csv_in.fieldnames
             if f not in chromo.get('csv_org_extras', [])]
 
         if strict:

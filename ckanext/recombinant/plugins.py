@@ -2,12 +2,11 @@ import importlib
 import os
 import uuid
 
-from paste.reloader import watch_file
 from ckan.plugins.toolkit import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
-from ckanext.recombinant import logic, tables, helpers, load, views, auth
+from ckanext.recombinant import logic, tables, helpers, load, views, auth, cli
 
 class RecombinantException(Exception):
     pass
@@ -23,6 +22,7 @@ class RecombinantPlugin(
     p.implements(p.IActions)
     p.implements(p.ITranslation)
     p.implements(p.IAuthFunctions)
+    p.implements(p.IClick)
 
     def update_config(self, config):
         # add our templates
@@ -100,6 +100,11 @@ class RecombinantPlugin(
             'datastore_delete': auth.datastore_delete,
         }
 
+    # IClick
+
+    def get_commands(self):
+        return [cli.get_commands()]
+
 
 def generate_uuid(value):
     """
@@ -155,7 +160,6 @@ def _load_tables_module_path(url):
     p = m.__path__[0]
     p = os.path.join(p, file_name)
     if os.path.exists(p):
-        watch_file(p)
         return load.load(open(p)), p
 
 

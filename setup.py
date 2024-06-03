@@ -28,9 +28,6 @@ setup(
     [ckan.plugins]
     recombinant=ckanext.recombinant.plugins:RecombinantPlugin
 
-    [paste.paster_command]
-    recombinant=ckanext.recombinant.commands:TableCommand
-
     [babel.extractors]
     ckan=ckan.lib.extract:extract_ckan
     """,

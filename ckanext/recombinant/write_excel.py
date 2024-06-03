@@ -171,7 +171,7 @@ def datastore_type_format(value, datastore_type):
 
     numeric_types = ['money', 'year', 'int', 'bigint', 'numeric']
     if isinstance(value, list):
-        item = u', '.join(unicode(e) for e in value)
+        item = u', '.join(str(e) for e in value)
     elif datastore_type == 'date':
         item = datetime.strptime(value, "%Y-%m-%d").date()
     elif datastore_type == 'timestamp':
@@ -305,7 +305,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
         DEFAULT_EXAMPLE_STYLE, **geno.get('excel_example_style', {}))
 
     # create rows so we can set all heights
-    for i in xrange(1, DATA_FIRST_ROW + data_num_rows):
+    for i in range(1, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=1).value = None
 
     sheet.merge_cells(EXAMPLE_MERGE)
@@ -334,6 +334,9 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
     sheet.cell(row=CODE_ROW, column=2).value = org['name']
 
     cheadings_dimensions = sheet.row_dimensions[CHEADINGS_ROW]
+    cheadings_default_height = cheadings_dimensions.height if cheadings_dimensions.height \
+            else sheet.sheet_format.customHeight if sheet.sheet_format.customHeight \
+            else sheet.sheet_format.defaultRowHeight
 
     choice_fields = recombinant_choice_fields(chromo['resource_name'])
 
@@ -341,7 +344,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
         field_heading = recombinant_language_text(
             field.get('excel_heading', field['label'])).strip()
         cheadings_dimensions.height = max(
-            cheadings_dimensions.height,
+            cheadings_default_height + CHEADINGS_HEIGHT,
             field_heading.count('\n') * LINE_HEIGHT + CHEADINGS_HEIGHT)
 
         col_heading_style = 'reco_cheading'
@@ -465,7 +468,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
                     formula1=user_choice_range or choice_range,
                     allow_blank=True)
                 v.errorTitle = u'Invalid choice'
-                valid_keys = u', '.join(unicode(c) for c in choices)
+                valid_keys = u', '.join(str(c) for c in choices)
                 if len(valid_keys) < 40:
                     v.error = (u'Please enter one of the valid keys: '
                         + valid_keys)
@@ -495,7 +498,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
     sheet.row_dimensions[CSTATUS_ROW].height = CSTATUS_HEIGHT
     sheet.row_dimensions[EXAMPLE_ROW].height = chromo.get(
         'excel_example_height', DEFAULT_EXAMPLE_HEIGHT)
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+    for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.row_dimensions[i].height = chromo.get(
             'excel_data_height', DEFAULT_DATA_HEIGHT)
 
@@ -563,10 +566,10 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
     for key, value in choices:
         if full_text_choices:
             choice = [u'{0}: {1}'.format(key, value)]
-        elif unicode(key) == value:
-            choice = [unicode(key)]
+        elif str(key) == value:
+            choice = [str(key)]
         else:
-            choice = [unicode(key), value]
+            choice = [str(key), value]
         refs.append(('choice', choice))
         max_length = max(max_length, len(choice[0]))  # used for full_text_choices
     return estimate_width_from_length(max_length)
@@ -758,7 +761,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             sheet=chromo['resource_name'],
             col=col)
         fmla = '=NOT({cell}="")*(' + fmla + ')'
-        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+        for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
             try:
                 sheet.cell(row=i, column=col_num).value = fmla.format(
                     cell=cell,
@@ -778,7 +781,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
     if col is None:
         return  # no errors to report on!
 
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+    for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
             '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'.format(
                 colA=DATA_FIRST_COL,
@@ -831,7 +834,7 @@ def _populate_excel_r_sheet(sheet, chromo):
                 for cn, f in template_cols_fields(chromo)
                 if f['datastore_id'] in fmla_keys}
 
-        for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+        for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
             sheet.cell(row=i, column=col_num).value = fmla.format(
                 cell=cell,
                 has_data='{col}{{num}}'.format(col=RPAD_COL),
@@ -848,7 +851,7 @@ def _populate_excel_r_sheet(sheet, chromo):
     if col is None:
         return  # no required columns
 
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+    for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RPAD_COL_NUM).value = (
             "=SUMPRODUCT(LEN('{sheet}'!{colA}{row}:{colZ}{row}))>0".format(
                 sheet=chromo['resource_name'],
@@ -856,7 +859,7 @@ def _populate_excel_r_sheet(sheet, chromo):
                 colZ=col,
                 row=i))
 
-    for i in xrange(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
+    for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
             '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'
             .format(
@@ -875,10 +878,10 @@ def fill_cell(sheet, row, column, value, style):
     :return: None
     """
     c = sheet.cell(row=row, column=column)
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         value = value.replace(u'\n', u'\r\n')
     c.value = value
-    if isinstance(style, basestring):
+    if isinstance(style, str):
         c.style = style
     else:
         apply_style(c, style)

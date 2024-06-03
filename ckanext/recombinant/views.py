@@ -31,7 +31,7 @@ from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import (
     recombinant_primary_key_fields, recombinant_choice_fields)
 
-from cStringIO import StringIO
+from io import BytesIO
 
 log = getLogger(__name__)
 
@@ -262,7 +262,7 @@ def template(dataset_type, lang, owner_org):
 
         append_data(book, record_data, chromo)
 
-    blob = StringIO()
+    blob = BytesIO()
     book.save(blob)
     response = Response(blob.getvalue())
     content_type, disposition_type = _xlsx_response_headers()
@@ -284,7 +284,7 @@ def data_dictionary(dataset_type):
         abort(404, _('Recombinant dataset_type not found'))
 
     book = excel_data_dictionary(geno)
-    blob = StringIO()
+    blob = BytesIO()
     book.save(blob)
     response = Response(blob.getvalue())
     content_type, disposition_type = _xlsx_response_headers()
@@ -599,8 +599,8 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
             else:
                 # remove some postgres-isms that won't help the user
                 # when we render this as an error in the form
-                pgerror = re.sub(ur'\nLINE \d+:', u'', pgerror)
-                pgerror = re.sub(ur'\n *\^\n$', u'', pgerror)
+                pgerror = re.sub(r'\nLINE \d+:', u'', pgerror)
+                pgerror = re.sub(r'\n *\^\n$', u'', pgerror)
             if 'records_row' in e.error_dict:
                 raise BadExcelData(_(u'Sheet {0} Row {1}:').format(
                     sheet_name, records[e.error_dict['records_row']][0])
