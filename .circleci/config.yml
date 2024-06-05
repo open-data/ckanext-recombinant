@@ -25,17 +25,28 @@ jobs:
             - "f2:9a:75:b8:82:b3:08:63:3d:9c:71:1d:14:2a:fa:18"
       - checkout
       - run:
-          name: Setup Environment
+          name: Install requirements
           command: |
-            apk add python3-dev
-            python3 -m venv venv
             pip install setuptools==44.1.0
             pip install --upgrade pip==23.2.1
+            pip install -e \/srv\/app\/src\/ckan\/ -r \/srv\/app\/src\/ckan\/requirements.txt -r \/srv\/app\/src\/ckan\/dev-requirements.txt
             pip install -e . -r .\/requirements.txt -r .\/test-requirements.txt
             find \/srv\/app\/ -name '*.pyc' -delete
-            python3 setup.py develop
       - run:
-          name: Run Tests
+          name: Setup extension (CKAN 2.9 PY3)
+          command: |
+            ln -s \/srv\/app\/src\/ckan\/test-core.ini .\/links\/test-core.ini
+            ln -s \/srv\/app\/src\/ckan\/who.ini .\/links\/who.ini
+            mkdir -p .\/links\/ckanext\/datastore\/tests\/ && ln -s \/srv\/app\/src\/ckan\/ckanext\/datastore\/tests\/allowed_functions.txt .\/links\/ckanext\/datastore\/tests\/allowed_functions.txt
+            mkdir -p .\/links\/ckan\/bin\/postgres_init\/ && ln -s \/srv\/app\/src\/ckan\/bin\/postgres_init\/1_create_ckan_db.sh .\/links\/ckan\/bin\/postgres_init\/1_create_ckan_db.sh && ln -s \/srv\/app\/src\/ckan\/bin\/postgres_init\/2_create_ckan_datastore_db.sh .\/links\/ckan\/bin\/postgres_init\/2_create_ckan_datastore_db.sh
+            python3 setup.py develop
+            . .\/links\/ckan\/bin\/postgres_init\/1_create_ckan_db.sh
+            . .\/links\/ckan\/bin\/postgres_init\/2_create_ckan_datastore_db.sh
+            ckan -c test-core.ini db init
+            ckan -c test-core.ini datastore set-permissions | psql -U postgres --set ON_ERROR_STOP=1
+            ckan -c test-core.ini recombinant create-triggers -a
+      - run:
+          name: Run all tests
           command: |
             mkdir -p ~/junit/result
             pytest --ckan-ini=test-core.ini ckanext/recombinant/tests --junitxml=~/junit/result/junit.xml
