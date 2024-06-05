@@ -37,7 +37,7 @@ jobs:
           CKAN_DATASTORE_READ_URL: postgresql://datastore_read:pass@postgres/datastore_test
           CKAN_SOLR_URL: http://solr:8983/solr/ckan_registry
           CKAN_REDIS_URL: redis://redis:6379/1
-      - image: solr:8  # dependency service
+      - image: opendatacanada/solr  # dependency service
         name: solr
       - image: postgres:9.6  # dependency service
         name: postgres
