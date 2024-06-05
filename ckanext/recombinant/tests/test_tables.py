@@ -1,3 +1,4 @@
+import os
 import pytest
 
 from ckan.tests.helpers import change_config
@@ -74,7 +75,7 @@ class TestRecombinantTables(RecombinantTestBase):
             },
             'dataset_type': 'sample',
             'target_dataset': 'sample',
-            '_path': '/srv/app/ckan/registry/src/ckanext-recombinant/ckanext/recombinant/tests/samples'
+            '_path': os.path.dirname(os.path.realpath(__file__)) + '/samples'
         }
         self.expected_geno = {
             'dataset_type': 'sample',
@@ -91,49 +92,42 @@ class TestRecombinantTables(RecombinantTestBase):
             'excel_column_heading_style': {'PatternFill': {'patternType': 'solid', 'fgColor': 'FFEFEFEF'}}
         }
 
-    @change_config('recombinant.definitions', 'ckanext.recombinant.tests:samples/sample.yaml')
     def test_get_dataset_types(self):
         """Should return a list of loaded dataset types from Recombinant"""
         _get_plugin().update_config(config)
         dtypes = get_dataset_types()
         assert dtypes == ['sample']
 
-    @change_config('recombinant.definitions', 'ckanext.recombinant.tests:samples/sample.yaml')
     def test_get_geno(self):
         """Should return a dictionary from the loaded yaml."""
         _get_plugin().update_config(config)
         geno = get_geno(get_dataset_types()[0])
         assert geno == self.expected_geno
 
-    @change_config('recombinant.definitions', 'ckanext.recombinant.tests:samples/sample.yaml')
     def test_get_chromo(self):
         """Should return a dictionary from the loaded yaml for a specific Recombinant resource name."""
         _get_plugin().update_config(config)
         chromo = get_chromo('sample')
         assert chromo == self.expected_chromo
 
-    @change_config('recombinant.definitions', 'ckanext.recombinant.tests:samples/sample.yaml')
     def test_get_resource_names(self):
         """Should return a list of all Recombinant resource names."""
         _get_plugin().update_config(config)
         resource_names = get_resource_names()
         assert resource_names == ['sample']
 
-    @change_config('recombinant.definitions', 'ckanext.recombinant.tests:samples/sample.yaml')
     def test_get_published_resource_resource_name(self):
         """Should return the Recombinant resource name from a published resourd ID."""
         _get_plugin().update_config(config)
         resource_name = get_published_resource_resource_name('1495491e-338c-43ec-9995-ecb48c67d17e')
         assert resource_name == 'sample'
 
-    @change_config('recombinant.definitions', 'ckanext.recombinant.tests:samples/sample.yaml')
     def test_get_dataset_type_for_resource_name(self):
         """Should return the dataset type from the given Recombinant resource name."""
         _get_plugin().update_config(config)
         dtype = get_dataset_type_for_resource_name('sample')
         assert dtype == 'sample'
 
-    @change_config('recombinant.definitions', 'ckanext.recombinant.tests:samples/sample.yaml')
     def test_get_target_datasets(self):
         """Should return a list of all target dataset types from Recombinant."""
         _get_plugin().update_config(config)
