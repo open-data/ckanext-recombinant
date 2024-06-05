@@ -1,228 +1,238 @@
 # -*- coding: UTF-8 -*-
-from datetime import datetime, date
+import pytest
 
-from nose.tools import assert_raises, assert_equal
+from datetime import datetime, date
 
 from ckanext.recombinant.datatypes import canonicalize, BadExcelData
 
 def test_year():
     dt = 'year'
-    assert_equal(canonicalize(2019, dt, False), '2019')
-    assert_equal(canonicalize(42.0, dt, False), '42')
-    assert_equal(canonicalize(42.25, dt, False), '42.25')
-    assert_equal(canonicalize(0, dt, False), '0')
-    assert_equal(canonicalize('2019', dt, False), '2019')
-    assert_equal(canonicalize('42.0', dt, False), '42')
-    assert_equal(canonicalize('42.25', dt, False), '42.25')
-    assert_equal(canonicalize('0', dt, False), '0')
-    assert_equal(canonicalize(None, dt, False), None)
-    assert_equal(canonicalize('', dt, False), None)
-    assert_equal(canonicalize('', dt, True), '')
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), '2020-11-15 00:00:00')
-    assert_equal(canonicalize('$1,000.50', dt, False), '$1,000.50')
-    assert_equal(canonicalize('AB,CD,E', dt, False), 'AB,CD,E')
+    assert canonicalize(2019, dt, False) == '2019'
+    assert canonicalize(42.0, dt, False) == '42'
+    assert canonicalize(42.25, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0'
+    assert canonicalize('2019', dt, False) == '2019'
+    assert canonicalize('42.0', dt, False) == '42'
+    assert canonicalize('42.25', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize(None, dt, False) == None
+    assert canonicalize('', dt, False) == None
+    assert canonicalize('', dt, True) == ''
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15 00:00:00'
+    assert canonicalize('$1,000.50', dt, False) == '$1,000.50'
+    assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
 def test_month():
     dt = 'month'
-    assert_equal(canonicalize(2019, dt, False), '2019')
-    assert_equal(canonicalize(42.0, dt, False), '42')
-    assert_equal(canonicalize(42.25, dt, False), '42.25')
-    assert_equal(canonicalize(0, dt, False), '0')
-    assert_equal(canonicalize('2019', dt, False), '2019')
-    assert_equal(canonicalize('42.0', dt, False), '42')
-    assert_equal(canonicalize('42.25', dt, False), '42.25')
-    assert_equal(canonicalize('0', dt, False), '0')
-    assert_equal(canonicalize(None, dt, False), None)
-    assert_equal(canonicalize('', dt, False), None)
-    assert_equal(canonicalize('', dt, True), '')
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), '2020-11-15 00:00:00')
-    assert_equal(canonicalize('$1,000.50', dt, False), '$1,000.50')
-    assert_equal(canonicalize('=TRUE()', dt, False), 'TRUE')
-    assert_equal(canonicalize('=FALSE()', dt, False), 'FALSE')
-    assert_equal(canonicalize('AB,CD,E', dt, False), 'AB,CD,E')
+    assert canonicalize(2019, dt, False) == '2019'
+    assert canonicalize(42.0, dt, False) == '42'
+    assert canonicalize(42.25, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0'
+    assert canonicalize('2019', dt, False) == '2019'
+    assert canonicalize('42.0', dt, False) == '42'
+    assert canonicalize('42.25', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize(None, dt, False) == None
+    assert canonicalize('', dt, False) == None
+    assert canonicalize('', dt, True) == ''
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15 00:00:00'
+    assert canonicalize('$1,000.50', dt, False) == '$1,000.50'
+    assert canonicalize('=TRUE()', dt, False) == 'TRUE'
+    assert canonicalize('=FALSE()', dt, False) == 'FALSE'
+    assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
 def test_int():
     dt = 'int'
-    assert_equal(canonicalize(2019, dt, False), '2019')
-    assert_equal(canonicalize(42.0, dt, False), '42')
-    assert_equal(canonicalize(42.25, dt, False), '42.25')
-    assert_equal(canonicalize(0, dt, False), '0')
-    assert_equal(canonicalize('2019', dt, False), '2019')
-    assert_equal(canonicalize('42.0', dt, False), '42')
-    assert_equal(canonicalize('42.25', dt, False), '42.25')
-    assert_equal(canonicalize('0', dt, False), '0')
-    assert_equal(canonicalize(None, dt, False), None)
-    assert_equal(canonicalize('', dt, False), None)
-    assert_equal(canonicalize('', dt, True), '')
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), '2020-11-15 00:00:00')
-    assert_equal(canonicalize('$1,000.50', dt, False), '$1,000.50')
-    assert_equal(canonicalize('=TRUE()', dt, False), 'TRUE')
-    assert_equal(canonicalize('=FALSE()', dt, False), 'FALSE')
-    assert_equal(canonicalize('AB,CD,E', dt, False), 'AB,CD,E')
+    assert canonicalize(2019, dt, False) == '2019'
+    assert canonicalize(42.0, dt, False) == '42'
+    assert canonicalize(42.25, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0'
+    assert canonicalize('2019', dt, False) == '2019'
+    assert canonicalize('42.0', dt, False) == '42'
+    assert canonicalize('42.25', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize(None, dt, False) == None
+    assert canonicalize('', dt, False) == None
+    assert canonicalize('', dt, True) == ''
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15 00:00:00'
+    assert canonicalize('$1,000.50', dt, False) == '$1,000.50'
+    assert canonicalize('=TRUE()', dt, False) == 'TRUE'
+    assert canonicalize('=FALSE()', dt, False) == 'FALSE'
+    assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
 def test_bigint():
     dt = 'bigint'
-    assert_equal(canonicalize(2019, dt, False), '2019')
-    assert_equal(canonicalize(42.0, dt, False), '42')
-    assert_equal(canonicalize(42.25, dt, False), '42.25')
-    assert_equal(canonicalize(0, dt, False), '0')
-    assert_equal(canonicalize('2019', dt, False), '2019')
-    assert_equal(canonicalize('42.0', dt, False), '42')
-    assert_equal(canonicalize('42.25', dt, False), '42.25')
-    assert_equal(canonicalize('0', dt, False), '0')
-    assert_equal(canonicalize(None, dt, False), None)
-    assert_equal(canonicalize('', dt, False), None)
-    assert_equal(canonicalize('', dt, True), '')
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), '2020-11-15 00:00:00')
-    assert_equal(canonicalize('$1,000.50', dt, False), '$1,000.50')
-    assert_equal(canonicalize('=TRUE()', dt, False), 'TRUE')
-    assert_equal(canonicalize('=FALSE()', dt, False), 'FALSE')
-    assert_equal(canonicalize('AB,CD,E', dt, False), 'AB,CD,E')
+    assert canonicalize(2019, dt, False) == '2019'
+    assert canonicalize(42.0, dt, False) == '42'
+    assert canonicalize(42.25, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0'
+    assert canonicalize('2019', dt, False) == '2019'
+    assert canonicalize('42.0', dt, False) == '42'
+    assert canonicalize('42.25', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize(None, dt, False) == None
+    assert canonicalize('', dt, False) == None
+    assert canonicalize('', dt, True) == ''
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15 00:00:00'
+    assert canonicalize('$1,000.50', dt, False) == '$1,000.50'
+    assert canonicalize('=TRUE()', dt, False) == 'TRUE'
+    assert canonicalize('=FALSE()', dt, False) == 'FALSE'
+    assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
 def test_date():
     dt = 'date'
-    assert_equal(canonicalize(2019, dt, False), '2019')
-    assert_equal(canonicalize(42.0, dt, False), '42.0')
-    assert_equal(canonicalize(42.25, dt, False), '42.25')
-    assert_equal(canonicalize(0, dt, False), '0')
-    assert_equal(canonicalize('2019', dt, False), '2019')
-    assert_equal(canonicalize('42.0', dt, False), '42.0')
-    assert_equal(canonicalize('42.25', dt, False), '42.25')
-    assert_equal(canonicalize('0', dt, False), '0')
-    assert_equal(canonicalize(None, dt, False), None)
-    assert_equal(canonicalize('', dt, False), None)
-    assert_equal(canonicalize('', dt, True), '')
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize('$1,000.50', dt, False), '$1,000.50')
-    assert_equal(canonicalize('=TRUE()', dt, False), 'TRUE')
-    assert_equal(canonicalize('=FALSE()', dt, False), 'FALSE')
-    assert_equal(canonicalize('AB,CD,E', dt, False), 'AB,CD,E')
+    assert canonicalize(2019, dt, False) == '2019'
+    assert canonicalize(42.0, dt, False) == '42.0'
+    assert canonicalize(42.25, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0'
+    assert canonicalize('2019', dt, False) == '2019'
+    assert canonicalize('42.0', dt, False) == '42.0'
+    assert canonicalize('42.25', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize(None, dt, False) == None
+    assert canonicalize('', dt, False) == None
+    assert canonicalize('', dt, True) == ''
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize('$1,000.50', dt, False) == '$1,000.50'
+    assert canonicalize('=TRUE()', dt, False) == 'TRUE'
+    assert canonicalize('=FALSE()', dt, False) == 'FALSE'
+    assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
 def test_timestamp():
     dt = 'timestamp'
-    assert_equal(canonicalize(2019, dt, False), '2019')
-    assert_equal(canonicalize(42.0, dt, False), '42.0')
-    assert_equal(canonicalize(42.25, dt, False), '42.25')
-    assert_equal(canonicalize(0, dt, False), '0')
-    assert_equal(canonicalize('2019', dt, False), '2019')
-    assert_equal(canonicalize('42.0', dt, False), '42.0')
-    assert_equal(canonicalize('42.25', dt, False), '42.25')
-    assert_equal(canonicalize('0', dt, False), '0')
-    assert_equal(canonicalize(None, dt, False), None)
-    assert_equal(canonicalize('', dt, False), None)
-    assert_equal(canonicalize('', dt, True), '')
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), '2020-11-15 00:00:00')
-    assert_equal(canonicalize('$1,000.50', dt, False), '$1,000.50')
-    assert_equal(canonicalize('=TRUE()', dt, False), 'TRUE')
-    assert_equal(canonicalize('=FALSE()', dt, False), 'FALSE')
-    assert_equal(canonicalize('AB,CD,E', dt, False), 'AB,CD,E')
+    assert canonicalize(2019, dt, False) == '2019'
+    assert canonicalize(42.0, dt, False) == '42.0'
+    assert canonicalize(42.25, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0'
+    assert canonicalize('2019', dt, False) == '2019'
+    assert canonicalize('42.0', dt, False) == '42.0'
+    assert canonicalize('42.25', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize(None, dt, False) == None
+    assert canonicalize('', dt, False) == None
+    assert canonicalize('', dt, True) == ''
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15 00:00:00'
+    assert canonicalize('$1,000.50', dt, False) == '$1,000.50'
+    assert canonicalize('=TRUE()', dt, False) == 'TRUE'
+    assert canonicalize('=FALSE()', dt, False) == 'FALSE'
+    assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
 def test_money():
     dt = 'money'
-    assert_equal(canonicalize(2019, dt, False), '2019')
-    assert_equal(canonicalize(42.0, dt, False), '42.0')
-    assert_equal(canonicalize(42.25, dt, False), '42.25')
-    assert_equal(canonicalize(0, dt, False), '0')
-    assert_equal(canonicalize('2019', dt, False), '2019')
-    assert_equal(canonicalize('42.0', dt, False), '42.0')
-    assert_equal(canonicalize('42.25', dt, False), '42.25')
-    assert_equal(canonicalize('0', dt, False), '0')
-    assert_equal(canonicalize(None, dt, False), None)
-    assert_equal(canonicalize('', dt, False), None)
-    assert_equal(canonicalize('', dt, True), '')
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), '2020-11-15 00:00:00')
-    assert_equal(canonicalize('$1,000.50', dt, False), '1000.50')
-    assert_equal(canonicalize('=TRUE()', dt, False), 'TRUE')
-    assert_equal(canonicalize('=FALSE()', dt, False), 'FALSE')
-    assert_equal(canonicalize('AB,CD,E', dt, False), 'AB,CD,E')
+    assert canonicalize(2019, dt, False) == '2019'
+    assert canonicalize(42.0, dt, False) == '42.0'
+    assert canonicalize(42.25, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0'
+    assert canonicalize('2019', dt, False) == '2019'
+    assert canonicalize('42.0', dt, False) == '42.0'
+    assert canonicalize('42.25', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize(None, dt, False) == None
+    assert canonicalize('', dt, False) == None
+    assert canonicalize('', dt, True) == ''
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15 00:00:00'
+    assert canonicalize('$1,000.50', dt, False) == '1000.50'
+    assert canonicalize('=TRUE()', dt, False) == 'TRUE'
+    assert canonicalize('=FALSE()', dt, False) == 'FALSE'
+    assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
 def test_text():
     dt = 'text'
-    assert_equal(canonicalize(2019, dt, False), '2019')
-    assert_equal(canonicalize(42.0, dt, False), '42.0')
-    assert_equal(canonicalize(42.25, dt, False), '42.25')
-    assert_equal(canonicalize(0, dt, False), '0')
-    assert_equal(canonicalize('2019', dt, False), '2019')
-    assert_equal(canonicalize('42.0', dt, False), '42.0')
-    assert_equal(canonicalize('42.25', dt, False), '42.25')
-    assert_equal(canonicalize('0', dt, False), '0')
-    assert_equal(canonicalize(None, dt, False), '')
-    assert_equal(canonicalize('', dt, False), '')
-    assert_equal(canonicalize('', dt, True), '')
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), '2020-11-15 00:00:00')
-    assert_equal(canonicalize('$1,000.50', dt, False), '$1,000.50')
-    assert_equal(canonicalize('=TRUE()', dt, False), 'TRUE')
-    assert_equal(canonicalize('=FALSE()', dt, False), 'FALSE')
-    assert_equal(canonicalize('AB,CD,E', dt, False), 'AB,CD,E')
+    assert canonicalize(2019, dt, False) == '2019'
+    assert canonicalize(42.0, dt, False) == '42.0'
+    assert canonicalize(42.25, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0'
+    assert canonicalize('2019', dt, False) == '2019'
+    assert canonicalize('42.0', dt, False) == '42.0'
+    assert canonicalize('42.25', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize(None, dt, False) == ''
+    assert canonicalize('', dt, False) == ''
+    assert canonicalize('', dt, True) == ''
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15 00:00:00'
+    assert canonicalize('$1,000.50', dt, False) == '$1,000.50'
+    assert canonicalize('=TRUE()', dt, False) == 'TRUE'
+    assert canonicalize('=FALSE()', dt, False) == 'FALSE'
+    assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
 def test_boolean():
     dt = 'boolean'
-    assert_equal(canonicalize(2019, dt, False), '2019')
-    assert_equal(canonicalize(42.0, dt, False), '42.0')
-    assert_equal(canonicalize(42.25, dt, False), '42.25')
-    assert_equal(canonicalize(0, dt, False), '0')
-    assert_equal(canonicalize('2019', dt, False), '2019')
-    assert_equal(canonicalize('42.0', dt, False), '42.0')
-    assert_equal(canonicalize('42.25', dt, False), '42.25')
-    assert_equal(canonicalize('0', dt, False), '0')
-    assert_equal(canonicalize(None, dt, False), None)
-    assert_equal(canonicalize('', dt, False), None)
-    assert_equal(canonicalize('', dt, True), '')
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), '2020-11-15')
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), '2020-11-15 00:00:00')
-    assert_equal(canonicalize('$1,000.50', dt, False), '$1,000.50')
-    assert_equal(canonicalize('=TRUE()', dt, False), 'TRUE')
-    assert_equal(canonicalize('=FALSE()', dt, False), 'FALSE')
-    assert_equal(canonicalize('AB,CD,E', dt, False), 'AB,CD,E')
+    assert canonicalize(2019, dt, False) == '2019'
+    assert canonicalize(42.0, dt, False) == '42.0'
+    assert canonicalize(42.25, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0'
+    assert canonicalize('2019', dt, False) == '2019'
+    assert canonicalize('42.0', dt, False) == '42.0'
+    assert canonicalize('42.25', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize(None, dt, False) == None
+    assert canonicalize('', dt, False) == None
+    assert canonicalize('', dt, True) == ''
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == '2020-11-15'
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15 00:00:00'
+    assert canonicalize('$1,000.50', dt, False) == '$1,000.50'
+    assert canonicalize('=TRUE()', dt, False) == 'TRUE'
+    assert canonicalize('=FALSE()', dt, False) == 'FALSE'
+    assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
 def test_text_array():
     dt = '_text'
-    assert_equal(canonicalize(2019, dt, False), ['2019'])
-    assert_equal(canonicalize(42.0, dt, False), ['42.0'])
-    assert_equal(canonicalize(42.25, dt, False), ['42.25'])
-    assert_equal(canonicalize(0, dt, False), ['0'])
-    assert_equal(canonicalize('2019', dt, False), ['2019'])
-    assert_equal(canonicalize('42.0', dt, False), ['42.0'])
-    assert_equal(canonicalize('42.25', dt, False), ['42.25'])
-    assert_equal(canonicalize('0', dt, False), ['0'])
-    assert_equal(canonicalize(None, dt, False), [])
-    assert_equal(canonicalize('', dt, False), [])
-    assert_equal(canonicalize('', dt, True), [])
-    assert_raises(BadExcelData, canonicalize, '=1+1', dt, False)
-    assert_equal(canonicalize(date(2020, 11, 15), dt, False), ['2020-11-15'])
-    assert_equal(canonicalize(datetime(2020, 11, 15), dt, False), ['2020-11-15 00:00:00'])
-    assert_equal(canonicalize('$1,000.50', dt, False), ['$1', '000.50'])
-    assert_equal(canonicalize('=TRUE()', dt, False), ['TRUE'])
-    assert_equal(canonicalize('=FALSE()', dt, False), ['FALSE'])
-    assert_equal(canonicalize('AB,CD,E', dt, False), ['AB', 'CD', 'E'])
+    assert canonicalize(2019, dt, False) == ['2019']
+    assert canonicalize(42.0, dt, False) == ['42.0']
+    assert canonicalize(42.25, dt, False) == ['42.25']
+    assert canonicalize(0, dt, False) == ['0']
+    assert canonicalize('2019', dt, False) == ['2019']
+    assert canonicalize('42.0', dt, False) == ['42.0']
+    assert canonicalize('42.25', dt, False) == ['42.25']
+    assert canonicalize('0', dt, False) == ['0']
+    assert canonicalize(None, dt, False) == []
+    assert canonicalize('', dt, False) == []
+    assert canonicalize('', dt, True) == []
+    with pytest.raises(BadExcelData):
+        canonicalize('=1+1', dt, False)
+    assert canonicalize(date(2020, 11, 15), dt, False) == ['2020-11-15']
+    assert canonicalize(datetime(2020, 11, 15), dt, False) == ['2020-11-15 00:00:00']
+    assert canonicalize('$1,000.50', dt, False) == ['$1', '000.50']
+    assert canonicalize('=TRUE()', dt, False) == ['TRUE']
+    assert canonicalize('=FALSE()', dt, False) == ['FALSE']
+    assert canonicalize('AB,CD,E', dt, False) == ['AB', 'CD', 'E']
 
 def test_primary_key():
     dt = 'text'
-    assert_equal(canonicalize('OGP-324', dt, True), 'OGP-324')
-    assert_equal(canonicalize('\t OGP-324\n', dt, True), 'OGP-324')
-    assert_equal(canonicalize('OGP-\r\n\r\n324', dt, True), 'OGP-324')
-    assert_equal(canonicalize('OGP- 324', dt, True), 'OGP- 324')
+    assert canonicalize('OGP-324', dt, True) == 'OGP-324'
+    assert canonicalize('\t OGP-324\n', dt, True) == 'OGP-324'
+    assert canonicalize('OGP-\r\n\r\n324', dt, True) == 'OGP-324'
+    assert canonicalize('OGP- 324', dt, True) == 'OGP- 324'
 
 def test_choice_field():
-    assert_equal(canonicalize('C1 ', 'text', False, False), 'C1 ')
-    assert_equal(canonicalize('C1 ', 'text', False, True), 'C1')
-    assert_equal(canonicalize(' C1: Value', 'text', False, False), ' C1: Value')
-    assert_equal(canonicalize(' C1: Value', 'text', False, True), 'C1: Value')
-    assert_equal(canonicalize(' C1: Value', 'text', False, 'full'), 'C1')
+    assert canonicalize('C1 ', 'text', False, False) == 'C1 '
+    assert canonicalize('C1 ', 'text', False, True) == 'C1'
+    assert canonicalize(' C1: Value', 'text', False, False) == ' C1: Value'
+    assert canonicalize(' C1: Value', 'text', False, True) == 'C1: Value'
+    assert canonicalize(' C1: Value', 'text', False, 'full') == 'C1'

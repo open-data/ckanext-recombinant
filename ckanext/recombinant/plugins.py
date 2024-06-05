@@ -7,9 +7,7 @@ import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
 from ckanext.recombinant import logic, tables, helpers, load, views, auth, cli
-
-class RecombinantException(Exception):
-    pass
+from ckanext.recombinant.errors import RecombinantException
 
 
 class RecombinantPlugin(
@@ -145,7 +143,7 @@ def _load_table_definitions(urls):
                 raise RecombinantException('Recombinant resource_name "%s" is already defined in %s. Cannot be redefined in %s.'
                                            % (chromo['resource_name'], resource_definitions[chromo['resource_name']], url))
             if 'published_resource_id' in chromo and chromo['published_resource_id'] in published_resource_definitions:
-                raise RecombinantException('Published Resource ID "%s" is already defined in "%s" in %s. Cannot be redefined in %s.'
+                raise RecombinantException('Published Resource ID "%s" is already defined for "%s" in %s. Cannot be redefined in %s.'
                                            % (chromo['published_resource_id'],
                                               published_resource_definitions[chromo['published_resource_id']]['resource_name'],
                                               published_resource_definitions[chromo['published_resource_id']]['url'], url))
@@ -165,7 +163,7 @@ def _load_table_definitions(urls):
                     if isinstance(trigger, dict):
                         for trigger_name in trigger:
                             if trigger_name in trigger_definitions:
-                                raise RecombinantException('Recombinant database trigger "%s" is already defined in "%s" in %s. Cannot be redefined in %s.'
+                                raise RecombinantException('Recombinant database trigger "%s" is already defined for "%s" in %s. Cannot be redefined in %s.'
                                                            % (trigger_name, trigger_definitions[trigger_name]['resource_name'],
                                                               trigger_definitions[trigger_name]['url'], url))
                             trigger_definitions[trigger_name] = {'url': url, 'resource_name': chromo['resource_name']}

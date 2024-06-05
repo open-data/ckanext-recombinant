@@ -29,11 +29,18 @@ jobs:
           command: |
             apk add python3-dev
             python3 -m venv venv
-            venv/bin/pip install nose==1.3.7
+            pip install setuptools==44.1.0
+            pip install --upgrade pip==23.2.1
+            pip install -e . -r .\/requirements.txt -r .\/test-requirements.txt
+            find \/srv\/app\/ -name '*.pyc' -delete
+            python3 setup.py develop
       - run:
           name: Run Tests
           command: |
-            venv/bin/nosetests
+            mkdir -p ~/junit/result
+            pytest --ckan-ini=test-core.ini ckanext/recombinant/tests --junitxml=~/junit/result/junit.xml
+      - store_test_results:
+          path: ~/junit
       - slack/notify:
           event: fail
           template: basic_fail_1
