@@ -84,7 +84,7 @@
               {{ _("Activity Stream") }}
             </summary>
             {% block activity_stream %}
-              <a id="activity-stream-link" href="{{ h.url_for(dataset.dataset_type ~ '.activity', id=dataset.id) }}">
+              <a id="activity-stream-link" href="{{ h.url_for('recombinant.activity', resource_name=resource_name, owner_org=organization.name) }}">
                 {{ _('Activity Stream') }}
               </a>
             {% endblock %}
