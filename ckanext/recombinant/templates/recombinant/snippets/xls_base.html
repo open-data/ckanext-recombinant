@@ -1,6 +1,7 @@
 <h3>{% block title %}{% endblock %}</h3>
 {% block form %}
 <form>
+{{ h.csrf_input() }}
 {% endblock %}
   <div class="col-md-6">
     <div class="col-md-12">
