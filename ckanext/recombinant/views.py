@@ -309,7 +309,7 @@ def schema_json(dataset_type):
     schema['notes'] = OrderedDict()
 
     from ckan.lib.i18n import handle_request, get_lang
-    for lang in config['ckan.locales_offered'].split():
+    for lang in config.get('ckan.locales_offered', ['en']):
         request.environ['CKAN_LANG'] = lang
         handle_request(request, g)
         schema['title'][lang] = _(geno['title'])
@@ -330,7 +330,7 @@ def schema_json(dataset_type):
 
         resource['resource_name'] = chromo['resource_name']
         resource['title'] = OrderedDict()
-        for lang in config['ckan.locales_offered'].split():
+        for lang in config.get('ckan.locales_offered', ['en']):
             request.environ['CKAN_LANG'] = lang
             handle_request(request, g)
             resource['title'][lang] = _(chromo['title'])
@@ -350,7 +350,7 @@ def schema_json(dataset_type):
                         fld[k] = field[k]
                         continue
                     fld[k] = OrderedDict()
-                    for lang in config['ckan.locales_offered'].split():
+                    for lang in config.get('ckan.locales_offered', ['en']):
                         request.environ['CKAN_LANG'] = lang
                         handle_request(request, g)
                         fld[k][lang] = _(field[k])

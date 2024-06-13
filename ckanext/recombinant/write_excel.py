@@ -207,7 +207,7 @@ def excel_data_dictionary(geno):
     from ckan.lib.i18n import handle_request
 
     _build_styles(book, geno)
-    for lang in config['ckan.locales_offered'].split():
+    for lang in config.get('ckan.locales_offered', ['en']):
         if sheet is None:
             sheet = book.create_sheet()
 
