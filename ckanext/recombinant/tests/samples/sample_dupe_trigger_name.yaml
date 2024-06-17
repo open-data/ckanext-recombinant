@@ -1,0 +1,97 @@
+dataset_type: sample2
+target_dataset: sample2
+
+
+title: Sample Dataset Type
+shortname: Sample Dataset Type
+notes: Sample Dataset Type
+
+
+template_version: 3
+
+portal_type: dataset
+collection: sample2
+
+resources:
+- title: Sample Resource
+  resource_name: sample2
+
+  published_resource_id: 1495491e-338c-43ec-9995-ecb48c67d19f
+
+  create_form: true
+  edit_form: true
+  fields:
+  - datastore_id: reference_number
+    label:
+      en: Reference Number
+      fr: Reference Number FR
+    description:
+      en: Sample Reference Number Field
+      fr: Sample Reference Number Field FR
+    obligation: Mandatory
+    excel_required: true
+    form_required: true
+    format_type: Free text
+    validation: This field must not be empty
+    visible_to_public: Yes
+    occurrence: Single
+    datastore_type: text
+
+  - datastore_id: year
+    datastore_type: year
+    label: Year
+    description:
+      en: Sample Year Field
+      fr: SampleYear Field FR
+    obligation: Mandatory
+    excel_required: true
+    form_required: true
+    validation: This field must not be empty
+    excel_column_width: 10
+    extract_date_year: true
+    form_attrs:
+      size: 20
+
+  datastore_primary_key: reference_number
+  datastore_indexes: ""
+
+  default_preview_sort: reference_number
+
+  excel_example_height: 100
+  excel_data_num_rows: 500
+
+  triggers:
+  - test_trigger_1: |
+      DECLARE
+        errors text[][] := '{{}}';
+        crval RECORD;
+      BEGIN
+        errors := errors || required_error(NEW.reference_number, 'reference_number');
+        errors := errors || required_error(NEW.year, 'year');
+
+        IF errors = '{{}}' THEN
+          RETURN NEW;
+        END IF;
+        RAISE EXCEPTION E'TAB-DELIMITED\t%', array_to_string(errors, E'\t');
+      END;
+
+  examples:
+    record:
+      reference_number: "T-2019-Q3-00001"
+      year: 2024
+    filter_one:
+      reference_number: T-2019-Q3-00001
+    sort: year desc
+
+excel_edge_style:
+  PatternFill:
+    fgColor: FF336B87
+    patternType: solid
+excel_header_style:
+  PatternFill:
+    patternType: solid
+    fgColor: FF6832e3
+excel_column_heading_style:
+  PatternFill:
+    patternType: solid
+    fgColor: FFEFEFEF
