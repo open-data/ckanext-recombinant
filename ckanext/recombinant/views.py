@@ -49,12 +49,10 @@ def upload(id):
     dataset = lc.action.package_show(id=id)
     org = lc.action.organization_show(id=dataset['owner_org'])
     dry_run = 'validate' in request.form
-    resource_index = 0
-    if 'resource_id' in request.form:
-        for r_index, resource in enumerate(dataset['resources']):
-            if resource['id'] == request.form['resource_id']:
-                resource_index = r_index
-                break
+    # resource_name is only required for redirect,
+    # so do not need to heavily validate that it exists in the geno.
+    resource_name = request.form['resource_name']
+
     try:
         if not request.files['xls_update']:
             raise BadExcelData('You must provide a valid file')
@@ -76,12 +74,12 @@ def upload(id):
                 ))
 
         return h.redirect_to('recombinant.preview_table',
-                             resource_name=dataset['resources'][resource_index]['name'],
+                             resource_name=resource_name,
                              owner_org=org['name'])
     except BadExcelData as e:
         h.flash_error(_(e.message))
         return h.redirect_to('recombinant.preview_table',
-                             resource_name=dataset['resources'][resource_index]['name'],
+                             resource_name=resource_name,
                              owner_org=org['name'])
 
 @recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['POST'])
