@@ -19,78 +19,79 @@ from ckanext.recombinant.errors import RecombinantException
 
 
 class TestRecombinantTables(RecombinantTestBase):
+
+    expected_chromo = {
+        'title': 'Sample Resource',
+        'resource_name': 'sample',
+        'published_resource_id': '1495491e-338c-43ec-9995-ecb48c67d17e',
+        'create_form': True,
+        'edit_form': True,
+        'fields': [
+            {
+                'datastore_id': 'reference_number',
+                'label': {'en': 'Reference Number', 'fr': 'Reference Number FR'},
+                'description': {'en': 'Sample Reference Number Field', 'fr': 'Sample Reference Number Field FR'},
+                'obligation': 'Mandatory',
+                'excel_required': True,
+                'form_required': True,
+                'format_type': 'Free text',
+                'validation': 'This field must not be empty',
+                'visible_to_public': True,
+                'occurrence': 'Single',
+                'datastore_type': 'text'
+            },
+            {
+                'datastore_id': 'year',
+                'datastore_type': 'year',
+                'label': 'Year',
+                'description': {'en': 'Sample Year Field', 'fr': 'SampleYear Field FR'},
+                'obligation': 'Mandatory',
+                'excel_required': True,
+                'form_required': True,
+                'validation': 'This field must not be empty',
+                'excel_column_width': 10,
+                'extract_date_year': True,
+                'form_attrs': {'size': 20}
+            }
+        ],
+        'datastore_primary_key': 'reference_number',
+        'datastore_indexes': '',
+        'default_preview_sort': 'reference_number',
+        'excel_example_height': 100,
+        'excel_data_num_rows': 500,
+        'triggers': [{
+            'test_trigger_1': "DECLARE\n  errors text[][] := '{{}}';\n  crval RECORD;\nBEGIN\n  errors := errors || required_error(NEW.reference_number, 'reference_number');\n  errors := errors || required_error(NEW.year, 'year');\n\n  IF errors = '{{}}' THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION E'TAB-DELIMITED\\t%', array_to_string(errors, E'\\t');\nEND;\n"
+        }],
+        'examples': {
+            'record': {'reference_number': 'T-2019-Q3-00001', 'year': 2024},
+            'filter_one': {'reference_number': 'T-2019-Q3-00001'},
+            'sort': 'year desc'
+        },
+        'dataset_type': 'sample',
+        'target_dataset': 'sample',
+        '_path': os.path.dirname(os.path.realpath(__file__)) + '/samples'
+    }
+    expected_geno = {
+        'dataset_type': 'sample',
+        'target_dataset': 'sample',
+        'title': 'Sample Dataset Type',
+        'shortname': 'Sample Dataset Type',
+        'notes': 'Sample Dataset Type',
+        'template_version': 3,
+        'portal_type': 'dataset',
+        'collection': 'sample',
+        'resources': [expected_chromo],
+        'excel_edge_style': {'PatternFill': {'fgColor': 'FF336B87', 'patternType': 'solid'}},
+        'excel_header_style': {'PatternFill': {'patternType': 'solid', 'fgColor': 'FF6832e3'}},
+        'excel_column_heading_style': {'PatternFill': {'patternType': 'solid', 'fgColor': 'FFEFEFEF'}}
+    }
+
     @classmethod
     def setup_method(self, method):
         """Method is called at class level before EACH test methods of the class are called.
         Setup any state specific to the execution of the given class methods.
         """
         super(TestRecombinantTables, self).setup_method(method)
-
-        self.expected_chromo = {
-            'title': 'Sample Resource',
-            'resource_name': 'sample',
-            'published_resource_id': '1495491e-338c-43ec-9995-ecb48c67d17e',
-            'create_form': True,
-            'edit_form': True,
-            'fields': [
-                {
-                    'datastore_id': 'reference_number',
-                    'label': {'en': 'Reference Number', 'fr': 'Reference Number FR'},
-                    'description': {'en': 'Sample Reference Number Field', 'fr': 'Sample Reference Number Field FR'},
-                    'obligation': 'Mandatory',
-                    'excel_required': True,
-                    'form_required': True,
-                    'format_type': 'Free text',
-                    'validation': 'This field must not be empty',
-                    'visible_to_public': True,
-                    'occurrence': 'Single',
-                    'datastore_type': 'text'
-                },
-                {
-                    'datastore_id': 'year',
-                    'datastore_type': 'year',
-                    'label': 'Year',
-                    'description': {'en': 'Sample Year Field', 'fr': 'SampleYear Field FR'},
-                    'obligation': 'Mandatory',
-                    'excel_required': True,
-                    'form_required': True,
-                    'validation': 'This field must not be empty',
-                    'excel_column_width': 10,
-                    'extract_date_year': True,
-                    'form_attrs': {'size': 20}
-                }
-            ],
-            'datastore_primary_key': 'reference_number',
-            'datastore_indexes': '',
-            'default_preview_sort': 'reference_number',
-            'excel_example_height': 100,
-            'excel_data_num_rows': 500,
-            'triggers': [{
-                'test_trigger_1': "DECLARE\n  errors text[][] := '{{}}';\n  crval RECORD;\nBEGIN\n  errors := errors || required_error(NEW.reference_number, 'reference_number');\n  errors := errors || required_error(NEW.year, 'year');\n\n  IF errors = '{{}}' THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION E'TAB-DELIMITED\\t%', array_to_string(errors, E'\\t');\nEND;\n"
-            }],
-            'examples': {
-                'record': {'reference_number': 'T-2019-Q3-00001', 'year': 2024},
-                'filter_one': {'reference_number': 'T-2019-Q3-00001'},
-                'sort': 'year desc'
-            },
-            'dataset_type': 'sample',
-            'target_dataset': 'sample',
-            '_path': os.path.dirname(os.path.realpath(__file__)) + '/samples'
-        }
-        self.expected_geno = {
-            'dataset_type': 'sample',
-            'target_dataset': 'sample',
-            'title': 'Sample Dataset Type',
-            'shortname': 'Sample Dataset Type',
-            'notes': 'Sample Dataset Type',
-            'template_version': 3,
-            'portal_type': 'dataset',
-            'collection': 'sample',
-            'resources': [self.expected_chromo],
-            'excel_edge_style': {'PatternFill': {'fgColor': 'FF336B87', 'patternType': 'solid'}},
-            'excel_header_style': {'PatternFill': {'patternType': 'solid', 'fgColor': 'FF6832e3'}},
-            'excel_column_heading_style': {'PatternFill': {'patternType': 'solid', 'fgColor': 'FFEFEFEF'}}
-        }
 
     def test_get_dataset_types(self):
         """Should return a list of loaded dataset types from Recombinant"""
