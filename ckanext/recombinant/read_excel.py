@@ -59,7 +59,7 @@ def _filter_bumf(rowiter, header_rows):
     for row in rowiter:
         i += 1
         values = [
-            unescape(c.value) if isinstance(c.value, unicode) else c.value
+            unescape(c.value) if isinstance(c.value, str) else c.value
             for c in row]
         # return next non-empty row
         if not all(_is_bumf(v) for v in values):
@@ -76,7 +76,7 @@ def _is_bumf(value):
     :return: whether the value is filler
     :rtype: bool
     """
-    if type(value) in (unicode, str):
+    if isinstance(value, str):
         return value.strip() == ''
     return value is None
 
@@ -118,7 +118,7 @@ def get_records(rows, fields, primary_key_fields, choice_fields):
                         f['datastore_id'] in primary_key_fields,
                         choice_fields.get(f['datastore_id'], False)))
                 for f, v in zip(fields, row))))
-        except BadExcelData, e:
+        except BadExcelData as e:
             raise BadExcelData(u'Row {0}:'.format(n) + u' ' + e.message)
 
     return records

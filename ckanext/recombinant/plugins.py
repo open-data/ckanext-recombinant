@@ -2,15 +2,12 @@ import importlib
 import os
 import uuid
 
-from paste.reloader import watch_file
 from ckan.plugins.toolkit import _
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
-from ckanext.recombinant import logic, tables, helpers, load, views, auth
-
-class RecombinantException(Exception):
-    pass
+from ckanext.recombinant import logic, tables, helpers, load, views, auth, cli
+from ckanext.recombinant.errors import RecombinantException
 
 
 class RecombinantPlugin(
@@ -23,6 +20,7 @@ class RecombinantPlugin(
     p.implements(p.IActions)
     p.implements(p.ITranslation)
     p.implements(p.IAuthFunctions)
+    p.implements(p.IClick)
 
     def update_config(self, config):
         # add our templates
@@ -100,6 +98,11 @@ class RecombinantPlugin(
             'datastore_delete': auth.datastore_delete,
         }
 
+    # IClick
+
+    def get_commands(self):
+        return [cli.get_commands()]
+
 
 def generate_uuid(value):
     """
@@ -118,6 +121,10 @@ def value_from_id(key, converted_data, errors, context):
 def _load_table_definitions(urls):
     chromos = {}
     genos = {}
+    dataset_definitions = {}
+    resource_definitions = {}
+    published_resource_definitions = {}
+    trigger_definitions = {}
     for url in urls:
         is_url = False
         t, p = _load_tables_module_path(url)
@@ -125,9 +132,21 @@ def _load_table_definitions(urls):
             t = _load_tables_url(url)
             is_url = True
 
+        if t['dataset_type'] in dataset_definitions:
+            raise RecombinantException('Recombinant dataset_type "%s" is already defined in %s. Cannot be redefined in %s.'
+                                       % (t['dataset_type'], dataset_definitions[t['dataset_type']], url))
         genos[t['dataset_type']] = t
+        dataset_definitions[t['dataset_type']] = url
 
         for chromo in t['resources']:
+            if chromo['resource_name'] in resource_definitions:
+                raise RecombinantException('Recombinant resource_name "%s" is already defined in %s. Cannot be redefined in %s.'
+                                           % (chromo['resource_name'], resource_definitions[chromo['resource_name']], url))
+            if 'published_resource_id' in chromo and chromo['published_resource_id'] in published_resource_definitions:
+                raise RecombinantException('Published Resource ID "%s" is already defined for "%s" in %s. Cannot be redefined in %s.'
+                                           % (chromo['published_resource_id'],
+                                              published_resource_definitions[chromo['published_resource_id']]['resource_name'],
+                                              published_resource_definitions[chromo['published_resource_id']]['url'], url))
             chromo['dataset_type'] = t['dataset_type']
             if 'target_dataset' in t:
                 chromo['target_dataset'] = t['target_dataset']
@@ -136,6 +155,18 @@ def _load_table_definitions(urls):
             else:  # used for choices_file paths
                 chromo['_path'] = os.path.split(p)[0]
             chromos[chromo['resource_name']] = chromo
+            resource_definitions[chromo['resource_name']] = url
+            if 'published_resource_id' in chromo:
+                published_resource_definitions[chromo['published_resource_id']] = {'url': url, 'resource_name': chromo['resource_name']}
+            if 'triggers' in chromo:
+                for trigger in chromo['triggers']:
+                    if isinstance(trigger, dict):
+                        for trigger_name in trigger:
+                            if trigger_name in trigger_definitions:
+                                raise RecombinantException('Recombinant database trigger "%s" is already defined for "%s" in %s. Cannot be redefined in %s.'
+                                                           % (trigger_name, trigger_definitions[trigger_name]['resource_name'],
+                                                              trigger_definitions[trigger_name]['url'], url))
+                            trigger_definitions[trigger_name] = {'url': url, 'resource_name': chromo['resource_name']}
 
     return chromos, genos
 
@@ -155,7 +186,6 @@ def _load_tables_module_path(url):
     p = m.__path__[0]
     p = os.path.join(p, file_name)
     if os.path.exists(p):
-        watch_file(p)
         return load.load(open(p)), p
 
 

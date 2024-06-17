@@ -4,7 +4,7 @@ from ckan.plugins.toolkit import _
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
 from ckan.model.group import Group
-from paste.deploy.converters import asbool
+from ckan.common import asbool
 
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException, RecombinantConfigurationError
@@ -263,7 +263,7 @@ def _update_datastore(lc, geno, dataset, force_update=False):
             fields=fields,
             primary_key=chromo.get('datastore_primary_key', []),
             indexes=chromo.get('datastore_indexes', []),
-            triggers=[{'function': unicode(f)} for f in trigger_names],
+            triggers=[{'function': str(f)} for f in trigger_names],
             force=True)
 
 
@@ -291,10 +291,10 @@ def _update_triggers(lc, chromo):
             trigger_names.append(trname)
             try:
                 lc.action.datastore_function_create(
-                    name=unicode(trname),
+                    name=str(trname),
                     or_replace=True,
                     rettype=u'trigger',
-                    definition=unicode(trcode).format(**dict(
+                    definition=str(trcode).format(**dict(
                         (dkey, _pg_value(dvalue))
                         for dkey, dvalue in definitions.items())))
             except NotAuthorized:
@@ -311,10 +311,10 @@ def _pg_value(value):
         from ckanext.datastore.helpers import literal_string
 
     if isinstance(value, string_types):
-        return literal_string(unicode(value))
+        return literal_string(str(value))
 
     return u'ARRAY[' + u','.join(
-        literal_string(unicode(c)) for c in value) + u']'
+        literal_string(str(c)) for c in value) + u']'
 
 
 def _dataset_fields(geno):

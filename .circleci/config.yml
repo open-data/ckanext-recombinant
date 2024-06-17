@@ -17,7 +17,36 @@ orbs:
 jobs:
   build:
     docker:
-      - image: openknowledge/ckan-dev:2.8  # primary executor
+      - image: openknowledge/ckan-dev:2.9  # primary executor
+        name: ckan
+        environment:
+          PGHOST: postgres
+          PGDATABASE: postgres
+          PGUSER: postgres
+          PGPASSWORD: pass
+          CKAN_POSTGRES_DB: ckan_test
+          CKAN_DATASTORE_POSTGRES_DB: datastore_test
+          CKAN_POSTGRES_USER: ckan_default
+          CKAN_DATASTORE_POSTGRES_READ_USER: datastore_read
+          CKAN_DATASTORE_POSTGRES_WRITE_USER: datastore_write
+          CKAN_POSTGRES_PWD: pass
+          CKAN_DATASTORE_POSTGRES_READ_PWD: pass
+          CKAN_DATASTORE_POSTGRES_WRITE_PWD: pass
+          CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
+          CKAN_DATASTORE_WRITE_URL: postgresql://datastore_write:pass@postgres/datastore_test
+          CKAN_DATASTORE_READ_URL: postgresql://datastore_read:pass@postgres/datastore_test
+          CKAN_SOLR_URL: http://solr:8983/solr/ckan_registry
+          CKAN_REDIS_URL: redis://redis:6379/1
+      - image: opendatacanada/solr  # dependency service
+        name: solr
+      - image: postgres:9.6  # dependency service
+        name: postgres
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: postgres
+      - image: redis:3  # dependency service
+        name: redis
     steps:
       - add_ssh_keys:
           fingerprints:
@@ -25,17 +54,33 @@ jobs:
             - "f2:9a:75:b8:82:b3:08:63:3d:9c:71:1d:14:2a:fa:18"
       - checkout
       - run:
-          name: Setup Environment
+          name: Install requirements
           command: |
-            apk add python2-dev
-            curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py && python2 get-pip.py
-            pip2 install virtualenv
-            virtualenv --python=python2 venv
-            venv/bin/pip install nose==1.3.7
+            pip install setuptools==44.1.0
+            pip install --upgrade pip==23.2.1
+            pip install -e \/srv\/app\/src\/ckan\/ -r \/srv\/app\/src\/ckan\/requirements.txt -r \/srv\/app\/src\/ckan\/dev-requirements.txt
+            pip install -e . -r .\/requirements.txt -r .\/test-requirements.txt
+            find \/srv\/app\/ -name '*.pyc' -delete
       - run:
-          name: Run Tests
+          name: Setup extension (CKAN 2.9 PY3)
           command: |
-            venv/bin/nosetests
+            ln -s \/srv\/app\/src\/ckan\/test-core.ini .\/links\/test-core.ini
+            ln -s \/srv\/app\/src\/ckan\/who.ini .\/links\/who.ini
+            mkdir -p .\/links\/ckanext\/datastore\/tests\/ && ln -s \/srv\/app\/src\/ckan\/ckanext\/datastore\/tests\/allowed_functions.txt .\/links\/ckanext\/datastore\/tests\/allowed_functions.txt
+            mkdir -p .\/links\/ckan\/bin\/postgres_init\/ && ln -s \/srv\/app\/src\/ckan\/bin\/postgres_init\/1_create_ckan_db.sh .\/links\/ckan\/bin\/postgres_init\/1_create_ckan_db.sh && ln -s \/srv\/app\/src\/ckan\/bin\/postgres_init\/2_create_ckan_datastore_db.sh .\/links\/ckan\/bin\/postgres_init\/2_create_ckan_datastore_db.sh
+            python3 setup.py develop
+            . .\/links\/ckan\/bin\/postgres_init\/1_create_ckan_db.sh
+            . .\/links\/ckan\/bin\/postgres_init\/2_create_ckan_datastore_db.sh
+            ckan -c test-core.ini db init
+            ckan -c test-core.ini datastore set-permissions | psql -U postgres --set ON_ERROR_STOP=1
+            ckan -c test-core.ini recombinant create-triggers -a
+      - run:
+          name: Run all tests
+          command: |
+            mkdir -p ~/junit/result
+            pytest --ckan-ini=test-core.ini ckanext/recombinant/tests --junitxml=~/junit/result/junit.xml
+      - store_test_results:
+          path: ~/junit
       - slack/notify:
           event: fail
           template: basic_fail_1
