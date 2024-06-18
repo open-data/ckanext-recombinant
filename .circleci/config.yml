@@ -66,6 +66,7 @@ jobs:
           command: |
             pip install setuptools==44.1.0
             pip install --upgrade pip==23.2.1
+            pip install cython
             pip install -e \/srv\/app\/src\/ckan\/ -r \/srv\/app\/src\/ckan\/requirements.txt -r \/srv\/app\/src\/ckan\/dev-requirements.txt
             pip install -e . -r .\/requirements.txt -r .\/test-requirements.txt
             find \/srv\/app\/ -name '*.pyc' -delete
