@@ -17,7 +17,7 @@ orbs:
 jobs:
   build:
     docker:
-      - image: openknowledge/ckan-dev:2.9  # primary executor
+      - image: openknowledge/ckan-dev:2.10  # primary executor
         name: ckan
         environment:
           PGHOST: postgres
@@ -39,7 +39,7 @@ jobs:
           CKAN_REDIS_URL: redis://redis:6379/1
       - image: opendatacanada/solr  # dependency service
         name: solr
-      - image: postgres:9.6  # dependency service
+      - image: postgres:13.14  # dependency service
         name: postgres
         environment:
           POSTGRES_USER: postgres
@@ -54,6 +54,14 @@ jobs:
             - "f2:9a:75:b8:82:b3:08:63:3d:9c:71:1d:14:2a:fa:18"
       - checkout
       - run:
+          name: Set Python Version to 3.9
+          command: |
+            apk add --no-cache python3=3.9.18-r0 --repository=https://dl-cdn.alpinelinux.org/alpine/v3.15/main
+            ln -sf python3 /usr/local/bin/python
+            python3 -m ensurepip
+            pip3 install --no-cache --upgrade pip setuptools
+            python3 --version
+      - run:
           name: Install requirements
           command: |
             pip install setuptools==44.1.0
@@ -62,7 +70,7 @@ jobs:
             pip install -e . -r .\/requirements.txt -r .\/test-requirements.txt
             find \/srv\/app\/ -name '*.pyc' -delete
       - run:
-          name: Setup extension (CKAN 2.9 PY3)
+          name: Setup extension (CKAN 2.10 PY3.9)
           command: |
             ln -s \/srv\/app\/src\/ckan\/test-core.ini .\/links\/test-core.ini
             ln -s \/srv\/app\/src\/ckan\/who.ini .\/links\/who.ini
