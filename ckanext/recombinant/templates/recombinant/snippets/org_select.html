@@ -3,7 +3,7 @@
     <label class="control-label " for="org-select">{{ _('Organization') }}</label>
   </div>
   <div class="col-sm-10">
-    <select id="org-select" name="org_select" class="form-control"
+    <select id="org-select" name="org_select" class="form-control form-select"
       onchange="window.location.href=this.value">
       {% for org in h.organizations_available('read') %}
       <option value="{{ h.url_for('recombinant.preview_table', resource_name=resource_name, owner_org=org.name) }}"
