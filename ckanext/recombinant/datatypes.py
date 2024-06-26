@@ -96,9 +96,9 @@ def canonicalize(
         # User has overridden Excel format string, probably adding currency
         # markers or digit group separators (e.g.,fr-CA uses 1$ (not $1)).
         # Accept only "DDDDD.DD", discard other characters
-        canon = re.sub(r'[$,\s]', '', "{:.2f}".format(float(dirty)))
+        canon = re.sub(r'[$,\s]', '', str(dirty))
         try:
-            d = Decimal(str(canon))
+            d = Decimal(canon).quantize(Decimal(10) ** -2)  # same as Decimal('0.01')
             return str(d)
         except InvalidOperation:
             pass
