@@ -137,14 +137,16 @@ def test_timestamp():
 
 def test_money():
     dt = 'money'
-    assert canonicalize(2019, dt, False) == '2019'
-    assert canonicalize(42.0, dt, False) == '42.0'
+    assert canonicalize(2019, dt, False) == '2019.00'
+    assert canonicalize(42.0, dt, False) == '42.00'
     assert canonicalize(42.25, dt, False) == '42.25'
-    assert canonicalize(0, dt, False) == '0'
-    assert canonicalize('2019', dt, False) == '2019'
-    assert canonicalize('42.0', dt, False) == '42.0'
+    assert canonicalize(42.25000001, dt, False) == '42.25'
+    assert canonicalize(0, dt, False) == '0.00'
+    assert canonicalize('2019', dt, False) == '2019.00'
+    assert canonicalize('42.0', dt, False) == '42.00'
     assert canonicalize('42.25', dt, False) == '42.25'
-    assert canonicalize('0', dt, False) == '0'
+    assert canonicalize('42.25000001', dt, False) == '42.25'
+    assert canonicalize('0', dt, False) == '0.00'
     assert canonicalize(None, dt, False) == None
     assert canonicalize('', dt, False) == None
     assert canonicalize('', dt, True) == ''

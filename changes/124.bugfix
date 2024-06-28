@@ -1,0 +1,1 @@
+format money(float) type to 2 decimal places to improve precision
