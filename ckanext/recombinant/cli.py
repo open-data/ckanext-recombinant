@@ -487,14 +487,16 @@ def _combine_csv(target_dir, resource_names, all_types=False, verbose=False):
     lc = LocalCKAN()
     for resource_name in _expand_resource_names(resource_names, all_types):
         if verbose:
-            click.echo("Combining {} resources into csv...".format(resource_name))
+            click.echo("Combining {resource_name} resources into csv file: {file}".format(resource_name=resource_name,
+                                                                                          file=os.path.join(target_dir, resource_name + '.csv')))
         if target_dir:
             outf = open(os.path.join(target_dir,
                 resource_name + '.csv'), 'w', encoding='utf-8')
         outf.write("\N{bom}")
         dataset_type = get_dataset_type_for_resource_name(resource_name)
         if verbose:
-            click.echo("Writing packages of type {} into csv...".format(dataset_type))
+            click.echo("Writing packages of type {dataset_type} into csv file: {file}".format(dataset_type=dataset_type,
+                                                                                              file=os.path.join(target_dir, resource_name + '.csv')))
         _write_one_csv(
             lc,
             _get_packages(dataset_type, orgs),
