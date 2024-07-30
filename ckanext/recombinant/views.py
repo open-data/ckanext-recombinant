@@ -190,6 +190,72 @@ def delete_records(id, resource_id):
         )
 
 
+@recombinant.route('/recombinant/delete-selected-records/<resource_id>', methods=['POST'])
+def delete_selected_records(resource_id):
+    lc = ckanapi.LocalCKAN(username=g.user)
+
+    if not h.check_access('datastore_records_delete',
+                          {'resource_id': resource_id, 'filters': {}}):
+        abort(403, _('User {0} not authorized to update resource {1}'
+                     .format(str(g.user), resource_id)))
+
+    try:
+        res = lc.action.resource_show(id=resource_id)
+        pkg = lc.action.package_show(id=res['package_id'])
+        org = lc.action.organization_show(id=pkg['owner_org'])
+        dataset = lc.action.recombinant_show(
+            dataset_type=pkg['type'], owner_org=org['name'])
+    except ckanapi.NotFound:
+        abort(404, _('Not found'))
+
+    records = request.form.getlist('select-delete')
+
+    if 'cancel' in request.form:
+        return render('recombinant/resource_edit.html',
+                      extra_vars={
+                          'delete_errors': [],
+                          'dataset': dataset,
+                          'dataset_type': dataset['dataset_type'],
+                          'resource': res,
+                          'organization': org,
+                          'action': 'edit'})
+    if not 'confirm' in request.form:
+        return render('recombinant/confirm_delete.html',
+                      extra_vars={
+                          'dataset': dataset,
+                          'resource': res,
+                          'num': len(records),
+                          'select_delete': ';'.join(records) })
+
+    records = ''.join(records).split(';')
+
+    pk_fields = recombinant_primary_key_fields(res['name'])
+    pk = []
+    for f in pk_fields:
+        pk.append(f['datastore_id'])
+
+    records_deleted = 0
+    for r in records:
+        filter = dict(zip(pk, r.split(',')))
+        if filter:
+            try:
+                lc.action.datastore_records_delete(
+                    resource_id=resource_id,
+                    filters=filter
+                )
+                records_deleted += 1
+            except ckanapi.NotFound:
+                h.flash_error(_('Not found') + ' ' + str(filter))
+
+    h.flash_success(_("{num} deleted.").format(num=records_deleted))
+
+    return h.redirect_to(
+        'recombinant.preview_table',
+        resource_name=res['name'],
+        owner_org=org['name'],
+    )
+
+
 def _xlsx_response_headers():
     """
     Returns tuple of content type and disposition type.
