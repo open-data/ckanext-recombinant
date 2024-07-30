@@ -1,0 +1,1 @@
+Add view to delete selected records.
