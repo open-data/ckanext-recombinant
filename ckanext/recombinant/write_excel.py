@@ -177,6 +177,9 @@ def datastore_type_format(value, datastore_type):
     elif datastore_type == 'timestamp':
         item = datetime.strptime(value, "%Y-%m-%d %H:%M:%S %Z")
     elif datastore_type in numeric_types:
+        if datastore_type == 'money' and isinstance(value, str):
+            # support any old money type columns
+            value = value.replace('$', '').replace(',', '')
         item = Decimal(value)
     else:
         item = value

@@ -1,0 +1,1 @@
+Added parsing for money strings when writing to Excel sheets to support old `money` column types.
