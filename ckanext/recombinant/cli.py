@@ -598,15 +598,14 @@ def _run_triggers(target_datasets, all_types=False, verbose=False):
     for dtype in _expand_dataset_types(target_datasets, all_types):
         datasets = lc.action.package_search(q="type:%s" % dtype, include_private=True, rows=5000)
         for d in datasets['results']:
-            try:
-                results = [lc.action.datastore_run_triggers(resource_id=r['id'])
-                            for r in d['resources']]
-                rowcount = sum(results)
-                click.echo(' '.join([dtype, d['owner_org'], d['organization']['name'],
-                           'updated', str(rowcount), 'records']))
-            except ValidationError as e:
-                click.echo(' '.join([dtype, d['owner_org'], d['organization']['name'],
-                           'failed', str(e.error_dict)]), err=True)
+            for r in d['resources']:
+                try:
+                    results = lc.action.datastore_run_triggers(resource_id=r['id'])
+                    click.echo(' '.join([r['name'], d['owner_org'], d['organization']['name'],
+                               'updated', str(results), 'records']))
+                except ValidationError as e:
+                    click.echo(' '.join([r['name'], d['owner_org'], d['organization']['name'],
+                               'failed', str(e.error_dict)]), err=True)
 
 
 def _target_datasets(verbose=False):
