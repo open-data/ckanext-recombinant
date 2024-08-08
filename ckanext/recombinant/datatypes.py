@@ -98,7 +98,7 @@ def canonicalize(
         # Accept only "DDDDD.DD", discard other characters
         canon = re.sub(r'[$,\s]', '', str(dirty))
         try:
-            d = Decimal(canon)
+            d = Decimal(canon).quantize(Decimal(10) ** -2)  # same as Decimal('0.01')
             return str(d)
         except InvalidOperation:
             pass
