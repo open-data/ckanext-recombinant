@@ -605,10 +605,7 @@ def _run_triggers(target_datasets, all_types=False, verbose=False):
                                'updated', str(results), 'records']))
                 except ValidationError as e:
                     click.echo(' '.join([r['name'], d['owner_org'], d['organization']['name'],
-                               'failed with Validation Error:', str(e.error_dict)]), err=True)
-                except Exception as e:
-                    click.echo(' '.join([r['name'], d['owner_org'], d['organization']['name'],
-                               'failed with Error:', str(e)]), err=True)
+                               'failed', str(e.error_dict)]), err=True)
 
 
 def _target_datasets(verbose=False):
