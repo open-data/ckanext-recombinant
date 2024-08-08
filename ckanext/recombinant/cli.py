@@ -205,15 +205,16 @@ def remove_broken(dataset_type, verbose=False):
 
 @recombinant.command(short_help="Low-level command to run triggers on datasets' datastore tables.")
 @click.argument("dataset_type", nargs=-1)
+@click.option("-a", "--all-types", is_flag=True, type=click.BOOL, help="All dataset types/resource names")
 @click.option('-v', '--verbose', is_flag=True, type=click.BOOL, help='Increase verbosity.')
-def run_triggers(dataset_type, verbose=False):
+def run_triggers(dataset_type, all_types=False, verbose=False):
     """
     Low-level command to run triggers on datasets' datastore tables
 
     Full Usage:\n
         recombinant run-triggers DATASET_TYPE ...
     """
-    _run_triggers(dataset_type, verbose=verbose)
+    _run_triggers(dataset_type, all_types=all_types, verbose=verbose)
 
 
 @recombinant.command(short_help="Output the recombinant excel template to a file path.")
@@ -589,19 +590,23 @@ def _remove_broken(target_datasets, verbose=False):
                     break
 
 
-def _run_triggers(target_datasets, verbose=False):
+def _run_triggers(target_datasets, all_types=False, verbose=False):
     """
     Low-level command to run triggers on datasets' datastore tables
     """
     lc = LocalCKAN()
-    for dtype in target_datasets:
+    for dtype in _expand_dataset_types(target_datasets, all_types):
         datasets = lc.action.package_search(q="type:%s" % dtype, include_private=True, rows=5000)
         for d in datasets['results']:
-            results = [lc.action.datastore_run_triggers(resource_id=r['id'])
-                        for r in d['resources']]
-            rowcount = sum(results)
-            click.echo(' '.join([d['owner_org'], d['organization']['name'],
-                            'updated', str(rowcount), 'records']))
+            try:
+                results = [lc.action.datastore_run_triggers(resource_id=r['id'])
+                            for r in d['resources']]
+                rowcount = sum(results)
+                click.echo(' '.join([dtype, d['owner_org'], d['organization']['name'],
+                           'updated', str(rowcount), 'records']))
+            except ValidationError as e:
+                click.echo(' '.join([dtype, d['owner_org'], d['organization']['name'],
+                           'failed', str(e.error_dict)]), err=True)
 
 
 def _target_datasets(verbose=False):
