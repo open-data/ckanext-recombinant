@@ -258,10 +258,17 @@ def _update_datastore(lc, geno, dataset, force_update=False):
 
         trigger_names = _update_triggers(lc, chromo)
 
+        foreign_keys = chromo.get('datastore_foreign_keys', [])
+        if foreign_keys:
+            #TODO: make foreign_keys a thing in DS upstream.
+            #TODO: get table/resource name/ID from datastore_foreign_keys definition.
+            foreign_keys = []
+
         lc.action.datastore_create(
             resource_id=resource_id,
             fields=fields,
             primary_key=chromo.get('datastore_primary_key', []),
+            foreign_keys=foreign_keys,
             indexes=chromo.get('datastore_indexes', []),
             triggers=[{'function': str(f)} for f in trigger_names],
             force=True)
