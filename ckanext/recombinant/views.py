@@ -176,10 +176,18 @@ def delete_records(id, resource_id):
                     + ([''] if '' in ok_records else [])) })
 
     for f in ok_filters:
-        lc.action.datastore_delete(
-            resource_id=resource_id,
-            filters=f,
-            )
+        try:
+            lc.action.datastore_delete(
+                resource_id=resource_id,
+                filters=f,
+                )
+        except ValidationError as e:
+            if 'constraints' in e.error_dict:
+                records = []
+                ok_records = []
+                h.flash_error(_(e.error_dict['constraints'][0]))
+                return record_fail(_(e.error_dict['constraints'][0]))
+            raise
 
     h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
 

@@ -373,6 +373,8 @@ def _delete(dataset_types, all_types=False, verbose=False):
                         resource_id=r['id'])
                 except NotFound:
                     pass
+                except ValidationError as e:
+                    click.echo('failed %s %s -- %s' % (dtype, p['owner_org'], str(e.error_dict)), err=True)
             lc.action.package_delete(id=p['id'])
 
 
