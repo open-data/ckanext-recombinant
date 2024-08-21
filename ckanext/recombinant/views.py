@@ -182,11 +182,13 @@ def delete_records(id, resource_id):
                 filters=f,
                 )
         except ValidationError as e:
-            if 'constraints' in e.error_dict:
+            if 'foreign_constraints' in e.error_dict:
                 records = []
                 ok_records = []
-                h.flash_error(_(e.error_dict['constraints'][0]))
-                return record_fail(_(e.error_dict['constraints'][0]))
+                chromo = get_chromo(res['name'])
+                error_message = chromo.get('datastore_constraint_errors', {}).get('delete', e.error_dict['foreign_constraints'][0])
+                h.flash_error(_(error_message))
+                return record_fail(_(error_message))
             raise
 
     h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
