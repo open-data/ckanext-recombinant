@@ -608,7 +608,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 pgerror = e.error_dict['records'][0]
             if isinstance(pgerror, dict):
                 pgerror = u'; '.join(
-                    k + u': ' + u', '.join(v)
+                    k + u': ' + u', '.join(_(e.split('\uF8FF')[0]).format(e.split('\uF8FF')[1]) if '\uF8FF' in e else _(e) for e in v)
                     for k, v in pgerror.items())
             else:
                 # remove some postgres-isms that won't help the user
@@ -616,6 +616,10 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 pgerror = re.sub(r'\nLINE \d+:', u'', pgerror)
                 pgerror = re.sub(r'\n *\^\n$', u'', pgerror)
             if 'records_row' in e.error_dict:
+                if 'violates foreign key constraint' in pgerror:
+                    foreign_error = chromo.get('datastore_constraint_errors', {}).get('upsert')
+                    if foreign_error:
+                        pgerror = _(foreign_error)
                 raise BadExcelData(_(u'Sheet {0} Row {1}:').format(
                     sheet_name, records[e.error_dict['records_row']][0])
                     + u' ' + pgerror)
