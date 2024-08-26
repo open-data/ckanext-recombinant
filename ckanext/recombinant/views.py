@@ -23,7 +23,7 @@ from ckan.authz import has_user_permission_for_group_or_org
 
 from ckan.views.dataset import _get_package_type
 
-from ckanext.recombinant.errors import RecombinantException, BadExcelData
+from ckanext.recombinant.errors import RecombinantException, BadExcelData, format_trigger_error
 from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.write_excel import (
     excel_template, excel_data_dictionary, append_data)
@@ -608,7 +608,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 pgerror = e.error_dict['records'][0]
             if isinstance(pgerror, dict):
                 pgerror = u'; '.join(
-                    k + u': ' + u', '.join(_(e.split('\uF8FF')[0]).format(e.split('\uF8FF')[1]) if '\uF8FF' in e else _(e) for e in v)
+                    k + u': ' + u', '.join(format_trigger_error(v))
                     for k, v in pgerror.items())
             else:
                 # remove some postgres-isms that won't help the user

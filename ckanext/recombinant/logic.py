@@ -259,9 +259,8 @@ def _update_datastore(lc, geno, dataset, force_update=False):
         trigger_names = _update_triggers(lc, chromo)
 
         chromo_foreign_keys = chromo.get('datastore_foreign_keys', None)
-        foreign_keys = None
+        foreign_keys = {}
         if chromo_foreign_keys:
-            foreign_keys = {}
             for f_table, field_map in chromo_foreign_keys.items():
                 is_chromo_name = False
                 for _chromo in geno['resources']:
@@ -272,8 +271,6 @@ def _update_datastore(lc, geno, dataset, force_update=False):
                         break
                 if not is_chromo_name:
                     foreign_keys[f_table] = field_map
-            if not foreign_keys:
-                foreign_keys = None
 
         lc.action.datastore_create(
             resource_id=resource_id,

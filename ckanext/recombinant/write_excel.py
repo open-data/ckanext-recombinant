@@ -722,6 +722,14 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
             # single choice
             fmla = 'COUNTIF({r},TRIM({{cell}}))=0'.format(r=crange)
 
+        max_chars = field.get('max_chars')
+        if max_chars:
+            if not fmla:
+                fmla = 'LEN(TRIM({{cell}}))>{i}'.format(i=max_chars)
+            else:
+                fmla = 'OR({fmla},LEN(TRIM({{cell}}))>{i})'.format(fmla=fmla,
+                                                                   i=max_chars)
+
         user_fmla = field.get('excel_error_formula')
         if user_fmla:
             if not fmla:
