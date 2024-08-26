@@ -46,6 +46,9 @@
           else _('Required') if field.excel_required
           else '' }}
         {% endcall %}
+        {% call dictionary_field(_('Occurrence')) %}
+          {{ h.recombinant_language_text(field.occurrence) }}
+        {% endcall %}
         {% set choices = choice_fields.get(field.datastore_id) %}
         {% if choices %}
           {% call dictionary_field(_('Choices')) %}

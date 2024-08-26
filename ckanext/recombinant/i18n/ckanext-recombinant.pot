@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-08-26 18:45+0000\n"
+"POT-Creation-Date: 2024-08-26 20:27+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -152,64 +152,69 @@ msgid ""
 "your Excel file to open-ouvert@tbs-sct.gc.ca so we may investigate."
 msgstr ""
 
-#: ckanext/recombinant/views.py:621
+#: ckanext/recombinant/views.py:611
 msgid ":"
 msgstr ""
 
-#: ckanext/recombinant/views.py:650
+#: ckanext/recombinant/views.py:625
 msgid "Invalid input syntax for type integer: {}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:652
+#: ckanext/recombinant/views.py:627
 msgid "Invalid input syntax for type integer"
 msgstr ""
 
-#: ckanext/recombinant/views.py:658
+#: ckanext/recombinant/views.py:628
 msgid "Sheet {0} Row {1}:"
 msgstr ""
 
-#: ckanext/recombinant/views.py:662
+#: ckanext/recombinant/views.py:632
 msgid "Error while importing data: {0}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:665
+#: ckanext/recombinant/views.py:635
 msgid "The template uploaded is empty"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:315
+#: ckanext/recombinant/write_excel.py:318
 msgid "e.g."
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:96
-#: ckanext/recombinant/write_excel.py:547 ckanext/recombinant/write_excel_v2.py:290
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:99
+#: ckanext/recombinant/write_excel.py:550 ckanext/recombinant/write_excel_v2.py:290
 msgid "ID"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:40
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:56
-#: ckanext/recombinant/write_excel.py:551 ckanext/recombinant/write_excel_v2.py:294
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:59
+#: ckanext/recombinant/write_excel.py:554 ckanext/recombinant/write_excel_v2.py:294
 msgid "Description"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:44
-#: ckanext/recombinant/write_excel.py:555 ckanext/recombinant/write_excel_v2.py:298
+#: ckanext/recombinant/write_excel.py:558 ckanext/recombinant/write_excel_v2.py:298
 msgid "Obligation"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:559
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:49
+#: ckanext/recombinant/write_excel.py:562
+msgid "Occurrence"
+msgstr ""
+
+#: ckanext/recombinant/write_excel.py:566
 msgid "Validation"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:563 ckanext/recombinant/write_excel_v2.py:302
+#: ckanext/recombinant/write_excel.py:570 ckanext/recombinant/write_excel_v2.py:302
 msgid "Format"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:567 ckanext/recombinant/write_excel_v2.py:306
+#: ckanext/recombinant/write_excel.py:574 ckanext/recombinant/write_excel_v2.py:306
 msgid "Values"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:70
-#: ckanext/recombinant/write_excel.py:596
+#: ckanext/recombinant/write_excel.py:603
 msgid "Reference"
 msgstr ""
 
@@ -394,15 +399,15 @@ msgstr ""
 msgid "Required"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:51
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:54
 msgid "Choices"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:55
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:58
 msgid "Code"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:97
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:100
 msgid "Type"
 msgstr ""
 

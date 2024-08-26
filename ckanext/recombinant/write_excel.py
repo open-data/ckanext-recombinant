@@ -226,10 +226,13 @@ def excel_data_dictionary(geno):
                 _append_field_ref_rows(refs, field, link=None)
 
                 if field['datastore_id'] in choice_fields:
+                    full_text_choices = (
+                        field['datastore_type'] != '_text' and field.get(
+                        'excel_full_text_choices', False))
                     _append_field_choices_rows(
                         refs,
                         choice_fields[field['datastore_id']],
-                        full_text_choices=False)
+                        full_text_choices=full_text_choices)
 
         _populate_reference_sheet(sheet, geno, refs)
         sheet = None
@@ -554,6 +557,10 @@ def _append_field_ref_rows(refs, field, link):
         refs.append(('attr', [
             _('Obligation'),
             recombinant_language_text(field['obligation'])]))
+    if 'occurrence' in field:
+        refs.append(('attr', [
+            _('Occurrence'),
+            recombinant_language_text(field['occurrence'])]))
     if 'validation' in field:
         refs.append(('attr', [
             _('Validation'),
@@ -573,7 +580,7 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
             choice = [str(key)]
         else:
             choice = [str(key), value]
-        refs.append(('choice', choice))
+        refs.append(('choice' if not full_text_choices else 'choice_full_text', choice))
         max_length = max(max_length, len(choice[0]))  # used for full_text_choices
     return estimate_width_from_length(max_length)
 
@@ -651,6 +658,12 @@ def _populate_reference_sheet(sheet, geno, refs):
                 sheet.row_dimensions[row_number].height = REF_FIELD_TITLE_HEIGHT
                 field_count += 1
             elif style == 'choice':
+                pad_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
+                pad_cell.style = 'reco_example'
+                key_cell.style = 'reco_example'
+                value_cell.style = 'reco_example'
+            elif style == 'choice_full_text':
+                sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
                 pad_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
                 pad_cell.style = 'reco_example'
                 key_cell.style = 'reco_example'
