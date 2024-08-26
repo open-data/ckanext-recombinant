@@ -608,7 +608,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 pgerror = e.error_dict['records'][0]
             if isinstance(pgerror, dict):
                 pgerror = u'; '.join(
-                    k + u': ' + u', '.join(format_trigger_error(v))
+                    k + _(u':') + ' ' + u', '.join(format_trigger_error(v))
                     for k, v in pgerror.items())
             else:
                 # remove some postgres-isms that won't help the user
@@ -620,6 +620,11 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                     foreign_error = chromo.get('datastore_constraint_errors', {}).get('upsert')
                     if foreign_error:
                         pgerror = _(foreign_error)
+                elif 'invalid input syntax for type integer' in pgerror:
+                    if ':' in pgerror:
+                        pgerror = _('Invalid input syntax for type integer: {}').format(pgerror.split(':')[1].strip())
+                    else:
+                        pgerror = _('Invalid input syntax for type integer')
                 raise BadExcelData(_(u'Sheet {0} Row {1}:').format(
                     sheet_name, records[e.error_dict['records_row']][0])
                     + u' ' + pgerror)
