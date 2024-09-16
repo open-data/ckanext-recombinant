@@ -44,7 +44,7 @@
         {% call dictionary_field(_('Obligation')) %}
           {{ _('Primary key') if field.datastore_id in chromo.datastore_primary_key
           else _('Required') if field.excel_required
-          else '' }}
+          else field.get(h.lang()) if field.get('obligation') is mapping else _(field.get('obligation', '')) }}
         {% endcall %}
         {% call dictionary_field(_('Occurrence')) %}
           {{ h.recombinant_language_text(field.occurrence) }}
@@ -59,12 +59,28 @@
                   <th scope="col">{{ _('Description') }}</th>
                 </tr>
               </thead>
-              {% for code, desc in choices %}
-                <tr>
-                  <td>{{ code }}</td>
-                  <td>{{ desc }}</td>
-                </tr>
-              {% endfor %}
+              {% set _choices = choices %}
+              {% set _more_choices = [] %}
+              {% if choices|length > 30 %}
+                {% set _choices = choices[:30] %}
+                {% set _more_choices = choices[30:] %}
+              {% endif %}
+              <tbody>
+                {% for code, desc in _choices %}
+                  <tr>
+                    <td>{{ code }}</td>
+                    <td>{{ desc }}</td>
+                  </tr>
+                {% endfor %}
+                {% if _more_choices %}
+                  {% for code, desc in _more_choices %}
+                    <tr class="toggle-more">
+                      <td>{{ code }}</td>
+                      <td>{{ desc }}</td>
+                    </tr>
+                  {% endfor %}
+                {% endif %}
+              </tbody>
             </table>
           {% endcall %}
         {% endif %}
