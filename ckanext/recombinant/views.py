@@ -608,7 +608,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 pgerror = e.error_dict['records'][0]
             if isinstance(pgerror, dict):
                 pgerror = u'; '.join(
-                    k + _(u':') + ' ' + u', '.join(format_trigger_error(v))
+                    (h.recombinant_language_text(h.recombinant_get_field(sheet_name, k)['label']) if h.recombinant_get_field(sheet_name, k) else k) + _(u':') + ' ' + u', '.join(format_trigger_error(v))
                     for k, v in pgerror.items())
             else:
                 # remove some postgres-isms that won't help the user
