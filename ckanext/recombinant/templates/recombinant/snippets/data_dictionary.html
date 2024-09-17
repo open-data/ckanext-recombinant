@@ -52,7 +52,7 @@
         {% set choices = choice_fields.get(field.datastore_id) %}
         {% if choices %}
           {% call dictionary_field(_('Choices')) %}
-            <table class="table table-striped table-bordered table-condensed" data-module="table-toggle-more">
+            <table class="table table-striped table-bordered table-condensed" data-module-show-label="{{ _('Show more') }}" data-module-hide-label="{{ _('Hide') }}" data-module="table-toggle-more">
               <thead>
                 <tr>
                   <th scope="col">{{ _('Code') }}</th>
