@@ -1,0 +1,1 @@
+Added `format_trigger_error` method to format Database errors in a pythonian way to support language translations in the CKAN framework.
