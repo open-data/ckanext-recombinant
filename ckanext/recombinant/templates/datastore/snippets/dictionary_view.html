@@ -1,29 +1,14 @@
 {% ckan_extends %}
 
-{% import 'macros/recombinant.html' as _recombinant %}
-
 {% block dictionary_view %}
   {% set chromo = h.recombinant_published_resource_chromo(res.id) %}
   {% if chromo %}
     {% set choice_fields=h.recombinant_choice_fields(chromo.resource_name) %}
-    {% set chromo_keyed = {} %}
-    {% for recombinant_field in chromo.fields %}
-      {% do chromo_keyed.update({recombinant_field.datastore_id: recombinant_field}) %}
-    {% endfor %}
     <div class="module-content">
-      {{ _recombinant.dictionary_header(chromo, h) }}
-      <div class="panel-group">
-        {% for field in ddict %}
-          {% if field.id in chromo_keyed %}
-          {# the DS field is a Recombinant field, use chromo #}
-            {{ _recombinant.dictionary_field_html(chromo_keyed[field.id], chromo, choice_fields, loop, h) }}
-          {% else %}
-          {# the DS field is NOT a Recombinant field, use normal data dictionary (with lang support) #}
-            {{ _recombinant.vanilla_dictionary_field_html(field, loop, h) }}
-          {% endif %}
-        {% endfor %}
-      </div>
+      {% snippet 'recombinant/snippets/data_dictionary.html',
+        chromo=chromo, all_expanded=false, is_published_resource=true %}
     </div>
+
   {% else %}
     {{ super() }}
   {% endif %}

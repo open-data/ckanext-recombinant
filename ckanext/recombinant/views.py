@@ -352,7 +352,7 @@ def schema_json(dataset_type):
 
         resource['fields'] = []
         for field in chromo['fields']:
-            if not field.get('visible_to_public', True):
+            if not field.get('visible_to_public', True) or field.get('published_resource_computed_field', False):
                 continue
             fld = OrderedDict()
             resource['fields'].append(fld)
@@ -567,7 +567,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
 
         chromo = get_chromo(sheet_name)
         expected_columns = [f['datastore_id'] for f in chromo['fields']
-            if f.get('import_template_include', True)]
+            if f.get('import_template_include', True) and not f.get('published_resource_computed_field')]
         if column_names != expected_columns:
             raise BadExcelData(
                 _("This template is out of date. "

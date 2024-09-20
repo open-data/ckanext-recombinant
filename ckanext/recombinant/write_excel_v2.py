@@ -61,11 +61,11 @@ def _populate_excel_sheet_v2(sheet, chromo, org, refs):
     pk_cells = [
         get_column_letter(n)+'4' for
         n, field in enumerate((f for f in chromo['fields'] if f.get(
-                    'import_template_include', True)), 1)
+                    'import_template_include', True) and not f.get('published_resource_computed_field')), 1)
         if field['datastore_id'] in chromo['datastore_primary_key']]
 
     for n, field in enumerate((f for f in chromo['fields'] if f.get(
-            'import_template_include', True)), 1):
+            'import_template_include', True) and not f.get('published_resource_computed_field')), 1):
         fill_cell(sheet, 2, n, recombinant_language_text(field['label']), header_style)
         fill_cell(sheet, 3, n, field['datastore_id'], header_style)
         # jumping through openpyxl hoops:

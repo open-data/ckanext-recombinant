@@ -959,7 +959,7 @@ def template_cols_fields(chromo):
     ''' (col_num, field) ... for fields in template'''
     return enumerate(
         (f for f in chromo['fields'] if f.get(
-            'import_template_include', True)), DATA_FIRST_COL_NUM)
+            'import_template_include', True) and not f.get('published_resource_computed_field')), DATA_FIRST_COL_NUM)
 
 def _add_conditional_formatting(
         sheet, col_letter, resource_num, error_style, required_style,

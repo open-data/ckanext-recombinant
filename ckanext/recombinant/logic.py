@@ -380,10 +380,15 @@ def datastore_fields(fs, text_types):
     """
     return the datastore field definitions for fields fs
     """
-    return [{
-        'id': f['datastore_id'],
-        'type': datastore_column_type(f['datastore_type'], text_types)}
-        for f in fs]
+    ds_fields = []
+    for f in fs:
+        # exclude Published Resource fields from the Recombinant Resource DataStore
+        if f.get('published_resource_computed_field', False):
+            continue
+        ds_fields.append({
+            'id': f['datastore_id'],
+            'type': datastore_column_type(f['datastore_type'], text_types)})
+    return ds_fields
 
 
 def _datastore_match(fs, fields):
