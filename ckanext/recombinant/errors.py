@@ -21,9 +21,5 @@ def format_trigger_error(error_values: list):
     for e in error_values:
         if '\uF8FF' in e:
             yield _(e.split('\uF8FF')[0]).format(e.split('\uF8FF')[1])
-        # NOTE: unicode-escape to handle any raw strings from the triggers.
-        elif '\uF8FF' in e.encode().decode('unicode-escape'):
-            err = e.encode().decode('unicode-escape')
-            yield _(err.split('\uF8FF')[0]).format(err.split('\uF8FF')[1])
         else:
             yield _(e)

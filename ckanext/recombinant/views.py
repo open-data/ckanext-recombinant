@@ -33,6 +33,8 @@ from ckanext.recombinant.helpers import (
 
 from io import BytesIO
 
+from ckanext.datastore.backend import DatastoreBackend
+
 log = getLogger(__name__)
 
 import ckanapi
@@ -514,6 +516,9 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
     Use lc.action.datastore_upsert to load data from upload_file
 
     raises BadExcelData on errors.
+
+    NOTE (2024-09-20): All sheets in an XLSX file need to pass validation
+                       to be successfully committed to the database.
     """
     owner_org = dataset['organization']['name']
 
@@ -523,113 +528,127 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
 
     upload_data = read_excel(upload_file)
     total_records = 0
-    while True:
-        try:
-            sheet_name, org_name, column_names, rows = next(upload_data)
-        except StopIteration:
-            break
-        except BadExcelData as e:
-            raise e
-        except Exception:
-            # unfortunately this can fail in all sorts of ways
-            if asbool(config.get('debug', False)):
-                # on debug we want the real error
-                raise
-            raise BadExcelData(
-                _("The server encountered a problem processing the file "
-                "uploaded. Please try copying your data into the latest "
-                "version of the template and uploading again. If this "
-                "problem continues, send your Excel file to "
-                "open-ouvert@tbs-sct.gc.ca so we may investigate."))
+    backend = DatastoreBackend.get_active_backend()
+    ds_write_connection = backend._get_write_engine().connect()
+    ds_write_transaction = ds_write_connection.begin()
+    try:
+        while True:
+            try:
+                sheet_name, org_name, column_names, rows = next(upload_data)
+            except StopIteration:
+                break
+            except BadExcelData as e:
+                raise e
+            except Exception:
+                # unfortunately this can fail in all sorts of ways
+                if asbool(config.get('debug', False)):
+                    # on debug we want the real error
+                    raise
+                raise BadExcelData(
+                    _("The server encountered a problem processing the file "
+                    "uploaded. Please try copying your data into the latest "
+                    "version of the template and uploading again. If this "
+                    "problem continues, send your Excel file to "
+                    "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
-        if sheet_name not in expected_sheet_names:
-            raise BadExcelData(_('Invalid file for this data type. ' +
-                'Sheet must be labeled "{0}", ' +
-                'but you supplied a sheet labeled "{1}"').format(
-                    '"/"'.join(sorted(expected_sheet_names)),
-                    sheet_name))
+            if sheet_name not in expected_sheet_names:
+                raise BadExcelData(_('Invalid file for this data type. ' +
+                    'Sheet must be labeled "{0}", ' +
+                    'but you supplied a sheet labeled "{1}"').format(
+                        '"/"'.join(sorted(expected_sheet_names)),
+                        sheet_name))
 
-        if not h.check_access('datastore_upsert', {'resource_id': expected_sheet_names[sheet_name]}):
-            abort(403, _('User {0} not authorized to update resource {1}'
-                        .format(str(g.user), expected_sheet_names[sheet_name])))
+            if not h.check_access('datastore_upsert', {'resource_id': expected_sheet_names[sheet_name]}):
+                abort(403, _('User {0} not authorized to update resource {1}'
+                            .format(str(g.user), expected_sheet_names[sheet_name])))
 
-        if org_name != owner_org:
-            raise BadExcelData(_(
-                'Invalid sheet for this organization. ' +
-                'Sheet must be labeled for {0}, ' +
-                'but you supplied a sheet for {1}').format(
-                    owner_org, org_name))
+            if org_name != owner_org:
+                raise BadExcelData(_(
+                    'Invalid sheet for this organization. ' +
+                    'Sheet must be labeled for {0}, ' +
+                    'but you supplied a sheet for {1}').format(
+                        owner_org, org_name))
 
-        # custom styles or other errors cause columns to be read
-        # that actually have no data. strip them here to avoid error below
-        while column_names and column_names[-1] is None:
-            column_names.pop()
+            # custom styles or other errors cause columns to be read
+            # that actually have no data. strip them here to avoid error below
+            while column_names and column_names[-1] is None:
+                column_names.pop()
 
-        chromo = get_chromo(sheet_name)
-        expected_columns = [f['datastore_id'] for f in chromo['fields']
-            if f.get('import_template_include', True) and not f.get('published_resource_computed_field')]
-        if column_names != expected_columns:
-            raise BadExcelData(
-                _("This template is out of date. "
-                "Please try copying your data into the latest "
-                "version of the template and uploading again. If this "
-                "problem continues, send your Excel file to "
-                "open-ouvert@tbs-sct.gc.ca so we may investigate."))
+            chromo = get_chromo(sheet_name)
+            expected_columns = [f['datastore_id'] for f in chromo['fields']
+                if f.get('import_template_include', True) and not f.get('published_resource_computed_field')]
+            if column_names != expected_columns:
+                raise BadExcelData(
+                    _("This template is out of date. "
+                    "Please try copying your data into the latest "
+                    "version of the template and uploading again. If this "
+                    "problem continues, send your Excel file to "
+                    "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
-        pk = chromo.get('datastore_primary_key', [])
-        choice_fields = {
-            f['datastore_id']:
-                'full' if f.get('excel_full_text_choices') else True
-            for f in chromo['fields']
-            if ('choices' in f or 'choices_file' in f)}
+            pk = chromo.get('datastore_primary_key', [])
+            choice_fields = {
+                f['datastore_id']:
+                    'full' if f.get('excel_full_text_choices') else True
+                for f in chromo['fields']
+                if ('choices' in f or 'choices_file' in f)}
 
-        records = get_records(
-            rows,
-            [f for f in chromo['fields'] if f.get('import_template_include', True)],
-            pk,
-            choice_fields)
-        method = 'upsert' if pk else 'insert'
-        total_records += len(records)
-        if not records:
-            continue
-        try:
-            lc.action.datastore_upsert(
-                method=method,
-                resource_id=expected_sheet_names[sheet_name],
-                records=[r[1] for r in records],
-                dry_run=dry_run,
+            records = get_records(
+                rows,
+                [f for f in chromo['fields'] if f.get('import_template_include', True)],
+                pk,
+                choice_fields)
+            method = 'upsert' if pk else 'insert'
+            total_records += len(records)
+            if not records:
+                continue
+            try:
+                lc.call_action('datastore_upsert', data_dict=dict(
+                        method=method,
+                        resource_id=expected_sheet_names[sheet_name],
+                        records=[r[1] for r in records],
+                        dry_run=dry_run),
+                    context={'connection': ds_write_connection}
                 )
-        except ValidationError as e:
-            if 'info' in e.error_dict:
-                # because, where else would you put the error text?
-                # XXX improve this in datastore, please
-                pgerror = e.error_dict['info']['orig'][0].decode('utf-8')
-            else:
-                pgerror = e.error_dict['records'][0]
-            if isinstance(pgerror, dict):
-                pgerror = u'; '.join(
-                    (h.recombinant_language_text(h.recombinant_get_field(sheet_name, k)['label']) if h.recombinant_get_field(sheet_name, k) else k) + _(u':') + ' ' + u', '.join(format_trigger_error(v))
-                    for k, v in pgerror.items())
-            else:
-                # remove some postgres-isms that won't help the user
-                # when we render this as an error in the form
-                pgerror = re.sub(r'\nLINE \d+:', u'', pgerror)
-                pgerror = re.sub(r'\n *\^\n$', u'', pgerror)
-            if 'records_row' in e.error_dict:
-                if 'violates foreign key constraint' in pgerror:
-                    foreign_error = chromo.get('datastore_constraint_errors', {}).get('upsert')
-                    if foreign_error:
-                        pgerror = _(foreign_error)
-                elif 'invalid input syntax for type integer' in pgerror:
-                    if ':' in pgerror:
-                        pgerror = _('Invalid input syntax for type integer: {}').format(pgerror.split(':')[1].strip())
-                    else:
-                        pgerror = _('Invalid input syntax for type integer')
-                raise BadExcelData(_(u'Sheet {0} Row {1}:').format(
-                    sheet_name, records[e.error_dict['records_row']][0])
-                    + u' ' + pgerror)
-            raise BadExcelData(
-                _(u"Error while importing data: {0}").format(
-                    pgerror))
-    if not total_records:
-        raise BadExcelData(_("The template uploaded is empty"))
+            except ValidationError as e:
+                if 'info' in e.error_dict:
+                    # because, where else would you put the error text?
+                    # XXX improve this in datastore, please
+                    pgerror = e.error_dict['info']['orig'][0].decode('utf-8')
+                else:
+                    pgerror = e.error_dict['records'][0]
+                if isinstance(pgerror, dict):
+                    pgerror = u'; '.join(
+                        (h.recombinant_language_text(h.recombinant_get_field(sheet_name, k)['label']) if h.recombinant_get_field(sheet_name, k) else k) + _(u':') + ' ' + u', '.join(format_trigger_error(v))
+                        for k, v in pgerror.items())
+                else:
+                    # remove some postgres-isms that won't help the user
+                    # when we render this as an error in the form
+                    pgerror = re.sub(r'\nLINE \d+:', u'', pgerror)
+                    pgerror = re.sub(r'\n *\^\n$', u'', pgerror)
+                if 'records_row' in e.error_dict:
+                    if 'violates foreign key constraint' in pgerror:
+                        foreign_error = chromo.get('datastore_constraint_errors', {}).get('upsert')
+                        if foreign_error:
+                            pgerror = _(foreign_error)
+                    elif 'invalid input syntax for type integer' in pgerror:
+                        if ':' in pgerror:
+                            pgerror = _('Invalid input syntax for type integer: {}').format(pgerror.split(':')[1].strip())
+                        else:
+                            pgerror = _('Invalid input syntax for type integer')
+                    raise BadExcelData(_(u'Sheet {0} Row {1}:').format(
+                        sheet_name, records[e.error_dict['records_row']][0])
+                        + u' ' + pgerror)
+                raise BadExcelData(
+                    _(u"Error while importing data: {0}").format(
+                        pgerror))
+        if not total_records:
+            raise BadExcelData(_("The template uploaded is empty"))
+        if dry_run:
+            ds_write_transaction.rollback()
+        else:
+            ds_write_transaction.commit()
+    except Exception:
+        ds_write_transaction.rollback()
+        raise
+    finally:
+        ds_write_connection.close()

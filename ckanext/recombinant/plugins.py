@@ -91,6 +91,7 @@ class RecombinantPlugin(
             'recombinant_create': logic.recombinant_create,
             'recombinant_update': logic.recombinant_update,
             'recombinant_show': logic.recombinant_show,
+            'datastore_info': logic.recombinant_datastore_info,
             }
 
     # IAuthFunctions
