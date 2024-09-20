@@ -29,7 +29,7 @@ def csv_data_batch(csv_path, chromo, strict=True):
             if f not in chromo.get('csv_org_extras', [])]
 
         if strict:
-            expected = [f['datastore_id'] for f in chromo['fields']
+            expected = [f['datastore_id'] for f in chromo['fields'] if not f.get('published_resource_computed_field')
                 ] + ['owner_org', 'owner_org_title']
             assert cols == expected, 'column mismatch:\n{0}\n{1}'.format(
                 cols, expected)
@@ -49,6 +49,10 @@ def csv_data_batch(csv_path, chromo, strict=True):
             for f_id in none_fields:
                 if not row_dict.get(f_id, ''):
                     row_dict[f_id] = None
+
+            for f in chromo['fields']:
+                if f.get('published_resource_computed_field'):
+                    row_dict.pop(f['datastore_id'], None)
 
             records.append(row_dict)
             if len(records) >= BATCH_SIZE:

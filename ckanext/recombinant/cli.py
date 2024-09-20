@@ -432,7 +432,7 @@ def _load_one_csv_file(name):
 
         # convert list values to lists
         list_fields = [f['datastore_id']
-            for f in chromo['fields'] if f['datastore_type'] == '_text']
+            for f in chromo['fields'] if f['datastore_type'] == '_text' and not f.get('published_resource_computed_field')]
         if list_fields:
             for r in records:
                 for k in list_fields:
@@ -512,7 +512,7 @@ def _combine_csv(target_dir, resource_names, all_types=False, verbose=False):
 
 def _write_one_csv(lc, pkgs, chromo, outfile):
     out = csv.writer(outfile)
-    column_ids = [f['datastore_id'] for f in chromo['fields']
+    column_ids = [f['datastore_id'] for f in chromo['fields'] if not f.get('published_resource_computed_field')
         ] + chromo.get('csv_org_extras', []) + [
         'owner_org', 'owner_org_title']
     out.writerow(column_ids)
