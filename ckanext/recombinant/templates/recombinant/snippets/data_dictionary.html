@@ -26,7 +26,6 @@
 {% endmacro %}
 
 <div class="panel-group">
-  <h2>{{ is_published_resource }}</h2>
   {% for field in chromo.fields %}
     {% if (field.get('visible_to_public', true) and not field.get('published_resource_computed_field', false)) or (is_published_resource and field.get('published_resource_computed_field', false)) %}
 
@@ -45,10 +44,10 @@
         {% call dictionary_field(_('Obligation')) %}
           {{ _('Primary key') if field.datastore_id in chromo.datastore_primary_key
           else _('Required') if field.excel_required
-          else field.get(h.lang()) if field.get('obligation') is mapping else _(field.get('obligation', '')) }}
+          else h.recombinant_language_text(field.get('obligation', '')) }}
         {% endcall %}
         {% call dictionary_field(_('Occurrence')) %}
-          {{ h.recombinant_language_text(field.occurrence) }}
+          {{ h.recombinant_language_text(field.get('occurrence', '')) }}
         {% endcall %}
         {% set choices = choice_fields.get(field.datastore_id) %}
         {% if choices %}
