@@ -262,14 +262,12 @@ def _update_datastore(lc, geno, dataset, force_update=False):
         foreign_keys = {}
         if chromo_foreign_keys:
             for f_table, field_map in chromo_foreign_keys.items():
-                is_chromo_name = False
                 for _chromo in geno['resources']:
                     # try to get the resource id from chromo name
                     if f_table == _chromo['resource_name']:
-                        is_chromo_name = True
                         foreign_keys[resource_ids[_chromo['resource_name']]] = field_map
                         break
-                if not is_chromo_name:
+                else:
                     foreign_keys[f_table] = field_map
 
         lc.action.datastore_create(
