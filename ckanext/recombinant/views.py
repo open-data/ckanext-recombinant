@@ -594,7 +594,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
 
             records = get_records(
                 rows,
-                [f for f in chromo['fields'] if f.get('import_template_include', True)],
+                [f for f in chromo['fields'] if f.get('import_template_include', True) and not f.get('published_resource_computed_field')],
                 pk,
                 choice_fields)
             method = 'upsert' if pk else 'insert'
