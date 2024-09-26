@@ -54,6 +54,14 @@ jobs:
             - "f2:9a:75:b8:82:b3:08:63:3d:9c:71:1d:14:2a:fa:18"
       - checkout
       - run:
+          name: Set CKAN to open-data/ckan@canada-py3
+          command: |
+            pip uninstall -y ckan
+            git --git-dir=\/srv\/app\/src\/ckan\/.git --work-tree=\/srv\/app\/src\/ckan\/ remote add canada https://github.com/open-data/ckan.git
+            git --git-dir=\/srv\/app\/src\/ckan\/.git --work-tree=\/srv\/app\/src\/ckan\/ fetch canada canada-py3
+            git --git-dir=\/srv\/app\/src\/ckan\/.git --work-tree=\/srv\/app\/src\/ckan\/ checkout -b canada-py3 canada/canada-py3
+            git --git-dir=\/srv\/app\/src\/ckan\/.git --work-tree=\/srv\/app\/src\/ckan\/ pull
+      - run:
           name: Install requirements
           command: |
             pip install setuptools==44.1.0
