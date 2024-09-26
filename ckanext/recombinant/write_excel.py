@@ -187,7 +187,7 @@ def datastore_type_format(value, datastore_type):
     return item
 
 
-def excel_data_dictionary(geno):
+def excel_data_dictionary(geno, published_resource=False):
     """
     return an openpyxl.Workbook object containing the field reference
     from geno, one sheet per language
@@ -216,13 +216,19 @@ def excel_data_dictionary(geno):
 
         sheet.title = lang.upper()
         # switch language (FIXME: this is harder than it should be)
+        # FIXME: this does not work for Flask gettext??
         request.environ['CKAN_LANG'] = lang
         handle_request(request, g)
 
         refs = []
-        for chromo in geno['resources']:
+        for rnum, chromo in enumerate(geno['resources'], 1):
+            _append_resource_ref_header(geno, refs, rnum)
             choice_fields = recombinant_choice_fields(chromo['resource_name'])
             for field in chromo['fields']:
+                if not field.get('import_template_include', True):
+                    continue
+                if not published_resource and field.get('published_resource_computed_field', False):
+                    continue
                 _append_field_ref_rows(refs, field, link=None)
 
                 if field['datastore_id'] in choice_fields:
@@ -536,11 +542,12 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
     return cranges
 
 def _append_resource_ref_header(geno, refs, rnum):
-    #Add resource titles for all resources except the first one
-    if (rnum > 1):
-        refs.append((None, []))
-        resource_title = recombinant_language_text(geno['resources'][rnum-1]['title'])
-        refs.append(('resource_title', [resource_title]))
+    # Add resource titles for all resources except the first one (unless if it has a different name)
+    if rnum == 1 and geno['resources'][rnum-1]['title'] == geno['title']:
+        return
+    refs.append((None, []))
+    resource_title = recombinant_language_text(geno['resources'][rnum-1]['title'])
+    refs.append(('resource_title', [resource_title]))
 
 def _append_field_ref_rows(refs, field, link):
     refs.append((None, []))
@@ -549,23 +556,23 @@ def _append_field_ref_rows(refs, field, link):
     refs.append(('attr', [
         _('ID'),
         field['datastore_id']]))
-    if 'description' in field:
+    if field.get('description'):
         refs.append(('attr', [
             _('Description'),
             recombinant_language_text(field['description'])]))
-    if 'obligation' in field:  # for old yaml files (merged with validation in new ones)
+    if field.get('obligation'):  # for old yaml files (merged with validation in new ones)
         refs.append(('attr', [
             _('Obligation'),
             recombinant_language_text(field['obligation'])]))
-    if 'occurrence' in field:
+    if field.get('occurrence'):
         refs.append(('attr', [
             _('Occurrence'),
             recombinant_language_text(field['occurrence'])]))
-    if 'validation' in field:
+    if field.get('validation'):
         refs.append(('attr', [
             _('Validation'),
             recombinant_language_text(field['validation'])]))
-    if 'format_type' in field:  # for old yaml files (merged with validation in new ones)
+    if field.get('format_type'):  # for old yaml files (merged with validation in new ones)
         refs.append(('attr', [
             _('Format'),
             recombinant_language_text(field['format_type'])]))
@@ -608,7 +615,6 @@ def _populate_reference_sheet(sheet, geno, refs):
     sheet.row_dimensions[REF_HEADER1_ROW].height = REF_HEADER1_HEIGHT
     sheet.row_dimensions[REF_HEADER2_ROW].height = REF_HEADER2_HEIGHT
 
-
     for row_number, (style, ref_line) in enumerate(refs, REF_FIRST_ROW - 1):
         if style == 'resource_title':
             sheet.merge_cells('B{row}:D{row}'.format(row=row_number))
@@ -620,6 +626,8 @@ def _populate_reference_sheet(sheet, geno, refs):
                 'reco_header')
             apply_style(sheet.row_dimensions[row_number], header1_style)
             sheet.row_dimensions[row_number].height = HEADER_HEIGHT
+            # Reset field counter as we are doing a different resource now
+            field_count = 1
         else:
             link = None
             if len(ref_line) == 2:
@@ -640,7 +648,6 @@ def _populate_reference_sheet(sheet, geno, refs):
 
             key_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
             value_cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
-
 
             if style == 'title':
                 sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))

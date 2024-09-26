@@ -90,7 +90,7 @@ def delete_records(id, resource_id):
     filters = {}
 
     if not h.check_access('datastore_delete', {'resource_id': resource_id, 'filters': filters}):
-        abort(403, _('User {0} not authorized to update resource {1}'
+        return abort(403, _('User {0} not authorized to update resource {1}'
                     .format(str(g.user), resource_id)))
 
     x_vars = {'filters': filters, 'action': 'edit'}
@@ -236,7 +236,7 @@ def template(dataset_type, lang, owner_org):
     """
 
     if lang != h.lang():
-        abort(404, _('Not found'))
+        return abort(404, _('Not found'))
 
     lc = ckanapi.LocalCKAN(username=g.user)
     try:
@@ -247,7 +247,7 @@ def template(dataset_type, lang, owner_org):
             id=owner_org,
             include_datasets=False)
     except ckanapi.NotFound:
-        abort(404, _('Not found'))
+        return abort(404, _('Not found'))
 
     book = excel_template(dataset_type, org)
 
@@ -259,7 +259,7 @@ def template(dataset_type, lang, owner_org):
                 resource = r
                 break
         else:
-            abort(404, _("Resource not found"))
+            return abort(404, _("Resource not found"))
 
         pk_fields = recombinant_primary_key_fields(resource['name'])
         primary_keys = request.form.getlist('bulk-template')
@@ -273,7 +273,7 @@ def template(dataset_type, lang, owner_org):
             try:
                 result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
             except NotAuthorized:
-                abort(403, _(u'Unauthorized to read resource %s') % resource['id'])
+                return abort(403, _(u'Unauthorized to read resource %s') % resource['id'])
             record_data += result['records']
 
         append_data(book, record_data, chromo)
@@ -292,14 +292,13 @@ def template(dataset_type, lang, owner_org):
     return response
 
 
-@recombinant.route('/recombinant-dictionary/<dataset_type>')
-def data_dictionary(dataset_type):
+def _data_dictionary(dataset_type, published_resource=False):
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
-        abort(404, _('Recombinant dataset_type not found'))
+        return abort(404, _('Recombinant dataset_type not found'))
 
-    book = excel_data_dictionary(geno)
+    book = excel_data_dictionary(geno, published_resource=published_resource)
     blob = BytesIO()
     book.save(blob)
     response = Response(blob.getvalue())
@@ -311,12 +310,21 @@ def data_dictionary(dataset_type):
     return response
 
 
-@recombinant.route('/recombinant-schema/<dataset_type>.json')
-def schema_json(dataset_type):
+@recombinant.route('/recombinant-dictionary/<dataset_type>')
+def data_dictionary(dataset_type):
+    return _data_dictionary(dataset_type, published_resource=False)
+
+
+@recombinant.route('/recombinant-published-dictionary/<dataset_type>')
+def published_data_dictionary(dataset_type):
+    return _data_dictionary(dataset_type, published_resource=True)
+
+
+def _schema_json(dataset_type, published_resource=False):
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
-        abort(404, _('Recombinant dataset_type not found'))
+        return abort(404, _('Recombinant dataset_type not found'))
 
     schema = OrderedDict()
     schema['dataset_type'] = geno['dataset_type']
@@ -324,6 +332,7 @@ def schema_json(dataset_type):
     schema['notes'] = OrderedDict()
 
     from ckan.lib.i18n import handle_request, get_lang
+    #FIXME: this does not work for Flask??
     for lang in config['ckan.locales_offered'].split():
         request.environ['CKAN_LANG'] = lang
         handle_request(request, g)
@@ -343,33 +352,29 @@ def schema_json(dataset_type):
             chromo['resource_name'],
             all_languages=True)
 
+        pkeys = aslist(chromo['datastore_primary_key'])
+
         resource['resource_name'] = chromo['resource_name']
         resource['title'] = OrderedDict()
         for lang in config['ckan.locales_offered'].split():
             request.environ['CKAN_LANG'] = lang
+            #FIXME: this does not work for Flask??
             handle_request(request, g)
             resource['title'][lang] = _(chromo['title'])
 
-        resource['primary_key'] = aslist(chromo['datastore_primary_key'])
+        if not published_resource:
+            resource['primary_key'] = pkeys
 
         resource['fields'] = []
         for field in chromo['fields']:
-            if not field.get('visible_to_public', True) or field.get('published_resource_computed_field', False):
+            if not field.get('visible_to_public', True):
+                continue
+            if not published_resource and field.get('published_resource_computed_field', False):
                 continue
             fld = OrderedDict()
             resource['fields'].append(fld)
             fld['id'] = field['datastore_id']
-            for k in ['label', 'description', 'validation']:
-                if k in field:
-                    if isinstance(field[k], dict):
-                        fld[k] = field[k]
-                        continue
-                    fld[k] = OrderedDict()
-                    for lang in config['ckan.locales_offered'].split():
-                        request.environ['CKAN_LANG'] = lang
-                        handle_request(request, g)
-                        fld[k][lang] = _(field[k])
-            if fld['id'] in resource['primary_key']:
+            if fld['id'] in pkeys:
                 fld['obligation'] = 'mandatory'
             elif field.get('excel_required'):
                 fld['obligation'] = 'mandatory'
@@ -377,6 +382,17 @@ def schema_json(dataset_type):
                 fld['obligation'] = 'conditional'
             else:
                 fld['obligation'] = 'optional'
+            for k in ['label', 'description', 'validation', 'obligation']:
+                if k in field:
+                    if isinstance(field[k], dict):
+                        fld[k] = field[k]
+                        continue
+                    fld[k] = OrderedDict()
+                    for lang in config['ckan.locales_offered'].split():
+                        request.environ['CKAN_LANG'] = lang
+                        #FIXME: this does not work for Flask??
+                        handle_request(request, g)
+                        fld[k][lang] = _(field[k])
 
             fld['datastore_type'] = field['datastore_type']
 
@@ -386,7 +402,7 @@ def schema_json(dataset_type):
                 for ck, cv in choice_fields[fld['id']]:
                     choices[ck] = cv
 
-        if 'examples' in chromo:
+        if not published_resource and 'examples' in chromo:
             ex_record = chromo['examples']['record']
             example = OrderedDict()
             for field in chromo['fields']:
@@ -403,16 +419,26 @@ def schema_json(dataset_type):
     return response
 
 
+@recombinant.route('/recombinant-schema/<dataset_type>.json')
+def schema_json(dataset_type):
+    return _schema_json(dataset_type, published_resource=False)
+
+
+@recombinant.route('/recombinant-published-schema/<dataset_type>.json')
+def published_schema_json(dataset_type):
+    return _schema_json(dataset_type, published_resource=True)
+
+
 @recombinant.route('/recombinant/<resource_name>')
 def type_redirect(resource_name):
     orgs = h.organizations_available('read')
 
     if not orgs:
-        abort(404, _('No organizations found'))
+        return abort(404, _('No organizations found'))
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
-        abort(404, _('Recombinant resource_name not found'))
+        return abort(404, _('Recombinant resource_name not found'))
 
     return h.redirect_to(
         'recombinant.preview_table',
@@ -452,13 +478,13 @@ def preview_table(resource_name, owner_org, errors=None):
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
-        abort(404, _('Recombinant resource_name not found'))
+        return abort(404, _('Recombinant resource_name not found'))
 
     if 'create' in request.form or 'refresh' in request.form:
         # check if the user can update datasets for organization
         # admin and editors should be able to init recombinant records
         if not has_user_permission_for_group_or_org(org_object.id, g.user, 'update_dataset'):
-            abort(403, _('User %s not authorized to create packages') % (str(g.user)))
+            return abort(403, _('User %s not authorized to create packages') % (str(g.user)))
         try:
             # check if the dataset exists
             dataset = lc.action.recombinant_show(
@@ -477,7 +503,7 @@ def preview_table(resource_name, owner_org, errors=None):
                         dataset_type=chromo['dataset_type'], owner_org=owner_org,
                         force_update=True)
             except NotAuthorized as e:
-                abort(403, e.message)
+                return abort(403, e.message)
         return h.redirect_to(
             'recombinant.preview_table',
             resource_name=resource_name,
@@ -496,7 +522,7 @@ def preview_table(resource_name, owner_org, errors=None):
             if r['name'] == resource_name:
                 break
         else:
-            abort(404, _('Resource not found'))
+            return abort(404, _('Resource not found'))
     else:
         r = None
 
@@ -559,7 +585,7 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                         sheet_name))
 
             if not h.check_access('datastore_upsert', {'resource_id': expected_sheet_names[sheet_name]}):
-                abort(403, _('User {0} not authorized to update resource {1}'
+                return abort(403, _('User {0} not authorized to update resource {1}'
                             .format(str(g.user), expected_sheet_names[sheet_name])))
 
             if org_name != owner_org:

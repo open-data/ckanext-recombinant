@@ -3,15 +3,17 @@
 <h3>{{ _("Data Dictionary") }}</h3>
 
 <div class="form-group control-medium row">
+  {% set excel_dictionary = 'recombinant.published_data_dictionary' if is_published_resource else 'recombinant.data_dictionary' %}
+  {% set json_dictionary = 'recombinant.published_schema_json' if is_published_resource else 'recombinant.schema_json' %}
   <div class="col-md-6">
     <a class="button" href="{{ h.url_for(
-      'recombinant.data_dictionary',
+      excel_dictionary,
       dataset_type=chromo.dataset_type) }}"><span class="glyphicon glyphicon-download-alt"></span>
       {{ _('Download data dictionary') }} XLSX</a>
   </div>
   <div class="col-md-6">
     <a class="button" href="{{ h.url_for(
-      'recombinant.schema_json',
+      json_dictionary,
       dataset_type=chromo.dataset_type) }}"><span class="glyphicon glyphicon-wrench"></span>
       {{ _('Schema as JSON') }}</a>
   </div>
