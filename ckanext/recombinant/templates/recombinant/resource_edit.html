@@ -70,7 +70,7 @@
               {{ _("Reference") }}
             </summary>
             {% snippet "recombinant/snippets/data_dictionary.html",
-              chromo=h.recombinant_get_chromo(resource.name), all_expanded=true %}
+              chromo=h.recombinant_get_chromo(resource.name), all_expanded=true, is_published_resource=false %}
           </details>
           <details id="api">
             <summary><span class="glyphicon glyphicon-wrench"></span>

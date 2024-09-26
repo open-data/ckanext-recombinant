@@ -6,7 +6,7 @@
     {% set choice_fields=h.recombinant_choice_fields(chromo.resource_name) %}
     <div class="module-content">
       {% snippet 'recombinant/snippets/data_dictionary.html',
-        chromo=chromo %}
+        chromo=chromo, all_expanded=false, is_published_resource=true %}
     </div>
 
   {% else %}

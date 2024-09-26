@@ -1,3 +1,4 @@
 ckan.log
 *.pyc
 *.egg-info/
+*.mo

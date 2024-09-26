@@ -27,7 +27,7 @@
 
 <div class="panel-group">
   {% for field in chromo.fields %}
-    {% if field.get('visible_to_public', true) %}
+    {% if (field.get('visible_to_public', true) and not field.get('published_resource_computed_field', false)) or (is_published_resource and field.get('published_resource_computed_field', false)) %}
 
       {% set field_type %}{{
         field.datastore_type[1:] ~ '[]' if field.datastore_type[0] == '_'
@@ -44,24 +44,43 @@
         {% call dictionary_field(_('Obligation')) %}
           {{ _('Primary key') if field.datastore_id in chromo.datastore_primary_key
           else _('Required') if field.excel_required
-          else '' }}
+          else h.recombinant_language_text(field.get('obligation', '')) }}
+        {% endcall %}
+        {% call dictionary_field(_('Occurrence')) %}
+          {{ h.recombinant_language_text(field.get('occurrence', '')) }}
         {% endcall %}
         {% set choices = choice_fields.get(field.datastore_id) %}
         {% if choices %}
           {% call dictionary_field(_('Choices')) %}
-            <table class="table table-striped table-bordered table-condensed" data-module="table-toggle-more">
+            <table class="table table-striped table-bordered table-condensed" data-module-show-label="{{ _('Show more') }}" data-module-hide-label="{{ _('Hide') }}" data-module="table-toggle-more">
               <thead>
                 <tr>
                   <th scope="col">{{ _('Code') }}</th>
                   <th scope="col">{{ _('Description') }}</th>
                 </tr>
               </thead>
-              {% for code, desc in choices %}
-                <tr>
-                  <td>{{ code }}</td>
-                  <td>{{ desc }}</td>
-                </tr>
-              {% endfor %}
+              {% set _choices = choices %}
+              {% set _more_choices = [] %}
+              {% if choices|length > 30 %}
+                {% set _choices = choices[:30] %}
+                {% set _more_choices = choices[30:] %}
+              {% endif %}
+              <tbody>
+                {% for code, desc in _choices %}
+                  <tr>
+                    <td>{{ code }}</td>
+                    <td>{{ desc }}</td>
+                  </tr>
+                {% endfor %}
+                {% if _more_choices %}
+                  {% for code, desc in _more_choices %}
+                    <tr class="toggle-more">
+                      <td>{{ code }}</td>
+                      <td>{{ desc }}</td>
+                    </tr>
+                  {% endfor %}
+                {% endif %}
+              </tbody>
             </table>
           {% endcall %}
         {% endif %}

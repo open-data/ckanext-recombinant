@@ -2,12 +2,14 @@ import importlib
 import os
 import uuid
 
-from ckan.plugins.toolkit import _
+from ckan.plugins.toolkit import _, get_validator
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
-from ckanext.recombinant import logic, tables, helpers, load, views, auth, cli
+from ckanext.recombinant import logic, tables, helpers, load, views, auth, cli, validators
 from ckanext.recombinant.errors import RecombinantException
+
+from ckanext.datastore.interfaces import IDataDictionaryForm
 
 
 class RecombinantPlugin(
@@ -21,6 +23,8 @@ class RecombinantPlugin(
     p.implements(p.ITranslation)
     p.implements(p.IAuthFunctions)
     p.implements(p.IClick)
+    p.implements(p.IValidators)
+    p.implements(IDataDictionaryForm, inherit=True)
 
     def update_config(self, config):
         # add our templates
@@ -87,6 +91,7 @@ class RecombinantPlugin(
             'recombinant_create': logic.recombinant_create,
             'recombinant_update': logic.recombinant_update,
             'recombinant_show': logic.recombinant_show,
+            'datastore_info': logic.recombinant_datastore_info,
             }
 
     # IAuthFunctions
@@ -102,6 +107,20 @@ class RecombinantPlugin(
 
     def get_commands(self):
         return [cli.get_commands()]
+
+    # IValidators
+
+    def get_validators(self):
+        return {
+            'recombinant_foreign_keys': validators.recombinant_foreign_keys,
+        }
+
+    # IDataDictionaryForm
+
+    def update_datastore_create_schema(self, schema):
+        recombinant_foreign_keys_validator = get_validator('recombinant_foreign_keys')
+        schema['foreign_keys'].append(recombinant_foreign_keys_validator)
+        return schema
 
 
 def generate_uuid(value):

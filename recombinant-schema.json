@@ -110,6 +110,9 @@
         "choices_file": {
           "type": "string"
         },
+        "max_chars": {
+          "type": "integer"
+        },
         "choices": {
           "type": "object",
           "propertyNames": {
