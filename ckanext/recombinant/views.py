@@ -1,4 +1,5 @@
 from flask import Blueprint, Response
+from flask_babel import force_locale
 import re
 from collections import OrderedDict
 import simplejson as json
@@ -331,13 +332,10 @@ def _schema_json(dataset_type, published_resource=False):
     schema['title'] = OrderedDict()
     schema['notes'] = OrderedDict()
 
-    from ckan.lib.i18n import handle_request, get_lang
-    #FIXME: this does not work for Flask??
     for lang in config['ckan.locales_offered'].split():
-        request.environ['CKAN_LANG'] = lang
-        handle_request(request, g)
-        schema['title'][lang] = _(geno['title'])
-        schema['notes'][lang] = _(geno['notes'])
+        with force_locale(lang):
+            schema['title'][lang] = _(geno['title'])
+            schema['notes'][lang] = _(geno['notes'])
 
     if 'front_matter' in geno:
         schema['front_matter'] = OrderedDict()
@@ -357,10 +355,8 @@ def _schema_json(dataset_type, published_resource=False):
         resource['resource_name'] = chromo['resource_name']
         resource['title'] = OrderedDict()
         for lang in config['ckan.locales_offered'].split():
-            request.environ['CKAN_LANG'] = lang
-            #FIXME: this does not work for Flask??
-            handle_request(request, g)
-            resource['title'][lang] = _(chromo['title'])
+            with force_locale(lang):
+                resource['title'][lang] = _(chromo['title'])
 
         if not published_resource:
             resource['primary_key'] = pkeys
@@ -375,13 +371,13 @@ def _schema_json(dataset_type, published_resource=False):
             resource['fields'].append(fld)
             fld['id'] = field['datastore_id']
             if fld['id'] in pkeys:
-                fld['obligation'] = 'mandatory'
+                fld['obligation'] = _('Mandatory')
             elif field.get('excel_required'):
-                fld['obligation'] = 'mandatory'
+                fld['obligation'] = _('Mandatory')
             elif field.get('excel_required_formula'):
-                fld['obligation'] = 'conditional'
+                fld['obligation'] = _('Conditional')
             else:
-                fld['obligation'] = 'optional'
+                fld['obligation'] = _('Optional')
             for k in ['label', 'description', 'validation', 'obligation']:
                 if k in field:
                     if isinstance(field[k], dict):
@@ -389,10 +385,8 @@ def _schema_json(dataset_type, published_resource=False):
                         continue
                     fld[k] = OrderedDict()
                     for lang in config['ckan.locales_offered'].split():
-                        request.environ['CKAN_LANG'] = lang
-                        #FIXME: this does not work for Flask??
-                        handle_request(request, g)
-                        fld[k][lang] = _(field[k])
+                        with force_locale(lang):
+                            fld[k][lang] = _(field[k])
 
             fld['datastore_type'] = field['datastore_type']
 

@@ -18,7 +18,8 @@ from ckanext.recombinant.helpers import (
 from ckanext.recombinant.write_excel_v2 import (
     _populate_excel_sheet_v2, _populate_reference_sheet_v2)
 
-from ckan.plugins.toolkit import _, h
+from ckan.plugins.toolkit import _, h, config, request
+from flask_babel import force_locale
 
 from datetime import datetime
 from decimal import Decimal
@@ -206,42 +207,37 @@ def excel_data_dictionary(geno, published_resource=False):
             'patternType': 'solid',
             'fgColor': 'FFDFE2DB'}}
 
-    from ckan.plugins.toolkit import config, g, request
-    from ckan.lib.i18n import handle_request
-
     _build_styles(book, geno)
     for lang in config['ckan.locales_offered'].split():
         if sheet is None:
             sheet = book.create_sheet()
 
         sheet.title = lang.upper()
-        # switch language (FIXME: this is harder than it should be)
-        # FIXME: this does not work for Flask gettext??
-        request.environ['CKAN_LANG'] = lang
-        handle_request(request, g)
+        request.environ['CKAN_LANG'] = lang  # needed for recombinant_language_text
+        with force_locale(lang):
 
-        refs = []
-        for rnum, chromo in enumerate(geno['resources'], 1):
-            _append_resource_ref_header(geno, refs, rnum)
-            choice_fields = recombinant_choice_fields(chromo['resource_name'])
-            for field in chromo['fields']:
-                if not field.get('import_template_include', True):
-                    continue
-                if not published_resource and field.get('published_resource_computed_field', False):
-                    continue
-                _append_field_ref_rows(refs, field, link=None)
+            refs = []
+            for rnum, chromo in enumerate(geno['resources'], 1):
+                _append_resource_ref_header(geno, refs, rnum)
+                choice_fields = recombinant_choice_fields(chromo['resource_name'])
+                for field in chromo['fields']:
+                    if not field.get('import_template_include', True):
+                        continue
+                    if not published_resource and field.get('published_resource_computed_field', False):
+                        continue
+                    _append_field_ref_rows(refs, field, link=None)
 
-                if field['datastore_id'] in choice_fields:
-                    full_text_choices = (
-                        field['datastore_type'] != '_text' and field.get(
-                        'excel_full_text_choices', False))
-                    _append_field_choices_rows(
-                        refs,
-                        choice_fields[field['datastore_id']],
-                        full_text_choices=full_text_choices)
+                    if field['datastore_id'] in choice_fields:
+                        full_text_choices = (
+                            field['datastore_type'] != '_text' and field.get(
+                            'excel_full_text_choices', False))
+                        _append_field_choices_rows(
+                            refs,
+                            choice_fields[field['datastore_id']],
+                            full_text_choices=full_text_choices)
 
-        _populate_reference_sheet(sheet, geno, refs)
-        sheet = None
+            _populate_reference_sheet(sheet, geno, refs)
+            sheet = None
 
     return book
 
