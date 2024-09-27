@@ -370,14 +370,17 @@ def _schema_json(dataset_type, published_resource=False):
             fld = OrderedDict()
             resource['fields'].append(fld)
             fld['id'] = field['datastore_id']
-            if fld['id'] in pkeys:
-                fld['obligation'] = _('Mandatory')
-            elif field.get('excel_required'):
-                fld['obligation'] = _('Mandatory')
-            elif field.get('excel_required_formula'):
-                fld['obligation'] = _('Conditional')
-            else:
-                fld['obligation'] = _('Optional')
+            fld['obligation'] = OrderedDict()
+            for lang in config['ckan.locales_offered'].split():
+                with force_locale(lang):
+                    if fld['id'] in pkeys:
+                        fld['obligation'][lang] = _('Mandatory')
+                    elif field.get('excel_required'):
+                        fld['obligation'][lang] = _('Mandatory')
+                    elif field.get('excel_required_formula'):
+                        fld['obligation'][lang] = _('Conditional')
+                    else:
+                        fld['obligation'][lang] = _('Optional')
             for k in ['label', 'description', 'validation', 'obligation']:
                 if k in field:
                     if isinstance(field[k], dict):
