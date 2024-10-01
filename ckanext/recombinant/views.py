@@ -1,4 +1,5 @@
 from flask import Blueprint, Response
+from flask_babel import force_locale
 import re
 from collections import OrderedDict
 import simplejson as json
@@ -326,27 +327,24 @@ def _schema_json(dataset_type, published_resource=False):
     except RecombinantException:
         return abort(404, _('Recombinant dataset_type not found'))
 
-    schema = OrderedDict()
+    schema = {}
     schema['dataset_type'] = geno['dataset_type']
-    schema['title'] = OrderedDict()
-    schema['notes'] = OrderedDict()
+    schema['title'] = {}
+    schema['notes'] = {}
 
-    from ckan.lib.i18n import handle_request, get_lang
-    #FIXME: this does not work for Flask??
     for lang in config['ckan.locales_offered'].split():
-        request.environ['CKAN_LANG'] = lang
-        handle_request(request, g)
-        schema['title'][lang] = _(geno['title'])
-        schema['notes'][lang] = _(geno['notes'])
+        with force_locale(lang):
+            schema['title'][lang] = _(geno['title'])
+            schema['notes'][lang] = _(geno['notes'])
 
     if 'front_matter' in geno:
-        schema['front_matter'] = OrderedDict()
+        schema['front_matter'] = {}
         for lang in sorted(geno['front_matter']):
             schema['front_matter'][lang] = geno['front_matter'][lang]
 
     schema['resources'] = []
     for chromo in geno['resources']:
-        resource = OrderedDict()
+        resource = {}
         schema['resources'].append(resource)
         choice_fields = recombinant_choice_fields(
             chromo['resource_name'],
@@ -355,12 +353,10 @@ def _schema_json(dataset_type, published_resource=False):
         pkeys = aslist(chromo['datastore_primary_key'])
 
         resource['resource_name'] = chromo['resource_name']
-        resource['title'] = OrderedDict()
+        resource['title'] = {}
         for lang in config['ckan.locales_offered'].split():
-            request.environ['CKAN_LANG'] = lang
-            #FIXME: this does not work for Flask??
-            handle_request(request, g)
-            resource['title'][lang] = _(chromo['title'])
+            with force_locale(lang):
+                resource['title'][lang] = _(chromo['title'])
 
         if not published_resource:
             resource['primary_key'] = pkeys
@@ -371,40 +367,41 @@ def _schema_json(dataset_type, published_resource=False):
                 continue
             if not published_resource and field.get('published_resource_computed_field', False):
                 continue
-            fld = OrderedDict()
+            fld = {}
             resource['fields'].append(fld)
             fld['id'] = field['datastore_id']
-            if fld['id'] in pkeys:
-                fld['obligation'] = 'mandatory'
-            elif field.get('excel_required'):
-                fld['obligation'] = 'mandatory'
-            elif field.get('excel_required_formula'):
-                fld['obligation'] = 'conditional'
-            else:
-                fld['obligation'] = 'optional'
+            fld['obligation'] = {}
+            for lang in config['ckan.locales_offered'].split():
+                with force_locale(lang):
+                    if fld['id'] in pkeys:
+                        fld['obligation'][lang] = _('Mandatory')
+                    elif field.get('excel_required'):
+                        fld['obligation'][lang] = _('Mandatory')
+                    elif field.get('excel_required_formula'):
+                        fld['obligation'][lang] = _('Conditional')
+                    else:
+                        fld['obligation'][lang] = _('Optional')
             for k in ['label', 'description', 'validation', 'obligation']:
                 if k in field:
                     if isinstance(field[k], dict):
                         fld[k] = field[k]
                         continue
-                    fld[k] = OrderedDict()
+                    fld[k] = {}
                     for lang in config['ckan.locales_offered'].split():
-                        request.environ['CKAN_LANG'] = lang
-                        #FIXME: this does not work for Flask??
-                        handle_request(request, g)
-                        fld[k][lang] = _(field[k])
+                        with force_locale(lang):
+                            fld[k][lang] = _(field[k])
 
             fld['datastore_type'] = field['datastore_type']
 
             if fld['id'] in choice_fields:
-                choices = OrderedDict()
+                choices = {}
                 fld['choices'] = choices
                 for ck, cv in choice_fields[fld['id']]:
                     choices[ck] = cv
 
         if not published_resource and 'examples' in chromo:
             ex_record = chromo['examples']['record']
-            example = OrderedDict()
+            example = {}
             for field in chromo['fields']:
                 if field['datastore_id'] in ex_record:
                     example[field['datastore_id']] = ex_record[
