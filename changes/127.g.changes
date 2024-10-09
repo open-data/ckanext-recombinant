@@ -1,0 +1,1 @@
+Uploading an Excel file now requires all worksheets to pass validation for the records to be committed to the database.

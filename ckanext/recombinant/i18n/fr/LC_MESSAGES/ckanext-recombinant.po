@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-04-11 13:12+0000\n"
+"POT-Creation-Date: 2024-09-27 15:13+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -36,95 +36,111 @@ msgid ""
 "instead."
 msgstr ""
 
-#: ckanext/recombinant/logic.py:27
+#: ckanext/recombinant/logic.py:29
 #, python-format
 msgid "dataset type %s already exists for this organization"
 msgstr "Le jeu de données de type %s existe déjà pour cette organisation."
 
-#: ckanext/recombinant/logic.py:145
+#: ckanext/recombinant/logic.py:147
 msgid "Recombinant dataset type not found"
 msgstr "Type de jeux de données recombinant non trouvé"
 
-#: ckanext/recombinant/logic.py:170
+#: ckanext/recombinant/logic.py:172
 msgid "Multiple datasets exist for type {0} org {1}"
 msgstr "Plusieurs jeux de données existent pour le type {0} org {1}."
 
-#: ckanext/recombinant/views.py:64
+#: ckanext/recombinant/validators.py:14
+msgid "Cannot assign foreign keys to a non-recombinant resource."
+msgstr ""
+
+#: ckanext/recombinant/views.py:71
 msgid "No errors found."
 msgstr "Aucune erreur trouvée."
 
-#: ckanext/recombinant/views.py:68
+#: ckanext/recombinant/views.py:75
 msgid "Your file was successfully uploaded into the central system."
 msgstr "Votre fichier a été téléchargé avec succès dans le système central."
 
-#: ckanext/recombinant/views.py:88 ckanext/recombinant/views.py:540
+#: ckanext/recombinant/views.py:95 ckanext/recombinant/views.py:583
 msgid "User {0} not authorized to update resource {1}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:111
+#: ckanext/recombinant/views.py:118
 msgid "Required field"
 msgstr "Champ obligatoire"
 
-#: ckanext/recombinant/views.py:129
+#: ckanext/recombinant/views.py:136
 msgid "Wrong number of fields, expected {num}"
 msgstr "Nombre de champs erroné, prévu {num}"
 
-#: ckanext/recombinant/views.py:141
+#: ckanext/recombinant/views.py:148
 msgid "Invalid fields"
 msgstr "Champs non valides"
 
-#: ckanext/recombinant/views.py:144
+#: ckanext/recombinant/views.py:151
 #, python-format
 msgid "No matching records found \"%s\""
 msgstr "Aucun document correspondant n’a été trouvé \"%s\""
 
-#: ckanext/recombinant/views.py:147
+#: ckanext/recombinant/views.py:154
 msgid "Multiple matching records found"
 msgstr "Plusieurs documents correspondants trouvés"
 
-#: ckanext/recombinant/views.py:180
+#: ckanext/recombinant/views.py:197
 msgid "{num} deleted."
 msgstr "{num} supprimé"
 
-#: ckanext/recombinant/views.py:223 ckanext/recombinant/views.py:234
+#: ckanext/recombinant/views.py:240 ckanext/recombinant/views.py:251
 msgid "Not found"
 msgstr "Non trouvé"
 
-#: ckanext/recombinant/views.py:246 ckanext/recombinant/views.py:483
+#: ckanext/recombinant/views.py:263 ckanext/recombinant/views.py:519
 msgid "Resource not found"
 msgstr "Ressource non trouvée"
 
-#: ckanext/recombinant/views.py:260
+#: ckanext/recombinant/views.py:277
 #, python-format
 msgid "Unauthorized to read resource %s"
 msgstr ""
 
-#: ckanext/recombinant/views.py:284 ckanext/recombinant/views.py:303
+#: ckanext/recombinant/views.py:300 ckanext/recombinant/views.py:328
 msgid "Recombinant dataset_type not found"
 msgstr "Type de jeux de données recombinant_non trouvé"
 
-#: ckanext/recombinant/views.py:314 ckanext/recombinant/views.py:335
+#: ckanext/recombinant/views.py:337 ckanext/recombinant/views.py:359
 msgid "title"
 msgstr "titre"
 
-#: ckanext/recombinant/views.py:315
+#: ckanext/recombinant/views.py:338
 msgid "notes"
 msgstr "notes"
 
-#: ckanext/recombinant/views.py:395
+#: ckanext/recombinant/views.py:374 ckanext/recombinant/views.py:376
+msgid "Mandatory"
+msgstr "Obligatoire"
+
+#: ckanext/recombinant/views.py:378
+msgid "Conditional"
+msgstr "Conditionnel"
+
+#: ckanext/recombinant/views.py:380
+msgid "Optional"
+msgstr "Facultatif"
+
+#: ckanext/recombinant/views.py:431
 msgid "No organizations found"
 msgstr "Aucune organisation trouvée"
 
-#: ckanext/recombinant/views.py:399 ckanext/recombinant/views.py:439
+#: ckanext/recombinant/views.py:435 ckanext/recombinant/views.py:475
 msgid "Recombinant resource_name not found"
 msgstr "Nom de la ressource recombinante_non trouvé"
 
-#: ckanext/recombinant/views.py:445
+#: ckanext/recombinant/views.py:481
 #, python-format
 msgid "User %s not authorized to create packages"
 msgstr ""
 
-#: ckanext/recombinant/views.py:525
+#: ckanext/recombinant/views.py:568
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try"
 " copying your data into the latest version of the template and uploading "
@@ -137,13 +153,13 @@ msgstr ""
 "persiste, envoyez votre fichier Excel à open-ouvert@… afin que nous "
 "puissions faire enquête."
 
-#: ckanext/recombinant/views.py:532
+#: ckanext/recombinant/views.py:575
 msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
 
-#: ckanext/recombinant/views.py:543
+#: ckanext/recombinant/views.py:586
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but "
 "you supplied a sheet for {1}"
@@ -151,7 +167,7 @@ msgstr ""
 "La feuille n'est pas valide pour cette organisation. La feuille doit être"
 " étiquetée pour {0}, mais vous avez fourni une feuille pour {1}"
 
-#: ckanext/recombinant/views.py:559
+#: ckanext/recombinant/views.py:602
 msgid ""
 "This template is out of date. Please try copying your data into the "
 "latest version of the template and uploading again. If this problem "
@@ -163,63 +179,104 @@ msgstr ""
 "persiste, envoyez votre fichier Excel à open-ouvert@tbs-sct.gc.ca afin "
 "que nous puissions trouver le problème."
 
-#: ckanext/recombinant/views.py:605
+#: ckanext/recombinant/views.py:641
+msgid ":"
+msgstr " :"
+
+#: ckanext/recombinant/views.py:655
+msgid "Invalid input syntax for type integer: {}"
+msgstr "Syntaxe d'entrée invalide pour le type entier : {}"
+
+#: ckanext/recombinant/views.py:657
+msgid "Invalid input syntax for type integer"
+msgstr "Syntaxe d'entrée invalide pour le type entier"
+
+#: ckanext/recombinant/views.py:658
 msgid "Sheet {0} Row {1}:"
 msgstr "Feuille {0} Rangée {1} :"
 
-#: ckanext/recombinant/views.py:609
+#: ckanext/recombinant/views.py:662
 msgid "Error while importing data: {0}"
 msgstr "Erreur lors de l’importation des données: {0}"
 
-#: ckanext/recombinant/views.py:612
+#: ckanext/recombinant/views.py:665
 msgid "The template uploaded is empty"
 msgstr "Le modèle que vous avez soumis est vide"
 
-#: ckanext/recombinant/write_excel.py:312
+#: ckanext/recombinant/write_excel.py:322
 msgid "e.g."
 msgstr "ex."
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:96
-#: ckanext/recombinant/write_excel.py:541
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:117
+#: ckanext/recombinant/write_excel.py:555
 #: ckanext/recombinant/write_excel_v2.py:290
 msgid "ID"
 msgstr "Identifiant"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:40
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:56
-#: ckanext/recombinant/write_excel.py:545
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:42
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:61
+#: ckanext/recombinant/write_excel.py:559
 #: ckanext/recombinant/write_excel_v2.py:294
 msgid "Description"
 msgstr "Description"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:44
-#: ckanext/recombinant/write_excel.py:549
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:46
+#: ckanext/recombinant/write_excel.py:563
 #: ckanext/recombinant/write_excel_v2.py:298
 msgid "Obligation"
 msgstr "Obligation"
 
-#: ckanext/recombinant/write_excel.py:553
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:51
+#: ckanext/recombinant/write_excel.py:567
+msgid "Occurrence"
+msgstr "Occurrence"
+
+#: ckanext/recombinant/write_excel.py:571
 msgid "Validation"
 msgstr "Validation"
 
-#: ckanext/recombinant/write_excel.py:557
+#: ckanext/recombinant/write_excel.py:575
 #: ckanext/recombinant/write_excel_v2.py:302
 msgid "Format"
 msgstr "Format"
 
-#: ckanext/recombinant/write_excel.py:561
+#: ckanext/recombinant/write_excel.py:579
 #: ckanext/recombinant/write_excel_v2.py:306
 msgid "Values"
 msgstr "Valeurs"
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:70
-#: ckanext/recombinant/write_excel.py:590
+#: ckanext/recombinant/write_excel.py:608
 msgid "Reference"
 msgstr "Référence"
 
 #: ckanext/recombinant/write_excel_v2.py:287
 msgid "Field Name"
 msgstr "Nom de la zone"
+
+#: ckanext/recombinant/templates/datastore/dictionary.html:14
+msgid "Field {num}."
+msgstr "Champ {num}."
+
+#: ckanext/recombinant/templates/datastore/dictionary.html:16
+msgid "Type Override"
+msgstr "Remplacement du type"
+
+#: ckanext/recombinant/templates/datastore/dictionary.html:20
+msgid "English Label"
+msgstr "Label anglais"
+
+#: ckanext/recombinant/templates/datastore/dictionary.html:25
+msgid "French Label"
+msgstr "Label français"
+
+#: ckanext/recombinant/templates/datastore/dictionary.html:30
+msgid "English Description"
+msgstr "Description en anglais"
+
+#: ckanext/recombinant/templates/datastore/dictionary.html:35
+msgid "French Description"
+msgstr "Description en français"
 
 #: ckanext/recombinant/templates/package/activity.html:6
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:84
@@ -415,35 +472,43 @@ msgstr ""
 msgid "Data Dictionary"
 msgstr "Dictionnaire de données"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:10
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:12
 msgid "Download data dictionary"
 msgstr "Télécharger le dictionnaire de données"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:16
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:18
 msgid "Schema as JSON"
 msgstr "Schéma en JSON"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:37
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:39
 msgid "Label"
 msgstr "Étiquette"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:45
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:47
 msgid "Primary key"
 msgstr "Clé principale"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:46
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:48
 msgid "Required"
 msgstr "obligatoire"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:51
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:56
 msgid "Choices"
 msgstr "Choix"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:55
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:57
+msgid "Show more"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:57
+msgid "Hide"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:60
 msgid "Code"
 msgstr "Code"
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:97
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:118
 msgid "Type"
 msgstr "Type"
 
@@ -492,15 +557,15 @@ msgstr "Téléverser"
 msgid "You must provide a valid file"
 msgstr "Vous devez fournir un fichier valide."
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:37
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:38
 msgid "Submit"
 msgstr "Soumettre"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:38
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:39
 msgid "Check for Errors"
 msgstr "Vérifier les erreurs"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:45
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:46
 msgid ""
 "To ensure the validation rules within the template are maintained, please"
 " paste your data using the “Paste Values” function. This can be done by "

@@ -62,6 +62,14 @@ jobs:
             pip3 install --no-cache --upgrade pip setuptools
             python3 --version
       - run:
+          name: Set CKAN to open-data/ckan@canada-v2.10
+          command: |
+            pip uninstall -y ckan
+            git --git-dir=\/srv\/app\/src\/ckan\/.git --work-tree=\/srv\/app\/src\/ckan\/ remote add canada https://github.com/open-data/ckan.git
+            git --git-dir=\/srv\/app\/src\/ckan\/.git --work-tree=\/srv\/app\/src\/ckan\/ fetch canada canada-v2.10
+            git --git-dir=\/srv\/app\/src\/ckan\/.git --work-tree=\/srv\/app\/src\/ckan\/ checkout -b canada-v2.10 canada/canada-2.10
+            git --git-dir=\/srv\/app\/src\/ckan\/.git --work-tree=\/srv\/app\/src\/ckan\/ pull
+      - run:
           name: Install requirements
           command: |
             pip install setuptools==44.1.0

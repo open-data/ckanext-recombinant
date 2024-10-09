@@ -2,6 +2,7 @@
 
 {% macro recombinant_dataset(activity, root_pkg_dict) %}
   {% set dataset_type = activity.data.package.type or 'dataset' %}
+  {% set root_pkg_dict = root_pkg_dict or {'type': dataset_type} %} {# for purged packages #}
   <span class="dataset">
     {% if root_pkg_dict.type not in h.recombinant_get_types() %}
         {{ h.link_to(activity.data.package.title if activity.data.package else _('unknown'),

@@ -1,0 +1,1 @@
+The DataDictionary form will now show the Recombinant resource's schema as readonly fields. The DataDictionary front-end will now show non-schema fields such as any additional fields added by filter scripts, allowing normal usage of DataDictionary for these fields.

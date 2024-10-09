@@ -1,0 +1,43 @@
+{% ckan_extends %}
+
+{% import 'macros/form.html' as form %}
+
+{% block primary_content_inner %}
+  {% set chromo = h.recombinant_published_resource_chromo(res.id) %}
+  {% if chromo %}
+    <form>
+      {% for recombinant_field in chromo.fields %}
+        {% set _type = recombinant_field.get('datastore_type', '') %}
+        {% if _type == '_text' %}
+          {% set _type = 'text[]' %}
+        {% endif %}
+        <h3>{{ _( "Field {num}.").format(num=loop.index) }} {{ recombinant_field.datastore_id }} ({{ _type }})</h3>
+        {{ form.input('info__' ~ loop.index ~ '__type_override',
+          label=_('Type Override'), id='info__' ~ loop.index ~ '__type_override',
+          value='', placeholder=_type, attrs={'class': 'form-control', 'readonly': true, 'style': 'pointer-events: none;', 'tabindex': '-1'}) }}
+
+        {{ form.input('info__' ~ loop.index ~ '__label_en',
+          label=_('English Label'), id='field-f' ~ loop.index ~ 'label_en',
+          value='', placeholder=h.recombinant_language_text(recombinant_field.get('label', ''), 'en'), classes=['control-full'],
+          attrs={'class': 'form-control', 'readonly': true, 'style': 'pointer-events: none;', 'tabindex': '-1'}) }}
+
+        {{ form.input('info__' ~ loop.index ~ '__label_fr',
+          label=_('French Label'), id='field-f' ~ loop.index ~ 'label_fr',
+          value='', placeholder=h.recombinant_language_text(recombinant_field.get('label', ''), 'fr'), classes=['control-full'],
+          attrs={'class': 'form-control', 'readonly': true, 'style': 'pointer-events: none;', 'tabindex': '-1'}) }}
+
+        {{ form.textarea('info__' ~ loop.index ~ '__notes_en',
+          label=_('English Description'), id='field-d' ~ loop.index ~ 'notes_en',
+          value='', placeholder=h.recombinant_language_text(recombinant_field.get('description', ''), 'en'),
+          attrs={'class': 'form-control', 'readonly': true, 'style': 'pointer-events: none;', 'tabindex': '-1'}) }}
+
+        {{ form.textarea('info__' ~ loop.index ~ '__notes_fr',
+          label=_('French Description'), id='field-d' ~ loop.index ~ 'notes_fr',
+          value='', placeholder=h.recombinant_language_text(recombinant_field.get('description', ''), 'fr'),
+          attrs={'class': 'form-control', 'readonly': true, 'style': 'pointer-events: none;', 'tabindex': '-1'}) }}
+      {% endfor %}
+    </form>
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}

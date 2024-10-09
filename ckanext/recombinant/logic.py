@@ -1,12 +1,14 @@
 from six import string_types
-from ckan.plugins.toolkit import _
+from ckan.plugins.toolkit import _, chained_action, h, side_effect_free
+
+from sqlalchemy import and_
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
 from ckan.model.group import Group
 from ckan.common import asbool
 
-from ckanext.recombinant.tables import get_geno
+from ckanext.recombinant.tables import get_geno, get_chromo
 from ckanext.recombinant.errors import RecombinantException, RecombinantConfigurationError
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
@@ -258,10 +260,23 @@ def _update_datastore(lc, geno, dataset, force_update=False):
 
         trigger_names = _update_triggers(lc, chromo)
 
+        chromo_foreign_keys = chromo.get('datastore_foreign_keys', None)
+        foreign_keys = {}
+        if chromo_foreign_keys:
+            for f_table, field_map in chromo_foreign_keys.items():
+                for _chromo in geno['resources']:
+                    # try to get the resource id from chromo name
+                    if f_table == _chromo['resource_name']:
+                        foreign_keys[resource_ids[_chromo['resource_name']]] = field_map
+                        break
+                else:
+                    foreign_keys[f_table] = field_map
+
         lc.action.datastore_create(
             resource_id=resource_id,
             fields=fields,
             primary_key=chromo.get('datastore_primary_key', []),
+            foreign_keys=foreign_keys,
             indexes=chromo.get('datastore_indexes', []),
             triggers=[{'function': str(f)} for f in trigger_names],
             force=True)
@@ -368,7 +383,8 @@ def datastore_fields(fs, text_types):
     return [{
         'id': f['datastore_id'],
         'type': datastore_column_type(f['datastore_type'], text_types)}
-        for f in fs]
+        for f in fs
+        if not f.get('published_resource_computed_field', False)]
 
 
 def _datastore_match(fs, fields):
@@ -379,3 +395,47 @@ def _datastore_match(fs, fields):
     # XXX: does not check types or extra columns at this time
     existing = set(c['id'] for c in fields)
     return all(f['datastore_id'] in existing for f in fs)
+
+
+@chained_action
+@side_effect_free
+def recombinant_datastore_info(up_func, context, data_dict):
+    """
+    Wraps datastore_info action to add Recombinant schema info to Recombinant resources and Published resources.
+    """
+    info = up_func(context, data_dict)
+    resource_id = data_dict.get('resource_id', data_dict.get('id'))
+    chromo = h.recombinant_published_resource_chromo(resource_id)
+    if not chromo:
+        model = context['model']
+        result = model.Session.query(model.Package.type, model.Resource.name).join(
+            model.Resource,
+            and_(model.Resource.package_id == model.Package.id,
+                model.Resource.id == resource_id)
+        ).all()
+
+        if result:
+            package_type = result[0][0]
+            recombinant_resource_name = result[0][1]
+
+        if package_type not in h.recombinant_get_types():
+            return info
+
+        chromo = get_chromo(recombinant_resource_name)
+
+    keyed_chromo = {}
+    for field in chromo['fields']:
+        keyed_chromo[field['datastore_id']] = field
+
+    for field in info.get('fields', []):
+        if field['id'] in keyed_chromo:
+            field['type'] = keyed_chromo[field['id']].get('datastore_type')
+            field['info'] = {
+                'label_en': h.recombinant_language_text(keyed_chromo[field['id']].get('label'), 'en'),
+                'label_fr': h.recombinant_language_text(keyed_chromo[field['id']].get('label'), 'fr'),
+                'notes_en': h.recombinant_language_text(keyed_chromo[field['id']].get('description'), 'en'),
+                'notes_fr': h.recombinant_language_text(keyed_chromo[field['id']].get('description'), 'fr'),
+                'type_override': keyed_chromo[field['id']].get('datastore_type'),
+            }
+
+    return info
