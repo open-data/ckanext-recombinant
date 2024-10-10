@@ -725,9 +725,10 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         elif crange and field['datastore_type'] == '_text':
             # multiple comma-separated choices
             # validate by counting choices against matches
+            # NOTE: use FIND instead of SEARCH for case sensitivity
             fmla = (
                 'LEN(SUBSTITUTE({{cell}}," ",""))+1-SUMPRODUCT(--ISNUMBER('
-                'SEARCH(","&{r}&",",SUBSTITUTE(","&{{cell}}&","," ",""))),'
+                'FIND(","&{r}&",",SUBSTITUTE(","&{{cell}}&","," ",""))),'
                 'LEN({r})+1)').format(r=crange)
         elif crange and field.get('excel_full_text_choices', False):
             # 'code:text'-style choices, accept 'code' and 'code:anything'
