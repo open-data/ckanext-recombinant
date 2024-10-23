@@ -333,7 +333,11 @@ def _schema_json(dataset_type, published_resource=False):
     schema['title'] = {}
     schema['notes'] = {}
 
-    for lang in config['ckan.locales_offered'].split():
+    _locales_offered = config.get('ckan.locales_offered', ['en'])
+    if not isinstance(_locales_offered, list):
+        _locales_offered = _locales_offered.split()
+
+    for lang in _locales_offered:
         with force_locale(lang):
             schema['title'][lang] = _(geno['title'])
             schema['notes'][lang] = _(geno['notes'])
@@ -355,7 +359,7 @@ def _schema_json(dataset_type, published_resource=False):
 
         resource['resource_name'] = chromo['resource_name']
         resource['title'] = {}
-        for lang in config['ckan.locales_offered'].split():
+        for lang in _locales_offered:
             with force_locale(lang):
                 resource['title'][lang] = _(chromo['title'])
 
@@ -372,7 +376,7 @@ def _schema_json(dataset_type, published_resource=False):
             resource['fields'].append(fld)
             fld['id'] = field['datastore_id']
             fld['obligation'] = {}
-            for lang in config['ckan.locales_offered'].split():
+            for lang in _locales_offered:
                 with force_locale(lang):
                     if fld['id'] in pkeys:
                         fld['obligation'][lang] = _('Mandatory')
@@ -388,7 +392,7 @@ def _schema_json(dataset_type, published_resource=False):
                         fld[k] = field[k]
                         continue
                     fld[k] = {}
-                    for lang in config['ckan.locales_offered'].split():
+                    for lang in _locales_offered:
                         with force_locale(lang):
                             fld[k][lang] = _(field[k])
 

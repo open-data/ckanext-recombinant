@@ -208,7 +208,10 @@ def excel_data_dictionary(geno, published_resource=False):
             'fgColor': 'FFDFE2DB'}}
 
     _build_styles(book, geno)
-    for lang in config.get('ckan.locales_offered', ['en']):
+    _locales_offered = config.get('ckan.locales_offered', ['en'])
+    if not isinstance(_locales_offered, list):
+        _locales_offered = _locales_offered.split()
+    for lang in _locales_offered:
         if sheet is None:
             sheet = book.create_sheet()
 
