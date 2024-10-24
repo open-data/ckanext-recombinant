@@ -159,15 +159,10 @@ def delete_records(id, resource_id):
             ok_filters.append(dict(filters))
 
     if 'cancel' in request.form:
-        return render('recombinant/resource_edit.html',
-            extra_vars={
-                'delete_errors': [],
-                'dataset': dataset,
-                'dataset_type': dataset['dataset_type'],
-                'resource': res,
-                'organization': org,
-                'filters': {'bulk-delete': u'\n'.join(ok_records)},
-                'action': 'edit'})
+        return h.redirect_to(
+            'recombinant.preview_table',
+            resource_name=res['name'],
+            owner_org=org['name'],)
     if not 'confirm' in request.form:
         return render('recombinant/confirm_delete.html',
             extra_vars={
@@ -469,6 +464,8 @@ def preview_table(resource_name, owner_org, errors=None):
         return h.redirect_to('user.login')
 
     org_object = Group.get(owner_org)
+    if not org_object:
+        return abort(404, _('Organization not found'))
     if org_object.name != owner_org:
         return h.redirect_to(
             'recombinant.preview_table',
