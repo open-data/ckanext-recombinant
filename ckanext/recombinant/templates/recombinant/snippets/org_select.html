@@ -1,16 +1,18 @@
-<div class="row form-group control-medium control-select">
-  <div class="col-sm-2">
+<div class="{% block container_classes %} row form-group control-medium control-select {% endblock %}">
+  <div class="{% block label_classes %} col-sm-2 {% endblock %}">
     <label class="control-label " for="org-select">{{ _('Organization') }}</label>
   </div>
-  <div class="col-sm-10">
-    <select id="org-select" name="org_select" class="form-control form-select"
-      onchange="window.location.href=this.value">
-      {% for org in h.organizations_available('read') %}
-      <option value="{{ h.url_for('recombinant.preview_table', resource_name=resource_name, owner_org=org.name) }}"
-      {% if selected.name == org.name %}selected="selected"{% endif %}
-      >{{ organization_display_name(org) }}</option>
-      {% endfor %}
-    </select>
+  <div class="{% block select_classes %} col-sm-10 {% endblock %}">
+    {% block select_field %}
+      <select id="org-select" name="org_select" class="form-control form-select"
+        onchange="window.location.href=this.value">
+        {% for org in h.organizations_available('read') %}
+        <option value="{{ h.url_for('recombinant.preview_table', resource_name=resource_name, owner_org=org.name) }}"
+        {% if selected.name == org.name %}selected="selected"{% endif %}
+        >{{ organization_display_name(org, 60) }}</option>
+        {% endfor %}
+      </select>
+    {% endblock %}
   </div>
 </div>
 
