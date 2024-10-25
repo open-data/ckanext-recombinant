@@ -81,8 +81,7 @@
               <summary><span class="glyphicon glyphicon-wrench"></span>
                 {{ _("API Access") }}
               </summary>
-              {% snippet "recombinant/snippets/api_access.html",
-                pkg=dataset, username=c.userobj.name, resource=resource %}
+              {% snippet "recombinant/snippets/api_access.html", resource_id=resource.id, resource_name=resource.name, is_modal=false %}
             </details>
             <details id="activity">
               <summary><span class="glyphicon glyphicon-time"></span>
@@ -142,18 +141,12 @@
   {% endblock action_panels %}
 {% endblock %}
 
-{# syntax hilighting for API docs above #}
 {% block links %}
-{{ super() }}
-<style>
-.code-block pre {display: none}
-.code-block.lang-python pre.python {display: block}
-.code-block.lang-curl pre.curl {display: block}
-.code-block.lang-powershell pre.powershell {display: block}
-</style>
+  {{ super() }}
+  {% asset 'recombinant/main_css' %}
 {% endblock %}
 
-{%- block scripts %}
+{%- block scripts -%}
   {{ super() }}
- <script src="{{ h.url_for_static('js/code_block_buttons.js') }}"></script>
-{% endblock %}
+  {% asset 'recombinant/code_block_buttons' %}
+{%- endblock -%}

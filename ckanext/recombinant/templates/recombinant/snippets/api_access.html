@@ -1,44 +1,58 @@
-{% set resource_id = resource.id %}
-{% set profile_url = h.url_for('user.read', id=username) %}
-<h3>{{ _("API access examples") }}</h3>
-<div class="wb-prettify all-pre">
-  <button type="button" class="btn btn-default btn-code-lang lang-curl active" onclick="langBtnFn.apply(this)"><span class="sr-only">Show </span>curl<span class="sr-only"> Examples</span></button>
-  <button type="button" class="btn btn-default btn-code-lang lang-powershell" onclick="langBtnFn.apply(this)"><span class="sr-only">Show </span>PowerShell<span class="sr-only"> Examples</span></button>
-  <button type="button" class="btn btn-default btn-code-lang lang-python" onclick="langBtnFn.apply(this)"><span class="sr-only">Show </span>Python<span class="sr-only"> Examples</span></button>
+{% set profile_url = h.url_for('user.read', id=g.userobj.name) %}
+{% if not is_modal %}
+  <h3>{{ _("API access examples") }}</h3>
+{% endif %}
+<div class="wb-prettify all-pre" id="api-access-example-code-control">
+  <label for="curl" class="mrgn-rght-md">
+    <input type="radio" name="api-access-example-code" id="curl" value="curl" checked/>
+    {% trans %}<span class="sr-only">Show </span><span>cURL</span><span class="sr-only"> examples</span>{% endtrans %}
+  </label>
+  <label for="powershell" class="mrgn-rght-md">
+    <input type="radio" name="api-access-example-code" id="powershell" value="powershell"/>
+    {% trans %}<span class="sr-only">Show </span><span>PowerShell</span><span class="sr-only"> examples</span>{% endtrans %}
+  </label>
+  <label for="python" class="mrgn-rght-md">
+    <input type="radio" name="api-access-example-code" id="python" value="python"/>
+    {% trans %}<span class="sr-only">Show </span><span>Python</span><span class="sr-only"> examples</span>{% endtrans %}
+  </label>
 </div>
-<div class="code-block lang-curl">
-  <h4>{{ _("Retrieve Records") }}</h4>
-  <p>{% trans %}Access this data through the <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api"     >CKAN Datastore API</a> with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}
-  </p>
-  <p>{% trans %}The CKAN API uses a JSON-RPC style, where you post a JSON object and receive another JSON object in response.{% endtrans %}</p>
 
-  <p>{% trans %}Retrieving records requires an API key. Your API key is shown on your <a href="{{ profile_url }}">profile page</a>.{% endtrans %}
-  </p>
-
-  <p>{% trans %}Do not include your API key in any code shared with other people. Use a configuration file or environment variable to let each user input their own key when they use your tool. Your API key is <em>equivalent to your password</em> and may be used to perform any action your user can on this site. All actions made with your API key will be logged as actions you performed.{% endtrans %}
-  </p>
-
-  <h5>{{ _("Example:") }}</h5>
-  <pre class="curl"
+<div class="accordion mrgn-tp-md" id="api-access-accordion">
+  <div class="accordion-item">
+    <h4 class="accordion-heading">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-get" aria-expanded="true" aria-controls="collapse-get">{{ _('Retrieve Records') }} &raquo;</button>
+    </h4>
+    <div id="collapse-get" class="accordion-collapse collapse show" aria-labelledby="collapse-get" data-bs-parent="#api-access-accordion">
+      <div class="accordion-body">
+        <p>{% trans %}Access this data through the <a href="http://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api">CKAN Datastore API</a> with <code>resource_id="{{ resource_id }}"</code>{% endtrans %}</p>
+        <p>{% trans %}The CKAN API uses a JSON-RPC style, where you post a JSON object and receive another JSON object in response.{% endtrans %}</p>
+        <p>{% trans %}Retrieving records requires an API key. Your API key is shown on your <a href="{{ profile_url }}">profile page</a>.{% endtrans %}</p>
+        <p>{% trans %}Do not include your API key in any code shared with other people. Use a configuration file or environment variable to let each user input their own key when they use your tool. Your API key is <em>equivalent to your password</em> and may be used to perform any action your user can on this site. All actions made with your API key will be logged as actions you performed.{% endtrans %}</p>
+        <strong>{{ _("Example:") }}</strong>
+        <figure class="curl">
+        <pre
 >curl {{ g.site_url }}/api/action/datastore_search \
   -H"Authorization:$API_KEY" -d '
 {
   "resource_id": "{{ resource_id }}",
-  "sort": {{ h.recombinant_example(resource.name, 'sort') }},
+  "sort": {{ h.recombinant_example(resource_name, 'sort') }},
   "limit": 10,
   "filters": {
-{{ h.recombinant_example(resource.name, 'filters', indent=4) }}
+{{ h.recombinant_example(resource_name, 'filters', indent=4) }}
   }
 }'
 </pre>
-  <pre class="powershell"
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;cURL</figcaption>
+</figure>
+<figure class="powershell">
+<pre
 >$json = @'
 {
   "resource_id": "{{ resource_id }}",
-  "sort": {{ h.recombinant_example(resource.name, 'sort') }},
+  "sort": {{ h.recombinant_example(resource_name, 'sort') }},
   "limit": 10,
   "filters": {
-{{ h.recombinant_example(resource.name, 'filters', indent=4) }}
+{{ h.recombinant_example(resource_name, 'filters', indent=4) }}
   }
 }
 '@
@@ -46,75 +60,107 @@ $response = Invoke-RestMethod {{ g.site_url }}/api/action/datastore_search `
   -Method Post -Body $json -Headers @{"Authorization"="$API_KEY"}
 $response.result.records
 </pre>
-  <pre class="python"
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;PowerShell</figcaption>
+</figure>
+<figure class="python">
+<pre
 >from ckanapi import RemoteCKAN
 from pprint import pprint
 ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
 result = ckan.action.datastore_search(
     resource_id="{{ resource_id }}",
-    sort={{ h.recombinant_example(resource.name, 'sort') }},
+    sort={{ h.recombinant_example(resource_name, 'sort') }},
     limit=10,
     filters={
-{{ h.recombinant_example(resource.name, 'filters', indent=8) }}
+{{ h.recombinant_example(resource_name, 'filters', indent=8) }}
     }
 )
 pprint(result['records'])</pre>
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;Python</figcaption>
+</figure>
+      </div><!-- accordion-body -->
+    </div><!-- accordion-collapse -->
+  </div><!-- accordion-item -->
 
-  <h4>{{ _("Create and Update Records") }}</h4>
-  <p>{% trans %}Create and update records with the "datastore_upsert" endpoint.{% endtrans %}</p>
-
-  <h5>{{ _("Example:") }}</h5>
-  <pre class="curl"
+  <div class="accordion-item">
+    <h4 class="accordion-heading">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-upsert" aria-expanded="false" aria-controls="collapse-upsert">{{ _('Create and Update Records') }} &raquo;</button>
+    </h4>
+    <div id="collapse-upsert"  class="accordion-collapse collapse" aria-labelledby="collapse-upsert" data-bs-parent="#api-access-accordion">
+      <div class="accordion-body">
+        <p>{% trans %}Create and update records with the "datastore_upsert" endpoint.{% endtrans %}</p>
+        <strong>{{ _("Example:") }}</strong>
+        <figure class="curl">
+        <pre
 >curl {{ g.site_url }}/api/action/datastore_upsert \
   -H"Authorization:$API_KEY" -d '
 {
   "resource_id": "{{ resource_id }}",
   "records": [{
-{{ h.recombinant_example(resource.name, 'record', indent=4) }}
+{{ h.recombinant_example(resource_name, 'record', indent=4) }}
   }]
 }'</pre>
-  <pre class="powershell"
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;cURL</figcaption>
+</figure>
+<figure class="powershell">
+<pre
 >$json = @'
 {
   "resource_id": "{{ resource_id }}",
   "records": [{
-{{ h.recombinant_example(resource.name, 'record', indent=4) }}
+{{ h.recombinant_example(resource_name, 'record', indent=4) }}
   }]
 }
 '@
 $response = Invoke-RestMethod {{ g.site_url }}/api/action/datastore_upsert `
   -Method Post -Body $json -Headers @{"Authorization"="$API_KEY"}
 </pre>
-  <pre class="python"
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;PowerShell</figcaption>
+</figure>
+<figure class="python">
+<pre
 >from ckanapi import RemoteCKAN
 ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
 result = ckan.action.datastore_upsert(
     resource_id="{{ resource_id }}",
     records=[{
-{{ h.recombinant_example(resource.name, 'record', indent=8) }}
+{{ h.recombinant_example(resource_name, 'record', indent=8) }}
     }]
 )</pre>
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;Python</figcaption>
+</figure>
+      </div><!-- accordion-body -->
+    </div><!-- accordion-collapse -->
+  </div><!-- accordion-item -->
 
-  <h4>{{ _("Delete Records") }}</h4>
-  <p>{% trans %}First verify that the record you would like to remove is present with the "datastore_search" endpoint{% endtrans %}<p>
-
-  <h5>{{ _("Example:") }}</h5>
-  <pre class="curl"
+  <div class="accordion-item">
+    <h4 class="accordion-heading">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-delete" aria-expanded="false" aria-controls="collapse-delete">{{ _('Delete Records') }} &raquo;</button>
+    </h4>
+    <div id="collapse-delete"  class="accordion-collapse collapse" aria-labelledby="collapse-delete" data-bs-parent="#api-access-accordion">
+      <div class="accordion-body">
+        <p>{% trans %}First verify that the record you would like to remove is present with the "datastore_search" endpoint{% endtrans %}<p>
+        <strong>{{ _("Example:") }}</strong>
+        <figure class="curl">
+        <pre
 >curl {{ g.site_url }}/api/action/datastore_search \
   -H"Authorization:$API_KEY" -d '
 {
   "resource_id": "{{ resource_id }}",
   "filters": {
-{{ h.recombinant_example(resource.name, 'filter_one', indent=4) }}
+{{ h.recombinant_example(resource_name, 'filter_one', indent=4) }}
   }
 }'
 </pre>
-  <pre class="powershell"
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;cURL</figcaption>
+</figure>
+<figure class="powershell">
+<pre
 >$json = @'
 {
   "resource_id": "{{ resource_id }}",
   "records": [{
-{{ h.recombinant_example(resource.name, 'filter_one', indent=4) }}
+{{ h.recombinant_example(resource_name, 'filter_one', indent=4) }}
   }]
 }
 '@
@@ -122,52 +168,67 @@ $response = Invoke-RestMethod {{ g.site_url }}/api/action/datastore_search `
   -Method Post -Body $json -Headers @{"Authorization"="$API_KEY"}
 $response.result.records
 </pre>
-  <pre class="python"
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;PowerShell</figcaption>
+</figure>
+<figure class="python">
+<pre
 >from ckanapi import RemoteCKAN
 from pprint import pprint
 ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
 result = ckan.action.datastore_search(
     resource_id="{{ resource_id }}",
     filters={
-{{ h.recombinant_example(resource.name, 'filter_one', indent=8) }}
+{{ h.recombinant_example(resource_name, 'filter_one', indent=8) }}
     }
 )
 pprint(result['records'])</code></pre>
-
-  <p>{% trans %}Remove the record returned by passing the same parameters to the "datastore_records_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
-
-  <h5>{{ _("Example:") }}</h5>
-  <pre class="curl"
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;Python</figcaption>
+</figure>
+        <p>{% trans %}Remove the record returned by passing the same parameters to the "datastore_records_delete" endpoint instead of "datastore_search".{% endtrans %}</p>
+        <strong>{{ _("Example:") }}</strong>
+        <figure class="curl">
+        <pre
 >curl {{ g.site_url }}/api/action/datastore_records_delete \
  -H"Authorization:$API_KEY" -d '
 {
   "resource_id": "{{ resource_id }}",
   "filters": {
-{{ h.recombinant_example(resource.name, 'filter_one', indent=4) }}
+{{ h.recombinant_example(resource_name, 'filter_one', indent=4) }}
   }
 }'
 </pre>
-  <pre class="powershell"
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;cURL</figcaption>
+</figure>
+<figure class="powershell">
+<pre
 >$json = @'
 {
   "resource_id": "{{ resource_id }}",
   "filters": {
-{{ h.recombinant_example(resource.name, 'filter_one', indent=4) }}
+{{ h.recombinant_example(resource_name, 'filter_one', indent=4) }}
   }
 '@
 >$response = Invoke-RestMethod {{ g.site_url }}/api/action/datastore_records_delete `
   -Method Post -Body $json -Headers @{"Authorization"="$API_KEY"}
 </pre>
-  <pre class="python"
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;PowerShell</figcaption>
+</figure>
+<figure class="python">
+<pre
 >from ckanapi import RemoteCKAN
 ckan = RemoteCKAN('{{ g.site_url }}', apikey=API_KEY)
 ckan.action.datastore_records_delete(
     resource_id="{{ resource_id }}",
     filters={
-{{ h.recombinant_example(resource.name, 'filter_one', indent=8) }}
+{{ h.recombinant_example(resource_name, 'filter_one', indent=8) }}
     }
 )</pre>
-</div>
-<p>
-{% trans %}If you have modified these API Access instructions for another programming language please send them to <a href="mailto:open-ouvert@tbs-sct.gc.ca">open-ouvert@tbs-sct.gc.ca</a> and we may be able to post them here as well. {% endtrans %}
-</p>
+<figcaption><i class="fa fa-code" aria-hidden="true"></i>&nbsp;Python</figcaption>
+</figure>
+      </div><!-- accordion-body -->
+    </div><!-- accordion-collapse -->
+  </div><!-- accordion-item -->
+
+</div><!-- accordion -->
+
+<p>{% trans %}If you have modified these API Access instructions for another programming language please send them to <a href="mailto:open-ouvert@tbs-sct.gc.ca">open-ouvert@tbs-sct.gc.ca</a> and we may be able to post them here as well.{% endtrans %}</p>
