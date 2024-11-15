@@ -63,7 +63,7 @@ msgstr "Votre fichier a été téléchargé avec succès dans le système centra
 
 #: ckanext/recombinant/views.py:96 ckanext/recombinant/views.py:588
 msgid "User {0} not authorized to update resource {1}"
-msgstr ""
+msgstr "L'utilisateur {0} n'est pas autorisé à mettre à jour la ressource {1}"
 
 #: ckanext/recombinant/views.py:119
 msgid "Required field"
@@ -101,7 +101,7 @@ msgstr "Ressource non trouvée"
 #: ckanext/recombinant/views.py:273
 #, python-format
 msgid "Unauthorized to read resource %s"
-msgstr ""
+msgstr "Vous n'êtes pas autorisé à lire la ressource %s"
 
 #: ckanext/recombinant/views.py:296 ckanext/recombinant/views.py:324
 msgid "Recombinant dataset_type not found"
@@ -142,7 +142,7 @@ msgstr "Organisation non trouvée"
 #: ckanext/recombinant/views.py:486
 #, python-format
 msgid "User %s not authorized to create packages"
-msgstr ""
+msgstr "L'utilisateur %s n'est pas autorisé à enregistrer des jeux de données"
 
 #: ckanext/recombinant/views.py:573
 msgid ""
@@ -520,11 +520,11 @@ msgstr "Choix"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:57
 msgid "Show more"
-msgstr ""
+msgstr "Afficher plus"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:57
 msgid "Hide"
-msgstr ""
+msgstr "Cacher"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:60
 msgid "Code"
@@ -603,11 +603,11 @@ msgstr ""
 #: ckanext/recombinant/templates/snippets/stream.html:8
 #: ckanext/recombinant/templates/snippets/stream.html:12
 msgid "unknown"
-msgstr ""
+msgstr "inconnu"
 
 #: ckanext/recombinant/templates/snippets/activities/changed_package.html:11
 msgid "{actor} updated the dataset {dataset}"
-msgstr ""
+msgstr "{actor} a mis à jour le dossier {dataset}"
 
 #: ckanext/recombinant/templates/snippets/activities/changed_package.html:21
 #: ckanext/recombinant/templates/snippets/activities/new_package.html:21
@@ -616,11 +616,11 @@ msgstr ""
 
 #: ckanext/recombinant/templates/snippets/activities/changed_package.html:25
 msgid "Changes"
-msgstr ""
+msgstr "Modifications"
 
 #: ckanext/recombinant/templates/snippets/activities/new_package.html:11
 msgid "{actor} created the dataset {dataset}"
-msgstr ""
+msgstr "{actor} a créé le dosier {dataset}"
 
 #~ msgid "No matching records found %s"
 #~ msgstr ""
