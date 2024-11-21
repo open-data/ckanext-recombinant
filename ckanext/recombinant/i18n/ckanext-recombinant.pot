@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-09-27 15:13+0000\n"
+"POT-Creation-Date: 2024-11-21 21:09+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -58,7 +58,7 @@ msgstr ""
 msgid "Your file was successfully uploaded into the central system."
 msgstr ""
 
-#: ckanext/recombinant/views.py:95 ckanext/recombinant/views.py:583
+#: ckanext/recombinant/views.py:95 ckanext/recombinant/views.py:588
 msgid "User {0} not authorized to update resource {1}"
 msgstr ""
 
@@ -91,7 +91,7 @@ msgstr ""
 msgid "Not found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:263 ckanext/recombinant/views.py:519
+#: ckanext/recombinant/views.py:263 ckanext/recombinant/views.py:524
 msgid "Resource not found"
 msgstr ""
 
@@ -112,32 +112,32 @@ msgstr ""
 msgid "notes"
 msgstr ""
 
-#: ckanext/recombinant/views.py:374 ckanext/recombinant/views.py:376
+#: ckanext/recombinant/views.py:379 ckanext/recombinant/views.py:381
 msgid "Mandatory"
 msgstr ""
 
-#: ckanext/recombinant/views.py:378
+#: ckanext/recombinant/views.py:383
 msgid "Conditional"
 msgstr ""
 
-#: ckanext/recombinant/views.py:380
+#: ckanext/recombinant/views.py:385
 msgid "Optional"
 msgstr ""
 
-#: ckanext/recombinant/views.py:431
+#: ckanext/recombinant/views.py:436
 msgid "No organizations found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:435 ckanext/recombinant/views.py:475
+#: ckanext/recombinant/views.py:440 ckanext/recombinant/views.py:480
 msgid "Recombinant resource_name not found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:481
+#: ckanext/recombinant/views.py:486
 #, python-format
 msgid "User %s not authorized to create packages"
 msgstr ""
 
-#: ckanext/recombinant/views.py:568
+#: ckanext/recombinant/views.py:573
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try "
 "copying your data into the latest version of the template and uploading "
@@ -145,92 +145,97 @@ msgid ""
 "sct.gc.ca so we may investigate."
 msgstr ""
 
-#: ckanext/recombinant/views.py:575
+#: ckanext/recombinant/views.py:580
 msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
 
-#: ckanext/recombinant/views.py:586
+#: ckanext/recombinant/views.py:591
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but you "
 "supplied a sheet for {1}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:602
+#: ckanext/recombinant/views.py:607
 msgid ""
 "This template is out of date. Please try copying your data into the latest "
 "version of the template and uploading again. If this problem continues, send "
 "your Excel file to open-ouvert@tbs-sct.gc.ca so we may investigate."
 msgstr ""
 
-#: ckanext/recombinant/views.py:641
+#: ckanext/recombinant/views.py:646
 msgid ":"
 msgstr ""
 
-#: ckanext/recombinant/views.py:655
+#: ckanext/recombinant/views.py:660
 msgid "Invalid input syntax for type integer: {}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:657
+#: ckanext/recombinant/views.py:662
 msgid "Invalid input syntax for type integer"
 msgstr ""
 
-#: ckanext/recombinant/views.py:658
+#: ckanext/recombinant/views.py:663
 msgid "Sheet {0} Row {1}:"
 msgstr ""
 
-#: ckanext/recombinant/views.py:662
+#: ckanext/recombinant/views.py:667
 msgid "Error while importing data: {0}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:665
+#: ckanext/recombinant/views.py:670
 msgid "The template uploaded is empty"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:322
+#: ckanext/recombinant/write_excel.py:320
 msgid "e.g."
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:117
-#: ckanext/recombinant/write_excel.py:555 ckanext/recombinant/write_excel_v2.py:290
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:120
+#: ckanext/recombinant/write_excel.py:553 ckanext/recombinant/write_excel_v2.py:291
 msgid "ID"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:42
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:61
-#: ckanext/recombinant/write_excel.py:559 ckanext/recombinant/write_excel_v2.py:294
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:64
+#: ckanext/recombinant/write_excel.py:557 ckanext/recombinant/write_excel_v2.py:295
 msgid "Description"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:46
-#: ckanext/recombinant/write_excel.py:563 ckanext/recombinant/write_excel_v2.py:298
+#: ckanext/recombinant/write_excel.py:561 ckanext/recombinant/write_excel_v2.py:299
 msgid "Obligation"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:51
-#: ckanext/recombinant/write_excel.py:567
+#: ckanext/recombinant/write_excel.py:565
 msgid "Occurrence"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:571
+#: ckanext/recombinant/write_excel.py:569
 msgid "Validation"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:575 ckanext/recombinant/write_excel_v2.py:302
+#: ckanext/recombinant/write_excel.py:573 ckanext/recombinant/write_excel_v2.py:303
 msgid "Format"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:579 ckanext/recombinant/write_excel_v2.py:306
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:54
+#: ckanext/recombinant/write_excel.py:577
+msgid "Character Limit"
+msgstr ""
+
+#: ckanext/recombinant/write_excel.py:581 ckanext/recombinant/write_excel_v2.py:307
 msgid "Values"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:70
-#: ckanext/recombinant/write_excel.py:608
+#: ckanext/recombinant/write_excel.py:610
 msgid "Reference"
 msgstr ""
 
-#: ckanext/recombinant/write_excel_v2.py:287
+#: ckanext/recombinant/write_excel_v2.py:288
 msgid "Field Name"
 msgstr ""
 
@@ -435,23 +440,23 @@ msgstr ""
 msgid "Required"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:56
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:59
 msgid "Choices"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:57
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:60
 msgid "Show more"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:57
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:60
 msgid "Hide"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:60
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:63
 msgid "Code"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:118
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:121
 msgid "Type"
 msgstr ""
 
@@ -516,8 +521,8 @@ msgid ""
 "Text</kbd>."
 msgstr ""
 
-#: ckanext/recombinant/templates/snippets/activity_stream.html:7
-#: ckanext/recombinant/templates/snippets/activity_stream.html:11
+#: ckanext/recombinant/templates/snippets/activity_stream.html:8
+#: ckanext/recombinant/templates/snippets/activity_stream.html:12
 msgid "unknown"
 msgstr ""
 

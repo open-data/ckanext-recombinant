@@ -572,6 +572,10 @@ def _append_field_ref_rows(refs, field, link):
         refs.append(('attr', [
             _('Format'),
             recombinant_language_text(field['format_type'])]))
+    if field.get('max_chars'):
+        refs.append(('attr', [
+            _('Character Limit'),
+            field['max_chars']]))
 
 def _append_field_choices_rows(refs, choices, full_text_choices):
     refs.append(('choice heading', [_('Values')]))
