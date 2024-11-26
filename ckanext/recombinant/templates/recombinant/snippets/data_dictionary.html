@@ -51,6 +51,9 @@
         {% call dictionary_field(_('Occurrence')) %}
           {{ h.recombinant_language_text(field.get('occurrence', '')) }}
         {% endcall %}
+        {% call dictionary_field(_('Character Limit')) %}
+          {{ h.recombinant_language_text(field.get('max_chars', '')) }}
+        {% endcall %}
         {% set choices = choice_fields.get(field.datastore_id) %}
         {% if choices %}
           {% call dictionary_field(_('Choices')) %}
