@@ -370,6 +370,8 @@ def _schema_json(dataset_type, published_resource=False):
             fld = {}
             resource['fields'].append(fld)
             fld['id'] = field['datastore_id']
+            if field.get('max_chars'):
+                fld['character_limit'] = field['max_chars']
             fld['obligation'] = {}
             for lang in _locales_offered:
                 with force_locale(lang):
