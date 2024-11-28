@@ -23,11 +23,13 @@ msgstr ""
 #, python-format
 msgid "User %s not authorized to modify Recombinant type: %s"
 msgstr ""
+"Utilisateur %s non autorisé à modifier le type Recombinant : %s"
 
 #: ckanext/recombinant/auth.py:32
 #, python-format
 msgid "User %s not authorized to create Recombinant packages: %s"
 msgstr ""
+"Utilisateur %s non autorisé à créer des ensemble recombinants : %s"
 
 #: ckanext/recombinant/auth.py:51
 #, python-format
@@ -35,6 +37,8 @@ msgid ""
 "Cannot delete Datastore for type: %s. Use datastore_records_delete "
 "instead."
 msgstr ""
+"Impossible de supprimer l’entrepôt de données pour le type : %s."
+" Utilisez plutôt datastore_records_delete."
 
 #: ckanext/recombinant/logic.py:29
 #, python-format
@@ -52,6 +56,8 @@ msgstr "Plusieurs jeux de données existent pour le type {0} org {1}."
 #: ckanext/recombinant/validators.py:14
 msgid "Cannot assign foreign keys to a non-recombinant resource."
 msgstr ""
+"Impossible d'attribuer des clés étrangères à une ressource non "
+"recombinante."
 
 #: ckanext/recombinant/views.py:72
 msgid "No errors found."
@@ -162,6 +168,8 @@ msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
+"Fichier non valide pour ce type de données. La feuille doit être étiquetée "
+"\"{0}\", mais vous avez fourni une feuille étiquetée \"{1}\"
 
 #: ckanext/recombinant/views.py:593
 msgid ""
@@ -381,18 +389,21 @@ msgid ""
 "<span class=\"sr-only\">Show </span><span>cURL</span><span class=\"sr-"
 "only\"> examples</span>"
 msgstr ""
+"<span class=\"sr-only\">Montrez des exemples </span><span>cURL</span>"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:12
 msgid ""
 "<span class=\"sr-only\">Show </span><span>PowerShell</span><span class"
 "=\"sr-only\"> examples</span>"
 msgstr ""
+"<span class=\"sr-only\">Montrez des exemples </span><span>PowerShell</span>"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:16
 msgid ""
 "<span class=\"sr-only\">Show </span><span>Python</span><span class=\"sr-"
 "only\"> examples</span>"
 msgstr ""
+"<span class=\"sr-only\">Montrez des exemples </span><span>Python</span>"
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:23
 msgid "Retrieve Records"
@@ -617,7 +628,7 @@ msgstr "{actor} a mis à jour le dossier {dataset}"
 #: ckanext/recombinant/templates/snippets/activities/changed_package.html:21
 #: ckanext/recombinant/templates/snippets/activities/new_package.html:21
 msgid "View this version"
-msgstr ""
+msgstr "Consultez cette version"
 
 #: ckanext/recombinant/templates/snippets/activities/changed_package.html:25
 msgid "Changes"
