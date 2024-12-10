@@ -449,7 +449,8 @@ def recombinant_datastore_upsert(up_func, context, data_dict):
     try:
         up_func(context, data_dict)
     except ValidationError as e:
-        _error_dict = e.error_dict
+        _error_dict = dict(e.error_dict)
+        _error_dict['records'] = dict(_error_dict['records'])
         if 'records' not in _error_dict:
             raise
         for record_errs in _error_dict['records']:
