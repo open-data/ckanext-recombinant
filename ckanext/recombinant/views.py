@@ -246,7 +246,10 @@ def template(dataset_type, lang, owner_org):
     except ckanapi.NotFound:
         return abort(404, _('Not found'))
 
-    book = excel_template(dataset_type, org)
+    try:
+        book = excel_template(dataset_type, org)
+    except RecombinantException as e:
+        return abort(400, _('Unable to download template.\n%s') % e)
 
     if request.method == 'POST':
         filters = {}
