@@ -447,13 +447,15 @@ def recombinant_datastore_upsert(up_func, context, data_dict):
     Wraps datastore_upsert action to split Validation Errors with format_trigger_error.
     """
     try:
-        up_func(context, data_dict)
+        return up_func(context, data_dict)
     except ValidationError as e:
         _error_dict = dict(e.error_dict)
-        _error_dict['records'] = dict(_error_dict['records'])
         if 'records' not in _error_dict:
             raise
+        _error_dict['records'] = list(_error_dict['records'])
         for record_errs in _error_dict['records']:
+            if not isinstance(record_errs, dict):
+                continue
             for field, field_errs in record_errs.items():
                 record_errs[field] = list(format_trigger_error(field_errs))
         raise ValidationError(_error_dict)
