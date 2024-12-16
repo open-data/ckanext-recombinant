@@ -455,5 +455,5 @@ def recombinant_datastore_upsert(up_func, context, data_dict):
             raise
         for record_errs in _error_dict['records']:
             for field, field_errs in record_errs.items():
-                record_errs[field] = [e for e in format_trigger_error(field_errs)]
+                record_errs[field] = list(format_trigger_error(field_errs))
         raise ValidationError(_error_dict)
