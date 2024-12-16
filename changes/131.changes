@@ -1,0 +1,1 @@
+`format_trigger_error` is now done at a logic level instead of view level.
