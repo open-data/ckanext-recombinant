@@ -208,7 +208,10 @@ def excel_data_dictionary(geno, published_resource=False):
             'fgColor': 'FFDFE2DB'}}
 
     _build_styles(book, geno)
-    for lang in config['ckan.locales_offered'].split():
+    _locales_offered = config.get('ckan.locales_offered', ['en'])
+    if not isinstance(_locales_offered, list):
+        _locales_offered = _locales_offered.split()
+    for lang in _locales_offered:
         if sheet is None:
             sheet = book.create_sheet()
 
@@ -250,7 +253,7 @@ def estimate_width_from_length(length):
         range2 * ESTIMATE_WIDTH_MULTIPLE_2)
 
 def estimate_width(text):
-    return max(estimate_width_from_length(len(s)) for s in text.split('\n'))
+    return max(estimate_width_from_length(len(s)) for s in str(text).split('\n'))
 
 def wrap_text_to_width(text, width):
     # assuming width > ESTIMATE_WIDTH_MULTIPLE_1_CHARS
@@ -258,7 +261,7 @@ def wrap_text_to_width(text, width):
     cwidth = width // ESTIMATE_WIDTH_MULTIPLE_2 + ESTIMATE_WIDTH_MULTIPLE_1_CHARS
     return '\n'.join(
         '\n'.join(textwrap.wrap(line, cwidth))
-        for line in text.split('\n'))
+        for line in str(text).split('\n'))
 
 
 def _build_styles(book, geno):
@@ -572,6 +575,10 @@ def _append_field_ref_rows(refs, field, link):
         refs.append(('attr', [
             _('Format'),
             recombinant_language_text(field['format_type'])]))
+    if field.get('max_chars'):
+        refs.append(('attr', [
+            _('Character Limit'),
+            field['max_chars']]))
 
 def _append_field_choices_rows(refs, choices, full_text_choices):
     refs.append(('choice heading', [_('Values')]))

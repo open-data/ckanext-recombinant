@@ -29,7 +29,7 @@ class RecombinantPlugin(
     def update_config(self, config):
         # add our templates
         p.toolkit.add_template_directory(config, 'templates')
-        p.toolkit.add_public_directory(config, 'public')
+        p.toolkit.add_resource('assets', 'recombinant')
 
         # read our configuration early
         self._tables_urls = config.get('recombinant.definitions', ""

@@ -1,11 +1,11 @@
 {% extends 'package/base_form_page.html' %}
 
-{% block page_title %}<h1 id="wb-cont" property="name">{{ _(resource_description) }}</h1>{% endblock %}
+{% block page_title %}<h1 id="wb-cont" property="name">{{ _(resource_description) }} - {{ organization_display_name(organization) }}</h1>{% endblock %}
 {% block subtitle %}{{ _(resource_description) }}{% endblock %}
-{%- macro organization_display_name(org) -%}
+{%- macro organization_display_name(org, trunc) -%}
   {%- block organization_display scoped -%}
     {%- set org_title = org.title or org.name -%}
-    {{- org_title|truncate(60) -}}
+    {{- org_title|truncate(trunc) if trun else org_title -}}
   {%- endblock -%}
 {%- endmacro -%}
 
@@ -14,137 +14,139 @@
 {% block breadcrumb_content %}
   <li>{% link_for _(resource_description), named_route='recombinant.type_redirect',
     resource_name=resource_name %}</li>
-  <li class="active">{{ organization_display_name(organization) }}</li>
+  <li class="active"><a href="javascript:void(0);" title="{{ organization_display_name(organization) }}">{{ organization_display_name(organization, 60) }}</a></li>
 {% endblock %}
 
 {% block primary_content %}
-  {% if dataset %}
-    <ul class="nav nav-pills mrgn-bttm-sm">
-      {% set separator = ' : ' if h.lang() == 'fr' else ': ' %}
-      {% for r in dataset.resources %}
-        {% set num_label = separator ~ ungettext('{num} row', '{num} rows', r.get('datastore_rows', 0)).format(num=r.get('datastore_rows', 0)) %}
-        {% if 'error' in r %}
-          {% set num_label = separator ~ _('Error') %}
-        {% endif %}
-        <li {% if r.id == resource.id %}class="active"{% endif %}>{%
-          link_for _(r.description) ~ num_label,
-          named_route='recombinant.preview_table',
-          resource_name=r.name, owner_org=dataset.owner_org %}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-
-  {% snippet "recombinant/snippets/org_select.html",
-    selected=organization, resource_name=resource_name,
-    organization_display_name=organization_display_name %}
-
-  {% if dataset %}
-    {% if 'error' not in resource %}
-      <div class="wb-tabs">
-        <div class="tabpanels">
-          {% block update_panel %}
-            <details id="update" {% if errors %}open="open"{% endif %}>
-              <summary><span class="glyphicon glyphicon-import"></span>
-                {{ _("Import") }}
-              </summary>
-              {% if h.check_access('package_update', {'id': dataset.id }) %}
-                {% snippet "recombinant/snippets/xls_upload.html",
-                  pkg=dataset, resource=resource, errors=errors %}
-              {% else %}
-                {% snippet "recombinant/snippets/xls_download.html",
-                  pkg=dataset, errors=errors %}
-              {% endif %}
-              {% block notices %}{% endblock %}
-            </details>
-          {% endblock %}
-          {% if h.check_access('package_update', {'id': dataset.id }) %}
-            <details {% if delete_errors %}open="open"{% endif %} id="delete">
-              <summary><span class="glyphicon glyphicon-remove"></span>
-                {{ _("Delete") }}</summary>
-              {% snippet "recombinant/snippets/delete.html",
-                pkg=dataset, res=resource, errors=delete_errors, filters=filters %}
-            </details>
+  {% block resource_menu %}
+    {% if dataset %}
+      <ul class="{% block resource_menu_classes %}nav nav-pills mrgn-bttm-sm{% endblock %}">
+        {% set separator = ' : ' if h.lang() == 'fr' else ': ' %}
+        {% for r in dataset.resources %}
+          {% set num_label = separator ~ ungettext('{num} row', '{num} rows', r.get('datastore_rows', 0)).format(num=r.get('datastore_rows', 0)) %}
+          {% if 'error' in r %}
+            {% set num_label = separator ~ _('Error') %}
           {% endif %}
-          <details id="reference">
-            <summary><span class="glyphicon glyphicon-th-list"></span>
-              {{ _("Reference") }}
-            </summary>
-            {% snippet "recombinant/snippets/data_dictionary.html",
-              chromo=h.recombinant_get_chromo(resource.name), all_expanded=true, is_published_resource=false %}
-          </details>
-          <details id="api">
-            <summary><span class="glyphicon glyphicon-wrench"></span>
-              {{ _("API Access") }}
-            </summary>
-            {% snippet "recombinant/snippets/api_access.html",
-              pkg=dataset, username=c.userobj.name, resource=resource %}
-          </details>
-          <details id="activity">
-            <summary><span class="glyphicon glyphicon-time"></span>
-              {{ _("Activity Stream") }}
-            </summary>
-            {% block activity_stream %}
-              <a id="activity-stream-link" href="{{ h.url_for(dataset.dataset_type ~ '.activity', id=dataset.id) }}">
-                {{ _('Activity Stream') }}
-              </a>
+          <li {% if r.id == resource.id %}class="active"{% endif %}>{%
+            link_for _(r.description) ~ num_label,
+            named_route='recombinant.preview_table',
+            resource_name=r.name, owner_org=dataset.owner_org %}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endblock resource_menu %}
+
+  {% block org_select %}
+    {% snippet "recombinant/snippets/org_select.html",
+      selected=organization, resource_name=resource_name,
+      organization_display_name=organization_display_name %}
+  {% endblock org_select %}
+
+  {% block action_panels %}
+    {% if dataset %}
+      {% if 'error' not in resource %}
+        <div class="wb-tabs">
+          <div class="tabpanels">
+            {% block update_panel %}
+              <details id="update" {% if errors %}open="open"{% endif %}>
+                <summary><span class="glyphicon glyphicon-import"></span>
+                  {{ _("Import") }}
+                </summary>
+                {% if h.check_access('package_update', {'id': dataset.id }) %}
+                  {% snippet "recombinant/snippets/xls_upload.html",
+                    pkg=dataset, resource=resource, errors=errors %}
+                {% else %}
+                  {% snippet "recombinant/snippets/xls_download.html",
+                    pkg=dataset, errors=errors %}
+                {% endif %}
+                {% block notices %}{% endblock %}
+              </details>
             {% endblock %}
-          </details>
+            {% if h.check_access('package_update', {'id': dataset.id }) %}
+              <details {% if delete_errors %}open="open"{% endif %} id="delete">
+                <summary><span class="glyphicon glyphicon-remove"></span>
+                  {{ _("Delete") }}</summary>
+                {% snippet "recombinant/snippets/delete.html",
+                  pkg=dataset, res=resource, errors=delete_errors, filters=filters %}
+              </details>
+            {% endif %}
+            <details id="reference">
+              <summary><span class="glyphicon glyphicon-th-list"></span>
+                {{ _("Reference") }}
+              </summary>
+              {% snippet "recombinant/snippets/data_dictionary.html",
+                chromo=h.recombinant_get_chromo(resource.name), all_expanded=true, is_published_resource=false %}
+            </details>
+            <details id="api">
+              <summary><span class="glyphicon glyphicon-wrench"></span>
+                {{ _("API Access") }}
+              </summary>
+              {% snippet "recombinant/snippets/api_access.html", resource_id=resource.id, resource_name=resource.name, is_modal=false %}
+            </details>
+            <details id="activity">
+              <summary><span class="glyphicon glyphicon-time"></span>
+                {{ _("Activity Stream") }}
+              </summary>
+              {% block activity_stream %}
+                <div class="mrgn-tp-lg"></div>
+                <a id="activity-stream-link" href="{{ h.url_for('activity.package_activity', id=dataset.id) }}">
+                  {{ _('Activity Stream') }}
+                </a>
+              {% endblock %}
+            </details>
+          </div>
         </div>
-      </div>
+      {% else %}
+        <div class="wb-tabs">
+          <div class="tabpanels">
+            <details id="update" {% if errors %}open="open"{% endif %}>
+              <summary><span class="glyphicon glyphicon-warning-sign"></span>
+                {{ _("Error") }}
+              </summary>
+              <h3>{{_("Error loading your records")}}</h3>
+              <div class="col-md-12">
+                <p>{{_("We were unable to retrieve your proactive publication records from our database. Please contact <a href=\"open-ouvert@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a>.")}}</p>
+                {% if g.userobj.sysadmin %}
+                  {# only let sysadmins refresh the recombinant record via UI #}
+                  <form id="create-pd-resource" method="post">
+                    {{ h.csrf_input() }}
+                    <button type="submit" class="btn btn-default mrgn-bttm-md m-b-3" name="refresh">{{_('Refresh…')}}</button>
+                  </form>
+                {% endif %}
+              </div>
+            </details>
+          </div>
+        </div>
+      {% endif %}
     {% else %}
       <div class="wb-tabs">
         <div class="tabpanels">
           <details id="update" {% if errors %}open="open"{% endif %}>
-            <summary><span class="glyphicon glyphicon-warning-sign"></span>
-              {{ _("Error") }}
+            <summary><span class="glyphicon glyphicon-import"></span>
+              {{ _("Import") }}
             </summary>
-            <h3>{{_("Error loading your records")}}</h3>
+            <h3>{{_("Create and update records")}}</h3>
             <div class="col-md-12">
-              <p>{{_("We were unable to retrieve your proactive publication records from our database. Please contact <a href=\"open-ouvert@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a>.")}}</p>
-              {% if g.userobj.sysadmin %}
-                {# only let sysadmins refresh the recombinant record via UI #}
-                <form id="create-pd-resource" method="post">
-                  <button type="submit" class="btn btn-default mrgn-bttm-md m-b-3" name="refresh">{{_('Refresh…')}}</button>
-                </form>
-              {% endif %}
+              <p>{{_("No records have been created for this organization")}}</p>
+              <form id="create-pd-resource" method="post">
+                {{ h.csrf_input() }}
+                <button type="submit" class="btn btn-default" name="create">{{_('Get started…')}}</button>
+              </form>
+              {{ self.notices() }}
             </div>
           </details>
         </div>
       </div>
     {% endif %}
-  {% else %}
-    <div class="wb-tabs">
-      <div class="tabpanels">
-        <details id="update" {% if errors %}open="open"{% endif %}>
-          <summary><span class="glyphicon glyphicon-import"></span>
-            {{ _("Import") }}
-          </summary>
-          <h3>{{_("Create and update records")}}</h3>
-          <div class="col-md-12">
-            <p>{{_("No records have been created for this organization")}}</p>
-            <form id="create-pd-resource" method="post">
-              <button type="submit" class="btn btn-default" name="create">{{_('Get started…')}}</button>
-            </form>
-            {{ self.notices() }}
-          </div>
-        </details>
-      </div>
-    </div>
-  {% endif %}
+  {% endblock action_panels %}
 {% endblock %}
 
-{# syntax hilighting for API docs above #}
 {% block links %}
-{{ super() }}
-<style>
-.code-block pre {display: none}
-.code-block.lang-python pre.python {display: block}
-.code-block.lang-curl pre.curl {display: block}
-.code-block.lang-powershell pre.powershell {display: block}
-</style>
+  {{ super() }}
+  {% asset 'recombinant/main_css' %}
 {% endblock %}
 
-{%- block scripts %}
+{%- block scripts -%}
   {{ super() }}
- <script src="{{ h.url_for_static('js/code_block_buttons.js') }}"></script>
-{% endblock %}
+  {% asset 'recombinant/code_block_buttons' %}
+{%- endblock -%}

@@ -23,6 +23,7 @@ from ckan.model.group import Group
 from ckan.authz import has_user_permission_for_group_or_org
 
 from ckan.views.dataset import _get_package_type
+from ckanext.activity.views import package_activity
 
 from ckanext.recombinant.errors import RecombinantException, BadExcelData, format_trigger_error
 from ckanext.recombinant.read_excel import read_excel, get_records
@@ -158,15 +159,10 @@ def delete_records(id, resource_id):
             ok_filters.append(dict(filters))
 
     if 'cancel' in request.form:
-        return render('recombinant/resource_edit.html',
-            extra_vars={
-                'delete_errors': [],
-                'dataset': dataset,
-                'dataset_type': dataset['dataset_type'],
-                'resource': res,
-                'organization': org,
-                'filters': {'bulk-delete': u'\n'.join(ok_records)},
-                'action': 'edit'})
+        return h.redirect_to(
+            'recombinant.preview_table',
+            resource_name=res['name'],
+            owner_org=org['name'],)
     if not 'confirm' in request.form:
         return render('recombinant/confirm_delete.html',
             extra_vars={
@@ -332,7 +328,11 @@ def _schema_json(dataset_type, published_resource=False):
     schema['title'] = {}
     schema['notes'] = {}
 
-    for lang in config['ckan.locales_offered'].split():
+    _locales_offered = config.get('ckan.locales_offered', ['en'])
+    if not isinstance(_locales_offered, list):
+        _locales_offered = _locales_offered.split()
+
+    for lang in _locales_offered:
         with force_locale(lang):
             schema['title'][lang] = _(geno['title'])
             schema['notes'][lang] = _(geno['notes'])
@@ -354,7 +354,7 @@ def _schema_json(dataset_type, published_resource=False):
 
         resource['resource_name'] = chromo['resource_name']
         resource['title'] = {}
-        for lang in config['ckan.locales_offered'].split():
+        for lang in _locales_offered:
             with force_locale(lang):
                 resource['title'][lang] = _(chromo['title'])
 
@@ -370,8 +370,10 @@ def _schema_json(dataset_type, published_resource=False):
             fld = {}
             resource['fields'].append(fld)
             fld['id'] = field['datastore_id']
+            if field.get('max_chars'):
+                fld['character_limit'] = field['max_chars']
             fld['obligation'] = {}
-            for lang in config['ckan.locales_offered'].split():
+            for lang in _locales_offered:
                 with force_locale(lang):
                     if fld['id'] in pkeys:
                         fld['obligation'][lang] = _('Mandatory')
@@ -387,7 +389,7 @@ def _schema_json(dataset_type, published_resource=False):
                         fld[k] = field[k]
                         continue
                     fld[k] = {}
-                    for lang in config['ckan.locales_offered'].split():
+                    for lang in _locales_offered:
                         with force_locale(lang):
                             fld[k][lang] = _(field[k])
 
@@ -464,6 +466,8 @@ def preview_table(resource_name, owner_org, errors=None):
         return h.redirect_to('user.login')
 
     org_object = Group.get(owner_org)
+    if not org_object:
+        return abort(404, _('Organization not found'))
     if org_object.name != owner_org:
         return h.redirect_to(
             'recombinant.preview_table',
