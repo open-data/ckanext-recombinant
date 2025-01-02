@@ -6,7 +6,6 @@ except ImportError:
     yaml = None
 
 
-
 def load(f):
     if is_yaml(f.name):
         return yaml.safe_load(f)

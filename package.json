@@ -1,0 +1,21 @@
+{
+  "name": "ckanext-recombinant",
+  "version": "1.0.0",
+  "description": "CKAN Recombinant Plugin",
+  "dependencies": {},
+  "devDependencies": {
+    "pyright": "1.1.386"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-data/ckanext-recombinant.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/open-data/ckanext-recombinant/issues"
+  },
+  "homepage": "https://github.com/open-data/ckanext-recombinant#readme"
+}

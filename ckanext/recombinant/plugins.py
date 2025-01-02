@@ -1,19 +1,29 @@
 import importlib
 import os
 import uuid
+from urllib.request import urlopen
+from urllib.error import URLError
 
-from ckan.plugins.toolkit import _, get_validator
+from ckan.plugins.toolkit import get_validator
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
-from ckanext.recombinant import logic, tables, helpers, load, views, auth, cli, validators
+from ckanext.recombinant import (
+    logic,
+    tables,
+    helpers,
+    load,
+    views,
+    auth,
+    cli,
+    validators
+)
 from ckanext.recombinant.errors import RecombinantException
 
 from ckanext.datastore.interfaces import IDataDictionaryForm
 
 
-class RecombinantPlugin(
-        p.SingletonPlugin, DefaultDatasetForm, DefaultTranslation):
+class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslation):
     p.implements(tables.IRecombinant)
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
@@ -32,11 +42,10 @@ class RecombinantPlugin(
         p.toolkit.add_resource('assets', 'recombinant')
 
         # read our configuration early
-        self._tables_urls = config.get('recombinant.definitions', ""
-            ).split()
+        self._tables_urls = config.get('recombinant.definitions', "").split()
         if not self._tables_urls:
             raise RecombinantException("Missing configuration option "
-                "recombinant.definitions")
+                                       "recombinant.definitions")
         self._chromos, self._genos = (
             _load_table_definitions(self._tables_urls))
         self._published_resource_ids = {}
@@ -60,14 +69,24 @@ class RecombinantPlugin(
         return [views.recombinant]
 
     def prepare_dataset_blueprint(self, package_type, bp):
-        bp.add_url_rule('/<id>', 'dataset_redirect', views.dataset_redirect)
-        bp.add_url_rule('/edit/<id>', 'dataset_edit_redirect', views.dataset_redirect)
-        bp.add_url_rule('/<id>/dictionary/<resource_id>', 'resource_data_dict_redirect', views.resource_redirect)
+        bp.add_url_rule('/<id>',
+                        'dataset_redirect',
+                        views.dataset_redirect)
+        bp.add_url_rule('/edit/<id>',
+                        'dataset_edit_redirect',
+                        views.dataset_redirect)
+        bp.add_url_rule('/<id>/dictionary/<resource_id>',
+                        'resource_data_dict_redirect',
+                        views.resource_redirect)
         return bp
 
     def prepare_resource_blueprint(self, package_type, bp):
-        bp.add_url_rule('/<resource_id>/edit', 'resource_edit_redirect', views.resource_redirect)
-        bp.add_url_rule('/<resource_id>', 'resource_view_redirect', views.resource_redirect)
+        bp.add_url_rule('/<resource_id>/edit',
+                        'resource_edit_redirect',
+                        views.resource_redirect)
+        bp.add_url_rule('/<resource_id>',
+                        'resource_view_redirect',
+                        views.resource_redirect)
         return bp
 
     def get_helpers(self):
@@ -152,20 +171,34 @@ def _load_table_definitions(urls):
             is_url = True
 
         if t['dataset_type'] in dataset_definitions:
-            raise RecombinantException('Recombinant dataset_type "%s" is already defined in %s. Cannot be redefined in %s.'
-                                       % (t['dataset_type'], dataset_definitions[t['dataset_type']], url))
+            raise RecombinantException(
+                'Recombinant dataset_type "%s" is already '
+                'defined in %s. Cannot be redefined in %s.' %
+                (t['dataset_type'],
+                 dataset_definitions[t['dataset_type']],
+                 url))
         genos[t['dataset_type']] = t
         dataset_definitions[t['dataset_type']] = url
 
         for chromo in t['resources']:
             if chromo['resource_name'] in resource_definitions:
-                raise RecombinantException('Recombinant resource_name "%s" is already defined in %s. Cannot be redefined in %s.'
-                                           % (chromo['resource_name'], resource_definitions[chromo['resource_name']], url))
-            if 'published_resource_id' in chromo and chromo['published_resource_id'] in published_resource_definitions:
-                raise RecombinantException('Published Resource ID "%s" is already defined for "%s" in %s. Cannot be redefined in %s.'
-                                           % (chromo['published_resource_id'],
-                                              published_resource_definitions[chromo['published_resource_id']]['resource_name'],
-                                              published_resource_definitions[chromo['published_resource_id']]['url'], url))
+                raise RecombinantException(
+                    'Recombinant resource_name "%s" is already '
+                    'defined in %s. Cannot be redefined in %s.' %
+                    (chromo['resource_name'],
+                     resource_definitions[chromo['resource_name']],
+                     url))
+            if (
+              'published_resource_id' in chromo and
+              chromo['published_resource_id'] in published_resource_definitions):
+                raise RecombinantException(
+                    'Published Resource ID "%s" is already '
+                    'defined for "%s" in %s. Cannot be redefined in %s.' %
+                    (chromo['published_resource_id'],
+                     published_resource_definitions[
+                         chromo['published_resource_id']]['resource_name'],
+                     published_resource_definitions[
+                         chromo['published_resource_id']]['url'], url))
             chromo['dataset_type'] = t['dataset_type']
             if 'target_dataset' in t:
                 chromo['target_dataset'] = t['target_dataset']
@@ -176,16 +209,24 @@ def _load_table_definitions(urls):
             chromos[chromo['resource_name']] = chromo
             resource_definitions[chromo['resource_name']] = url
             if 'published_resource_id' in chromo:
-                published_resource_definitions[chromo['published_resource_id']] = {'url': url, 'resource_name': chromo['resource_name']}
+                published_resource_definitions[chromo['published_resource_id']] = {
+                    'url': url, 'resource_name': chromo['resource_name']}
             if 'triggers' in chromo:
                 for trigger in chromo['triggers']:
                     if isinstance(trigger, dict):
                         for trigger_name in trigger:
                             if trigger_name in trigger_definitions:
-                                raise RecombinantException('Recombinant database trigger "%s" is already defined for "%s" in %s. Cannot be redefined in %s.'
-                                                           % (trigger_name, trigger_definitions[trigger_name]['resource_name'],
-                                                              trigger_definitions[trigger_name]['url'], url))
-                            trigger_definitions[trigger_name] = {'url': url, 'resource_name': chromo['resource_name']}
+                                raise RecombinantException(
+                                    'Recombinant database trigger "%s" is already '
+                                    'defined for "%s" in %s. Cannot be '
+                                    'redefined in %s.' %
+                                    (trigger_name,
+                                     trigger_definitions[
+                                         trigger_name]['resource_name'],
+                                     trigger_definitions[
+                                         trigger_name]['url'], url))
+                            trigger_definitions[trigger_name] = {
+                                'url': url, 'resource_name': chromo['resource_name']}
 
     return chromos, genos
 
@@ -209,11 +250,11 @@ def _load_tables_module_path(url):
 
 
 def _load_tables_url(url):
-    import urllib2
     try:
-        res = urllib2.urlopen(url)
+        res = urlopen(url)
         tables = res.read()
-    except urllib2.URLError:
-        raise RecombinantException("Could not find recombinant.definitions json config file: %s" % url )
+    except URLError:
+        raise RecombinantException(
+            "Could not find recombinant.definitions json config file: %s" % url)
 
     return load.loads(tables, url)

@@ -11,4 +11,5 @@ def recombinant_foreign_keys(key, data, errors, context):
     res = context['model'].Resource.get(resource_id)
     pkg = context['model'].Package.get(getattr(res, 'package_id', None))
     if not res or not pkg or pkg.type not in h.recombinant_get_types():
-        errors[key].append(_('Cannot assign foreign keys to a non-recombinant resource.'))
+        errors[key].append(
+            _('Cannot assign foreign keys to a non-recombinant resource.'))

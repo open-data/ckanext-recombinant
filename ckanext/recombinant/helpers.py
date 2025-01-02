@@ -30,7 +30,7 @@ def recombinant_language_text(text, prefer_lang=None):
         try:
             if prefer_lang is None:
                 prefer_lang = lang()
-        except:
+        except Exception:
             pass  # lang() call will fail when no user language available
         else:
             try:
@@ -60,6 +60,7 @@ def recombinant_get_chromo(resource_name):
     except RecombinantException:
         return
 
+
 def recombinant_get_geno(dataset_type):
     """
     Get the dataset definition (geno) for thr given dataset type
@@ -69,8 +70,10 @@ def recombinant_get_geno(dataset_type):
     except RecombinantException:
         return
 
+
 def recombinant_get_types():
     return get_dataset_types()
+
 
 def recombinant_primary_key_fields(resource_name):
     try:
@@ -81,6 +84,7 @@ def recombinant_primary_key_fields(resource_name):
         f for f in chromo['fields']
         if f['datastore_id'] in chromo['datastore_primary_key']
         ]
+
 
 def recombinant_example(resource_name, doc_type, indent=2, lang='json'):
     """
@@ -117,8 +121,7 @@ def recombinant_example(resource_name, doc_type, indent=2, lang='json'):
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
 
 
-def recombinant_choice_fields(resource_name, all_languages=False,
-        prefer_lang=None):
+def recombinant_choice_fields(resource_name, all_languages=False, prefer_lang=None):
     """
     Return a datastore_id: choices dict from the resource definition
     that contain lists of choices, with labels pre-translated
@@ -135,7 +138,6 @@ def recombinant_choice_fields(resource_name, all_languages=False,
 
     def build_choices(f, choices):
         order_expr = f.get('choice_order_expression')
-        key_fn = None
         if order_expr:
             code = compile(order_expr, resource_name, 'eval')
 
@@ -145,6 +147,8 @@ def recombinant_choice_fields(resource_name, all_languages=False,
                     'value': choices[v],
                     'text': recombinant_language_text(choices[v], prefer_lang),
                 })
+        else:
+            key_fn = None
 
         out[f['datastore_id']] = [
             (v, choices[v] if all_languages

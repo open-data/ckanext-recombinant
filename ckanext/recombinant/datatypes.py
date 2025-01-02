@@ -25,7 +25,7 @@ datastore_type = {
     'int': DatastoreType('int', True, 'General'),
     'bigint': DatastoreType('bigint', True, 'General'),
     'numeric': DatastoreType('numeric', False, 'General'),
-    'money': DatastoreType( 'numeric', False, '$#,##0.00'),
+    'money': DatastoreType('numeric', False, '$#,##0.00'),
     'text': DatastoreType('text', False, '@'),
     'boolean': DatastoreType('boolean', False, '@'),
     '_text': DatastoreType('_text', False, '@'),

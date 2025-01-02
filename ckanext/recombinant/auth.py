@@ -1,6 +1,4 @@
 from ckan.plugins.toolkit import chained_auth_function, h, _
-from ckan.model.group import Group
-from ckanapi import LocalCKAN, ValidationError
 
 
 @chained_auth_function
@@ -14,7 +12,7 @@ def package_update(up_func, context, data_dict):
     if data_dict and data_dict.get(u'type') in h.recombinant_get_types():
         return {'success': False,
                 'msg': _('User %s not authorized to modify Recombinant type: %s') %
-                            (str(context[u'user']), data_dict.get(u'type'))}
+                        (str(context[u'user']), data_dict.get(u'type'))}
     return up_func(context, data_dict)
 
 
@@ -29,8 +27,9 @@ def package_create(up_func, context, data_dict):
     """
     if data_dict and data_dict.get(u'type') in h.recombinant_get_types():
         return {'success': False,
-                'msg': _('User %s not authorized to create Recombinant packages: %s') %
-                            (str(context[u'user']), data_dict.get(u'type'))}
+                'msg': _('User %s not authorized to create '
+                         'Recombinant packages: %s') %
+                        (str(context[u'user']), data_dict.get(u'type'))}
     return up_func(context, data_dict)
 
 
@@ -49,6 +48,5 @@ def datastore_delete(up_func, context, data_dict):
         # we do not want that to happen for Recombinant types.
         return {'success': False,
                 'msg': _("Cannot delete Datastore for type: %s. "
-                         "Use datastore_records_delete instead.")
-                         % pkg.type}
+                         "Use datastore_records_delete instead.") % pkg.type}
     return up_func(context, data_dict)

@@ -4,7 +4,6 @@ from files specified in the recombinant.definitions ini setting.
 
 This module provides access to those definitions.
 """
-
 import ckan.plugins as p
 
 from ckanext.recombinant.errors import RecombinantException
@@ -37,8 +36,7 @@ def get_chromo(resource_name):
         for rname in chromos:
             if rname.replace('-', '') == resource_name:
                 return chromos[rname]
-        raise RecombinantException('resource_name "%s" not found'
-            % resource_name)
+        raise RecombinantException('resource_name "%s" not found' % resource_name)
 
 
 def get_geno(dataset_type):
@@ -49,8 +47,7 @@ def get_geno(dataset_type):
     try:
         return genos[dataset_type]
     except KeyError:
-        raise RecombinantException('dataset_type "%s" not found'
-            % dataset_type)
+        raise RecombinantException('dataset_type "%s" not found' % dataset_type)
 
 
 def get_dataset_types():
@@ -65,8 +62,8 @@ def get_resource_names():
     Get a list of recombinant resource names
     """
     return [chromo['resource_name']
-        for t in get_dataset_types()
-        for chromo in get_geno(t)['resources']]
+            for t in get_dataset_types()
+            for chromo in get_geno(t)['resources']]
 
 
 def get_published_resource_resource_name(res_id):

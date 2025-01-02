@@ -5,8 +5,10 @@ import openpyxl
 from ckanext.recombinant.datatypes import canonicalize
 from ckanext.recombinant.errors import BadExcelData
 
+
 HEADER_ROWS_V2 = 3
 HEADER_ROWS_V3 = 5
+
 
 def read_excel(f, file_contents=None):
     """
@@ -29,7 +31,7 @@ def read_excel(f, file_contents=None):
         rowiter = sheet.rows
         organization_row = next(rowiter)
 
-        label_row = next(rowiter)
+        next(rowiter)  # skip label_row
         names_row = next(rowiter)
 
         org_name = organization_row[0].value
@@ -42,7 +44,7 @@ def read_excel(f, file_contents=None):
                 _filter_bumf(rowiter, HEADER_ROWS_V2))
             continue
 
-        cstatus_row = next(rowiter)
+        next(rowiter)  # skip cstatus_row
         example_row = next(rowiter)
         if example_row[0].value != 'e.g.' and example_row[0].value != 'ex.':
             raise BadExcelData(u'Example record on row 5 is missing')
@@ -106,7 +108,7 @@ def get_records(rows, fields, primary_key_fields, choice_fields):
                 (row[-1] is None or row[-1] == '')):
             row.pop()
         while row and (len(row) < len(fields)):
-            row.append(None) # placeholder: canonicalize once only, below
+            row.append(None)  # placeholder: canonicalize once only, below
 
         try:
             records.append(
@@ -117,7 +119,7 @@ def get_records(rows, fields, primary_key_fields, choice_fields):
                         f['datastore_type'],
                         f['datastore_id'] in primary_key_fields,
                         choice_fields.get(f['datastore_id'], False)))
-                for f, v in zip(fields, row))))
+                    for f, v in zip(fields, row))))
         except BadExcelData as e:
             raise BadExcelData(u'Row {0}:'.format(n) + u' ' + e.message)
 
