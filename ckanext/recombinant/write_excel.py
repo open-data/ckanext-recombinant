@@ -4,10 +4,21 @@ Excel v3 template and data-dictionary generation code
 """
 import textwrap
 import string
-import openpyxl
+from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
+from openpyxl.cell import Cell
 from openpyxl.utils import get_column_letter
 from openpyxl.formatting.rule import FormulaRule
-from openpyxl.styles import NamedStyle
+from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.styles import (
+    NamedStyle,
+    Alignment,
+    Protection,
+    PatternFill,
+    Font
+)
+
+from typing import Any, Dict, List, Tuple, Optional, Union
 
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException
@@ -96,7 +107,8 @@ TYPE_HERE_STYLE = {
     'Font': {'bold': True, 'size': 16}}
 
 
-def excel_template(dataset_type, org):
+def excel_template(dataset_type: str,
+                   org: Dict[str, Any]):
     """
     return an openpyxl.Workbook object containing the sheet and header fields
     for passed dataset_type and org. Supports version 3 templates.
@@ -107,8 +119,9 @@ def excel_template(dataset_type, org):
     if version < DEFAULT_TEMPLATE_VERSION:
         raise RecombinantException(_('Unsupported template version: %s') % version)
 
-    book = openpyxl.Workbook()
-    sheet = book.active
+    book = Workbook()
+    # type_ignore_reason: incomplete typing
+    sheet: Worksheet = book.active  # type: ignore
     refs = []
     choice_ranges = []
 
@@ -122,7 +135,8 @@ def excel_template(dataset_type, org):
             sheet.protection.enabled = True
             sheet.protection.formatRows = False
             sheet.protection.formatColumns = False
-        sheet = book.create_sheet()
+        # type_ignore_reason: incomplete typing
+        sheet: Worksheet = book.create_sheet()  # type: ignore
 
     if version == 3:
         _populate_reference_sheet(sheet, geno, refs)
@@ -134,13 +148,14 @@ def excel_template(dataset_type, org):
 
     for i, (chromo, cranges) in enumerate(
             zip(geno['resources'], choice_ranges), 1):
-        sheet = book.create_sheet()
+        # type_ignore_reason: incomplete typing
+        sheet: Worksheet = book.create_sheet()  # type: ignore
         _populate_excel_e_sheet(sheet, chromo, cranges)
         sheet.title = 'e{i}'.format(i=i)
         sheet.protection.enabled = True
         sheet.sheet_state = 'hidden'
-
-        sheet = book.create_sheet()
+        # type_ignore_reason: incomplete typing
+        sheet: Worksheet = book.create_sheet()  # type: ignore
         _populate_excel_r_sheet(sheet, chromo)
         sheet.title = 'r{i}'.format(i=i)
         sheet.protection.enabled = True
@@ -148,12 +163,15 @@ def excel_template(dataset_type, org):
     return book
 
 
-def append_data(book, record_data, chromo):
+def append_data(book: Workbook,
+                record_data: List[Dict[str, Any]],
+                chromo: Dict[str, Any]):
 
     """
     fills rows of an openpyxl.Workbook with selected data from a datastore resource
     """
-    sheet = book[chromo['resource_name']]
+    # type_ignore_reason: incomplete typing
+    sheet: Worksheet = book[chromo['resource_name']]  # type: ignore
     current_row = DATA_FIRST_ROW
     for record in record_data:
         for col_num, field in template_cols_fields(chromo):
@@ -165,7 +183,8 @@ def append_data(book, record_data, chromo):
     return book
 
 
-def datastore_type_format(value, datastore_type):
+def datastore_type_format(value: Any,
+                          datastore_type: str) -> Optional[Any]:
 
     if value is None:
         return None
@@ -188,21 +207,25 @@ def datastore_type_format(value, datastore_type):
     return item
 
 
-def excel_data_dictionary(geno, published_resource=False):
+def excel_data_dictionary(geno: Dict[str, Any],
+                          published_resource: bool = False):
     """
     return an openpyxl.Workbook object containing the field reference
     from geno, one sheet per language
     """
-    book = openpyxl.Workbook()
-    sheet = book.active
+    book = Workbook()
+    # type_ignore_reason: incomplete typing
+    sheet: Worksheet = book.active  # type: ignore
 
     _build_styles(book, geno)
     _locales_offered = config.get('ckan.locales_offered', ['en'])
     if not isinstance(_locales_offered, list):
         _locales_offered = _locales_offered.split()
     for lang in _locales_offered:
-        if sheet is None:
-            sheet = book.create_sheet()
+        # type_ignore_reason: incomplete typing
+        if sheet is None:  # type: ignore
+            # type_ignore_reason: incomplete typing
+            sheet: Worksheet = book.create_sheet()  # type: ignore
 
         sheet.title = lang.upper()
         request.environ['CKAN_LANG'] = lang  # needed for recombinant_language_text
@@ -230,12 +253,13 @@ def excel_data_dictionary(geno, published_resource=False):
                             full_text_choices=full_text_choices)
 
             _populate_reference_sheet(sheet, geno, refs)
-            sheet = None
+            # type_ignore_reason: incomplete typing
+            sheet = None  # type: ignore
 
     return book
 
 
-def estimate_width_from_length(length):
+def estimate_width_from_length(length: int) -> float:
     range1 = max(length, ESTIMATE_WIDTH_MULTIPLE_1_CHARS)
     range2 = length - range1
     return (
@@ -243,20 +267,22 @@ def estimate_width_from_length(length):
         range2 * ESTIMATE_WIDTH_MULTIPLE_2)
 
 
-def estimate_width(text):
+def estimate_width(text: str) -> float:
     return max(estimate_width_from_length(len(s)) for s in str(text).split('\n'))
 
 
-def wrap_text_to_width(text, width):
+def wrap_text_to_width(text: str,
+                       width: int) -> str:
     # assuming width > ESTIMATE_WIDTH_MULTIPLE_1_CHARS
-    width -= ESTIMATE_WIDTH_MULTIPLE_1_CHARS * ESTIMATE_WIDTH_MULTIPLE_1
-    cwidth = width // ESTIMATE_WIDTH_MULTIPLE_2 + ESTIMATE_WIDTH_MULTIPLE_1_CHARS
+    calc_width = width - (ESTIMATE_WIDTH_MULTIPLE_1_CHARS * ESTIMATE_WIDTH_MULTIPLE_1)
+    cwidth = calc_width // ESTIMATE_WIDTH_MULTIPLE_2 + ESTIMATE_WIDTH_MULTIPLE_1_CHARS
     return '\n'.join(
-        '\n'.join(textwrap.wrap(line, cwidth))
+        '\n'.join(textwrap.wrap(line, int(cwidth)))
         for line in str(text).split('\n'))
 
 
-def _build_styles(book, geno):
+def _build_styles(book: Workbook,
+                  geno: Dict[str, Any]):
     """
     Add styles to workbook
     """
@@ -278,7 +304,13 @@ def _build_styles(book, geno):
     build_named_style(book, 'reco_ref_value', REF_VALUE_STYLE)
 
 
-def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
+def _populate_excel_sheet(book: Workbook,
+                          sheet: Worksheet,
+                          geno: Dict[str, Any],
+                          chromo: Dict[str, Any],
+                          org: Dict[str, Any],
+                          refs: List[Tuple[Optional[str], List[Any]]],
+                          resource_num: int) -> Dict[str, Any]:
     """
     Format openpyxl sheet for the resource definition chromo and org.
     (Version 3)
@@ -343,12 +375,14 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
         else sheet.sheet_format.defaultRowHeight
 
     choice_fields = recombinant_choice_fields(chromo['resource_name'])
+    col_letter = 'C'
 
     for col_num, field in template_cols_fields(chromo):
         field_heading = recombinant_language_text(
             field.get('excel_heading', field['label'])).strip()
+        # type_ignore_reason: incomplete typing
         cheadings_dimensions.height = max(
-            cheadings_default_height + CHEADINGS_HEIGHT,
+            cheadings_default_height + CHEADINGS_HEIGHT,  # type: ignore
             field_heading.count('\n') * LINE_HEIGHT + CHEADINGS_HEIGHT)
 
         col_heading_style = 'reco_cheading'
@@ -408,12 +442,12 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
             rowN=DATA_FIRST_ROW + data_num_rows - 1)
 
         xl_format = datastore_type[field['datastore_type']].xl_format
-        alignment = openpyxl.styles.Alignment(wrap_text=True)
+        alignment = Alignment(wrap_text=True)
         col_style = NamedStyle(
             name='reco_{0}{1}'.format(resource_num, col_letter),
             number_format=xl_format,
             alignment=alignment,
-            protection=openpyxl.styles.Protection(locked=False))
+            protection=Protection(locked=False))
         book.add_named_style(col_style)
         for (c,) in sheet[validation_range]:
             c.style = col_style.name
@@ -467,7 +501,7 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
 
             choices = [c[0] for c in choice_fields[field['datastore_id']]]
             if field['datastore_type'] != '_text':
-                v = openpyxl.worksheet.datavalidation.DataValidation(
+                v = DataValidation(
                     type="list",
                     formula1=user_choice_range or choice_range,
                     allow_blank=True)
@@ -527,13 +561,16 @@ def _populate_excel_sheet(book, sheet, geno, chromo, org, refs, resource_num):
 
     # trying to set the active cell (not working yet)
     select = "{col}{row}".format(col=DATA_FIRST_COL, row=DATA_FIRST_ROW)
-    sheet.sheet_view.selection[0].activeCell = select
-    sheet.sheet_view.selection[0].sqref = select
+    # type_ignore_reason: incomplete typing
+    sheet.sheet_view.selection[0].activeCell = select  # type: ignore
+    sheet.sheet_view.selection[0].sqref = select  # type: ignore
 
     return cranges
 
 
-def _append_resource_ref_header(geno, refs, rnum):
+def _append_resource_ref_header(geno: Dict[str, Any],
+                                refs: List[Tuple[Optional[str], List[Any]]],
+                                rnum: int):
     """
     Add resource titles for all resources except
     the first one (unless if it has a different name)
@@ -545,7 +582,9 @@ def _append_resource_ref_header(geno, refs, rnum):
     refs.append(('resource_title', [resource_title]))
 
 
-def _append_field_ref_rows(refs, field, link):
+def _append_field_ref_rows(refs: List[Tuple[Optional[str], List[Any]]],
+                           field: Dict[str, Any],
+                           link: Optional[str]):
     refs.append((None, []))
     label = recombinant_language_text(field['label'])
     refs.append(('title', [(link, label) if link else label]))
@@ -578,7 +617,9 @@ def _append_field_ref_rows(refs, field, link):
             field['max_chars']]))
 
 
-def _append_field_choices_rows(refs, choices, full_text_choices):
+def _append_field_choices_rows(refs: List[Tuple[Optional[str], List[Any]]],
+                               choices: Dict[str, Any],
+                               full_text_choices: bool):
     refs.append(('choice heading', [_('Values')]))
     max_length = 0
     for key, value in choices:
@@ -594,7 +635,9 @@ def _append_field_choices_rows(refs, choices, full_text_choices):
     return estimate_width_from_length(max_length)
 
 
-def _populate_reference_sheet(sheet, geno, refs):
+def _populate_reference_sheet(sheet: Worksheet,
+                              geno: Dict[str, Any],
+                              refs: List[Tuple[Optional[str], List[Any]]]):
     field_count = 1
 
     header1_style = dict(DEFAULT_HEADER_STYLE, **geno.get(
@@ -635,6 +678,7 @@ def _populate_reference_sheet(sheet, geno, refs):
             field_count = 1
         else:
             link = None
+            value = None
             if len(ref_line) == 2:
                 value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH).strip()
                 ref_line = [ref_line[0], value]
@@ -647,12 +691,12 @@ def _populate_reference_sheet(sheet, geno, refs):
                 sheet.cell(row=row_number, column=cnum).value = (
                     cval.strip().replace('\n', '\r\n'))
 
-            if len(ref_line) == 2:
+            if len(ref_line) == 2 and value:
                 sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
                     value.count('\n') * LINE_HEIGHT)
 
-            key_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
-            value_cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
+            key_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+            value_cell: Cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
 
             if style == 'title':
                 sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))
@@ -663,20 +707,20 @@ def _populate_reference_sheet(sheet, geno, refs):
                     REF_FIELD_NUM_COL_NUM,
                     field_count,
                     'reco_ref_number')
-                title_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+                title_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
                 if link:
                     title_cell.hyperlink = link
                 title_cell.style = 'reco_ref_title'
                 sheet.row_dimensions[row_number].height = REF_FIELD_TITLE_HEIGHT
                 field_count += 1
             elif style == 'choice':
-                pad_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
+                pad_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
                 pad_cell.style = 'reco_example'
                 key_cell.style = 'reco_example'
                 value_cell.style = 'reco_example'
             elif style == 'choice_full_text':
                 sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
-                pad_cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
+                pad_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
                 pad_cell.style = 'reco_example'
                 key_cell.style = 'reco_example'
                 value_cell.style = 'reco_example'
@@ -697,7 +741,9 @@ def _populate_reference_sheet(sheet, geno, refs):
     sheet.column_dimensions[REF_VALUE_COL].width = REF_VALUE_WIDTH
 
 
-def _populate_excel_e_sheet(sheet, chromo, cranges):
+def _populate_excel_e_sheet(sheet: Worksheet,
+                            chromo: Dict[str, Any],
+                            cranges: Dict[str, Any]):
     """
     Populate the "error" calculation excel worksheet
 
@@ -762,7 +808,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
                 fmla = 'FALSE()'
             fmla = user_fmla.replace('{default_formula}', '(' + fmla + ')')
 
-        if field.get('excel_error_cell_filter_formula'):
+        if field.get('excel_error_cell_filter_formula') and fmla:
             fmla = fmla.replace(
                 '{cell}', '(' + field.get('excel_error_cell_filter_formula') + ')')
 
@@ -785,6 +831,7 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
         fmla_keys = set(
             key for (_i, key, _i, _i) in string.Formatter().parse(fmla)
             if key != 'cell' and key != 'default_formula')
+        fmla_values = {}
         if fmla_keys:
             fmla_values = {
                 f['datastore_id']: "'{sheet}'!{col}{{num}}".format(
@@ -827,7 +874,8 @@ def _populate_excel_e_sheet(sheet, chromo, cranges):
                 row=i))
 
 
-def _populate_excel_r_sheet(sheet, chromo):
+def _populate_excel_r_sheet(sheet: Worksheet,
+                            chromo: Dict[str, Any]):
     """
     Populate the "required" calculation excel worksheet
 
@@ -906,7 +954,11 @@ def _populate_excel_r_sheet(sheet, chromo):
                 row=i))
 
 
-def fill_cell(sheet, row, column, value, style):
+def fill_cell(sheet: Worksheet,
+              row: int,
+              column: int,
+              value: Any,
+              style: Union[str, Dict[str, Any]]):
     """
     :param sheet: worksheet
     :param row: 1-based row number
@@ -915,7 +967,7 @@ def fill_cell(sheet, row, column, value, style):
     :param style: style name as string or dict for apply_style
     :return: None
     """
-    c = sheet.cell(row=row, column=column)
+    c: Cell = sheet.cell(row=row, column=column)
     if isinstance(value, str):
         value = value.replace('\n', '\r\n')
     c.value = value
@@ -925,7 +977,9 @@ def fill_cell(sheet, row, column, value, style):
         apply_style(c, style)
 
 
-def build_named_style(book, name, config):
+def build_named_style(book: Workbook,
+                      name: str,
+                      config: Dict[str, Any]):
     """
     :param book: workbook to assign style
     :param name: style name
@@ -937,7 +991,8 @@ def build_named_style(book, name, config):
     book.add_named_style(style)
 
 
-def apply_style(target, config):
+def apply_style(target: Union[Cell, NamedStyle],
+                config: Dict[str, Any]):
     """
     apply style from config to target
 
@@ -947,16 +1002,16 @@ def apply_style(target, config):
     """
     pattern_fill = config.get('PatternFill')
     if pattern_fill:
-        target.fill = openpyxl.styles.PatternFill(**pattern_fill)
+        target.fill = PatternFill(**pattern_fill)
     font = config.get('Font')
     if font:
-        target.font = openpyxl.styles.Font(**font)
+        target.font = Font(**font)
     alignment = config.get('Alignment')
     if alignment:
-        target.alignment = openpyxl.styles.Alignment(**alignment)
+        target.alignment = Alignment(**alignment)
 
 
-def org_title_lang_hack(title):
+def org_title_lang_hack(title: str):
     """
     Canada site is using title to store "{en title name} | {fr title name}"
     this hack displays the correct one (one day soon we'll fix this, promise)
@@ -970,7 +1025,7 @@ def org_title_lang_hack(title):
     return title.split(' | ')[0]
 
 
-def template_cols_fields(chromo):
+def template_cols_fields(chromo: Dict[str, Any]):
     ''' (col_num, field) ... for fields in template'''
     return enumerate(
         (f for f in chromo['fields'] if f.get(
@@ -978,20 +1033,23 @@ def template_cols_fields(chromo):
                 'published_resource_computed_field')), DATA_FIRST_COL_NUM)
 
 
-def _add_conditional_formatting(
-        sheet, col_letter, resource_num, error_style, required_style,
-        data_num_rows):
+def _add_conditional_formatting(sheet: Worksheet,
+                                col_letter: str,
+                                resource_num: int,
+                                error_style: Dict[str, Any],
+                                required_style: Dict[str, Any],
+                                data_num_rows: int):
     '''
     Error and required cell hilighting based on e/r sheets
     '''
-    error_fill = openpyxl.styles.PatternFill(
+    error_fill = PatternFill(
         bgColor=error_style['PatternFill']['fgColor'],
         **error_style['PatternFill'])
-    error_font = openpyxl.styles.Font(**error_style['Font'])
-    required_fill = openpyxl.styles.PatternFill(
+    error_font = Font(**error_style['Font'])
+    required_fill = PatternFill(
         bgColor=required_style['PatternFill']['fgColor'],
         **required_style['PatternFill'])
-    required_font = openpyxl.styles.Font(**required_style['Font'])
+    required_font = Font(**required_style['Font'])
 
     sheet.conditional_formatting.add(
         '{col}{row1}:{col}{rowN}'.format(

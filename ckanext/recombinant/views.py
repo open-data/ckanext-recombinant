@@ -1,7 +1,13 @@
-from flask import Blueprint, Response
+from flask import Blueprint, Response as FlaskResponse
 from flask_babel import force_locale
 import re
 import simplejson as json
+
+from typing import Union, Optional, Dict, Tuple, Any
+from ckan.types import Response
+
+from werkzeug.datastructures import FileStorage as FlaskFileStorage
+from cgi import FieldStorage
 
 from logging import getLogger
 
@@ -41,8 +47,9 @@ from ckanext.recombinant.helpers import (
 from io import BytesIO
 
 from ckanext.datastore.backend import DatastoreBackend
+from ckanext.datastore.backend.postgres import DatastorePostgresqlBackend
 
-import ckanapi
+from ckanapi import NotFound, LocalCKAN
 
 
 log = getLogger(__name__)
@@ -50,10 +57,10 @@ recombinant = Blueprint('recombinant', __name__)
 
 
 @recombinant.route('/recombinant/upload/<id>', methods=['POST'])
-def upload(id):
+def upload(id: str) -> Response:
     package_type = _get_package_type(id)
     geno = get_geno(package_type)
-    lc = ckanapi.LocalCKAN(username=g.user)
+    lc = LocalCKAN(username=g.user)
     dataset = lc.action.package_show(id=id)
     org = lc.action.organization_show(id=dataset['owner_org'])
     dry_run = 'validate' in request.form
@@ -92,8 +99,8 @@ def upload(id):
 
 
 @recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['POST'])
-def delete_records(id, resource_id):
-    lc = ckanapi.LocalCKAN(username=g.user)
+def delete_records(id: str, resource_id: str) -> Union[str, Response]:
+    lc = LocalCKAN(username=g.user)
     filters = {}
 
     if not h.check_access('datastore_delete',
@@ -109,7 +116,7 @@ def delete_records(id, resource_id):
     dataset = lc.action.recombinant_show(
         dataset_type=pkg['type'], owner_org=org['name'])
 
-    def delete_error(err):
+    def delete_error(err: str) -> str:
         return render('recombinant/resource_edit.html',
                       extra_vars={'delete_errors': [err],
                                   'dataset': dataset,
@@ -131,7 +138,7 @@ def delete_records(id, resource_id):
     for r in records:
         r = r.rstrip('\r')
 
-        def record_fail(err):
+        def record_fail(err: str) -> str:
             # move bad record to the top of the pile
             filters['bulk-delete'] = '\n'.join(
                 [r] + list(records) + ok_records)
@@ -191,10 +198,12 @@ def delete_records(id, resource_id):
                 records = []
                 ok_records = []
                 chromo = get_chromo(res['name'])
+                # type_ignore_reason: incomplete typing
                 error_message = chromo.get('datastore_constraint_errors', {}).get(
-                    'delete', e.error_dict['foreign_constraints'][0])
+                    'delete', e.error_dict['foreign_constraints'][0])  # type: ignore
                 h.flash_error(_(error_message))
-                return record_fail(_(error_message))
+                # type_ignore_reason: incomplete typing
+                return record_fail(_(error_message))  # type: ignore
             raise
 
     h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
@@ -206,7 +215,7 @@ def delete_records(id, resource_id):
         )
 
 
-def _xlsx_response_headers():
+def _xlsx_response_headers() -> Tuple[str, str]:
     """
     Returns tuple of content type and disposition type.
 
@@ -230,7 +239,7 @@ def _xlsx_response_headers():
 
 @recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx',
                    methods=['GET', 'POST'])
-def template(dataset_type, lang, owner_org):
+def template(dataset_type: str, lang: str, owner_org: str) -> Response:
     """
     POST requests to this endpoint contain primary keys of
     records that are to be included in the excel file
@@ -245,7 +254,7 @@ def template(dataset_type, lang, owner_org):
     if lang != h.lang():
         return abort(404, _('Not found'))
 
-    lc = ckanapi.LocalCKAN(username=g.user)
+    lc = LocalCKAN(username=g.user)
     try:
         dataset = lc.action.recombinant_show(
             dataset_type=dataset_type,
@@ -253,7 +262,7 @@ def template(dataset_type, lang, owner_org):
         org = lc.action.organization_show(
             id=owner_org,
             include_datasets=False)
-    except ckanapi.NotFound:
+    except NotFound:
         return abort(404, _('Not found'))
 
     try:
@@ -292,7 +301,7 @@ def template(dataset_type, lang, owner_org):
 
     blob = BytesIO()
     book.save(blob)
-    response = Response(blob.getvalue())
+    response = FlaskResponse(blob.getvalue())
     content_type, disposition_type = _xlsx_response_headers()
     response.headers['Content-Type'] = content_type
     response.headers['Content-Disposition'] = (
@@ -304,7 +313,8 @@ def template(dataset_type, lang, owner_org):
     return response
 
 
-def _data_dictionary(dataset_type, published_resource=False):
+def _data_dictionary(dataset_type: str,
+                     published_resource: bool = False) -> Response:
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
@@ -313,7 +323,7 @@ def _data_dictionary(dataset_type, published_resource=False):
     book = excel_data_dictionary(geno, published_resource=published_resource)
     blob = BytesIO()
     book.save(blob)
-    response = Response(blob.getvalue())
+    response = FlaskResponse(blob.getvalue())
     content_type, disposition_type = _xlsx_response_headers()
     response.headers['Content-Type'] = content_type
     response.headers['Content-Disposition'] = '{}; filename="{}.xlsx"'.format(
@@ -323,16 +333,16 @@ def _data_dictionary(dataset_type, published_resource=False):
 
 
 @recombinant.route('/recombinant-dictionary/<dataset_type>')
-def data_dictionary(dataset_type):
+def data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant-published-dictionary/<dataset_type>')
-def published_data_dictionary(dataset_type):
+def published_data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=True)
 
 
-def _schema_json(dataset_type, published_resource=False):
+def _schema_json(dataset_type: str, published_resource: bool = False) -> Response:
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
@@ -437,17 +447,17 @@ def _schema_json(dataset_type, published_resource=False):
 
 
 @recombinant.route('/recombinant-schema/<dataset_type>.json')
-def schema_json(dataset_type):
+def schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant-published-schema/<dataset_type>.json')
-def published_schema_json(dataset_type):
+def published_schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=True)
 
 
 @recombinant.route('/recombinant/<resource_name>')
-def type_redirect(resource_name):
+def type_redirect(resource_name: str) -> Response:
     orgs = h.organizations_available('read')
 
     if not orgs:
@@ -464,8 +474,8 @@ def type_redirect(resource_name):
     )
 
 
-def dataset_redirect(package_type, id):
-    lc = ckanapi.LocalCKAN(username=g.user)
+def dataset_redirect(package_type: str, id: str) -> Response:
+    lc = LocalCKAN(username=g.user)
     dataset = lc.action.package_show(id=id)
     return h.redirect_to(
         'recombinant.preview_table',
@@ -474,12 +484,14 @@ def dataset_redirect(package_type, id):
     )
 
 
-def resource_redirect(package_type, id, resource_id):
+def resource_redirect(package_type: str, id: str, resource_id: str) -> Response:
     return dataset_redirect(package_type, id)
 
 
 @recombinant.route('/recombinant/<resource_name>/<owner_org>', methods=['GET', 'POST'])
-def preview_table(resource_name, owner_org, errors=None):
+def preview_table(resource_name: str,
+                  owner_org: str,
+                  errors: Optional[Dict[str, Any]] = None) -> Union[str, Response]:
     if not g.user:
         return h.redirect_to('user.login')
 
@@ -493,7 +505,7 @@ def preview_table(resource_name, owner_org, errors=None):
             owner_org=org_object.name,
         )
 
-    lc = ckanapi.LocalCKAN(username=g.user, context={'ignore_auth': True})
+    lc = LocalCKAN(username=g.user, context={'ignore_auth': True})
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
@@ -514,8 +526,8 @@ def preview_table(resource_name, owner_org, errors=None):
             # check that the resource has errors
             for _r in dataset['resources']:
                 if _r['name'] == resource_name and 'error' in _r:
-                    raise ckanapi.NotFound
-        except ckanapi.NotFound:
+                    raise NotFound
+        except NotFound:
             try:
                 if 'create' in request.form:
                     lc.action.recombinant_create(
@@ -525,7 +537,7 @@ def preview_table(resource_name, owner_org, errors=None):
                         dataset_type=chromo['dataset_type'], owner_org=owner_org,
                         force_update=True)
             except NotAuthorized as e:
-                return abort(403, e.message)
+                return abort(403, e.message or '')
         return h.redirect_to(
             'recombinant.preview_table',
             resource_name=resource_name,
@@ -535,7 +547,7 @@ def preview_table(resource_name, owner_org, errors=None):
     try:
         dataset = lc.action.recombinant_show(
             dataset_type=chromo['dataset_type'], owner_org=owner_org)
-    except ckanapi.NotFound:
+    except NotFound:
         dataset = None
     org = lc.action.organization_show(id=owner_org)
 
@@ -559,7 +571,11 @@ def preview_table(resource_name, owner_org, errors=None):
         })
 
 
-def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
+def _process_upload_file(lc: LocalCKAN,
+                         dataset: Dict[str, Any],
+                         upload_file: Union[str, FlaskFileStorage, FieldStorage],
+                         geno: Dict[str, Any],
+                         dry_run: bool):
     """
     Use lc.action.datastore_upsert to load data from upload_file
 
@@ -576,7 +592,9 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
 
     upload_data = read_excel(upload_file)
     total_records = 0
-    backend = DatastoreBackend.get_active_backend()
+    # type_ignore_reason: incomplete typing
+    backend: DatastorePostgresqlBackend = DatastoreBackend.\
+        get_active_backend()  # type: ignore
     ds_write_connection = backend._get_write_engine().connect()
     ds_write_transaction = ds_write_connection.begin()
     try:
@@ -666,11 +684,14 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 if 'info' in e.error_dict:
                     # because, where else would you put the error text?
                     # XXX improve this in datastore, please
-                    pgerror = e.error_dict['info']['orig'][0].decode('utf-8')
+                    # type_ignore_reason: incomplete typing
+                    pgerror = e.error_dict['info']['orig'][0].decode(  # type: ignore
+                        'utf-8')
                 else:
-                    pgerror = e.error_dict['records'][0]
+                    # type_ignore_reason: incomplete typing
+                    pgerror = e.error_dict['records'][0]  # type: ignore
                 if isinstance(pgerror, dict):
-                    pgerror = u'; '.join(
+                    pgerror = '; '.join(
                         (h.recombinant_language_text(
                             h.recombinant_get_field(sheet_name, k)['label']) if
                             h.recombinant_get_field(sheet_name, k) else k) + _(':')
@@ -696,10 +717,12 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                     raise BadExcelData(
                         _('Sheet {0} Row {1}:').format(
                             sheet_name,
-                            records[e.error_dict['records_row']][0]) + ' '
+                            # type_ignore_reason: incomplete typing
+                            records[e.error_dict['records_row']][0])  # type: ignore
+                        + ' '
                         + pgerror)
                 raise BadExcelData(
-                    _(u"Error while importing data: {0}").format(
+                    _("Error while importing data: {0}").format(
                         pgerror))
         if not total_records:
             raise BadExcelData(_("The template uploaded is empty"))

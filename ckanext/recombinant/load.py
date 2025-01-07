@@ -1,23 +1,24 @@
 import json
+import yaml
 
-try:
-    import yaml
-except ImportError:
-    yaml = None
+from typing import Union, Dict, Any, TextIO
 
 
-def load(f):
-    if is_yaml(f.name):
-        return yaml.safe_load(f)
-    return json.load(f)
+def load(f: Union[str, bytes, bytearray, TextIO]) -> Dict[str, Any]:
+    if is_yaml(getattr(f, 'name', '')):
+        # type_ignore_reason: incomplete typing
+        return yaml.safe_load(f)  # type: ignore
+    # type_ignore_reason: incomplete typing
+    return json.load(f)  # type: ignore
 
 
-def loads(s, url):
+def loads(s: Union[str, bytes, bytearray, TextIO], url: str) -> Dict[str, Any]:
     if is_yaml(url):
-        return yaml.safe_load(s)
-    return json.loads(s)
+        # type_ignore_reason: incomplete typing
+        return yaml.safe_load(s)  # type: ignore
+    # type_ignore_reason: incomplete typing
+    return json.loads(s)  # type: ignore
 
 
-def is_yaml(n):
-    # import pyyaml only if necessary
+def is_yaml(n: str) -> bool:
     return n.endswith(('.yaml', '.yml'))

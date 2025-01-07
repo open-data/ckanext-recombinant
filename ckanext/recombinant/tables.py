@@ -4,12 +4,18 @@ from files specified in the recombinant.definitions ini setting.
 
 This module provides access to those definitions.
 """
+from typing import List, Dict, Optional, Any
+
 import ckan.plugins as p
 
 from ckanext.recombinant.errors import RecombinantException
 
 
 class IRecombinant(p.Interface):
+    _published_resource_ids = {}
+    _genos = {}
+    _chromos = {}
+
     pass
 
 
@@ -23,7 +29,7 @@ def _get_plugin():
         'Recombinant plugin not found. Have you enabled the plugin?')
 
 
-def get_chromo(resource_name):
+def get_chromo(resource_name: str) -> Dict[str, Any]:
     """
     Get the resource definition (chromo) for the given resource name
     """
@@ -39,7 +45,7 @@ def get_chromo(resource_name):
         raise RecombinantException('resource_name "%s" not found' % resource_name)
 
 
-def get_geno(dataset_type):
+def get_geno(dataset_type: str) -> Dict[str, Any]:
     """
     Get the dataset definition (geno) for the given dataset type
     """
@@ -50,14 +56,14 @@ def get_geno(dataset_type):
         raise RecombinantException('dataset_type "%s" not found' % dataset_type)
 
 
-def get_dataset_types():
+def get_dataset_types() -> List[str]:
     """
     Get a list of recombinant dataset types
     """
     return sorted(_get_plugin()._genos)
 
 
-def get_resource_names():
+def get_resource_names() -> List[str]:
     """
     Get a list of recombinant resource names
     """
@@ -66,14 +72,14 @@ def get_resource_names():
             for chromo in get_geno(t)['resources']]
 
 
-def get_published_resource_resource_name(res_id):
+def get_published_resource_resource_name(res_id: str) -> str:
     try:
         return _get_plugin()._published_resource_ids[res_id]
     except KeyError:
         raise RecombinantException('resource id not found')
 
 
-def get_dataset_type_for_resource_name(resource_name):
+def get_dataset_type_for_resource_name(resource_name: str) -> Optional[str]:
     """
     Get the dataset type that contains resource_name,
     or None if not found
@@ -84,7 +90,7 @@ def get_dataset_type_for_resource_name(resource_name):
                 return t
 
 
-def get_target_datasets():
+def get_target_datasets() -> List[str]:
     """
     Find the RecombinantPlugin instance and get its
     configured target datasets (e.g., ['ati', 'pd', ...])

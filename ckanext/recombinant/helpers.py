@@ -1,6 +1,8 @@
 import json
 import os.path
 
+from typing import Dict, Any, Optional, List
+
 from ckan.plugins.toolkit import c, config
 from ckan.plugins.toolkit import _ as gettext
 import ckanapi
@@ -15,7 +17,8 @@ from ckanext.recombinant import load
 
 
 # same as scheming_language_text, copied so we don't add the dependency
-def recombinant_language_text(text, prefer_lang=None):
+def recombinant_language_text(text: Any,
+                              prefer_lang: Optional[str] = None) -> str:
     """
     :param text: {lang: text} dict or text string
     :param prefer_lang: choose this language version if available
@@ -24,7 +27,7 @@ def recombinant_language_text(text, prefer_lang=None):
     language in dict or using gettext if not a dict
     """
     if not text:
-        return u''
+        return ''
 
     if hasattr(text, 'get'):
         try:
@@ -44,14 +47,14 @@ def recombinant_language_text(text, prefer_lang=None):
         except KeyError:
             pass
 
-        l, v = sorted(text.items())[0]
+        _l, v = sorted(text.items())[0]
         return v
 
     t = gettext(text)
     return t
 
 
-def recombinant_get_chromo(resource_name):
+def recombinant_get_chromo(resource_name: str) -> Optional[Dict[str, Any]]:
     """
     Get the resource definition (chromo) for the given resource name
     """
@@ -61,7 +64,7 @@ def recombinant_get_chromo(resource_name):
         return
 
 
-def recombinant_get_geno(dataset_type):
+def recombinant_get_geno(dataset_type: str) -> Optional[Dict[str, Any]]:
     """
     Get the dataset definition (geno) for thr given dataset type
     """
@@ -71,11 +74,11 @@ def recombinant_get_geno(dataset_type):
         return
 
 
-def recombinant_get_types():
+def recombinant_get_types() -> List[str]:
     return get_dataset_types()
 
 
-def recombinant_primary_key_fields(resource_name):
+def recombinant_primary_key_fields(resource_name: str) -> List[Dict[str, Any]]:
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
@@ -86,7 +89,10 @@ def recombinant_primary_key_fields(resource_name):
         ]
 
 
-def recombinant_example(resource_name, doc_type, indent=2, lang='json'):
+def recombinant_example(resource_name: str,
+                        doc_type: str,
+                        indent: int = 2,
+                        lang: str = 'json') -> str:
     """
     Return example data formatted for use in API documentation
     """
@@ -114,14 +120,17 @@ def recombinant_example(resource_name, doc_type, indent=2, lang='json'):
 
     if lang == 'pythonargs':
         return ',\n'.join(
-            "%s%s=%s" % (left, k, json.dumps(data[k]))
+            # type_ignore_reason: incomplete typing
+            "%s%s=%s" % (left, k, json.dumps(data[k]))  # type: ignore
             for k in sorted(data))
 
     out = json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False)
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
 
 
-def recombinant_choice_fields(resource_name, all_languages=False, prefer_lang=None):
+def recombinant_choice_fields(resource_name: str,
+                              all_languages: bool = False,
+                              prefer_lang: Optional[str] = None) -> Dict[str, Any]:
     """
     Return a datastore_id: choices dict from the resource definition
     that contain lists of choices, with labels pre-translated
@@ -136,19 +145,20 @@ def recombinant_choice_fields(resource_name, all_languages=False, prefer_lang=No
     if not chromo:
         return {}
 
-    def build_choices(f, choices):
+    def build_choices(f: Dict[str, Any], choices: Dict[str, Any]):
         order_expr = f.get('choice_order_expression')
         if order_expr:
             code = compile(order_expr, resource_name, 'eval')
 
-            def key_fn(v):
+            def key_fn(v: str) -> Any:
                 return eval(code, {}, {
                     'code': v,
                     'value': choices[v],
                     'text': recombinant_language_text(choices[v], prefer_lang),
                 })
+
         else:
-            key_fn = None
+            key_fn = None  # type: ignore
 
         out[f['datastore_id']] = [
             (v, choices[v] if all_languages
@@ -165,12 +175,12 @@ def recombinant_choice_fields(resource_name, all_languages=False, prefer_lang=No
     return out
 
 
-def _read_choices_file(chromo, f):
+def _read_choices_file(chromo: Dict[str, Any], f: Dict[str, Any]) -> Dict[str, Any]:
     with open(os.path.join(chromo['_path'], f['choices_file'])) as cf:
         return load.load(cf)
 
 
-def recombinant_show_package(pkg):
+def recombinant_show_package(pkg: Dict[str, Any]) -> Dict[str, Any]:
     """
     return recombinant_show results for pkg
     """
@@ -180,17 +190,20 @@ def recombinant_show_package(pkg):
         owner_org=pkg['organization']['name'])
 
 
-def recombinant_get_field(resource_name, datastore_id):
+def recombinant_get_field(resource_name: str,
+                          datastore_id: str) -> Optional[Dict[str, Any]]:
     """
     Return field info from resource name and datastore column id
     """
     chromo = recombinant_get_chromo(resource_name)
+    if not chromo:
+        return
     for f in chromo['fields']:
         if f['datastore_id'] == datastore_id:
             return f
 
 
-def recombinant_published_resource_chromo(res_id):
+def recombinant_published_resource_chromo(res_id: str) -> Optional[Dict[str, Any]]:
     try:
         resource_name = get_published_resource_resource_name(res_id)
         return recombinant_get_chromo(resource_name)

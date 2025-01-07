@@ -1,7 +1,12 @@
+from ckan.types import FlattenDataDict, FlattenKey, FlattenErrorDict, Context
+
 from ckan.plugins.toolkit import _, h
 
 
-def recombinant_foreign_keys(key, data, errors, context):
+def recombinant_foreign_keys(key: FlattenKey,
+                             data: FlattenDataDict,
+                             errors: FlattenErrorDict,
+                             context: Context):
     """
     Limit to Recombinant Resources only.
     """

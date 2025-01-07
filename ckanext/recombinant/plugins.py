@@ -4,6 +4,25 @@ import uuid
 from urllib.request import urlopen
 from urllib.error import URLError
 
+from typing import Optional, Union, Any, Dict, List, Tuple
+from ckan.types import (
+    FlattenDataDict,
+    FlattenErrorDict,
+    FlattenKey,
+    Context,
+    Callable,
+    Action,
+    ChainedAction,
+    AuthFunction,
+    ChainedAuthFunction,
+    Schema,
+    Validator
+)
+from ckan.common import CKANConfig
+
+from flask import Blueprint
+from click import Command
+
 from ckan.plugins.toolkit import get_validator
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
@@ -36,7 +55,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
     p.implements(p.IValidators)
     p.implements(IDataDictionaryForm, inherit=True)
 
-    def update_config(self, config):
+    def update_config(self, config: 'CKANConfig'):
         # add our templates
         p.toolkit.add_template_directory(config, 'templates')
         p.toolkit.add_resource('assets', 'recombinant')
@@ -54,10 +73,10 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
             if pubid:
                 self._published_resource_ids[pubid] = chname
 
-    def package_types(self):
+    def package_types(self) -> List[str]:
         return tables.get_dataset_types()
 
-    def create_package_schema(self):
+    def create_package_schema(self) -> Schema:
         schema = super(RecombinantPlugin, self).create_package_schema()
         schema['id'] = [generate_uuid]
         schema['name'] = [value_from_id]
@@ -65,10 +84,10 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
 
         return schema
 
-    def get_blueprint(self):
+    def get_blueprint(self) -> List[Blueprint]:
         return [views.recombinant]
 
-    def prepare_dataset_blueprint(self, package_type, bp):
+    def prepare_dataset_blueprint(self, package_type: str, bp: Blueprint):
         bp.add_url_rule('/<id>',
                         'dataset_redirect',
                         views.dataset_redirect)
@@ -80,7 +99,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
                         views.resource_redirect)
         return bp
 
-    def prepare_resource_blueprint(self, package_type, bp):
+    def prepare_resource_blueprint(self, package_type: str, bp: Blueprint):
         bp.add_url_rule('/<resource_id>/edit',
                         'resource_edit_redirect',
                         views.resource_redirect)
@@ -89,7 +108,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
                         views.resource_redirect)
         return bp
 
-    def get_helpers(self):
+    def get_helpers(self) -> Dict[str, Callable[..., Any]]:
         return {
             'recombinant_language_text': helpers.recombinant_language_text,
             'recombinant_primary_key_fields':
@@ -105,7 +124,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
                 helpers.recombinant_published_resource_chromo,
             }
 
-    def get_actions(self):
+    def get_actions(self) -> Dict[str, Union[Action, ChainedAction]]:
         return {
             'recombinant_create': logic.recombinant_create,
             'recombinant_update': logic.recombinant_update,
@@ -114,8 +133,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
             }
 
     # IAuthFunctions
-
-    def get_auth_functions(self):
+    def get_auth_functions(self) -> Dict[str, Union[AuthFunction,
+                                                    ChainedAuthFunction]]:
         return {
             'package_update': auth.package_update,
             'package_create': auth.package_create,
@@ -123,40 +142,45 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
         }
 
     # IClick
-
-    def get_commands(self):
+    def get_commands(self) -> List[Command]:
         return [cli.get_commands()]
 
     # IValidators
-
-    def get_validators(self):
+    def get_validators(self) -> Dict[str, Validator]:
         return {
             'recombinant_foreign_keys': validators.recombinant_foreign_keys,
         }
 
     # IDataDictionaryForm
-
-    def update_datastore_create_schema(self, schema):
+    def update_datastore_create_schema(self, schema: Schema) -> Schema:
         recombinant_foreign_keys_validator = get_validator('recombinant_foreign_keys')
-        schema['foreign_keys'].append(recombinant_foreign_keys_validator)
+        if 'foreign_keys' not in schema:
+            schema['foreign_keys'] = []
+        # type_ignore_reason: incomplete typing
+        schema['foreign_keys'].append(  # type: ignore
+            recombinant_foreign_keys_validator)
         return schema
 
 
-def generate_uuid(value):
+def generate_uuid(value: Any) -> str:
     """
     Create an id for this dataset earlier than normal.
     """
     return str(uuid.uuid4())
 
 
-def value_from_id(key, converted_data, errors, context):
+def value_from_id(key: FlattenKey,
+                  converted_data: FlattenDataDict,
+                  errors: FlattenErrorDict,
+                  context: Context):
     """
     Copy the 'id' value from converted_data
     """
     converted_data[key] = converted_data[('id',)]
 
 
-def _load_table_definitions(urls):
+def _load_table_definitions(urls: List[str]) -> Tuple[
+        Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     chromos = {}
     genos = {}
     dataset_definitions = {}
@@ -169,6 +193,9 @@ def _load_table_definitions(urls):
         if not t:
             t = _load_tables_url(url)
             is_url = True
+
+        if not t or not p:
+            continue
 
         if t['dataset_type'] in dataset_definitions:
             raise RecombinantException(
@@ -231,7 +258,8 @@ def _load_table_definitions(urls):
     return chromos, genos
 
 
-def _load_tables_module_path(url):
+def _load_tables_module_path(url: str) -> Tuple[
+        Optional[Dict[str, Any]], Optional[str]]:
     """
     Given a path like "ckanext.spatialx:my_definition.json"
     find the second part relative to the import path of the first
@@ -247,14 +275,14 @@ def _load_tables_module_path(url):
     p = os.path.join(p, file_name)
     if os.path.exists(p):
         return load.load(open(p)), p
+    return None, None
 
 
-def _load_tables_url(url):
+def _load_tables_url(url: str) -> Optional[Dict[str, Any]]:
     try:
         res = urlopen(url)
         tables = res.read()
     except URLError:
         raise RecombinantException(
             "Could not find recombinant.definitions json config file: %s" % url)
-
     return load.loads(tables, url)

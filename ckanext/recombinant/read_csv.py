@@ -1,11 +1,16 @@
 from unicodecsv import DictReader
 import codecs
 
+from typing import Any, Dict, Generator, Tuple, List, Optional
+
 
 BATCH_SIZE = 15000
 
 
-def csv_data_batch(csv_path, chromo, strict=True):
+def csv_data_batch(csv_path: str,
+                   chromo: Dict[str, Any],
+                   strict: bool = True) -> Generator[
+                       Tuple[Optional[str], List[Dict[str, Any]]], None, None]:
     """
     Generator of dataset records from csv file
 
@@ -26,9 +31,11 @@ def csv_data_batch(csv_path, chromo, strict=True):
             f.seek(0)
 
         csv_in = DictReader(f)
-        cols = [
-            f for f in csv_in.fieldnames
-            if f not in chromo.get('csv_org_extras', [])]
+        cols = []
+        if csv_in.fieldnames:
+            cols = [
+                f for f in csv_in.fieldnames
+                if f not in chromo.get('csv_org_extras', [])]
 
         if strict:
             expected = [f['datastore_id'] for f in chromo['fields'] if not f.get(

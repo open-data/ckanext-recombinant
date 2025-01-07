@@ -1,6 +1,9 @@
 from six import string_types
 from ckan.plugins.toolkit import _, chained_action, h, side_effect_free
 
+from typing import Dict, Any, List, Tuple
+from ckan.types import Context, DataDict, Action, ChainedAction
+
 from sqlalchemy import and_
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
@@ -16,13 +19,10 @@ from ckanext.recombinant.errors import (
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
 
-try:
-    from ckanext.datastore.backend.postgres import literal_string
-except ImportError:
-    from ckanext.datastore.helpers import literal_string
+from ckanext.datastore.backend.postgres import literal_string
 
 
-def recombinant_create(context, data_dict):
+def recombinant_create(context: Context, data_dict: DataDict):
     '''
     Create a dataset with datastore table(s) for an organization and
     recombinant dataset type.
@@ -52,7 +52,7 @@ def recombinant_create(context, data_dict):
     return _update_datastore(lc, geno, dataset)
 
 
-def recombinant_update(context, data_dict):
+def recombinant_update(context: Context, data_dict: DataDict):
     '''
     Update a dataset's datastore table(s) for an organization and
     recombinant dataset type.
@@ -72,7 +72,7 @@ def recombinant_update(context, data_dict):
         force_update=asbool(data_dict.get('force_update', False)))
 
 
-def recombinant_show(context, data_dict):
+def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
     '''
     Return the status of a recombinant dataset including all its tables
     and checking that its metadata is up to date.
@@ -137,13 +137,18 @@ def recombinant_show(context, data_dict):
         }
 
 
-def _action_find_dataset(context, data_dict):
+def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
+        LocalCKAN, Dict[str, Any], List[Dict[str, Any]]]:
     '''
     common code for actions that need to check for a dataset based on
     the dataset type and organization name or id
     '''
     dataset_type = get_or_bust(data_dict, 'dataset_type')
     owner_org = Group.get(get_or_bust(data_dict, 'owner_org'))
+
+    if not owner_org:
+        raise ValidationError(
+            {'owner_org': _("Organization not found")})
 
     try:
         geno = get_geno(dataset_type)
@@ -152,7 +157,7 @@ def _action_find_dataset(context, data_dict):
             {'dataset_type': _("Recombinant dataset type not found")})
 
     fresh_context = {}
-    if u'ignore_auth' in context:
+    if 'ignore_auth' in context:
         fresh_context['ignore_auth'] = context['ignore_auth']
 
     lc = LocalCKAN(username=context['user'], context=fresh_context)
@@ -163,7 +168,8 @@ def _action_find_dataset(context, data_dict):
     return lc, geno, result['results']
 
 
-def _action_get_dataset(context, data_dict):
+def _action_get_dataset(context: Context, data_dict: DataDict) -> Tuple[
+        LocalCKAN, Dict[str, Any], Dict[str, Any]]:
     '''
     common code for actions that need to retrieve a dataset based on
     the dataset type and organization name or id
@@ -180,7 +186,10 @@ def _action_get_dataset(context, data_dict):
     return lc, geno, results[0]
 
 
-def _update_dataset(lc, geno, dataset, delete_resources=False):
+def _update_dataset(lc: LocalCKAN,
+                    geno: Dict[str, Any],
+                    dataset: Dict[str, Any],
+                    delete_resources: bool = False) -> Dict[str, Any]:
     """
     call lc.action.package_update on dataset if necessary to make its
     metadata match the dataset definition geno
@@ -231,7 +240,10 @@ def _update_dataset(lc, geno, dataset, delete_resources=False):
     return dataset
 
 
-def _update_datastore(lc, geno, dataset, force_update=False):
+def _update_datastore(lc: LocalCKAN,
+                      geno: Dict[str, Any],
+                      dataset: Dict[str, Any],
+                      force_update: bool = False):
     """
     call lc.action.datastore_create to create tables or add
     columns to existing datastore tables based on dataset definition
@@ -286,7 +298,7 @@ def _update_datastore(lc, geno, dataset, force_update=False):
             force=True)
 
 
-def _update_triggers(lc, chromo):
+def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
     definitions = dict(chromo.get('trigger_strings', {}))
     trigger_names = []
 
@@ -317,7 +329,7 @@ def _update_triggers(lc, chromo):
                 lc.action.datastore_function_create(
                     name=str(trname),
                     or_replace=True,
-                    rettype=u'trigger',
+                    rettype='trigger',
                     definition=str(trcode).format(**dict(
                         (dkey, _pg_value(dvalue))
                         for dkey, dvalue in definitions.items())))
@@ -328,28 +340,28 @@ def _update_triggers(lc, chromo):
     return trigger_names
 
 
-def _pg_value(value):
+def _pg_value(value: Any) -> str:
     if isinstance(value, string_types):
         return literal_string(str(value))
 
-    return 'ARRAY[' + u','.join(literal_string(str(c)) for c in value) + ']'
+    return 'ARRAY[' + ','.join(literal_string(str(c)) for c in value) + ']'
 
 
-def _dataset_fields(geno):
+def _dataset_fields(geno: Dict[str, Any]) -> Dict[str, Any]:
     """
     return the dataset metadata fields created for dataset definition geno
     """
     return {'title': geno['title'], 'notes': geno.get('notes', '')}
 
 
-def _dataset_match(geno, dataset):
+def _dataset_match(geno: Dict[str, Any], dataset: Dict[str, Any]) -> bool:
     """
     return True if dataset metadata matches expected fields for dataset type dt
     """
     return all(dataset[k] == v for (k, v) in _dataset_fields(geno).items())
 
 
-def _resource_fields(chromo):
+def _resource_fields(chromo: Dict[str, Any]) -> Dict[str, Any]:
     """
     return the resource metadata fields created for resource definition chromo
     """
@@ -358,14 +370,14 @@ def _resource_fields(chromo):
             'url_type': 'datastore'}
 
 
-def _resource_match(chromo, resource):
+def _resource_match(chromo: Dict[str, Any], resource: Dict[str, Any]) -> bool:
     """
     return True if resource metadatas matches expected fields for sheet r
     """
     return all(resource[k] == v for (k, v) in _resource_fields(chromo).items())
 
 
-def datastore_column_type(t, text_types):
+def datastore_column_type(t: str, text_types: List[str]) -> str:
     """
     return postgres column type for field type t
     if text_types is true return simple types (almost all text)
@@ -378,7 +390,8 @@ def datastore_column_type(t, text_types):
     return 'int' if t in ('year', 'month') else t
 
 
-def datastore_fields(fs, text_types):
+def datastore_fields(fs: List[Dict[str, Any]], text_types: List[str]) -> List[
+        Dict[str, Any]]:
     """
     return the datastore field definitions for fields fs
     """
@@ -389,7 +402,7 @@ def datastore_fields(fs, text_types):
             if not f.get('published_resource_computed_field', False)]
 
 
-def _datastore_match(fs, fields):
+def _datastore_match(fs: List[Dict[str, Any]], fields: List[Dict[str, Any]]) -> bool:
     """
     return True if existing datastore column fields include fields
     defined in fs.
@@ -401,7 +414,9 @@ def _datastore_match(fs, fields):
 
 @chained_action
 @side_effect_free
-def recombinant_datastore_info(up_func, context, data_dict):
+def recombinant_datastore_info(up_func: Action,
+                               context: Context,
+                               data_dict: DataDict) -> ChainedAction:
     """
     Wraps datastore_info action to add Recombinant schema info
     to Recombinant resources and Published resources.
@@ -409,6 +424,8 @@ def recombinant_datastore_info(up_func, context, data_dict):
     info = up_func(context, data_dict)
     resource_id = data_dict.get('resource_id', data_dict.get('id'))
     chromo = h.recombinant_published_resource_chromo(resource_id)
+    package_type = ''
+    recombinant_resource_name = ''
     if not chromo:
         model = context['model']
         result = model.Session.query(model.Package.type, model.Resource.name).join(

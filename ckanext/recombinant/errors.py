@@ -1,3 +1,5 @@
+from typing import List, Any, Generator
+
 from ckan.plugins.toolkit import _
 
 
@@ -10,11 +12,11 @@ class RecombinantConfigurationError(Exception):
 
 
 class BadExcelData(Exception):
-    def __init__(self, message):
+    def __init__(self, message: Any):
         self.message = message
 
 
-def format_trigger_error(error_values: list):
+def format_trigger_error(error_values: List[str]) -> Generator[str, None, None]:
     """
     Format PSQL function errors from raised ValidationError exceptions.
 
