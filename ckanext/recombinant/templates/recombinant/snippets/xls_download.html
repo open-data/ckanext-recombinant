@@ -4,6 +4,7 @@
 
 {% block form %}
 <form enctype="multipart/form-data" id="dataset-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action=''>
+{{ h.csrf_input() }}
 {% endblock %}
 {% block upload_submit %}
   <div class="clear"></div>

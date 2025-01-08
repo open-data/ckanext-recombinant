@@ -1,0 +1,9 @@
+code_block_buttons:
+  contents:
+    - js/code_block_buttons.js
+  output: recombinant/%(version)s_code_block_buttons.js
+
+main_css:
+  contents:
+    - css/recombinant.css
+  output: recombinant/%(version)s_recombinant.css

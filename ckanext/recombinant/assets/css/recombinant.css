@@ -1,0 +1,38 @@
+#api-access-accordion figure{
+  display: none;
+}
+#api-access-accordion figure.python{
+  display: none;
+}
+/* Default cURL display */
+#api-access-accordion figure.curl{
+  display: block;
+}
+#api-access-accordion figure.powershell{
+  display: none;
+}
+#api-access-example-code-control label::after{
+  content: none !important;
+}
+#api-access-example-code-control input[type="radio"]{
+  cursor: pointer !important;
+}
+#api-access-accordion figure{
+  margin-bottom: 12px !important;
+}
+#api-access-accordion pre{
+  margin-bottom: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+#api-access-accordion figure figcaption{
+  padding: 4px 8px;
+  background-color: #335075;
+  color: white;
+  font-weight: 700 !important;
+  font-size: 14px;
+  line-height: 1.5 !important;
+  border-bottom-left-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+  text-align: right !important;
+}

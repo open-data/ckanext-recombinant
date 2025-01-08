@@ -8,26 +8,28 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-11-21 21:09+0000\n"
+"POT-Creation-Date: 2024-11-26 14:21+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
 "Language-Team: fr <LL@li.org>\n"
-"Plural-Forms: nplurals=2; plural=(n > 1)\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.7.0\n"
+"Generated-By: Babel 2.10.3\n"
 
 #: ckanext/recombinant/auth.py:16
 #, python-format
 msgid "User %s not authorized to modify Recombinant type: %s"
 msgstr ""
+"Utilisateur %s non autorisé à modifier le type Recombinant : %s"
 
 #: ckanext/recombinant/auth.py:32
 #, python-format
 msgid "User %s not authorized to create Recombinant packages: %s"
 msgstr ""
+"Utilisateur %s non autorisé à créer des ensemble recombinants : %s"
 
 #: ckanext/recombinant/auth.py:51
 #, python-format
@@ -35,6 +37,8 @@ msgid ""
 "Cannot delete Datastore for type: %s. Use datastore_records_delete "
 "instead."
 msgstr ""
+"Impossible de supprimer l’entrepôt de données pour le type : %s."
+" Utilisez plutôt datastore_records_delete."
 
 #: ckanext/recombinant/logic.py:29
 #, python-format
@@ -52,58 +56,60 @@ msgstr "Plusieurs jeux de données existent pour le type {0} org {1}."
 #: ckanext/recombinant/validators.py:14
 msgid "Cannot assign foreign keys to a non-recombinant resource."
 msgstr ""
+"Impossible d'attribuer des clés étrangères à une ressource non "
+"recombinante."
 
-#: ckanext/recombinant/views.py:71
+#: ckanext/recombinant/views.py:72
 msgid "No errors found."
 msgstr "Aucune erreur trouvée."
 
-#: ckanext/recombinant/views.py:75
+#: ckanext/recombinant/views.py:76
 msgid "Your file was successfully uploaded into the central system."
 msgstr "Votre fichier a été téléchargé avec succès dans le système central."
 
-#: ckanext/recombinant/views.py:95 ckanext/recombinant/views.py:588
+#: ckanext/recombinant/views.py:96 ckanext/recombinant/views.py:590
 msgid "User {0} not authorized to update resource {1}"
-msgstr ""
+msgstr "L'utilisateur {0} n'est pas autorisé à mettre à jour la ressource {1}"
 
-#: ckanext/recombinant/views.py:118
+#: ckanext/recombinant/views.py:119
 msgid "Required field"
 msgstr "Champ obligatoire"
 
-#: ckanext/recombinant/views.py:136
+#: ckanext/recombinant/views.py:137
 msgid "Wrong number of fields, expected {num}"
 msgstr "Nombre de champs erroné, prévu {num}"
 
-#: ckanext/recombinant/views.py:148
+#: ckanext/recombinant/views.py:149
 msgid "Invalid fields"
 msgstr "Champs non valides"
 
-#: ckanext/recombinant/views.py:151
+#: ckanext/recombinant/views.py:152
 #, python-format
 msgid "No matching records found \"%s\""
 msgstr "Aucun document correspondant n’a été trouvé \"%s\""
 
-#: ckanext/recombinant/views.py:154
+#: ckanext/recombinant/views.py:155
 msgid "Multiple matching records found"
 msgstr "Plusieurs documents correspondants trouvés"
 
-#: ckanext/recombinant/views.py:197
+#: ckanext/recombinant/views.py:193
 msgid "{num} deleted."
 msgstr "{num} supprimé"
 
-#: ckanext/recombinant/views.py:240 ckanext/recombinant/views.py:251
+#: ckanext/recombinant/views.py:236 ckanext/recombinant/views.py:247
 msgid "Not found"
 msgstr "Non trouvé"
 
-#: ckanext/recombinant/views.py:263 ckanext/recombinant/views.py:524
+#: ckanext/recombinant/views.py:259 ckanext/recombinant/views.py:526
 msgid "Resource not found"
 msgstr "Ressource non trouvée"
 
-#: ckanext/recombinant/views.py:277
+#: ckanext/recombinant/views.py:273
 #, python-format
 msgid "Unauthorized to read resource %s"
-msgstr ""
+msgstr "Vous n'êtes pas autorisé à lire la ressource %s"
 
-#: ckanext/recombinant/views.py:300 ckanext/recombinant/views.py:328
+#: ckanext/recombinant/views.py:296 ckanext/recombinant/views.py:324
 msgid "Recombinant dataset_type not found"
 msgstr "Type de jeux de données recombinant_non trouvé"
 
@@ -131,16 +137,20 @@ msgstr "Facultatif"
 msgid "No organizations found"
 msgstr "Aucune organisation trouvée"
 
-#: ckanext/recombinant/views.py:440 ckanext/recombinant/views.py:480
+#: ckanext/recombinant/views.py:440 ckanext/recombinant/views.py:482
 msgid "Recombinant resource_name not found"
 msgstr "Nom de la ressource recombinante_non trouvé"
 
-#: ckanext/recombinant/views.py:486
+#: ckanext/recombinant/views.py:470
+msgid "Organization not found"
+msgstr "Organisation non trouvée"
+
+#: ckanext/recombinant/views.py:488
 #, python-format
 msgid "User %s not authorized to create packages"
-msgstr ""
+msgstr "L'utilisateur %s n'est pas autorisé à enregistrer des jeux de données"
 
-#: ckanext/recombinant/views.py:573
+#: ckanext/recombinant/views.py:575
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try"
 " copying your data into the latest version of the template and uploading "
@@ -153,13 +163,15 @@ msgstr ""
 "persiste, envoyez votre fichier Excel à open-ouvert@… afin que nous "
 "puissions faire enquête."
 
-#: ckanext/recombinant/views.py:580
+#: ckanext/recombinant/views.py:582
 msgid ""
 "Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
 "supplied a sheet labeled \"{1}\""
 msgstr ""
+"Fichier non valide pour ce type de données. La feuille doit être étiquetée "
+"\"{0}\", mais vous avez fourni une feuille étiquetée \"{1}\"
 
-#: ckanext/recombinant/views.py:591
+#: ckanext/recombinant/views.py:593
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but "
 "you supplied a sheet for {1}"
@@ -167,7 +179,7 @@ msgstr ""
 "La feuille n'est pas valide pour cette organisation. La feuille doit être"
 " étiquetée pour {0}, mais vous avez fourni une feuille pour {1}"
 
-#: ckanext/recombinant/views.py:607
+#: ckanext/recombinant/views.py:609
 msgid ""
 "This template is out of date. Please try copying your data into the "
 "latest version of the template and uploading again. If this problem "
@@ -179,79 +191,79 @@ msgstr ""
 "persiste, envoyez votre fichier Excel à open-ouvert@tbs-sct.gc.ca afin "
 "que nous puissions trouver le problème."
 
-#: ckanext/recombinant/views.py:646
+#: ckanext/recombinant/views.py:648
 msgid ":"
 msgstr " :"
 
-#: ckanext/recombinant/views.py:660
+#: ckanext/recombinant/views.py:662
 msgid "Invalid input syntax for type integer: {}"
 msgstr "Syntaxe d'entrée invalide pour le type entier : {}"
 
-#: ckanext/recombinant/views.py:662
+#: ckanext/recombinant/views.py:664
 msgid "Invalid input syntax for type integer"
 msgstr "Syntaxe d'entrée invalide pour le type entier"
 
-#: ckanext/recombinant/views.py:663
+#: ckanext/recombinant/views.py:665
 msgid "Sheet {0} Row {1}:"
 msgstr "Feuille {0} Rangée {1} :"
 
-#: ckanext/recombinant/views.py:667
+#: ckanext/recombinant/views.py:669
 msgid "Error while importing data: {0}"
 msgstr "Erreur lors de l’importation des données: {0}"
 
-#: ckanext/recombinant/views.py:670
+#: ckanext/recombinant/views.py:672
 msgid "The template uploaded is empty"
 msgstr "Le modèle que vous avez soumis est vide"
 
-#: ckanext/recombinant/write_excel.py:320
+#: ckanext/recombinant/write_excel.py:323
 msgid "e.g."
 msgstr "ex."
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:120
-#: ckanext/recombinant/write_excel.py:553
+#: ckanext/recombinant/write_excel.py:556
 #: ckanext/recombinant/write_excel_v2.py:291
 msgid "ID"
 msgstr "Identifiant"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:42
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:64
-#: ckanext/recombinant/write_excel.py:557
+#: ckanext/recombinant/write_excel.py:560
 #: ckanext/recombinant/write_excel_v2.py:295
 msgid "Description"
 msgstr "Description"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:46
-#: ckanext/recombinant/write_excel.py:561
+#: ckanext/recombinant/write_excel.py:564
 #: ckanext/recombinant/write_excel_v2.py:299
 msgid "Obligation"
 msgstr "Obligation"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:51
-#: ckanext/recombinant/write_excel.py:565
+#: ckanext/recombinant/write_excel.py:568
 msgid "Occurrence"
 msgstr "Occurrence"
 
-#: ckanext/recombinant/write_excel.py:569
+#: ckanext/recombinant/write_excel.py:572
 msgid "Validation"
 msgstr "Validation"
 
-#: ckanext/recombinant/write_excel.py:573
+#: ckanext/recombinant/write_excel.py:576
 #: ckanext/recombinant/write_excel_v2.py:303
 msgid "Format"
 msgstr "Format"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:54
-#: ckanext/recombinant/write_excel.py:577
+#: ckanext/recombinant/write_excel.py:580
 msgid "Character Limit"
 msgstr "Limite de caractères"
 
-#: ckanext/recombinant/write_excel.py:581
+#: ckanext/recombinant/write_excel.py:584
 #: ckanext/recombinant/write_excel_v2.py:307
 msgid "Values"
 msgstr "Valeurs"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:70
-#: ckanext/recombinant/write_excel.py:610
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:75
+#: ckanext/recombinant/write_excel.py:613
 msgid "Reference"
 msgstr "Référence"
 
@@ -284,17 +296,17 @@ msgid "French Description"
 msgstr "Description en français"
 
 #: ckanext/recombinant/templates/package/activity.html:6
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:84
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:88
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:93
 msgid "Activity Stream"
 msgstr "Flux d'Activités"
 
 #: ckanext/recombinant/templates/recombinant/confirm_delete.html:3
-#: ckanext/recombinant/templates/recombinant/confirm_delete.html:15
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:42
 msgid "Confirm Delete"
 msgstr "Confirmez la suppression."
 
-#: ckanext/recombinant/templates/recombinant/confirm_delete.html:7
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:9
 msgid ""
 "Are you sure you want to delete {num} record? This action cannot be "
 "undone."
@@ -308,40 +320,40 @@ msgstr[1] ""
 "Souhaitez-vous vraiment supprimer {num} demandes? Cette action ne peut "
 "pas être annulée."
 
-#: ckanext/recombinant/templates/recombinant/confirm_delete.html:14
+#: ckanext/recombinant/templates/recombinant/confirm_delete.html:41
 msgid "Cancel"
 msgstr "Annuler"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:25
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:26
 msgid "{num} row"
 msgid_plural "{num} rows"
 msgstr[0] "{num} ligne"
 msgstr[1] "{num} lignes"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:27
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:99
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:28
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:104
 msgid "Error"
 msgstr "Erreur"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:48
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:120
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:53
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:126
 msgid "Import"
 msgstr "Importer"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:63
-#: ckanext/recombinant/templates/recombinant/snippets/delete.html:43
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:68
+#: ckanext/recombinant/templates/recombinant/snippets/delete.html:44
 msgid "Delete"
 msgstr "Supprimer"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:77
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:82
 msgid "API Access"
 msgstr "Accès par API"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:101
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:106
 msgid "Error loading your records"
 msgstr "Erreur lors du chargement de vos enregistrements"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:103
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:108
 msgid ""
 "We were unable to retrieve your proactive publication records from our "
 "database. Please contact <a href=\"open-ouvert@tbs-sct.gc.ca\">open-"
@@ -351,20 +363,20 @@ msgstr ""
 "proactive à partir de notre base de données. Veuillez <a href=\"open-"
 "ouvert@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a> contacter."
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:107
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:113
 msgid "Refresh…"
 msgstr "Rafraîchir…"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:122
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:128
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
 msgid "Create and update records"
 msgstr "Créer et mettre à jour un dossier"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:124
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:130
 msgid "No records have been created for this organization"
 msgstr "Aucun enregistrement n'a été créé pour cette organisation"
 
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:126
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:133
 msgid "Get started…"
 msgstr "Commencer…"
 
@@ -372,24 +384,45 @@ msgstr "Commencer…"
 msgid "API access examples"
 msgstr "Exemples d’accès par API"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:10
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:8
+msgid ""
+"<span class=\"sr-only\">Show </span><span>cURL</span><span class=\"sr-"
+"only\"> examples</span>"
+msgstr ""
+"<span class=\"sr-only\">Montrez des exemples </span><span>cURL</span>"
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:12
+msgid ""
+"<span class=\"sr-only\">Show </span><span>PowerShell</span><span class"
+"=\"sr-only\"> examples</span>"
+msgstr ""
+"<span class=\"sr-only\">Montrez des exemples </span><span>PowerShell</span>"
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:16
+msgid ""
+"<span class=\"sr-only\">Show </span><span>Python</span><span class=\"sr-"
+"only\"> examples</span>"
+msgstr ""
+"<span class=\"sr-only\">Montrez des exemples </span><span>Python</span>"
+
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:23
 msgid "Retrieve Records"
 msgstr "Récupérer un dossier"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:11
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:27
 #, python-format
 msgid ""
 "Access this data through the <a "
 "href=\"http://docs.ckan.org/en/latest/maintaining/datastore.html#the-"
-"datastore-api\"     >CKAN Datastore API</a> with "
+"datastore-api\">CKAN Datastore API</a> with "
 "<code>resource_id=\"%(resource_id)s\"</code>"
 msgstr ""
 "Accéder à ces données par <a "
 "href=\"http://docs.ckan.org/en/latest/maintaining/datastore.html#the-"
-"datastore-api\"     >l’API de mémoire de données CKAN</a> avec "
+"datastore-api\">l’API de mémoire de données CKAN</a> avec "
 "<code>resource_id=\"%(resource_id)s\"</code>"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:13
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:28
 msgid ""
 "The CKAN API uses a JSON-RPC style, where you post a JSON object and "
 "receive another JSON object in response."
@@ -397,7 +430,7 @@ msgstr ""
 "L’API CKAN utilise un style JSON-RPC, par lequel on inscrit un objet JSON"
 " et on reçoit en réponse un autre objet JSON."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:15
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:29
 #, python-format
 msgid ""
 "Retrieving records requires an API key. Your API key is shown on your <a "
@@ -406,7 +439,7 @@ msgstr ""
 "La récupération d’un dossier exige une clé API. Votre clé API apparaît "
 "dans votre <a href=\"%(profile_url)s\">page de profil</a>."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:18
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:30
 msgid ""
 "Do not include your API key in any code shared with other people. Use a "
 "configuration file or environment variable to let each user input their "
@@ -423,28 +456,28 @@ msgstr ""
 "exécuter votre utilisateur sur ce site. Toutes les actions effectuées à "
 "partir de votre clé API seront inscrites à votre nom."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:21
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:66
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:101
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:139
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:31
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:92
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:143
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:188
 msgid "Example:"
 msgstr "Exemple :"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:63
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:87
 msgid "Create and Update Records"
 msgstr "Créer et mettre à jour un dossier"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:64
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:91
 msgid "Create and update records with the \"datastore_upsert\" endpoint."
 msgstr ""
 "Pour créer ou mettre à jour des dossiers, utilisez le point de "
 "terminaison « datastore_upsert »."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:98
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:138
 msgid "Delete Records"
 msgstr "Supprimer un dossier"
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:99
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:142
 msgid ""
 "First verify that the record you would like to remove is present with the"
 " \"datastore_search\" endpoint"
@@ -452,7 +485,7 @@ msgstr ""
 "Vérifiez d’abord que le dossier que vous voulez supprimer apparaît avec "
 "le point de terminaison « datastore_search »."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:137
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:187
 msgid ""
 "Remove the record returned by passing the same parameters to the "
 "\"datastore_records_delete\" endpoint instead of \"datastore_search\"."
@@ -461,7 +494,7 @@ msgstr ""
 " de terminaison « datastore_records_delete » plutôt que « "
 "datastore_search »."
 
-#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:172
+#: ckanext/recombinant/templates/recombinant/snippets/api_access.html:234
 msgid ""
 "If you have modified these API Access instructions for another "
 "programming language please send them to <a href=\"mailto:open-ouvert"
@@ -503,11 +536,11 @@ msgstr "Choix"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:60
 msgid "Show more"
-msgstr ""
+msgstr "Afficher plus"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:60
 msgid "Hide"
-msgstr ""
+msgstr "Cacher"
 
 #: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:63
 msgid "Code"
@@ -522,7 +555,7 @@ msgid "Delete existing records"
 msgstr "Supprimer les dossiers existants"
 
 #: ckanext/recombinant/templates/recombinant/snippets/delete.html:14
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:14
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:15
 msgid "(required)"
 msgstr "(obligatoire)"
 
@@ -538,15 +571,15 @@ msgstr "Entrer un (1) dossier par ligne"
 msgid "Organization"
 msgstr "Organisation"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:8
+#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:9
 msgid "Download"
 msgstr "Télécharger"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:14
+#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:15
 msgid "Template Excel spreadsheet"
 msgstr "Télécharger modèle Excel"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:17
+#: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:18
 msgid "Last Updated"
 msgstr "Dernière mise à jour"
 
@@ -554,23 +587,23 @@ msgstr "Dernière mise à jour"
 msgid "Download template Excel spreadsheet"
 msgstr "Télécharger modèle Excel"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:13
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:14
 msgid "Upload"
 msgstr "Téléverser"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:23
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:24
 msgid "You must provide a valid file"
 msgstr "Vous devez fournir un fichier valide."
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:38
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:40
 msgid "Submit"
 msgstr "Soumettre"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:39
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:41
 msgid "Check for Errors"
 msgstr "Vérifier les erreurs"
 
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:46
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:48
 msgid ""
 "To ensure the validation rules within the template are maintained, please"
 " paste your data using the “Paste Values” function. This can be done by "
@@ -583,27 +616,27 @@ msgstr ""
 "la souris, en sélectionnant <kbd>Collage spécial</kbd> et ensuite, en "
 "cliquant sur <kbd>Texte Unicode</kbd>."
 
-#: ckanext/recombinant/templates/snippets/activity_stream.html:8
-#: ckanext/recombinant/templates/snippets/activity_stream.html:12
+#: ckanext/recombinant/templates/snippets/stream.html:8
+#: ckanext/recombinant/templates/snippets/stream.html:12
 msgid "unknown"
-msgstr ""
+msgstr "inconnu"
 
 #: ckanext/recombinant/templates/snippets/activities/changed_package.html:11
 msgid "{actor} updated the dataset {dataset}"
-msgstr ""
+msgstr "{actor} a mis à jour le dossier {dataset}"
 
 #: ckanext/recombinant/templates/snippets/activities/changed_package.html:21
 #: ckanext/recombinant/templates/snippets/activities/new_package.html:21
 msgid "View this version"
-msgstr ""
+msgstr "Consultez cette version"
 
 #: ckanext/recombinant/templates/snippets/activities/changed_package.html:25
 msgid "Changes"
-msgstr ""
+msgstr "Modifications"
 
 #: ckanext/recombinant/templates/snippets/activities/new_package.html:11
 msgid "{actor} created the dataset {dataset}"
-msgstr ""
+msgstr "{actor} a créé le dosier {dataset}"
 
 #~ msgid "No matching records found %s"
 #~ msgstr ""

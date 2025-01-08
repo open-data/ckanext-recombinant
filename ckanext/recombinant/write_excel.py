@@ -15,14 +15,14 @@ from ckanext.recombinant.errors import RecombinantException
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import (
     recombinant_choice_fields, recombinant_language_text)
-from ckanext.recombinant.write_excel_v2 import (
-    _populate_excel_sheet_v2, _populate_reference_sheet_v2)
 
 from ckan.plugins.toolkit import _, h, config, request
 from flask_babel import force_locale
 
 from datetime import datetime
 from decimal import Decimal
+
+DEFAULT_TEMPLATE_VERSION = 3
 
 HEADER_ROW, HEADER_HEIGHT = 1, 27
 CHEADINGS_ROW, CHEADINGS_HEIGHT = 2, 22
@@ -99,10 +99,13 @@ TYPE_HERE_STYLE = {
 def excel_template(dataset_type, org):
     """
     return an openpyxl.Workbook object containing the sheet and header fields
-    for passed dataset_type and org. Supports version 2 and 3 templates.
+    for passed dataset_type and org. Supports version 3 templates.
     """
     geno = get_geno(dataset_type)
-    version = geno.get('template_version', 2)
+    version = geno.get('template_version', DEFAULT_TEMPLATE_VERSION)
+
+    if version < DEFAULT_TEMPLATE_VERSION:
+        raise RecombinantException(_('Unsupported template version: %s') % version)
 
     book = openpyxl.Workbook()
     sheet = book.active
@@ -112,9 +115,7 @@ def excel_template(dataset_type, org):
     if version == 3:
         _build_styles(book, geno)
     for rnum, chromo in enumerate(geno['resources'], 1):
-        if version == 2:
-            _populate_excel_sheet_v2(sheet, chromo, org, refs)
-        elif version == 3:
+        if version == 3:
             _append_resource_ref_header(geno, refs, rnum)
             choice_ranges.append(_populate_excel_sheet(
                 book, sheet, geno, chromo, org, refs, rnum))
@@ -123,9 +124,7 @@ def excel_template(dataset_type, org):
             sheet.protection.formatColumns = False
         sheet = book.create_sheet()
 
-    if version == 2:
-        _populate_reference_sheet_v2(sheet, chromo, refs)
-    elif version == 3:
+    if version == 3:
         _populate_reference_sheet(sheet, geno, refs)
     sheet.title = 'reference'
     sheet.protection.enabled = True
@@ -208,7 +207,10 @@ def excel_data_dictionary(geno, published_resource=False):
             'fgColor': 'FFDFE2DB'}}
 
     _build_styles(book, geno)
-    for lang in config['ckan.locales_offered'].split():
+    _locales_offered = config.get('ckan.locales_offered', ['en'])
+    if not isinstance(_locales_offered, list):
+        _locales_offered = _locales_offered.split()
+    for lang in _locales_offered:
         if sheet is None:
             sheet = book.create_sheet()
 

@@ -3,7 +3,7 @@
 <form id="delete-form"
   class="dataset-form dataset-resource-form form-horizontal" method="post"
   action="{{ h.url_for('recombinant.delete_records', id=pkg.id, resource_id=res.id) }}">
-
+  {{ h.csrf_input() }}
   <div class="form-group control-medium {% if errors %}has-error{% endif %}">
     <label for="bulk-delete-field" class="required" aria-required="true">
       {%- for f in h.recombinant_primary_key_fields(res.name) -%}
@@ -39,8 +39,9 @@
     </div>
   <div>
   </div>
-  <div class="form-actions form-group">
-    <input class="btn btn-primary" type="submit" value="{{_('Delete')}}"/>
+  <div class="clearfix"></div>
+  <div class="form-actions form-group" style="padding-top: 3px;">
+    <input class="btn btn-danger" type="submit" value="{{_('Delete')}}"/>
   </div>
 </form>
 </div>

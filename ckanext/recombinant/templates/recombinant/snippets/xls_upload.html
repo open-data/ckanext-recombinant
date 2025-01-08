@@ -4,6 +4,7 @@
 
 {% block form %}
 <form enctype="multipart/form-data" id="dataset-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action="{{ h.url_for('recombinant.upload', id=pkg.id) }}">
+{{ h.csrf_input() }}
 {% endblock %}
 
 {% block upload_submit %}
@@ -34,7 +35,8 @@
       {% endif %}
     </div>
     <input type="hidden" name="resource_name" value="{{ resource.get('name') }}"/>
-    <div class="form-actions form-group">
+    <div class="clearfix"></div>
+    <div class="form-actions form-group" style="padding-top: 3px;">
       <button type="submit" class="btn btn-primary" name="upload">{{_('Submit')}}</button>
       <button type="submit" class="btn btn-default" name="validate">{{_('Check for Errors')}}</button>
     </div>
