@@ -199,11 +199,11 @@ def delete_records(id, resource_id):
         )
 
 
-def _xlsx_response_headers():
+def _xltx_response_headers():
     """
     Returns tuple of content type and disposition type.
 
-    If the request is from MS Edge user agent, we force the XLSX
+    If the request is from MS Edge user agent, we force the XLTX
     download to prevent Edge from cowboying into Office Apps Online
     """
     content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -222,7 +222,7 @@ def _xlsx_response_headers():
     return content_type, disposition_type
 
 
-@recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx', methods=['GET', 'POST'])
+@recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xltx', methods=['GET', 'POST'])
 def template(dataset_type, lang, owner_org):
 
     """
@@ -281,10 +281,10 @@ def template(dataset_type, lang, owner_org):
     blob = BytesIO()
     book.save(blob)
     response = Response(blob.getvalue())
-    content_type, disposition_type = _xlsx_response_headers()
+    content_type, disposition_type = _xltx_response_headers()
     response.headers['Content-Type'] = content_type
     response.headers['Content-Disposition'] = (
-        '{}; filename="{}_{}_{}.xlsx"'.format(
+        '{}; filename="{}_{}_{}.xltx"'.format(
             disposition_type,
             dataset['owner_org'],
             lang,
@@ -302,7 +302,7 @@ def _data_dictionary(dataset_type, published_resource=False):
     blob = BytesIO()
     book.save(blob)
     response = Response(blob.getvalue())
-    content_type, disposition_type = _xlsx_response_headers()
+    content_type, disposition_type = _xltx_response_headers()
     response.headers['Content-Type'] = content_type
     response.headers['Content-Disposition'] = '{}; filename="{}.xlsx"'.format(
         disposition_type,
