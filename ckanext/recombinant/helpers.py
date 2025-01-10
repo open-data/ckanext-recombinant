@@ -146,10 +146,12 @@ def recombinant_choice_fields(resource_name, all_languages=False,
                     'text': recombinant_language_text(choices[v], prefer_lang),
                 })
 
+        exclude_choices = f.get('exclude_choices', [])
         out[f['datastore_id']] = [
             (v, choices[v] if all_languages
                 else recombinant_language_text(choices[v], prefer_lang))
             for v in sorted(choices, key=key_fn)
+            if v not in exclude_choices
         ]
 
     for f in chromo['fields']:
