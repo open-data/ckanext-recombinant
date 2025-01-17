@@ -14,7 +14,8 @@ from ckan.common import asbool
 from ckanext.recombinant.tables import get_geno, get_chromo
 from ckanext.recombinant.errors import (
     RecombinantException,
-    RecombinantConfigurationError
+    RecombinantConfigurationError,
+    format_trigger_error
 )
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
