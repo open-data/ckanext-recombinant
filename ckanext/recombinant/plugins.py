@@ -130,6 +130,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
             'recombinant_update': logic.recombinant_update,
             'recombinant_show': logic.recombinant_show,
             'datastore_info': logic.recombinant_datastore_info,
+            'datastore_upsert': logic.recombinant_datastore_upsert,
             }
 
     # IAuthFunctions

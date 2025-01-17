@@ -458,7 +458,28 @@ def recombinant_datastore_info(up_func: Action,
                     keyed_chromo[field['id']].get('description'), 'en'),
                 'notes_fr': h.recombinant_language_text(
                     keyed_chromo[field['id']].get('description'), 'fr'),
-                'type_override': keyed_chromo[field['id']].get('datastore_type'),
+                'type_override': field.get('info', {}).get('type_override', ''),
+                'datastore_type': field['type']
             }
 
     return info
+
+
+@chained_action
+def recombinant_datastore_upsert(up_func, context, data_dict):
+    """
+    Wraps datastore_upsert action to split Validation Errors with format_trigger_error.
+    """
+    try:
+        return up_func(context, data_dict)
+    except ValidationError as e:
+        _error_dict = dict(e.error_dict)
+        if 'records' not in _error_dict:
+            raise
+        _error_dict['records'] = list(_error_dict['records'])
+        for record_errs in _error_dict['records']:
+            if not isinstance(record_errs, dict):
+                continue
+            for field, field_errs in record_errs.items():
+                record_errs[field] = list(format_trigger_error(field_errs))
+        raise ValidationError(_error_dict)
