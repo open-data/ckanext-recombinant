@@ -479,7 +479,8 @@ def recombinant_datastore_upsert(up_func: Action,
         _error_dict = dict(e.error_dict)
         if 'records' not in _error_dict:
             raise
-        _error_dict['records'] = list(_error_dict['records'])
+        # type_ignore_reason: incomplete typing
+        _error_dict['records'] = list(_error_dict['records'])  # type: ignore
         for record_errs in _error_dict['records']:
             if not isinstance(record_errs, dict):
                 continue
