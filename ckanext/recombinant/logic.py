@@ -467,7 +467,9 @@ def recombinant_datastore_info(up_func: Action,
 
 
 @chained_action
-def recombinant_datastore_upsert(up_func, context, data_dict):
+def recombinant_datastore_upsert(up_func: Action,
+                                 context: Context,
+                                 data_dict: DataDict) -> ChainedAction:
     """
     Wraps datastore_upsert action to split Validation Errors with format_trigger_error.
     """
