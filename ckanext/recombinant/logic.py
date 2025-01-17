@@ -435,7 +435,8 @@ def recombinant_datastore_info(up_func, context, data_dict):
                 'label_fr': h.recombinant_language_text(keyed_chromo[field['id']].get('label'), 'fr'),
                 'notes_en': h.recombinant_language_text(keyed_chromo[field['id']].get('description'), 'en'),
                 'notes_fr': h.recombinant_language_text(keyed_chromo[field['id']].get('description'), 'fr'),
-                'type_override': keyed_chromo[field['id']].get('datastore_type'),
+                'type_override': field.get('info', {}).get('type_override', ''),
+                'datastore_type': field['type']
             }
 
     return info
