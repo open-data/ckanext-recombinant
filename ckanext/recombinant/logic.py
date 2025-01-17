@@ -9,7 +9,7 @@ from ckan.model.group import Group
 from ckan.common import asbool
 
 from ckanext.recombinant.tables import get_geno, get_chromo
-from ckanext.recombinant.errors import RecombinantException, RecombinantConfigurationError
+from ckanext.recombinant.errors import RecombinantException, RecombinantConfigurationError, format_trigger_error
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
 
@@ -440,3 +440,23 @@ def recombinant_datastore_info(up_func, context, data_dict):
             }
 
     return info
+
+
+@chained_action
+def recombinant_datastore_upsert(up_func, context, data_dict):
+    """
+    Wraps datastore_upsert action to split Validation Errors with format_trigger_error.
+    """
+    try:
+        return up_func(context, data_dict)
+    except ValidationError as e:
+        _error_dict = dict(e.error_dict)
+        if 'records' not in _error_dict:
+            raise
+        _error_dict['records'] = list(_error_dict['records'])
+        for record_errs in _error_dict['records']:
+            if not isinstance(record_errs, dict):
+                continue
+            for field, field_errs in record_errs.items():
+                record_errs[field] = list(format_trigger_error(field_errs))
+        raise ValidationError(_error_dict)
