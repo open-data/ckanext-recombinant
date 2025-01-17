@@ -122,7 +122,7 @@ def canonicalize(dirty: Any,
     # leads to unpleasantness
     if primary_key:
         dirty = dirty.strip()
-        dirty = re.sub(r'[\x00-\x1f]', '', dirty)
+        dirty = re.sub('[\x00-\x1f]', '', dirty)
 
     if dstore_tag != 'text' and not primary_key and not dirty:
         return None
