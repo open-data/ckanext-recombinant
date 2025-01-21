@@ -14,6 +14,15 @@
             owner_org=pkg.owner_org) }}"><span class="glyphicon glyphicon-download-alt"></span>
             {{ _('Template Excel spreadsheet') }}</a>
         </div>
+        <br/>
+        <div class="form-control">
+          <a id="xls_download_filled" class="button" href="{{ h.url_for('recombinant.template',
+            dataset_type=pkg.dataset_type,
+            lang=h.lang(),
+            owner_org=pkg.owner_org,
+            include_records=true) }}"><span class="glyphicon glyphicon-edit"></span>
+            {{ _('Edit All Records in Excel spreadsheet') }}</a>
+        </div>
         {% if pkg.template_updated %}
         <p class='text-info'>{{ _('Last Updated') }}: {{ pkg.template_updated }}</p>
         {% endif %}

@@ -278,6 +278,17 @@ def template(dataset_type, lang, owner_org):
 
         append_data(book, record_data, chromo)
 
+    elif request.method == 'GET' and request.args.get('include_records'):
+        for resource in dataset['resources']:
+            chromo = get_chromo(resource['name'])
+            record_data = []
+            try:
+                result = lc.action.datastore_search(resource_id=resource['id'])
+            except NotAuthorized:
+                return abort(403, _('Unauthorized to read resource %s') % resource['id'])
+            record_data += result['records']
+            append_data(book, record_data, chromo)
+
     blob = BytesIO()
     book.save(blob)
     response = Response(blob.getvalue())
