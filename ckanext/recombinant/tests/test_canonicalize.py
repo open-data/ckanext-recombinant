@@ -5,6 +5,7 @@ from datetime import datetime, date
 
 from ckanext.recombinant.datatypes import canonicalize, BadExcelData
 
+
 def test_year():
     dt = 'year'
     assert canonicalize(2019, dt, False) == '2019'
@@ -15,8 +16,8 @@ def test_year():
     assert canonicalize('42.0', dt, False) == '42'
     assert canonicalize('42.25', dt, False) == '42.25'
     assert canonicalize('0', dt, False) == '0'
-    assert canonicalize(None, dt, False) == None
-    assert canonicalize('', dt, False) == None
+    assert canonicalize(None, dt, False) is None
+    assert canonicalize('', dt, False) is None
     assert canonicalize('', dt, True) == ''
     with pytest.raises(BadExcelData):
         canonicalize('=1+1', dt, False)
@@ -24,6 +25,7 @@ def test_year():
     assert canonicalize(datetime(2020, 11, 15), dt, False) == '2020-11-15 00:00:00'
     assert canonicalize('$1,000.50', dt, False) == '$1,000.50'
     assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
+
 
 def test_month():
     dt = 'month'
@@ -35,8 +37,8 @@ def test_month():
     assert canonicalize('42.0', dt, False) == '42'
     assert canonicalize('42.25', dt, False) == '42.25'
     assert canonicalize('0', dt, False) == '0'
-    assert canonicalize(None, dt, False) == None
-    assert canonicalize('', dt, False) == None
+    assert canonicalize(None, dt, False) is None
+    assert canonicalize('', dt, False) is None
     assert canonicalize('', dt, True) == ''
     with pytest.raises(BadExcelData):
         canonicalize('=1+1', dt, False)
@@ -46,6 +48,7 @@ def test_month():
     assert canonicalize('=TRUE()', dt, False) == 'TRUE'
     assert canonicalize('=FALSE()', dt, False) == 'FALSE'
     assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
+
 
 def test_int():
     dt = 'int'
@@ -57,8 +60,8 @@ def test_int():
     assert canonicalize('42.0', dt, False) == '42'
     assert canonicalize('42.25', dt, False) == '42.25'
     assert canonicalize('0', dt, False) == '0'
-    assert canonicalize(None, dt, False) == None
-    assert canonicalize('', dt, False) == None
+    assert canonicalize(None, dt, False) is None
+    assert canonicalize('', dt, False) is None
     assert canonicalize('', dt, True) == ''
     with pytest.raises(BadExcelData):
         canonicalize('=1+1', dt, False)
@@ -68,6 +71,7 @@ def test_int():
     assert canonicalize('=TRUE()', dt, False) == 'TRUE'
     assert canonicalize('=FALSE()', dt, False) == 'FALSE'
     assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
+
 
 def test_bigint():
     dt = 'bigint'
@@ -79,8 +83,8 @@ def test_bigint():
     assert canonicalize('42.0', dt, False) == '42'
     assert canonicalize('42.25', dt, False) == '42.25'
     assert canonicalize('0', dt, False) == '0'
-    assert canonicalize(None, dt, False) == None
-    assert canonicalize('', dt, False) == None
+    assert canonicalize(None, dt, False) is None
+    assert canonicalize('', dt, False) is None
     assert canonicalize('', dt, True) == ''
     with pytest.raises(BadExcelData):
         canonicalize('=1+1', dt, False)
@@ -90,6 +94,7 @@ def test_bigint():
     assert canonicalize('=TRUE()', dt, False) == 'TRUE'
     assert canonicalize('=FALSE()', dt, False) == 'FALSE'
     assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
+
 
 def test_date():
     dt = 'date'
@@ -101,8 +106,8 @@ def test_date():
     assert canonicalize('42.0', dt, False) == '42.0'
     assert canonicalize('42.25', dt, False) == '42.25'
     assert canonicalize('0', dt, False) == '0'
-    assert canonicalize(None, dt, False) == None
-    assert canonicalize('', dt, False) == None
+    assert canonicalize(None, dt, False) is None
+    assert canonicalize('', dt, False) is None
     assert canonicalize('', dt, True) == ''
     with pytest.raises(BadExcelData):
         canonicalize('=1+1', dt, False)
@@ -112,6 +117,7 @@ def test_date():
     assert canonicalize('=TRUE()', dt, False) == 'TRUE'
     assert canonicalize('=FALSE()', dt, False) == 'FALSE'
     assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
+
 
 def test_timestamp():
     dt = 'timestamp'
@@ -123,8 +129,8 @@ def test_timestamp():
     assert canonicalize('42.0', dt, False) == '42.0'
     assert canonicalize('42.25', dt, False) == '42.25'
     assert canonicalize('0', dt, False) == '0'
-    assert canonicalize(None, dt, False) == None
-    assert canonicalize('', dt, False) == None
+    assert canonicalize(None, dt, False) is None
+    assert canonicalize('', dt, False) is None
     assert canonicalize('', dt, True) == ''
     with pytest.raises(BadExcelData):
         canonicalize('=1+1', dt, False)
@@ -134,6 +140,7 @@ def test_timestamp():
     assert canonicalize('=TRUE()', dt, False) == 'TRUE'
     assert canonicalize('=FALSE()', dt, False) == 'FALSE'
     assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
+
 
 def test_money():
     dt = 'money'
@@ -147,8 +154,8 @@ def test_money():
     assert canonicalize('42.25', dt, False) == '42.25'
     assert canonicalize('42.25000001', dt, False) == '42.25'
     assert canonicalize('0', dt, False) == '0.00'
-    assert canonicalize(None, dt, False) == None
-    assert canonicalize('', dt, False) == None
+    assert canonicalize(None, dt, False) is None
+    assert canonicalize('', dt, False) is None
     assert canonicalize('', dt, True) == ''
     with pytest.raises(BadExcelData):
         canonicalize('=1+1', dt, False)
@@ -158,6 +165,7 @@ def test_money():
     assert canonicalize('=TRUE()', dt, False) == 'TRUE'
     assert canonicalize('=FALSE()', dt, False) == 'FALSE'
     assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
+
 
 def test_text():
     dt = 'text'
@@ -181,6 +189,7 @@ def test_text():
     assert canonicalize('=FALSE()', dt, False) == 'FALSE'
     assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
 
+
 def test_boolean():
     dt = 'boolean'
     assert canonicalize(2019, dt, False) == '2019'
@@ -191,8 +200,8 @@ def test_boolean():
     assert canonicalize('42.0', dt, False) == '42.0'
     assert canonicalize('42.25', dt, False) == '42.25'
     assert canonicalize('0', dt, False) == '0'
-    assert canonicalize(None, dt, False) == None
-    assert canonicalize('', dt, False) == None
+    assert canonicalize(None, dt, False) is None
+    assert canonicalize('', dt, False) is None
     assert canonicalize('', dt, True) == ''
     with pytest.raises(BadExcelData):
         canonicalize('=1+1', dt, False)
@@ -202,6 +211,7 @@ def test_boolean():
     assert canonicalize('=TRUE()', dt, False) == 'TRUE'
     assert canonicalize('=FALSE()', dt, False) == 'FALSE'
     assert canonicalize('AB,CD,E', dt, False) == 'AB,CD,E'
+
 
 def test_text_array():
     dt = '_text'
@@ -225,12 +235,14 @@ def test_text_array():
     assert canonicalize('=FALSE()', dt, False) == ['FALSE']
     assert canonicalize('AB,CD,E', dt, False) == ['AB', 'CD', 'E']
 
+
 def test_primary_key():
     dt = 'text'
     assert canonicalize('OGP-324', dt, True) == 'OGP-324'
     assert canonicalize('\t OGP-324\n', dt, True) == 'OGP-324'
     assert canonicalize('OGP-\r\n\r\n324', dt, True) == 'OGP-324'
     assert canonicalize('OGP- 324', dt, True) == 'OGP- 324'
+
 
 def test_choice_field():
     assert canonicalize('C1 ', 'text', False, False) == 'C1 '

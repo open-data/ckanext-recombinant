@@ -1,6 +1,9 @@
 from six import string_types
 from ckan.plugins.toolkit import _, chained_action, h, side_effect_free
 
+from typing import Dict, Any, List, Tuple
+from ckan.types import Context, DataDict, Action, ChainedAction
+
 from sqlalchemy import and_
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
@@ -9,12 +12,18 @@ from ckan.model.group import Group
 from ckan.common import asbool
 
 from ckanext.recombinant.tables import get_geno, get_chromo
-from ckanext.recombinant.errors import RecombinantException, RecombinantConfigurationError, format_trigger_error
+from ckanext.recombinant.errors import (
+    RecombinantException,
+    RecombinantConfigurationError,
+    format_trigger_error
+)
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
 
+from ckanext.datastore.backend.postgres import literal_string
 
-def recombinant_create(context, data_dict):
+
+def recombinant_create(context: Context, data_dict: DataDict):
     '''
     Create a dataset with datastore table(s) for an organization and
     recombinant dataset type.
@@ -25,9 +34,9 @@ def recombinant_create(context, data_dict):
     lc, geno, results = _action_find_dataset(context, data_dict)
 
     if results:
-        raise ValidationError({'owner_org':
-            _("dataset type %s already exists for this organization")
-            % data_dict['dataset_type']})
+        raise ValidationError(
+            {'owner_org': _("dataset type %s already exists for this organization") %
+             data_dict['dataset_type']})
 
     resources = [
         # dummy url for old ckan compatibility reasons
@@ -44,7 +53,7 @@ def recombinant_create(context, data_dict):
     return _update_datastore(lc, geno, dataset)
 
 
-def recombinant_update(context, data_dict):
+def recombinant_update(context: Context, data_dict: DataDict):
     '''
     Update a dataset's datastore table(s) for an organization and
     recombinant dataset type.
@@ -64,7 +73,7 @@ def recombinant_update(context, data_dict):
         force_update=asbool(data_dict.get('force_update', False)))
 
 
-def recombinant_show(context, data_dict):
+def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
     '''
     Return the status of a recombinant dataset including all its tables
     and checking that its metadata is up to date.
@@ -74,18 +83,15 @@ def recombinant_show(context, data_dict):
     '''
     lc, geno, dataset = _action_get_dataset(context, data_dict)
 
-    chromos = dict(
-        (chromo['resource_name'], chromo) for chromo in geno['resources'])
+    chromos = dict((chromo['resource_name'], chromo) for chromo in geno['resources'])
 
     resources = []
     resources_correct = True
 
     for resource in dataset['resources']:
-        out = {
-            'id': resource['id'],
-            'name': resource['name'],
-            'description': resource['description'],
-            }
+        out = {'id': resource['id'],
+               'name': resource['name'],
+               'description': resource['description']}
 
         # migration below will update this
         metadata_correct = True
@@ -126,13 +132,14 @@ def recombinant_show(context, data_dict):
         'id': dataset['id'],
         'metadata_correct': metadata_correct,
         'all_correct': (metadata_correct and resources_correct
-            and len(dataset['resources']) == len(chromos)),
+                        and len(dataset['resources']) == len(chromos)),
         'resources': resources,
         'template_updated': geno.get('template_updated'),
         }
 
 
-def _action_find_dataset(context, data_dict):
+def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
+        LocalCKAN, Dict[str, Any], List[Dict[str, Any]]]:
     '''
     common code for actions that need to check for a dataset based on
     the dataset type and organization name or id
@@ -140,14 +147,18 @@ def _action_find_dataset(context, data_dict):
     dataset_type = get_or_bust(data_dict, 'dataset_type')
     owner_org = Group.get(get_or_bust(data_dict, 'owner_org'))
 
+    if not owner_org:
+        raise ValidationError(
+            {'owner_org': _("Organization not found")})
+
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
-        raise ValidationError({'dataset_type':
-            _("Recombinant dataset type not found")})
+        raise ValidationError(
+            {'dataset_type': _("Recombinant dataset type not found")})
 
     fresh_context = {}
-    if u'ignore_auth' in context:
+    if 'ignore_auth' in context:
         fresh_context['ignore_auth'] = context['ignore_auth']
 
     lc = LocalCKAN(username=context['user'], context=fresh_context)
@@ -158,7 +169,8 @@ def _action_find_dataset(context, data_dict):
     return lc, geno, result['results']
 
 
-def _action_get_dataset(context, data_dict):
+def _action_get_dataset(context: Context, data_dict: DataDict) -> Tuple[
+        LocalCKAN, Dict[str, Any], Dict[str, Any]]:
     '''
     common code for actions that need to retrieve a dataset based on
     the dataset type and organization name or id
@@ -168,14 +180,17 @@ def _action_get_dataset(context, data_dict):
     if not results:
         raise NotFound()
     if len(results) > 1 and not data_dict.get('ignore_errors'):
-        raise ValidationError({'owner_org':
-            _("Multiple datasets exist for type {0} org {1}").format(
-                 data_dict['dataset_type'], data_dict['owner_org'])})
+        raise ValidationError(
+            {'owner_org': _("Multiple datasets exist for type {0} org {1}").format(
+                data_dict['dataset_type'], data_dict['owner_org'])})
 
     return lc, geno, results[0]
 
 
-def _update_dataset(lc, geno, dataset, delete_resources=False):
+def _update_dataset(lc: LocalCKAN,
+                    geno: Dict[str, Any],
+                    dataset: Dict[str, Any],
+                    delete_resources: bool = False) -> Dict[str, Any]:
     """
     call lc.action.package_update on dataset if necessary to make its
     metadata match the dataset definition geno
@@ -185,8 +200,7 @@ def _update_dataset(lc, geno, dataset, delete_resources=False):
         dataset.update(_dataset_fields(geno))
         package_update_required = True
 
-    chromos = dict(
-        (chromo['resource_name'], chromo) for chromo in geno['resources'])
+    chromos = dict((chromo['resource_name'], chromo) for chromo in geno['resources'])
 
     # migrate recombinant1 datasets which had no resource
     # name to identify resource
@@ -227,7 +241,10 @@ def _update_dataset(lc, geno, dataset, delete_resources=False):
     return dataset
 
 
-def _update_datastore(lc, geno, dataset, force_update=False):
+def _update_datastore(lc: LocalCKAN,
+                      geno: Dict[str, Any],
+                      dataset: Dict[str, Any],
+                      force_update: bool = False):
     """
     call lc.action.datastore_create to create tables or add
     columns to existing datastore tables based on dataset definition
@@ -247,12 +264,11 @@ def _update_datastore(lc, geno, dataset, force_update=False):
         except NotFound:
             pass
         else:
-            if not force_update and _datastore_match(
-                    chromo['fields'], ds['fields']):
+            if not force_update and _datastore_match(chromo['fields'], ds['fields']):
                 continue
             # extra work here to maintain existing fields+ordering
             # datastore_create rejects our list otherwise
-            fields = ds['fields'][1:] # trim _id field
+            fields = ds['fields'][1:]  # trim _id field
             seen = set(f['id'] for f in fields)
             for f in datastore_fields(chromo['fields'], datastore_text_types):
                 if f['id'] not in seen:
@@ -267,7 +283,8 @@ def _update_datastore(lc, geno, dataset, force_update=False):
                 for _chromo in geno['resources']:
                     # try to get the resource id from chromo name
                     if f_table == _chromo['resource_name']:
-                        foreign_keys[resource_ids[_chromo['resource_name']]] = field_map
+                        foreign_keys[resource_ids[_chromo['resource_name']]] = \
+                            field_map
                         break
                 else:
                     foreign_keys[f_table] = field_map
@@ -282,33 +299,38 @@ def _update_datastore(lc, geno, dataset, force_update=False):
             force=True)
 
 
-def _update_triggers(lc, chromo):
+def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
     definitions = dict(chromo.get('trigger_strings', {}))
     trigger_names = []
 
     for f in chromo['fields']:
         if 'choices' in f:
             if f['datastore_id'] in definitions:
-                raise RecombinantConfigurationError("trigger_string {name} can't be used because that name is required for the {name} field choices"
-                                                        .format(name=f['datastore_id']))
+                raise RecombinantConfigurationError(
+                    "trigger_string {name} can't be used because that "
+                    "name is required for the {name} field choices".format(
+                        name=f['datastore_id']))
             definitions[f['datastore_id']] = sorted(f['choices'])
         elif 'choices_file' in f and '_path' in chromo:
             if f['datastore_id'] in definitions:
-                raise RecombinantConfigurationError("trigger_string {name} can't be used because that name is required for the {name} field choices"
-                                                        .format(name=f['datastore_id']))
+                raise RecombinantConfigurationError(
+                    "trigger_string {name} can't be used because that "
+                    "name is required for the {name} field choices".format(
+                        name=f['datastore_id']))
             definitions[f['datastore_id']] = sorted(_read_choices_file(chromo, f))
 
     for tr in chromo.get('triggers', []):
         if isinstance(tr, dict):
             if len(tr) != 1:
-                raise RecombinantConfigurationError("inline trigger may have only one key: " + repr(tr.keys()))
+                raise RecombinantConfigurationError(
+                    "inline trigger may have only one key: " + repr(tr.keys()))
             ((trname, trcode),) = tr.items()
             trigger_names.append(trname)
             try:
                 lc.action.datastore_function_create(
                     name=str(trname),
                     or_replace=True,
-                    rettype=u'trigger',
+                    rettype='trigger',
                     definition=str(trcode).format(**dict(
                         (dkey, _pg_value(dvalue))
                         for dkey, dvalue in definitions.items())))
@@ -319,55 +341,48 @@ def _update_triggers(lc, chromo):
     return trigger_names
 
 
-def _pg_value(value):
-    try:
-        from ckanext.datastore.backend.postgres import literal_string
-    except ImportError:
-        from ckanext.datastore.helpers import literal_string
-
+def _pg_value(value: Any) -> str:
     if isinstance(value, string_types):
         return literal_string(str(value))
 
-    return u'ARRAY[' + u','.join(
-        literal_string(str(c)) for c in value) + u']'
+    return 'ARRAY[' + ','.join(literal_string(str(c)) for c in value) + ']'
 
 
-def _dataset_fields(geno):
+def _dataset_fields(geno: Dict[str, Any]) -> Dict[str, Any]:
     """
     return the dataset metadata fields created for dataset definition geno
     """
     return {'title': geno['title'], 'notes': geno.get('notes', '')}
 
 
-def _dataset_match(geno, dataset):
+def _dataset_match(geno: Dict[str, Any], dataset: Dict[str, Any]) -> bool:
     """
     return True if dataset metadata matches expected fields for dataset type dt
     """
     return all(dataset[k] == v for (k, v) in _dataset_fields(geno).items())
 
 
-def _resource_fields(chromo):
+def _resource_fields(chromo: Dict[str, Any]) -> Dict[str, Any]:
     """
     return the resource metadata fields created for resource definition chromo
     """
-    return {
-        'name': chromo['resource_name'],
-        'description': chromo['title'],
-        'url_type': u'datastore',
-        }
+    return {'name': chromo['resource_name'],
+            'description': chromo['title'],
+            'url_type': 'datastore'}
 
 
-def _resource_match(chromo, resource):
+def _resource_match(chromo: Dict[str, Any], resource: Dict[str, Any]) -> bool:
     """
     return True if resource metadatas matches expected fields for sheet r
     """
     return all(resource[k] == v for (k, v) in _resource_fields(chromo).items())
 
 
-def datastore_column_type(t, text_types):
+def datastore_column_type(t: str, text_types: List[str]) -> str:
     """
     return postgres column type for field type t
-    if text_types is true return simple types (almost all text) for backwards compatibility
+    if text_types is true return simple types (almost all text)
+    for backwards compatibility
     """
     if text_types:
         return 'bigint' if datastore_type[t].whole_number else 'text'
@@ -376,18 +391,19 @@ def datastore_column_type(t, text_types):
     return 'int' if t in ('year', 'month') else t
 
 
-def datastore_fields(fs, text_types):
+def datastore_fields(fs: List[Dict[str, Any]], text_types: List[str]) -> List[
+        Dict[str, Any]]:
     """
     return the datastore field definitions for fields fs
     """
-    return [{
-        'id': f['datastore_id'],
-        'type': datastore_column_type(f['datastore_type'], text_types)}
-        for f in fs
-        if not f.get('published_resource_computed_field', False)]
+    return [{'id': f['datastore_id'],
+             'type': datastore_column_type(
+                 f['datastore_type'], text_types)}
+            for f in fs
+            if not f.get('published_resource_computed_field', False)]
 
 
-def _datastore_match(fs, fields):
+def _datastore_match(fs: List[Dict[str, Any]], fields: List[Dict[str, Any]]) -> bool:
     """
     return True if existing datastore column fields include fields
     defined in fs.
@@ -399,20 +415,24 @@ def _datastore_match(fs, fields):
 
 @chained_action
 @side_effect_free
-def recombinant_datastore_info(up_func, context, data_dict):
+def recombinant_datastore_info(up_func: Action,
+                               context: Context,
+                               data_dict: DataDict) -> ChainedAction:
     """
-    Wraps datastore_info action to add Recombinant schema info to Recombinant resources and Published resources.
+    Wraps datastore_info action to add Recombinant schema info
+    to Recombinant resources and Published resources.
     """
     info = up_func(context, data_dict)
     resource_id = data_dict.get('resource_id', data_dict.get('id'))
     chromo = h.recombinant_published_resource_chromo(resource_id)
+    package_type = ''
+    recombinant_resource_name = ''
     if not chromo:
         model = context['model']
         result = model.Session.query(model.Package.type, model.Resource.name).join(
             model.Resource,
             and_(model.Resource.package_id == model.Package.id,
-                model.Resource.id == resource_id)
-        ).all()
+                 model.Resource.id == resource_id)).all()
 
         if result:
             package_type = result[0][0]
@@ -431,10 +451,14 @@ def recombinant_datastore_info(up_func, context, data_dict):
         if field['id'] in keyed_chromo:
             field['type'] = keyed_chromo[field['id']].get('datastore_type')
             field['info'] = {
-                'label_en': h.recombinant_language_text(keyed_chromo[field['id']].get('label'), 'en'),
-                'label_fr': h.recombinant_language_text(keyed_chromo[field['id']].get('label'), 'fr'),
-                'notes_en': h.recombinant_language_text(keyed_chromo[field['id']].get('description'), 'en'),
-                'notes_fr': h.recombinant_language_text(keyed_chromo[field['id']].get('description'), 'fr'),
+                'label_en': h.recombinant_language_text(
+                    keyed_chromo[field['id']].get('label'), 'en'),
+                'label_fr': h.recombinant_language_text(
+                    keyed_chromo[field['id']].get('label'), 'fr'),
+                'notes_en': h.recombinant_language_text(
+                    keyed_chromo[field['id']].get('description'), 'en'),
+                'notes_fr': h.recombinant_language_text(
+                    keyed_chromo[field['id']].get('description'), 'fr'),
                 'type_override': field.get('info', {}).get('type_override', ''),
                 'datastore_type': field['type']
             }
@@ -443,7 +467,9 @@ def recombinant_datastore_info(up_func, context, data_dict):
 
 
 @chained_action
-def recombinant_datastore_upsert(up_func, context, data_dict):
+def recombinant_datastore_upsert(up_func: Action,
+                                 context: Context,
+                                 data_dict: DataDict) -> ChainedAction:
     """
     Wraps datastore_upsert action to split Validation Errors with format_trigger_error.
     """
@@ -453,7 +479,8 @@ def recombinant_datastore_upsert(up_func, context, data_dict):
         _error_dict = dict(e.error_dict)
         if 'records' not in _error_dict:
             raise
-        _error_dict['records'] = list(_error_dict['records'])
+        # type_ignore_reason: incomplete typing
+        _error_dict['records'] = list(_error_dict['records'])  # type: ignore
         for record_errs in _error_dict['records']:
             if not isinstance(record_errs, dict):
                 continue

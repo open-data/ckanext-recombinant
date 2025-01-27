@@ -2,3 +2,4 @@ ckan.log
 *.pyc
 *.egg-info/
 *.mo
+node_modules/**

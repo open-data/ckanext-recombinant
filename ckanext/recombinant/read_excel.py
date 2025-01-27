@@ -1,14 +1,23 @@
 import re
 
-import openpyxl
+from openpyxl import load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
+
+from typing import Any, List, Dict, Iterator, Union, Optional, Tuple
+
+from werkzeug.datastructures import FileStorage as FlaskFileStorage
+from cgi import FieldStorage
 
 from ckanext.recombinant.datatypes import canonicalize
 from ckanext.recombinant.errors import BadExcelData
 
+
 HEADER_ROWS_V2 = 3
 HEADER_ROWS_V3 = 5
 
-def read_excel(f, file_contents=None):
+
+def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
+               file_contents: Optional[str] = None) -> Iterator[Any]:
     """
     Return a generator that opens the excel file f (name or file object)
     and then produces ((sheet-name, org-name), row1, row2, ...)
@@ -20,17 +29,20 @@ def read_excel(f, file_contents=None):
         ...
     :rtype: generator
     """
-    wb = openpyxl.load_workbook(f, read_only=True)
+    wb = load_workbook(f, read_only=True)
 
     for sheetname in wb.sheetnames:
         if sheetname == 'reference':
             return
-        sheet = wb[sheetname]
+        # type_ignore_reason: incomplete typing
+        sheet: Worksheet = wb[sheetname]  # type: ignore
         rowiter = sheet.rows
-        organization_row = next(rowiter)
+        # type_ignore_reason: incomplete typing
+        organization_row = next(rowiter)  # type: ignore
 
-        label_row = next(rowiter)
-        names_row = next(rowiter)
+        # type_ignore_reason: incomplete typing
+        next(rowiter)  # type: ignore  /  skip label_row
+        names_row = next(rowiter)  # type: ignore
 
         org_name = organization_row[0].value
         if org_name and names_row[0].value != 'v3':
@@ -39,13 +51,15 @@ def read_excel(f, file_contents=None):
                 sheetname,
                 org_name,
                 [c.value for c in names_row],
-                _filter_bumf(rowiter, HEADER_ROWS_V2))
+                # type_ignore_reason: incomplete typing
+                _filter_bumf(rowiter, HEADER_ROWS_V2))  # type: ignore
             continue
 
-        cstatus_row = next(rowiter)
-        example_row = next(rowiter)
+        # type_ignore_reason: incomplete typing
+        next(rowiter)  # type: ignore  /  skip cstatus_row
+        example_row = next(rowiter)  # type: ignore
         if example_row[0].value != 'e.g.' and example_row[0].value != 'ex.':
-            raise BadExcelData(u'Example record on row 5 is missing')
+            raise BadExcelData('Example record on row 5 is missing')
 
         yield (
             sheetname,
@@ -54,7 +68,8 @@ def read_excel(f, file_contents=None):
             _filter_bumf((row[2:] for row in rowiter), HEADER_ROWS_V3))
 
 
-def _filter_bumf(rowiter, header_rows):
+def _filter_bumf(rowiter: Iterator[Any],
+                 header_rows: int) -> Iterator[Any]:
     i = header_rows
     for row in rowiter:
         i += 1
@@ -66,7 +81,7 @@ def _filter_bumf(rowiter, header_rows):
             yield i, values
 
 
-def _is_bumf(value):
+def _is_bumf(value: Any) -> Union[str, bool]:
     """
     Return true if this value is filler, en route to skipping over empty lines
 
@@ -81,7 +96,10 @@ def _is_bumf(value):
     return value is None
 
 
-def get_records(rows, fields, primary_key_fields, choice_fields):
+def get_records(rows: Iterator[Any],
+                fields: List[Any],
+                primary_key_fields: List[str],
+                choice_fields: Dict[str, Any]) -> List[Tuple[Any, Any]]:
     """
     Truncate/pad empty/missing records to expected row length, canonicalize
     cell content, and return resulting record list.
@@ -106,7 +124,7 @@ def get_records(rows, fields, primary_key_fields, choice_fields):
                 (row[-1] is None or row[-1] == '')):
             row.pop()
         while row and (len(row) < len(fields)):
-            row.append(None) # placeholder: canonicalize once only, below
+            row.append(None)  # placeholder: canonicalize once only, below
 
         try:
             records.append(
@@ -117,21 +135,21 @@ def get_records(rows, fields, primary_key_fields, choice_fields):
                         f['datastore_type'],
                         f['datastore_id'] in primary_key_fields,
                         choice_fields.get(f['datastore_id'], False)))
-                for f, v in zip(fields, row))))
+                    for f, v in zip(fields, row))))
         except BadExcelData as e:
-            raise BadExcelData(u'Row {0}:'.format(n) + u' ' + e.message)
+            raise BadExcelData('Row {0}:'.format(n) + ' ' + e.message)
 
     return records
 
 
 # XXX remove this function once we upgrade to openpyxl 2.4
-def unescape(value):
+def unescape(value: str) -> str:
     """
     copy of unescape from openpyxl.utils.escape, openpyxl version 2.4.x
     """
     ESCAPED_REGEX = re.compile("_x([0-9A-Fa-f]{4})_")
 
-    def _sub(match):
+    def _sub(match: Any):
         """
         Callback to unescape chars
         """

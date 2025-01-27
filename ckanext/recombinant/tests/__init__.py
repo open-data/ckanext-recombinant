@@ -1,6 +1,7 @@
 from ckan.tests.helpers import reset_db
 from ckan.lib.search import clear_all
 
+
 class RecombinantTestBase(object):
     @classmethod
     def setup_method(self, method):

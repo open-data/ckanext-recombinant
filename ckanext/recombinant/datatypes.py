@@ -3,6 +3,8 @@ import re
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
+from typing import Union, Any
+
 from ckanext.recombinant.errors import BadExcelData
 
 
@@ -14,7 +16,8 @@ from ckanext.recombinant.errors import BadExcelData
 #    'default': default value to use if blank
 #    'xl_format': Excel custom format string to apply
 
-DatastoreType = namedtuple(
+# type_ignore_reason: incomplete typing
+DatastoreType = namedtuple(  # type: ignore
         'DataStoreType',
         ['tag', 'whole_number', 'xl_format'])
 
@@ -25,7 +28,7 @@ datastore_type = {
     'int': DatastoreType('int', True, 'General'),
     'bigint': DatastoreType('bigint', True, 'General'),
     'numeric': DatastoreType('numeric', False, 'General'),
-    'money': DatastoreType( 'numeric', False, '$#,##0.00'),
+    'money': DatastoreType('numeric', False, '$#,##0.00'),
     'text': DatastoreType('text', False, '@'),
     'boolean': DatastoreType('boolean', False, '@'),
     '_text': DatastoreType('_text', False, '@'),
@@ -33,8 +36,10 @@ datastore_type = {
 }
 
 
-def canonicalize(
-        dirty, dstore_tag, primary_key, choice_field=False):
+def canonicalize(dirty: Any,
+                 dstore_tag: str,
+                 primary_key: bool,
+                 choice_field: Union[str, bool] = False) -> Any:
     """
     Canonicalize dirty input from xlrd to align with
     recombinant.json datastore type specified in dstore_tag.
@@ -63,17 +68,17 @@ def canonicalize(
 
     if dirty is None:
         # use common value for blank cells
-        dirty = u""
+        dirty = ""
 
     if isinstance(dirty, str):
         if not dirty.strip():
             # whitespace-only values
-            dirty = u""
+            dirty = ""
         # excel, you keep being you
-        if dirty == u'=FALSE()':
-            dirty = u'FALSE'
-        elif dirty == u'=TRUE()':
-            dirty = u'TRUE'
+        if dirty == '=FALSE()':
+            dirty = 'FALSE'
+        elif dirty == '=TRUE()':
+            dirty = 'TRUE'
         if dirty.startswith('='):
             raise BadExcelData('Formulas are not supported')
 
@@ -104,7 +109,7 @@ def canonicalize(
             pass
 
     if dstore_tag == 'date' and isinstance(dirty, datetime):
-        return u'%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
+        return '%04d-%02d-%02d' % (dirty.year, dirty.month, dirty.day)
 
     dirty = str(dirty)
 
@@ -117,7 +122,7 @@ def canonicalize(
     # leads to unpleasantness
     if primary_key:
         dirty = dirty.strip()
-        dirty = re.sub(u'[\x00-\x1f]', '', dirty)
+        dirty = re.sub('[\x00-\x1f]', '', dirty)
 
     if dstore_tag != 'text' and not primary_key and not dirty:
         return None

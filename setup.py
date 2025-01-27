@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-import sys, os
 
 version = '2.0.0dev'
 
@@ -7,10 +6,11 @@ setup(
     name='ckanext-recombinant',
     version=version,
     description="Create datastore tables for organizations and "
-        "provide combined output",
+                "provide combined output",
     long_description="""
     """,
-    classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    classifiers=[],
     keywords='',
     author='Government of Canada',
     author_email='Michel.Gendron@statcan.gc.ca',
@@ -23,8 +23,7 @@ setup(
     install_requires=[
         # -*- Extra requirements: -*-
     ],
-    entry_points=\
-    """
+    entry_points="""
     [ckan.plugins]
     recombinant=ckanext.recombinant.plugins:RecombinantPlugin
 

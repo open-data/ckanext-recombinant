@@ -1,8 +1,13 @@
-from flask import Blueprint, Response
+from flask import Blueprint, Response as FlaskResponse
 from flask_babel import force_locale
 import re
-from collections import OrderedDict
 import simplejson as json
+
+from typing import Union, Optional, Dict, Tuple, Any
+from ckan.types import Response
+
+from werkzeug.datastructures import FileStorage as FlaskFileStorage
+from cgi import FieldStorage
 
 from logging import getLogger
 
@@ -23,12 +28,18 @@ from ckan.model.group import Group
 from ckan.authz import has_user_permission_for_group_or_org
 
 from ckan.views.dataset import _get_package_type
-from ckanext.activity.views import package_activity
 
-from ckanext.recombinant.errors import RecombinantException, BadExcelData, format_trigger_error
+from ckanext.recombinant.errors import (
+    RecombinantException,
+    BadExcelData,
+    format_trigger_error
+)
 from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.write_excel import (
-    excel_template, excel_data_dictionary, append_data)
+    excel_template,
+    excel_data_dictionary,
+    append_data
+)
 from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import (
     recombinant_primary_key_fields, recombinant_choice_fields)
@@ -36,20 +47,20 @@ from ckanext.recombinant.helpers import (
 from io import BytesIO
 
 from ckanext.datastore.backend import DatastoreBackend
+from ckanext.datastore.backend.postgres import DatastorePostgresqlBackend
+
+from ckanapi import NotFound, LocalCKAN
+
 
 log = getLogger(__name__)
-
-import ckanapi
-
-
 recombinant = Blueprint('recombinant', __name__)
 
 
 @recombinant.route('/recombinant/upload/<id>', methods=['POST'])
-def upload(id):
+def upload(id: str) -> Response:
     package_type = _get_package_type(id)
     geno = get_geno(package_type)
-    lc = ckanapi.LocalCKAN(username=g.user)
+    lc = LocalCKAN(username=g.user)
     dataset = lc.action.package_show(id=id)
     org = lc.action.organization_show(id=dataset['owner_org'])
     dry_run = 'validate' in request.form
@@ -86,16 +97,18 @@ def upload(id):
                              resource_name=resource_name,
                              owner_org=org['name'])
 
+
 @recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['POST'])
-def delete_records(id, resource_id):
-    lc = ckanapi.LocalCKAN(username=g.user)
+def delete_records(id: str, resource_id: str) -> Union[str, Response]:
+    lc = LocalCKAN(username=g.user)
     filters = {}
 
-    if not h.check_access('datastore_delete', {'resource_id': resource_id, 'filters': filters}):
-        return abort(403, _('User {0} not authorized to update resource {1}'
-                    .format(str(g.user), resource_id)))
+    if not h.check_access('datastore_delete',
+                          {'resource_id': resource_id,
+                           'filters': filters}):
+        return abort(403, _('User {0} not authorized to update resource {1}'.format(
+            str(g.user), resource_id)))
 
-    x_vars = {'filters': filters, 'action': 'edit'}
     pkg = lc.action.package_show(id=id)
     res = lc.action.resource_show(id=resource_id)
     org = lc.action.organization_show(id=pkg['owner_org'])
@@ -103,16 +116,15 @@ def delete_records(id, resource_id):
     dataset = lc.action.recombinant_show(
         dataset_type=pkg['type'], owner_org=org['name'])
 
-    def delete_error(err):
+    def delete_error(err: str) -> str:
         return render('recombinant/resource_edit.html',
-            extra_vars={
-                'delete_errors': [err],
-                'dataset': dataset,
-                'dataset_type': dataset['dataset_type'],
-                'resource': res,
-                'organization': org,
-                'filters': filters,
-                'action': 'edit'})
+                      extra_vars={'delete_errors': [err],
+                                  'dataset': dataset,
+                                  'dataset_type': dataset['dataset_type'],
+                                  'resource': res,
+                                  'organization': org,
+                                  'filters': filters,
+                                  'action': 'edit'})
 
     form_text = request.form.get('bulk-delete', '')
     if not form_text:
@@ -125,7 +137,8 @@ def delete_records(id, resource_id):
     records = iter(form_text.split('\n'))
     for r in records:
         r = r.rstrip('\r')
-        def record_fail(err):
+
+        def record_fail(err: str) -> str:
             # move bad record to the top of the pile
             filters['bulk-delete'] = '\n'.join(
                 [r] + list(records) + ok_records)
@@ -134,8 +147,8 @@ def delete_records(id, resource_id):
         split_on = '\t' if '\t' in r else ','
         fields = [f for f in r.split(split_on)]
         if len(fields) != len(pk_fields):
-            return record_fail(_('Wrong number of fields, expected {num}')
-                .format(num=len(pk_fields)))
+            return record_fail(_('Wrong number of fields, expected {num}').format(
+                num=len(pk_fields)))
 
         filters.clear()
         for f, pkf in zip(fields, pk_fields):
@@ -150,7 +163,7 @@ def delete_records(id, resource_id):
         found = result['records']
         if not found:
             return record_fail(_('No matching records found "%s"') %
-                u'", "'.join(fields))
+                               '", "'.join(fields))
         if len(found) > 1:
             return record_fail(_('Multiple matching records found'))
 
@@ -163,16 +176,16 @@ def delete_records(id, resource_id):
             'recombinant.preview_table',
             resource_name=res['name'],
             owner_org=org['name'],)
-    if not 'confirm' in request.form:
+    if 'confirm' not in request.form:
         return render('recombinant/confirm_delete.html',
-            extra_vars={
-                'dataset':dataset,
-                'resource':res,
-                'num': len(ok_records),
-                'bulk_delete': u'\n'.join(ok_records
-                    # extra blank is needed to prevent field
-                    # from being completely empty
-                    + ([''] if '' in ok_records else [])) })
+                      extra_vars={'dataset': dataset,
+                                  'resource': res,
+                                  'num': len(ok_records),
+                                  'bulk_delete': '\n'.join(
+                                      ok_records
+                                      # extra blank is needed to prevent field
+                                      # from being completely empty
+                                      + ([''] if '' in ok_records else []))})
 
     for f in ok_filters:
         try:
@@ -185,9 +198,12 @@ def delete_records(id, resource_id):
                 records = []
                 ok_records = []
                 chromo = get_chromo(res['name'])
-                error_message = chromo.get('datastore_constraint_errors', {}).get('delete', e.error_dict['foreign_constraints'][0])
+                # type_ignore_reason: incomplete typing
+                error_message = chromo.get('datastore_constraint_errors', {}).get(
+                    'delete', e.error_dict['foreign_constraints'][0])  # type: ignore
                 h.flash_error(_(error_message))
-                return record_fail(_(error_message))
+                # type_ignore_reason: incomplete typing
+                return record_fail(_(error_message))  # type: ignore
             raise
 
     h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
@@ -199,7 +215,7 @@ def delete_records(id, resource_id):
         )
 
 
-def _xlsx_response_headers():
+def _xlsx_response_headers() -> Tuple[str, str]:
     """
     Returns tuple of content type and disposition type.
 
@@ -211,31 +227,34 @@ def _xlsx_response_headers():
     user_agent_legacy = getattr(request, 'headers', {}).get('User-Agent')
     user_agent = getattr(request, 'headers', {}).get('Sec-CH-UA', user_agent_legacy)
     if user_agent and (
-        "Microsoft Edge" in user_agent or
-        "Edg/" in user_agent or
-        "EdgA/" in user_agent
-        ):
-            # force the XLSX file to be downloaded in MS Edge,
-            # and not open in Office Apps Online.
-            content_type = 'application/octet-stream'
-            disposition_type = 'attachment'
+      "Microsoft Edge" in user_agent or
+      "Edg/" in user_agent or
+      "EdgA/" in user_agent):
+        # force the XLSX file to be downloaded in MS Edge,
+        # and not open in Office Apps Online.
+        content_type = 'application/octet-stream'
+        disposition_type = 'attachment'
     return content_type, disposition_type
 
 
-@recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx', methods=['GET', 'POST'])
-def template(dataset_type, lang, owner_org):
-
+@recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx',
+                   methods=['GET', 'POST'])
+def template(dataset_type: str, lang: str, owner_org: str) -> Response:
     """
-    POST requests to this endpoint contain primary keys of records that are to be included in the excel file
+    POST requests to this endpoint contain primary keys of
+    records that are to be included in the excel file
+
     Parameters:
-        bulk-template -> an array of strings, each string contains primary keys separated by commas
+        bulk-template -> an array of strings, each string
+        contains primary keys separated by commas
+
         resource_name -> the name of the resource containing the records
     """
 
     if lang != h.lang():
         return abort(404, _('Not found'))
 
-    lc = ckanapi.LocalCKAN(username=g.user)
+    lc = LocalCKAN(username=g.user)
     try:
         dataset = lc.action.recombinant_show(
             dataset_type=dataset_type,
@@ -243,7 +262,7 @@ def template(dataset_type, lang, owner_org):
         org = lc.action.organization_show(
             id=owner_org,
             include_datasets=False)
-    except ckanapi.NotFound:
+    except NotFound:
         return abort(404, _('Not found'))
 
     try:
@@ -253,7 +272,7 @@ def template(dataset_type, lang, owner_org):
 
     if request.method == 'POST':
         filters = {}
-        resource_name = request.form.get('resource_name','' )
+        resource_name = request.form.get('resource_name', '')
         for r in dataset['resources']:
             if r['name'] == resource_name:
                 resource = r
@@ -271,16 +290,18 @@ def template(dataset_type, lang, owner_org):
             for f, pkf in zip(temp, pk_fields):
                 filters[pkf['datastore_id']] = f
             try:
-                result = lc.action.datastore_search(resource_id=resource['id'],filters = filters)
+                result = lc.action.datastore_search(resource_id=resource['id'],
+                                                    filters=filters)
             except NotAuthorized:
-                return abort(403, _(u'Unauthorized to read resource %s') % resource['id'])
+                return abort(403, _('Unauthorized to read resource %s') %
+                             resource['id'])
             record_data += result['records']
 
         append_data(book, record_data, chromo)
 
     blob = BytesIO()
     book.save(blob)
-    response = Response(blob.getvalue())
+    response = FlaskResponse(blob.getvalue())
     content_type, disposition_type = _xlsx_response_headers()
     response.headers['Content-Type'] = content_type
     response.headers['Content-Disposition'] = (
@@ -292,7 +313,8 @@ def template(dataset_type, lang, owner_org):
     return response
 
 
-def _data_dictionary(dataset_type, published_resource=False):
+def _data_dictionary(dataset_type: str,
+                     published_resource: bool = False) -> Response:
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
@@ -301,7 +323,7 @@ def _data_dictionary(dataset_type, published_resource=False):
     book = excel_data_dictionary(geno, published_resource=published_resource)
     blob = BytesIO()
     book.save(blob)
-    response = Response(blob.getvalue())
+    response = FlaskResponse(blob.getvalue())
     content_type, disposition_type = _xlsx_response_headers()
     response.headers['Content-Type'] = content_type
     response.headers['Content-Disposition'] = '{}; filename="{}.xlsx"'.format(
@@ -311,16 +333,16 @@ def _data_dictionary(dataset_type, published_resource=False):
 
 
 @recombinant.route('/recombinant-dictionary/<dataset_type>')
-def data_dictionary(dataset_type):
+def data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant-published-dictionary/<dataset_type>')
-def published_data_dictionary(dataset_type):
+def published_data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=True)
 
 
-def _schema_json(dataset_type, published_resource=False):
+def _schema_json(dataset_type: str, published_resource: bool = False) -> Response:
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
@@ -368,7 +390,8 @@ def _schema_json(dataset_type, published_resource=False):
         for field in chromo['fields']:
             if not field.get('visible_to_public', True):
                 continue
-            if not published_resource and field.get('published_resource_computed_field', False):
+            if not published_resource and field.get(
+              'published_resource_computed_field', False):
                 continue
             fld = {}
             resource['fields'].append(fld)
@@ -413,7 +436,9 @@ def _schema_json(dataset_type, published_resource=False):
                         field['datastore_id']]
             resource['example_record'] = example
 
-    response = Response(json.dumps(schema, indent=2, ensure_ascii=False).encode('utf-8'))
+    response = Response(json.dumps(schema,
+                                   indent=2,
+                                   ensure_ascii=False).encode('utf-8'))
     response.headers['Content-Type'] = 'application/json'
     response.headers['Content-Disposition'] = (
         'inline; filename="{0}.json"'.format(
@@ -422,23 +447,23 @@ def _schema_json(dataset_type, published_resource=False):
 
 
 @recombinant.route('/recombinant-schema/<dataset_type>.json')
-def schema_json(dataset_type):
+def schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant-published-schema/<dataset_type>.json')
-def published_schema_json(dataset_type):
+def published_schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=True)
 
 
 @recombinant.route('/recombinant/<resource_name>')
-def type_redirect(resource_name):
+def type_redirect(resource_name: str) -> Response:
     orgs = h.organizations_available('read')
 
     if not orgs:
         return abort(404, _('No organizations found'))
     try:
-        chromo = get_chromo(resource_name)
+        get_chromo(resource_name)
     except RecombinantException:
         return abort(404, _('Recombinant resource_name not found'))
 
@@ -449,8 +474,8 @@ def type_redirect(resource_name):
     )
 
 
-def dataset_redirect(package_type, id):
-    lc = ckanapi.LocalCKAN(username=g.user)
+def dataset_redirect(package_type: str, id: str) -> Response:
+    lc = LocalCKAN(username=g.user)
     dataset = lc.action.package_show(id=id)
     return h.redirect_to(
         'recombinant.preview_table',
@@ -459,12 +484,14 @@ def dataset_redirect(package_type, id):
     )
 
 
-def resource_redirect(package_type, id, resource_id):
+def resource_redirect(package_type: str, id: str, resource_id: str) -> Response:
     return dataset_redirect(package_type, id)
 
 
 @recombinant.route('/recombinant/<resource_name>/<owner_org>', methods=['GET', 'POST'])
-def preview_table(resource_name, owner_org, errors=None):
+def preview_table(resource_name: str,
+                  owner_org: str,
+                  errors: Optional[Dict[str, Any]] = None) -> Union[str, Response]:
     if not g.user:
         return h.redirect_to('user.login')
 
@@ -478,7 +505,7 @@ def preview_table(resource_name, owner_org, errors=None):
             owner_org=org_object.name,
         )
 
-    lc = ckanapi.LocalCKAN(username=g.user, context={'ignore_auth':True})
+    lc = LocalCKAN(username=g.user, context={'ignore_auth': True})
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
@@ -487,8 +514,11 @@ def preview_table(resource_name, owner_org, errors=None):
     if 'create' in request.form or 'refresh' in request.form:
         # check if the user can update datasets for organization
         # admin and editors should be able to init recombinant records
-        if not has_user_permission_for_group_or_org(org_object.id, g.user, 'update_dataset'):
-            return abort(403, _('User %s not authorized to create packages') % (str(g.user)))
+        if not has_user_permission_for_group_or_org(org_object.id,
+                                                    g.user,
+                                                    'update_dataset'):
+            return abort(403, _('User %s not authorized to create packages') %
+                         (str(g.user)))
         try:
             # check if the dataset exists
             dataset = lc.action.recombinant_show(
@@ -496,8 +526,8 @@ def preview_table(resource_name, owner_org, errors=None):
             # check that the resource has errors
             for _r in dataset['resources']:
                 if _r['name'] == resource_name and 'error' in _r:
-                    raise ckanapi.NotFound
-        except ckanapi.NotFound:
+                    raise NotFound
+        except NotFound:
             try:
                 if 'create' in request.form:
                     lc.action.recombinant_create(
@@ -507,7 +537,7 @@ def preview_table(resource_name, owner_org, errors=None):
                         dataset_type=chromo['dataset_type'], owner_org=owner_org,
                         force_update=True)
             except NotAuthorized as e:
-                return abort(403, e.message)
+                return abort(403, e.message or '')
         return h.redirect_to(
             'recombinant.preview_table',
             resource_name=resource_name,
@@ -517,7 +547,7 @@ def preview_table(resource_name, owner_org, errors=None):
     try:
         dataset = lc.action.recombinant_show(
             dataset_type=chromo['dataset_type'], owner_org=owner_org)
-    except ckanapi.NotFound:
+    except NotFound:
         dataset = None
     org = lc.action.organization_show(id=owner_org)
 
@@ -541,7 +571,11 @@ def preview_table(resource_name, owner_org, errors=None):
         })
 
 
-def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
+def _process_upload_file(lc: LocalCKAN,
+                         dataset: Dict[str, Any],
+                         upload_file: Union[str, FlaskFileStorage, FieldStorage],
+                         geno: Dict[str, Any],
+                         dry_run: bool):
     """
     Use lc.action.datastore_upsert to load data from upload_file
 
@@ -558,7 +592,9 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
 
     upload_data = read_excel(upload_file)
     total_records = 0
-    backend = DatastoreBackend.get_active_backend()
+    # type_ignore_reason: incomplete typing
+    backend: DatastorePostgresqlBackend = DatastoreBackend.\
+        get_active_backend()  # type: ignore
     ds_write_connection = backend._get_write_engine().connect()
     ds_write_transaction = ds_write_connection.begin()
     try:
@@ -576,21 +612,23 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                     raise
                 raise BadExcelData(
                     _("The server encountered a problem processing the file "
-                    "uploaded. Please try copying your data into the latest "
-                    "version of the template and uploading again. If this "
-                    "problem continues, send your Excel file to "
-                    "open-ouvert@tbs-sct.gc.ca so we may investigate."))
+                      "uploaded. Please try copying your data into the latest "
+                      "version of the template and uploading again. If this "
+                      "problem continues, send your Excel file to "
+                      "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
             if sheet_name not in expected_sheet_names:
                 raise BadExcelData(_('Invalid file for this data type. ' +
-                    'Sheet must be labeled "{0}", ' +
-                    'but you supplied a sheet labeled "{1}"').format(
-                        '"/"'.join(sorted(expected_sheet_names)),
-                        sheet_name))
+                                     'Sheet must be labeled "{0}", ' +
+                                     'but you supplied a sheet labeled "{1}"').format(
+                                        '"/"'.join(sorted(expected_sheet_names)),
+                                        sheet_name))
 
-            if not h.check_access('datastore_upsert', {'resource_id': expected_sheet_names[sheet_name]}):
+            if not h.check_access('datastore_upsert',
+                                  {'resource_id': expected_sheet_names[sheet_name]}):
                 return abort(403, _('User {0} not authorized to update resource {1}'
-                            .format(str(g.user), expected_sheet_names[sheet_name])))
+                                    .format(str(g.user),
+                                            expected_sheet_names[sheet_name])))
 
             if org_name != owner_org:
                 raise BadExcelData(_(
@@ -606,14 +644,15 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
 
             chromo = get_chromo(sheet_name)
             expected_columns = [f['datastore_id'] for f in chromo['fields']
-                if f.get('import_template_include', True) and not f.get('published_resource_computed_field')]
+                                if f.get('import_template_include', True) and
+                                not f.get('published_resource_computed_field')]
             if column_names != expected_columns:
                 raise BadExcelData(
                     _("This template is out of date. "
-                    "Please try copying your data into the latest "
-                    "version of the template and uploading again. If this "
-                    "problem continues, send your Excel file to "
-                    "open-ouvert@tbs-sct.gc.ca so we may investigate."))
+                      "Please try copying your data into the latest "
+                      "version of the template and uploading again. If this "
+                      "problem continues, send your Excel file to "
+                      "open-ouvert@tbs-sct.gc.ca so we may investigate."))
 
             pk = chromo.get('datastore_primary_key', [])
             choice_fields = {
@@ -624,7 +663,9 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
 
             records = get_records(
                 rows,
-                [f for f in chromo['fields'] if f.get('import_template_include', True) and not f.get('published_resource_computed_field')],
+                [f for f in chromo['fields'] if f.get(
+                    'import_template_include', True) and not f.get(
+                        'published_resource_computed_field')],
                 pk,
                 choice_fields)
             method = 'upsert' if pk else 'insert'
@@ -643,33 +684,45 @@ def _process_upload_file(lc, dataset, upload_file, geno, dry_run):
                 if 'info' in e.error_dict:
                     # because, where else would you put the error text?
                     # XXX improve this in datastore, please
-                    pgerror = e.error_dict['info']['orig'][0].decode('utf-8')
+                    # type_ignore_reason: incomplete typing
+                    pgerror = e.error_dict['info']['orig'][0].decode(  # type: ignore
+                        'utf-8')
                 else:
-                    pgerror = e.error_dict['records'][0]
+                    # type_ignore_reason: incomplete typing
+                    pgerror = e.error_dict['records'][0]  # type: ignore
                 if isinstance(pgerror, dict):
-                    pgerror = u'; '.join(
-                        (h.recombinant_language_text(h.recombinant_get_field(sheet_name, k)['label']) if h.recombinant_get_field(sheet_name, k) else k) + _(u':') + ' ' + u', '.join(format_trigger_error(v))
+                    pgerror = '; '.join(
+                        (h.recombinant_language_text(
+                            h.recombinant_get_field(sheet_name, k)['label']) if
+                            h.recombinant_get_field(sheet_name, k) else k) + _(':')
+                        + ' ' + ', '.join(format_trigger_error(v))
                         for k, v in pgerror.items())
                 else:
                     # remove some postgres-isms that won't help the user
                     # when we render this as an error in the form
-                    pgerror = re.sub(r'\nLINE \d+:', u'', pgerror)
-                    pgerror = re.sub(r'\n *\^\n$', u'', pgerror)
+                    pgerror = re.sub(r'\nLINE \d+:', '', pgerror)
+                    pgerror = re.sub(r'\n *\^\n$', '', pgerror)
                 if 'records_row' in e.error_dict:
                     if 'violates foreign key constraint' in pgerror:
-                        foreign_error = chromo.get('datastore_constraint_errors', {}).get('upsert')
+                        foreign_error = chromo.get(
+                            'datastore_constraint_errors', {}).get('upsert')
                         if foreign_error:
                             pgerror = _(foreign_error)
                     elif 'invalid input syntax for type integer' in pgerror:
                         if ':' in pgerror:
-                            pgerror = _('Invalid input syntax for type integer: {}').format(pgerror.split(':')[1].strip())
+                            pgerror = _('Invalid input syntax for type integer: {}')\
+                                .format(pgerror.split(':')[1].strip())
                         else:
                             pgerror = _('Invalid input syntax for type integer')
-                    raise BadExcelData(_(u'Sheet {0} Row {1}:').format(
-                        sheet_name, records[e.error_dict['records_row']][0])
-                        + u' ' + pgerror)
+                    raise BadExcelData(
+                        _('Sheet {0} Row {1}:').format(
+                            sheet_name,
+                            # type_ignore_reason: incomplete typing
+                            records[e.error_dict['records_row']][0])  # type: ignore
+                        + ' '
+                        + pgerror)
                 raise BadExcelData(
-                    _(u"Error while importing data: {0}").format(
+                    _("Error while importing data: {0}").format(
                         pgerror))
         if not total_records:
             raise BadExcelData(_("The template uploaded is empty"))

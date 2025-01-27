@@ -1,19 +1,48 @@
 import importlib
 import os
 import uuid
+from urllib.request import urlopen
+from urllib.error import URLError
 
-from ckan.plugins.toolkit import _, get_validator
+from typing import Optional, Union, Any, Dict, List, Tuple
+from ckan.types import (
+    FlattenDataDict,
+    FlattenErrorDict,
+    FlattenKey,
+    Context,
+    Callable,
+    Action,
+    ChainedAction,
+    AuthFunction,
+    ChainedAuthFunction,
+    Schema,
+    Validator
+)
+from ckan.common import CKANConfig
+
+from flask import Blueprint
+from click import Command
+
+from ckan.plugins.toolkit import get_validator
 import ckan.plugins as p
 from ckan.lib.plugins import DefaultDatasetForm, DefaultTranslation
 
-from ckanext.recombinant import logic, tables, helpers, load, views, auth, cli, validators
+from ckanext.recombinant import (
+    logic,
+    tables,
+    helpers,
+    load,
+    views,
+    auth,
+    cli,
+    validators
+)
 from ckanext.recombinant.errors import RecombinantException
 
 from ckanext.datastore.interfaces import IDataDictionaryForm
 
 
-class RecombinantPlugin(
-        p.SingletonPlugin, DefaultDatasetForm, DefaultTranslation):
+class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslation):
     p.implements(tables.IRecombinant)
     p.implements(p.IConfigurer)
     p.implements(p.IDatasetForm, inherit=True)
@@ -26,17 +55,16 @@ class RecombinantPlugin(
     p.implements(p.IValidators)
     p.implements(IDataDictionaryForm, inherit=True)
 
-    def update_config(self, config):
+    def update_config(self, config: 'CKANConfig'):
         # add our templates
         p.toolkit.add_template_directory(config, 'templates')
         p.toolkit.add_resource('assets', 'recombinant')
 
         # read our configuration early
-        self._tables_urls = config.get('recombinant.definitions', ""
-            ).split()
+        self._tables_urls = config.get('recombinant.definitions', "").split()
         if not self._tables_urls:
             raise RecombinantException("Missing configuration option "
-                "recombinant.definitions")
+                                       "recombinant.definitions")
         self._chromos, self._genos = (
             _load_table_definitions(self._tables_urls))
         self._published_resource_ids = {}
@@ -45,10 +73,10 @@ class RecombinantPlugin(
             if pubid:
                 self._published_resource_ids[pubid] = chname
 
-    def package_types(self):
+    def package_types(self) -> List[str]:
         return tables.get_dataset_types()
 
-    def create_package_schema(self):
+    def create_package_schema(self) -> Schema:
         schema = super(RecombinantPlugin, self).create_package_schema()
         schema['id'] = [generate_uuid]
         schema['name'] = [value_from_id]
@@ -56,21 +84,31 @@ class RecombinantPlugin(
 
         return schema
 
-    def get_blueprint(self):
+    def get_blueprint(self) -> List[Blueprint]:
         return [views.recombinant]
 
-    def prepare_dataset_blueprint(self, package_type, bp):
-        bp.add_url_rule('/<id>', 'dataset_redirect', views.dataset_redirect)
-        bp.add_url_rule('/edit/<id>', 'dataset_edit_redirect', views.dataset_redirect)
-        bp.add_url_rule('/<id>/dictionary/<resource_id>', 'resource_data_dict_redirect', views.resource_redirect)
+    def prepare_dataset_blueprint(self, package_type: str, bp: Blueprint):
+        bp.add_url_rule('/<id>',
+                        'dataset_redirect',
+                        views.dataset_redirect)
+        bp.add_url_rule('/edit/<id>',
+                        'dataset_edit_redirect',
+                        views.dataset_redirect)
+        bp.add_url_rule('/<id>/dictionary/<resource_id>',
+                        'resource_data_dict_redirect',
+                        views.resource_redirect)
         return bp
 
-    def prepare_resource_blueprint(self, package_type, bp):
-        bp.add_url_rule('/<resource_id>/edit', 'resource_edit_redirect', views.resource_redirect)
-        bp.add_url_rule('/<resource_id>', 'resource_view_redirect', views.resource_redirect)
+    def prepare_resource_blueprint(self, package_type: str, bp: Blueprint):
+        bp.add_url_rule('/<resource_id>/edit',
+                        'resource_edit_redirect',
+                        views.resource_redirect)
+        bp.add_url_rule('/<resource_id>',
+                        'resource_view_redirect',
+                        views.resource_redirect)
         return bp
 
-    def get_helpers(self):
+    def get_helpers(self) -> Dict[str, Callable[..., Any]]:
         return {
             'recombinant_language_text': helpers.recombinant_language_text,
             'recombinant_primary_key_fields':
@@ -86,7 +124,7 @@ class RecombinantPlugin(
                 helpers.recombinant_published_resource_chromo,
             }
 
-    def get_actions(self):
+    def get_actions(self) -> Dict[str, Union[Action, ChainedAction]]:
         return {
             'recombinant_create': logic.recombinant_create,
             'recombinant_update': logic.recombinant_update,
@@ -96,8 +134,8 @@ class RecombinantPlugin(
             }
 
     # IAuthFunctions
-
-    def get_auth_functions(self):
+    def get_auth_functions(self) -> Dict[str, Union[AuthFunction,
+                                                    ChainedAuthFunction]]:
         return {
             'package_update': auth.package_update,
             'package_create': auth.package_create,
@@ -105,40 +143,45 @@ class RecombinantPlugin(
         }
 
     # IClick
-
-    def get_commands(self):
+    def get_commands(self) -> List[Command]:
         return [cli.get_commands()]
 
     # IValidators
-
-    def get_validators(self):
+    def get_validators(self) -> Dict[str, Validator]:
         return {
             'recombinant_foreign_keys': validators.recombinant_foreign_keys,
         }
 
     # IDataDictionaryForm
-
-    def update_datastore_create_schema(self, schema):
+    def update_datastore_create_schema(self, schema: Schema) -> Schema:
         recombinant_foreign_keys_validator = get_validator('recombinant_foreign_keys')
-        schema['foreign_keys'].append(recombinant_foreign_keys_validator)
+        if 'foreign_keys' not in schema:
+            schema['foreign_keys'] = []
+        # type_ignore_reason: incomplete typing
+        schema['foreign_keys'].append(  # type: ignore
+            recombinant_foreign_keys_validator)
         return schema
 
 
-def generate_uuid(value):
+def generate_uuid(value: Any) -> str:
     """
     Create an id for this dataset earlier than normal.
     """
     return str(uuid.uuid4())
 
 
-def value_from_id(key, converted_data, errors, context):
+def value_from_id(key: FlattenKey,
+                  converted_data: FlattenDataDict,
+                  errors: FlattenErrorDict,
+                  context: Context):
     """
     Copy the 'id' value from converted_data
     """
     converted_data[key] = converted_data[('id',)]
 
 
-def _load_table_definitions(urls):
+def _load_table_definitions(urls: List[str]) -> Tuple[
+        Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     chromos = {}
     genos = {}
     dataset_definitions = {}
@@ -152,21 +195,38 @@ def _load_table_definitions(urls):
             t = _load_tables_url(url)
             is_url = True
 
+        if not t or not p:
+            continue
+
         if t['dataset_type'] in dataset_definitions:
-            raise RecombinantException('Recombinant dataset_type "%s" is already defined in %s. Cannot be redefined in %s.'
-                                       % (t['dataset_type'], dataset_definitions[t['dataset_type']], url))
+            raise RecombinantException(
+                'Recombinant dataset_type "%s" is already '
+                'defined in %s. Cannot be redefined in %s.' %
+                (t['dataset_type'],
+                 dataset_definitions[t['dataset_type']],
+                 url))
         genos[t['dataset_type']] = t
         dataset_definitions[t['dataset_type']] = url
 
         for chromo in t['resources']:
             if chromo['resource_name'] in resource_definitions:
-                raise RecombinantException('Recombinant resource_name "%s" is already defined in %s. Cannot be redefined in %s.'
-                                           % (chromo['resource_name'], resource_definitions[chromo['resource_name']], url))
-            if 'published_resource_id' in chromo and chromo['published_resource_id'] in published_resource_definitions:
-                raise RecombinantException('Published Resource ID "%s" is already defined for "%s" in %s. Cannot be redefined in %s.'
-                                           % (chromo['published_resource_id'],
-                                              published_resource_definitions[chromo['published_resource_id']]['resource_name'],
-                                              published_resource_definitions[chromo['published_resource_id']]['url'], url))
+                raise RecombinantException(
+                    'Recombinant resource_name "%s" is already '
+                    'defined in %s. Cannot be redefined in %s.' %
+                    (chromo['resource_name'],
+                     resource_definitions[chromo['resource_name']],
+                     url))
+            if (
+              'published_resource_id' in chromo and
+              chromo['published_resource_id'] in published_resource_definitions):
+                raise RecombinantException(
+                    'Published Resource ID "%s" is already '
+                    'defined for "%s" in %s. Cannot be redefined in %s.' %
+                    (chromo['published_resource_id'],
+                     published_resource_definitions[
+                         chromo['published_resource_id']]['resource_name'],
+                     published_resource_definitions[
+                         chromo['published_resource_id']]['url'], url))
             chromo['dataset_type'] = t['dataset_type']
             if 'target_dataset' in t:
                 chromo['target_dataset'] = t['target_dataset']
@@ -177,21 +237,30 @@ def _load_table_definitions(urls):
             chromos[chromo['resource_name']] = chromo
             resource_definitions[chromo['resource_name']] = url
             if 'published_resource_id' in chromo:
-                published_resource_definitions[chromo['published_resource_id']] = {'url': url, 'resource_name': chromo['resource_name']}
+                published_resource_definitions[chromo['published_resource_id']] = {
+                    'url': url, 'resource_name': chromo['resource_name']}
             if 'triggers' in chromo:
                 for trigger in chromo['triggers']:
                     if isinstance(trigger, dict):
                         for trigger_name in trigger:
                             if trigger_name in trigger_definitions:
-                                raise RecombinantException('Recombinant database trigger "%s" is already defined for "%s" in %s. Cannot be redefined in %s.'
-                                                           % (trigger_name, trigger_definitions[trigger_name]['resource_name'],
-                                                              trigger_definitions[trigger_name]['url'], url))
-                            trigger_definitions[trigger_name] = {'url': url, 'resource_name': chromo['resource_name']}
+                                raise RecombinantException(
+                                    'Recombinant database trigger "%s" is already '
+                                    'defined for "%s" in %s. Cannot be '
+                                    'redefined in %s.' %
+                                    (trigger_name,
+                                     trigger_definitions[
+                                         trigger_name]['resource_name'],
+                                     trigger_definitions[
+                                         trigger_name]['url'], url))
+                            trigger_definitions[trigger_name] = {
+                                'url': url, 'resource_name': chromo['resource_name']}
 
     return chromos, genos
 
 
-def _load_tables_module_path(url):
+def _load_tables_module_path(url: str) -> Tuple[
+        Optional[Dict[str, Any]], Optional[str]]:
     """
     Given a path like "ckanext.spatialx:my_definition.json"
     find the second part relative to the import path of the first
@@ -207,14 +276,14 @@ def _load_tables_module_path(url):
     p = os.path.join(p, file_name)
     if os.path.exists(p):
         return load.load(open(p)), p
+    return None, None
 
 
-def _load_tables_url(url):
-    import urllib2
+def _load_tables_url(url: str) -> Optional[Dict[str, Any]]:
     try:
-        res = urllib2.urlopen(url)
+        res = urlopen(url)
         tables = res.read()
-    except urllib2.URLError:
-        raise RecombinantException("Could not find recombinant.definitions json config file: %s" % url )
-
+    except URLError:
+        raise RecombinantException(
+            "Could not find recombinant.definitions json config file: %s" % url)
     return load.loads(tables, url)
