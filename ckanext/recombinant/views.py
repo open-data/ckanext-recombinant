@@ -26,6 +26,7 @@ from ckan.plugins.toolkit import (
 from ckan.logic import ValidationError, NotAuthorized
 from ckan.model.group import Group
 from ckan.authz import has_user_permission_for_group_or_org
+from ckan.common import session
 
 from ckan.views.dataset import _get_package_type
 
@@ -97,6 +98,7 @@ def upload(id: str) -> Response:
                              owner_org=org['name'])
     except BadExcelData as e:
         h.flash_error(_(e.message))
+        session['RECOMBINANT_ERRORS'] = _(e.message)
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=org['name'])
@@ -121,15 +123,12 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
         dataset_type=pkg['type'], owner_org=org['name'])
 
     def delete_error(err: str) -> str:
-        # FIXME: should redirect to the preview_table page with passed extra vars...
-        return render('recombinant/resource_edit.html',
-                      extra_vars={'delete_errors': [err],
-                                  'dataset': dataset,
-                                  'dataset_type': dataset['dataset_type'],
-                                  'resource': res,
-                                  'organization': org,
-                                  'filters': filters,
-                                  'action': 'edit'})
+        session['RECOMBINANT_DELETE_ERRORS'] = err
+        session['RECOMBINANT_FILTERS'] = filters
+        return h.redirect_to(
+            'recombinant.preview_table',
+            resource_name=res['name'],
+            owner_org=org['name'])
 
     form_text = request.form.get('bulk-delete', '')
     if not form_text:
@@ -543,8 +542,7 @@ def resource_redirect(package_type: str, id: str, resource_id: str) -> Response:
 
 @recombinant.route('/recombinant/<resource_name>/<owner_org>', methods=['GET', 'POST'])
 def preview_table(resource_name: str,
-                  owner_org: str,
-                  errors: Optional[Dict[str, Any]] = None) -> Union[str, Response]:
+                  owner_org: str) -> Union[str, Response]:
     if not g.user:
         return h.redirect_to('user.login')
 
@@ -613,6 +611,10 @@ def preview_table(resource_name: str,
     else:
         r = None
 
+    errors = session.pop('RECOMBINANT_ERRORS', None)
+    delete_errors = session.pop('RECOMBINANT_DELETE_ERRORS', None)
+    filters = session.pop('RECOMBINANT_FILTERS', None)
+
     return render('recombinant/resource_edit.html', extra_vars={
         'dataset': dataset,
         'dataset_type': chromo['dataset_type'],
@@ -621,6 +623,8 @@ def preview_table(resource_name: str,
         'resource': r,
         'organization': org,
         'errors': errors,
+        'delete_errors': [delete_errors] if delete_errors else None,
+        'filters': filters
         })
 
 
