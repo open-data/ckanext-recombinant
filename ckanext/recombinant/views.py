@@ -55,6 +55,10 @@ from ckanapi import NotFound, LocalCKAN
 log = getLogger(__name__)
 recombinant = Blueprint('recombinant', __name__)
 
+FK_DETAILS_MATCH__KEYS = re.compile('(?<=DETAIL:).*(\((.*)\))=')
+FK_DETAILS_MATCH__VALUES = re.compile('(?<=DETAIL:).*(\((.*)\))')
+FK_DETAILS_MATCH__TABLE = re.compile('(?<=DETAIL:).*"(.*?)"')
+
 
 @recombinant.route('/recombinant/upload/<id>', methods=['POST'])
 def upload(id: str) -> Response:
@@ -117,6 +121,7 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
         dataset_type=pkg['type'], owner_org=org['name'])
 
     def delete_error(err: str) -> str:
+        # FIXME: should redirect to the preview_table page with passed extra vars...
         return render('recombinant/resource_edit.html',
                       extra_vars={'delete_errors': [err],
                                   'dataset': dataset,
@@ -201,6 +206,51 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
                 # type_ignore_reason: incomplete typing
                 error_message = chromo.get('datastore_constraint_errors', {}).get(
                     'delete', e.error_dict['foreign_constraints'][0])  # type: ignore
+                # parse the pSQL original error string to determine
+                # the referenced keys, values, and table.
+                sql_error_string = e.error_dict['info']['orig']
+                keys_match = re.search(FK_DETAILS_MATCH__KEYS, sql_error_string)
+                values_match = re.search(FK_DETAILS_MATCH__VALUES, sql_error_string)
+                table_match = re.search(FK_DETAILS_MATCH__TABLE, sql_error_string)
+                ref_keys = keys_match.group(2) if \
+                    keys_match else None
+                ref_values = values_match.group(2) if \
+                    values_match else None
+                ref_resource = table_match.group(1) if table_match else None
+                if ref_resource:
+                    try:
+                        ref_res_dict = lc.action.resource_show(
+                            id=ref_resource)
+                        ref_pkg_dict = lc.action.package_show(
+                            id=ref_res_dict['package_id'])
+                        if ref_pkg_dict['type'] in h.recombinant_get_types():
+                            if ref_keys and ref_values:
+                                dt_query = {}
+                                _ref_keys = ref_keys.replace(' ', '').split(',')
+                                _ref_values = ref_values.replace(' ', '').split(',')
+                                for _i, key in enumerate(_ref_keys):
+                                    dt_query[key] = _ref_values[_i]
+                                dt_query = json.dumps(dt_query, separators=(',', ':'))
+                            ref_res_uri = h.url_for(
+                                'recombinant.preview_table',
+                                resource_name=ref_res_dict['name'],
+                                owner_org=ref_pkg_dict['organization']['name'],
+                                dt_query=dt_query if dt_query else None)
+                        else:
+                            ref_res_uri = h.url_for(
+                                'resource.read',
+                                id=ref_res_dict['package_id'],
+                                resource_id=ref_res_dict['id'])
+                        ref_resource = ref_res_uri
+                    except Exception:
+                        pass
+                if (
+                  ref_values and
+                  ref_resource and
+                  'refValues' in error_message and
+                  'refTable' in error_message):
+                    error_message = error_message.format(refValues=ref_values,
+                                                         refTable=ref_resource)
                 h.flash_error(_(error_message))
                 # type_ignore_reason: incomplete typing
                 return record_fail(_(error_message))  # type: ignore
@@ -285,6 +335,8 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
         chromo = get_chromo(resource['name'])
         record_data = []
 
+        # TODO: check if the geno has foreign keys
+
         for keys in primary_keys:
             temp = keys.split(",")
             for f, pkf in zip(temp, pk_fields):
@@ -295,6 +347,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
             except NotAuthorized:
                 return abort(403, _('Unauthorized to read resource %s') %
                              resource['id'])
+            # TODO: go get referencing records here...
             record_data += result['records']
 
         append_data(book, record_data, chromo)
