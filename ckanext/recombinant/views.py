@@ -2,8 +2,10 @@ from flask import Blueprint, Response as FlaskResponse
 from flask_babel import force_locale
 import re
 import simplejson as json
+from urllib.parse import quote
+from markupsafe import Markup
 
-from typing import Union, Optional, Dict, Tuple, Any
+from typing import Union, Dict, Tuple, Any
 from ckan.types import Response
 
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
@@ -122,7 +124,7 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     dataset = lc.action.recombinant_show(
         dataset_type=pkg['type'], owner_org=org['name'])
 
-    def delete_error(err: str) -> str:
+    def delete_error(err: Union[str, Markup]) -> Union[str, Markup]:
         session['RECOMBINANT_DELETE_ERRORS'] = err
         session['RECOMBINANT_FILTERS'] = filters
         return h.redirect_to(
@@ -142,7 +144,7 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     for r in records:
         r = r.rstrip('\r')
 
-        def record_fail(err: str) -> str:
+        def record_fail(err: Union[str, Markup]) -> Union[str, Markup]:
             # move bad record to the top of the pile
             filters['bulk-delete'] = '\n'.join(
                 [r] + list(records) + ok_records)
@@ -205,44 +207,9 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
                 # type_ignore_reason: incomplete typing
                 error_message = chromo.get('datastore_constraint_errors', {}).get(
                     'delete', e.error_dict['foreign_constraints'][0])  # type: ignore
-                # parse the pSQL original error string to determine
-                # the referenced keys, values, and table.
                 sql_error_string = e.error_dict['info']['orig']
-                keys_match = re.search(FK_DETAILS_MATCH__KEYS, sql_error_string)
-                values_match = re.search(FK_DETAILS_MATCH__VALUES, sql_error_string)
-                table_match = re.search(FK_DETAILS_MATCH__TABLE, sql_error_string)
-                ref_keys = keys_match.group(2) if \
-                    keys_match else None
-                ref_values = values_match.group(2) if \
-                    values_match else None
-                ref_resource = table_match.group(1) if table_match else None
-                if ref_resource:
-                    try:
-                        ref_res_dict = lc.action.resource_show(
-                            id=ref_resource)
-                        ref_pkg_dict = lc.action.package_show(
-                            id=ref_res_dict['package_id'])
-                        if ref_pkg_dict['type'] in h.recombinant_get_types():
-                            if ref_keys and ref_values:
-                                dt_query = {}
-                                _ref_keys = ref_keys.replace(' ', '').split(',')
-                                _ref_values = ref_values.replace(' ', '').split(',')
-                                for _i, key in enumerate(_ref_keys):
-                                    dt_query[key] = _ref_values[_i]
-                                dt_query = json.dumps(dt_query, separators=(',', ':'))
-                            ref_res_uri = h.url_for(
-                                'recombinant.preview_table',
-                                resource_name=ref_res_dict['name'],
-                                owner_org=ref_pkg_dict['organization']['name'],
-                                dt_query=dt_query if dt_query else None)
-                        else:
-                            ref_res_uri = h.url_for(
-                                'resource.read',
-                                id=ref_res_dict['package_id'],
-                                resource_id=ref_res_dict['id'])
-                        ref_resource = ref_res_uri
-                    except Exception:
-                        pass
+                _ref_keys, ref_values, ref_resource = \
+                    _get_constraint_info_from_psql_error(lc, sql_error_string)
                 if (
                   ref_values and
                   ref_resource and
@@ -252,7 +219,7 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
                                                          refTable=ref_resource)
                 h.flash_error(_(error_message))
                 # type_ignore_reason: incomplete typing
-                return record_fail(_(error_message))  # type: ignore
+                return record_fail(Markup(_(error_message)))  # type: ignore
             raise
 
     h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
@@ -622,7 +589,7 @@ def preview_table(resource_name: str,
         'resource_name': chromo['resource_name'],
         'resource': r,
         'organization': org,
-        'errors': errors,
+        'errors': [errors] if errors else None,
         'delete_errors': [delete_errors] if delete_errors else None,
         'filters': filters
         })
@@ -763,8 +730,19 @@ def _process_upload_file(lc: LocalCKAN,
                     if 'violates foreign key constraint' in pgerror:
                         foreign_error = chromo.get(
                             'datastore_constraint_errors', {}).get('upsert')
+                        sql_error_string = e.error_dict['upsert_info']['orig']
+                        _ref_keys, ref_values, ref_resource = \
+                            _get_constraint_info_from_psql_error(lc, sql_error_string)
+                        if (
+                          foreign_error and
+                          ref_values and
+                          ref_resource and
+                          'refValues' in foreign_error and
+                          'refTable' in foreign_error):
+                            foreign_error = foreign_error.format(
+                                refValues=ref_values, refTable=ref_resource)
                         if foreign_error:
-                            pgerror = _(foreign_error)
+                            pgerror = Markup(_(foreign_error))
                     elif 'invalid input syntax for type integer' in pgerror:
                         if ':' in pgerror:
                             pgerror = _('Invalid input syntax for type integer: {}')\
@@ -792,3 +770,48 @@ def _process_upload_file(lc: LocalCKAN,
         raise
     finally:
         ds_write_connection.close()
+
+
+def _get_constraint_info_from_psql_error(
+        lc: LocalCKAN, sql_error_string: str) -> Tuple[str, str, str]:
+    """
+    Parses the pSQL original constraint error string to determine
+    the referenced/referencing keys, values, and table.
+
+    Will return the referenced table with a URI to the CKAN resource.
+
+    If the resource is a PD type, it will append the key/value filters
+    for a DataTables query.
+    """
+    keys_match = re.search(FK_DETAILS_MATCH__KEYS, sql_error_string)
+    values_match = re.search(FK_DETAILS_MATCH__VALUES, sql_error_string)
+    table_match = re.search(FK_DETAILS_MATCH__TABLE, sql_error_string)
+    ref_keys = keys_match.group(2) if keys_match else None
+    ref_values = values_match.group(2) if values_match else None
+    ref_resource = table_match.group(1) if table_match else None
+    if ref_resource:
+        try:
+            ref_res_dict = lc.action.resource_show(id=ref_resource)
+            ref_pkg_dict = lc.action.package_show(id=ref_res_dict['package_id'])
+            if ref_pkg_dict['type'] in h.recombinant_get_types():
+                if ref_keys and ref_values:
+                    dt_query = {}
+                    _ref_keys = ref_keys.replace(' ', '').split(',')
+                    _ref_values = ref_values.replace(' ', '').split(',')
+                    for _i, key in enumerate(_ref_keys):
+                        dt_query[key] = _ref_values[_i]
+                    dt_query = json.dumps(dt_query, separators=(',', ':'))
+                ref_res_uri = h.url_for(
+                    'recombinant.preview_table',
+                    resource_name=ref_res_dict['name'],
+                    owner_org=ref_pkg_dict['organization']['name'],
+                    dt_query=dt_query)
+            else:
+                ref_res_uri = h.url_for(
+                    'resource.read',
+                    id=ref_res_dict['package_id'],
+                    resource_id=ref_res_dict['id'])
+            ref_resource = ref_res_uri
+        except Exception:
+            pass
+    return ref_keys, ref_values, ref_resource
