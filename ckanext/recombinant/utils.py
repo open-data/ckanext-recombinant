@@ -3,16 +3,22 @@ import json
 import string
 from markupsafe import Markup
 
+from typing import Any, Dict
+
 from ckanapi import LocalCKAN
 from ckan.plugins.toolkit import h, _
 
 
-FK_DETAILS_MATCH__KEYS = re.compile('(?<=DETAIL:).*(\((.*)\))=')
-FK_DETAILS_MATCH__VALUES = re.compile('(?<=DETAIL:).*(\((.*)\))')
+# noqa_reason: regex is fine
+# type_ignore_reason: regex is fine
+FK_DETAILS_MATCH__KEYS = re.compile(
+    '(?<=DETAIL:).*(\((.*)\))=')  # noqa: W605 # type: ignore
+FK_DETAILS_MATCH__VALUES = re.compile(
+    '(?<=DETAIL:).*(\((.*)\))')  # noqa: W605 # type: ignore
 FK_DETAILS_MATCH__TABLE = re.compile('(?<=DETAIL:).*"(.*?)"')
 
 
-class PartialFormat(dict):
+class PartialFormat(Dict[Any, Any]):
     def __missing__(self, key: str) -> str:
         return "{" + key + "}"
 
@@ -41,6 +47,7 @@ def get_constraint_error_from_psql_error(
             ref_res_dict = lc.action.resource_show(id=ref_resource)
             ref_pkg_dict = lc.action.package_show(id=ref_res_dict['package_id'])
             if ref_pkg_dict['type'] in h.recombinant_get_types():
+                dt_query = None
                 if ref_keys and ref_values:
                     dt_query = {}
                     _ref_keys = ref_keys.replace(' ', '').split(',')

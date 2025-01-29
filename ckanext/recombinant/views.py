@@ -203,7 +203,8 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
                 # type_ignore_reason: incomplete typing
                 error_message = chromo.get('datastore_constraint_errors', {}).get(
                     'delete', e.error_dict['foreign_constraints'][0])  # type: ignore
-                sql_error_string = e.error_dict['info']['orig']
+                # type_ignore_reason: incomplete typing
+                sql_error_string = e.error_dict['info']['orig']  # type: ignore
                 error_message = get_constraint_error_from_psql_error(
                     lc, sql_error_string, error_message)
                 h.flash_error(error_message)
@@ -719,7 +720,9 @@ def _process_upload_file(lc: LocalCKAN,
                     if 'violates foreign key constraint' in pgerror:
                         foreign_error = chromo.get(
                             'datastore_constraint_errors', {}).get('upsert')
-                        sql_error_string = e.error_dict['upsert_info']['orig']
+                        # type_ignore_reason: incomplete typing
+                        sql_error_string = \
+                            e.error_dict['upsert_info']['orig']  # type: ignore
                         if foreign_error:
                             pgerror = get_constraint_error_from_psql_error(
                                 lc, sql_error_string, foreign_error)
