@@ -208,18 +208,18 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
                 error_message = chromo.get('datastore_constraint_errors', {}).get(
                     'delete', e.error_dict['foreign_constraints'][0])  # type: ignore
                 sql_error_string = e.error_dict['info']['orig']
-                _ref_keys, ref_values, ref_resource = \
+                ref_keys, ref_values, ref_resource = \
                     _get_constraint_info_from_psql_error(lc, sql_error_string)
-                if (
-                  ref_values and
-                  ref_resource and
-                  'refValues' in error_message and
-                  'refTable' in error_message):
-                    error_message = error_message.format(refValues=ref_values,
-                                                         refTable=ref_resource)
-                h.flash_error(_(error_message))
+                error_message = _(error_message)
+                if 'refKeys' in error_message:
+                    error_message = error_message.format(refKeys=ref_keys)
+                if 'refValues' in error_message:
+                    error_message = error_message.format(refValues=ref_values)
+                if 'refTable' in error_message:
+                    error_message = error_message.format(refTable=ref_resource)
+                h.flash_error(error_message)
                 # type_ignore_reason: incomplete typing
-                return record_fail(Markup(_(error_message)))  # type: ignore
+                return record_fail(Markup(error_message))  # type: ignore
             raise
 
     h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
@@ -731,18 +731,17 @@ def _process_upload_file(lc: LocalCKAN,
                         foreign_error = chromo.get(
                             'datastore_constraint_errors', {}).get('upsert')
                         sql_error_string = e.error_dict['upsert_info']['orig']
-                        _ref_keys, ref_values, ref_resource = \
+                        ref_keys, ref_values, ref_resource = \
                             _get_constraint_info_from_psql_error(lc, sql_error_string)
-                        if (
-                          foreign_error and
-                          ref_values and
-                          ref_resource and
-                          'refValues' in foreign_error and
-                          'refTable' in foreign_error):
-                            foreign_error = foreign_error.format(
-                                refValues=ref_values, refTable=ref_resource)
                         if foreign_error:
-                            pgerror = Markup(_(foreign_error))
+                            foreign_error = _(foreign_error)
+                            if 'refKeys' in foreign_error:
+                                foreign_error = foreign_error.format(refKeys=ref_keys)
+                            if 'refValues' in foreign_error:
+                                foreign_error = foreign_error.format(refValues=ref_values)
+                            if 'refTable' in foreign_error:
+                                foreign_error = foreign_error.format(refTable=ref_resource)
+                            pgerror = Markup(foreign_error)
                     elif 'invalid input syntax for type integer' in pgerror:
                         if ':' in pgerror:
                             pgerror = _('Invalid input syntax for type integer: {}')\
@@ -778,7 +777,8 @@ def _get_constraint_info_from_psql_error(
     Parses the pSQL original constraint error string to determine
     the referenced/referencing keys, values, and table.
 
-    Will return the referenced table with a URI to the CKAN resource.
+    Will return a tuple of the keys, values, and referenced/referencing table
+    as a URI to the CKAN resource.
 
     If the resource is a PD type, it will append the key/value filters
     for a DataTables query.
