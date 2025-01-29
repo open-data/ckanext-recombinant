@@ -2,7 +2,6 @@ from flask import Blueprint, Response as FlaskResponse
 from flask_babel import force_locale
 import re
 import simplejson as json
-from urllib.parse import quote
 from markupsafe import Markup
 
 from typing import Union, Dict, Tuple, Any
@@ -46,6 +45,7 @@ from ckanext.recombinant.write_excel import (
 from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import (
     recombinant_primary_key_fields, recombinant_choice_fields)
+from ckanext.recombinant.utils import get_constraint_error_from_psql_error
 
 from io import BytesIO
 
@@ -57,10 +57,6 @@ from ckanapi import NotFound, LocalCKAN
 
 log = getLogger(__name__)
 recombinant = Blueprint('recombinant', __name__)
-
-FK_DETAILS_MATCH__KEYS = re.compile('(?<=DETAIL:).*(\((.*)\))=')
-FK_DETAILS_MATCH__VALUES = re.compile('(?<=DETAIL:).*(\((.*)\))')
-FK_DETAILS_MATCH__TABLE = re.compile('(?<=DETAIL:).*"(.*?)"')
 
 
 @recombinant.route('/recombinant/upload/<id>', methods=['POST'])
@@ -208,15 +204,8 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
                 error_message = chromo.get('datastore_constraint_errors', {}).get(
                     'delete', e.error_dict['foreign_constraints'][0])  # type: ignore
                 sql_error_string = e.error_dict['info']['orig']
-                ref_keys, ref_values, ref_resource = \
-                    _get_constraint_info_from_psql_error(lc, sql_error_string)
-                error_message = _(error_message)
-                if 'refKeys' in error_message:
-                    error_message = error_message.format(refKeys=ref_keys)
-                if 'refValues' in error_message:
-                    error_message = error_message.format(refValues=ref_values)
-                if 'refTable' in error_message:
-                    error_message = error_message.format(refTable=ref_resource)
+                error_message = get_constraint_error_from_psql_error(
+                    lc, sql_error_string, error_message)
                 h.flash_error(error_message)
                 # type_ignore_reason: incomplete typing
                 return record_fail(Markup(error_message))  # type: ignore
@@ -731,17 +720,9 @@ def _process_upload_file(lc: LocalCKAN,
                         foreign_error = chromo.get(
                             'datastore_constraint_errors', {}).get('upsert')
                         sql_error_string = e.error_dict['upsert_info']['orig']
-                        ref_keys, ref_values, ref_resource = \
-                            _get_constraint_info_from_psql_error(lc, sql_error_string)
                         if foreign_error:
-                            foreign_error = _(foreign_error)
-                            if 'refKeys' in foreign_error:
-                                foreign_error = foreign_error.format(refKeys=ref_keys)
-                            if 'refValues' in foreign_error:
-                                foreign_error = foreign_error.format(refValues=ref_values)
-                            if 'refTable' in foreign_error:
-                                foreign_error = foreign_error.format(refTable=ref_resource)
-                            pgerror = Markup(foreign_error)
+                            pgerror = get_constraint_error_from_psql_error(
+                                lc, sql_error_string, foreign_error)
                     elif 'invalid input syntax for type integer' in pgerror:
                         if ':' in pgerror:
                             pgerror = _('Invalid input syntax for type integer: {}')\
@@ -769,49 +750,3 @@ def _process_upload_file(lc: LocalCKAN,
         raise
     finally:
         ds_write_connection.close()
-
-
-def _get_constraint_info_from_psql_error(
-        lc: LocalCKAN, sql_error_string: str) -> Tuple[str, str, str]:
-    """
-    Parses the pSQL original constraint error string to determine
-    the referenced/referencing keys, values, and table.
-
-    Will return a tuple of the keys, values, and referenced/referencing table
-    as a URI to the CKAN resource.
-
-    If the resource is a PD type, it will append the key/value filters
-    for a DataTables query.
-    """
-    keys_match = re.search(FK_DETAILS_MATCH__KEYS, sql_error_string)
-    values_match = re.search(FK_DETAILS_MATCH__VALUES, sql_error_string)
-    table_match = re.search(FK_DETAILS_MATCH__TABLE, sql_error_string)
-    ref_keys = keys_match.group(2) if keys_match else None
-    ref_values = values_match.group(2) if values_match else None
-    ref_resource = table_match.group(1) if table_match else None
-    if ref_resource:
-        try:
-            ref_res_dict = lc.action.resource_show(id=ref_resource)
-            ref_pkg_dict = lc.action.package_show(id=ref_res_dict['package_id'])
-            if ref_pkg_dict['type'] in h.recombinant_get_types():
-                if ref_keys and ref_values:
-                    dt_query = {}
-                    _ref_keys = ref_keys.replace(' ', '').split(',')
-                    _ref_values = ref_values.replace(' ', '').split(',')
-                    for _i, key in enumerate(_ref_keys):
-                        dt_query[key] = _ref_values[_i]
-                    dt_query = json.dumps(dt_query, separators=(',', ':'))
-                ref_res_uri = h.url_for(
-                    'recombinant.preview_table',
-                    resource_name=ref_res_dict['name'],
-                    owner_org=ref_pkg_dict['organization']['name'],
-                    dt_query=dt_query)
-            else:
-                ref_res_uri = h.url_for(
-                    'resource.read',
-                    id=ref_res_dict['package_id'],
-                    resource_id=ref_res_dict['id'])
-            ref_resource = ref_res_uri
-        except Exception:
-            pass
-    return ref_keys, ref_values, ref_resource
