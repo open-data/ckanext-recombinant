@@ -291,7 +291,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
         chromo = get_chromo(resource['name'])
         record_data = []
 
-        # TODO: check if the geno has foreign keys
+        # TODO: see if we can complete the datastore_info fk mappings and just get from there...
 
         for keys in primary_keys:
             temp = keys.split(",")
@@ -303,10 +303,11 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
             except NotAuthorized:
                 return abort(403, _('Unauthorized to read resource %s') %
                              resource['id'])
-            # TODO: go get referencing records here...
             record_data += result['records']
 
         append_data(book, record_data, chromo)
+
+        # TODO: check if there are any foreign references and append any data
 
     blob = BytesIO()
     book.save(blob)
