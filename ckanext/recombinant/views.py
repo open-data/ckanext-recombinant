@@ -3,6 +3,7 @@ from flask_babel import force_locale
 import re
 import simplejson as json
 from markupsafe import Markup
+import sqlalchemy as sa
 
 from typing import Union, Dict, Tuple, Any
 from ckan.types import Response
@@ -291,8 +292,6 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
         chromo = get_chromo(resource['name'])
         record_data = []
 
-        # TODO: see if we can complete the datastore_info fk mappings and just get from there...
-
         for keys in primary_keys:
             temp = keys.split(",")
             for f, pkf in zip(temp, pk_fields):
@@ -307,7 +306,34 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
 
         append_data(book, record_data, chromo)
 
-        # TODO: check if there are any foreign references and append any data
+        ds_info = lc.action.datastore_info(id=resource['id'])
+        if 'foreignkeys' in ds_info['meta']:
+            for fk in ds_info['meta']['foreignkeys']:
+                foreign_constraints_sql = None
+                if resource['id'] == fk['child_table']:
+                    foreign_constraints_sql = sa.text('''
+                        SELECT * FROM "{0}" parent
+                        JOIN "{1}" child ON {2}
+                        ORDER BY parent._id;
+                    '''.format(fk['parent_table'],
+                               fk['child_table'],
+                               ' AND '.join(['parent.{0} = child.{1}'.format(fk_c, fk['child_columns'][fk_i])
+                                             for fk_i, fk_c in enumerate(fk['parent_columns'])])))
+                elif resource['id'] == fk['parent_table']:
+                    foreign_constraints_sql = sa.text('''
+                        SELECT * FROM "{0}" child
+                        JOIN "{1}" parent ON {2}
+                        ORDER BY child._id;
+                    '''.format(fk['child_table'],
+                               fk['parent_table'],
+                               ' AND '.join(['child.{0} = parent.{1}'.format(fk_c, fk['parent_columns'][fk_i])
+                                             for fk_i, fk_c in enumerate(fk['child_columns'])])))
+                if foreign_constraints_sql is not None:
+                    # TODO: get results and chromo and put them into the workbook
+                    continue
+                    # foreign_constraints_results = connection.execute(foreign_constraints_sql)
+                    for result in foreign_constraints_results.fetchall():
+                        continue
 
     blob = BytesIO()
     book.save(blob)
