@@ -519,11 +519,19 @@ def _load_one_csv_file(name: str) -> int:
 
         click.echo('- %s %s' % (org_name, len(records)))
 
+        # default org extras
+        org_extras = [
+            'owner_org',
+            'owner_org_title'
+        ]
         if 'csv_org_extras' in chromo:
-            # remove 'csv_org_extras' fields from records
-            for r in records:
-                for e in chromo['csv_org_extras']:
-                    del r[e]
+            org_extras += chromo['csv_org_extras']
+        # remove any org extras
+        for r in records:
+            for e in org_extras:
+                if e not in r:
+                    continue
+                del r[e]
 
         offset = 0
         while offset < len(records):
@@ -624,6 +632,7 @@ def _write_one_csv(lc: LocalCKAN,
                 chromo['resource_name'], pkg['owner_org']))
             continue
 
+        # default org extras
         org_extras = {
             'owner_org': pkg['owner_org'],
             'owner_org_title': pkg['org_title'],

@@ -48,7 +48,7 @@ def csv_data_batch(csv_path: str,
                        if f['datastore_type'] != 'text']
 
         for row_dict in csv_in:
-            owner_org = row_dict.pop('owner_org')
+            owner_org = row_dict.pop('owner_org', None)
             if owner_org != current_owner_org:
                 if records:
                     yield (current_owner_org, records)
