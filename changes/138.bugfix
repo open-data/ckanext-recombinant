@@ -1,0 +1,1 @@
+Fixed an issue with the `load_csv` command in which it would raise exceptions when passing non-existing fields to the DataStore.
