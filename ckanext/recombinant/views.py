@@ -2,10 +2,9 @@ from flask import Blueprint, Response as FlaskResponse
 from flask_babel import force_locale
 import re
 import simplejson as json
-from markupsafe import Markup
 from sqlalchemy import text as sql_text
 
-from typing import Union, Dict, Tuple, Any
+from typing import Union, Dict, Tuple, Any, Optional, List
 from ckan.types import Response
 
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
@@ -46,7 +45,6 @@ from ckanext.recombinant.write_excel import (
 from ckanext.recombinant.tables import get_chromo, get_geno
 from ckanext.recombinant.helpers import (
     recombinant_primary_key_fields, recombinant_choice_fields)
-from ckanext.recombinant.utils import get_constraint_error_from_psql_error
 
 from io import BytesIO
 
@@ -55,7 +53,8 @@ from ckanext.datastore.logic.action import datastore_search_sql
 from ckanext.datastore.backend import DatastoreBackend
 from ckanext.datastore.backend.postgres import (
     DatastorePostgresqlBackend,
-    identifier as sql_identifier
+    identifier as sql_identifier,
+    _parse_constraint_error_from_psql_error
 )
 
 from ckanapi import NotFound, LocalCKAN
@@ -102,13 +101,12 @@ def upload(id: str) -> Response:
                              owner_org=org['name'])
     except BadExcelData as e:
         h.flash_error(_(e.message))
-        session['RECOMBINANT_ERRORS'] = _(e.message)
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=org['name'])
 
 
-@recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['POST'])
+@recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['GET', 'POST'])
 def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     lc = LocalCKAN(username=g.user)
     filters = {}
@@ -126,17 +124,25 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     dataset = lc.action.recombinant_show(
         dataset_type=pkg['type'], owner_org=org['name'])
 
-    def delete_error(err: Union[str, Markup]) -> Union[str, Markup]:
-        session['RECOMBINANT_DELETE_ERRORS'] = err
-        session['RECOMBINANT_FILTERS'] = filters
-        return h.redirect_to(
-            'recombinant.preview_table',
-            resource_name=res['name'],
-            owner_org=org['name'])
+    def delete_error(err: str, _records: Optional[List[str]]) -> str:
+        return render('recombinant/confirm_delete.html',
+                      extra_vars={'dataset': dataset,
+                                  'resource': res,
+                                  'errors': [err],
+                                  'num': len(_records),
+                                  'bulk_delete': '\n'.join(
+                                      _records
+                                      # extra blank is needed to prevent field
+                                      # from being completely empty
+                                      + ([''] if '' in _records else []))})
 
     form_text = request.form.get('bulk-delete', '')
     if not form_text:
-        return delete_error(_('Required field'))
+        # we can just silently refresh
+        return h.redirect_to(
+                'recombinant.preview_table',
+                resource_name=res['name'],
+                owner_org=org['name'])
 
     pk_fields = recombinant_primary_key_fields(res['name'])
 
@@ -146,11 +152,11 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     for r in records:
         r = r.rstrip('\r')
 
-        def record_fail(err: Union[str, Markup]) -> Union[str, Markup]:
+        def record_fail(err: str) -> str:
             # move bad record to the top of the pile
             filters['bulk-delete'] = '\n'.join(
                 [r] + list(records) + ok_records)
-            return delete_error(err)
+            return delete_error(err, ok_records)
 
         split_on = '\t' if '\t' in r else ','
         fields = [f for f in r.split(split_on)]
@@ -183,8 +189,8 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
         return h.redirect_to(
             'recombinant.preview_table',
             resource_name=res['name'],
-            owner_org=org['name'],)
-    if 'confirm' not in request.form:
+            owner_org=org['name'])
+    if 'confirm' not in request.form or request.method == 'GET':
         return render('recombinant/confirm_delete.html',
                       extra_vars={'dataset': dataset,
                                   'resource': res,
@@ -194,31 +200,23 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
                                       # extra blank is needed to prevent field
                                       # from being completely empty
                                       + ([''] if '' in ok_records else []))})
+    if request.method == 'POST':
+        for f in ok_filters:
+            try:
+                lc.action.datastore_delete(
+                    resource_id=resource_id,
+                    filters=f,
+                    )
+            except ValidationError as e:
+                if 'constraint_info' in e.error_dict:
+                    error_message = _render_recombinant_constraint_errors(
+                        lc, e, get_chromo(res['name']), 'delete')
+                    h.flash_error(error_message)
+                    # type_ignore_reason: incomplete typing
+                    return record_fail(error_message)  # type: ignore
+                raise
 
-    for f in ok_filters:
-        try:
-            lc.action.datastore_delete(
-                resource_id=resource_id,
-                filters=f,
-                )
-        except ValidationError as e:
-            if 'foreign_constraints' in e.error_dict:
-                records = []
-                ok_records = []
-                chromo = get_chromo(res['name'])
-                # type_ignore_reason: incomplete typing
-                error_message = chromo.get('datastore_constraint_errors', {}).get(
-                    'delete', e.error_dict['foreign_constraints'][0])  # type: ignore
-                # type_ignore_reason: incomplete typing
-                sql_error_string = e.error_dict['info']['orig']  # type: ignore
-                error_message = get_constraint_error_from_psql_error(
-                    lc, sql_error_string, error_message)
-                h.flash_error(error_message)
-                # type_ignore_reason: incomplete typing
-                return record_fail(Markup(error_message))  # type: ignore
-            raise
-
-    h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
+        h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
 
     return h.redirect_to(
         'recombinant.preview_table',
@@ -609,10 +607,6 @@ def preview_table(resource_name: str,
     else:
         r = None
 
-    errors = session.pop('RECOMBINANT_ERRORS', None)
-    delete_errors = session.pop('RECOMBINANT_DELETE_ERRORS', None)
-    filters = session.pop('RECOMBINANT_FILTERS', None)
-
     return render('recombinant/resource_edit.html', extra_vars={
         'dataset': dataset,
         'dataset_type': chromo['dataset_type'],
@@ -620,9 +614,9 @@ def preview_table(resource_name: str,
         'resource_name': chromo['resource_name'],
         'resource': r,
         'organization': org,
-        'errors': [errors] if errors else None,
-        'delete_errors': [delete_errors] if delete_errors else None,
-        'filters': filters
+        'errors': None,
+        'delete_errors': None,
+        'filters': None
         })
 
 
@@ -736,7 +730,11 @@ def _process_upload_file(lc: LocalCKAN,
                     context={'connection': ds_write_connection}
                 )
             except ValidationError as e:
-                if 'info' in e.error_dict:
+                if 'constraint_info' in e.error_dict:
+                    # type_ignore_reason: incomplete typing
+                    pgerror = e.error_dict['errors'][
+                        'foreign_constraint'][0]  # type: ignore
+                elif 'info' in e.error_dict:
                     # because, where else would you put the error text?
                     # XXX improve this in datastore, please
                     # type_ignore_reason: incomplete typing
@@ -758,15 +756,9 @@ def _process_upload_file(lc: LocalCKAN,
                     pgerror = re.sub(r'\nLINE \d+:', '', pgerror)
                     pgerror = re.sub(r'\n *\^\n$', '', pgerror)
                 if 'records_row' in e.error_dict:
-                    if 'violates foreign key constraint' in pgerror:
-                        foreign_error = chromo.get(
-                            'datastore_constraint_errors', {}).get('upsert')
-                        # type_ignore_reason: incomplete typing
-                        sql_error_string = \
-                            e.error_dict['upsert_info']['orig']  # type: ignore
-                        if foreign_error:
-                            pgerror = get_constraint_error_from_psql_error(
-                                lc, sql_error_string, foreign_error)
+                    if 'constraint_info' in e.error_dict:
+                        pgerror = _render_recombinant_constraint_errors(
+                            lc, e, chromo, 'upsert')
                     elif 'invalid input syntax for type integer' in pgerror:
                         if ':' in pgerror:
                             pgerror = _('Invalid input syntax for type integer: {}')\
@@ -794,3 +786,43 @@ def _process_upload_file(lc: LocalCKAN,
         raise
     finally:
         ds_write_connection.close()
+
+
+def _render_recombinant_constraint_errors(lc: LocalCKAN,
+                                          exception: Exception,
+                                          chromo: Dict[str, Any],
+                                          action: str) -> str:
+    # type_ignore_reason: incomplete typing
+    orig_errmsg = exception.error_dict['errors'][
+        'foreign_constraint'][0]  # type: ignore
+    foreign_error = chromo.get(
+        'datastore_constraint_errors', {}).get(action)
+    fk_err_template = chromo.get(
+        'datastore_constraint_error_templates', {}).get(action)
+    if foreign_error and not fk_err_template:
+        # type_ignore_reason: incomplete typing
+        error_message = _parse_constraint_error_from_psql_error(
+            exception, foreign_error)['errors'][
+                'foreign_constraint'][0]  # type: ignore
+    elif fk_err_template:
+        ref_res_dict = lc.action.resource_show(
+            id=exception.error_dict['constraint_info']['ref_resource'])
+        ref_pkg_dict = lc.action.package_show(
+            id=ref_res_dict['package_id'])
+        dt_query = {}
+        _ref_keys = exception.error_dict['constraint_info'][
+            'ref_keys'].replace(' ', '').split(',')
+        _ref_values = exception.error_dict['constraint_info'][
+            'ref_values'].replace(' ', '').split(',')
+        for _i, key in enumerate(_ref_keys):
+            dt_query[key] = _ref_values[_i]
+        dt_query = json.dumps(dt_query, separators=(',', ':'))
+        error_message = render(fk_err_template,
+                               extra_vars=dict(
+                                   exception.error_dict['constraint_info'],
+                                   ref_resource=ref_res_dict,
+                                   ref_dataset=ref_pkg_dict,
+                                   dt_query=dt_query))
+    else:
+        error_message = orig_errmsg
+    return error_message
