@@ -4,7 +4,7 @@ import re
 import simplejson as json
 from sqlalchemy import text as sql_text
 
-from typing import Union, Dict, Tuple, Any, Optional, List
+from typing import Union, Dict, Tuple, Any, List
 from ckan.types import Response
 
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
@@ -27,7 +27,6 @@ from ckan.plugins.toolkit import (
 from ckan.logic import ValidationError, NotAuthorized
 from ckan.model.group import Group
 from ckan.authz import has_user_permission_for_group_or_org
-from ckan.common import session
 
 from ckan.views.dataset import _get_package_type
 
@@ -124,7 +123,8 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     dataset = lc.action.recombinant_show(
         dataset_type=pkg['type'], owner_org=org['name'])
 
-    def delete_error(err: str, _records: Optional[List[str]]) -> str:
+    # type_ignore_reason: [] default is allowed
+    def delete_error(err: str, _records: List[str] = []) -> str:  # type: ignore
         return render('recombinant/confirm_delete.html',
                       extra_vars={'dataset': dataset,
                                   'resource': res,
@@ -326,7 +326,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
                                ' AND '.join(
                                    ['parent.{0} = child.{1}'.format(
                                        fk_c, fk['child_columns'][fk_i])
-                                   for fk_i, fk_c in enumerate(
+                                    for fk_i, fk_c in enumerate(
                                        fk['parent_columns'])])))
                 elif resource['id'] == fk['parent_table']:
                     f_chromo = get_chromo(resource_names[fk['child_table']])
@@ -339,7 +339,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
                                ' AND '.join(
                                    ['child.{0} = parent.{1}'.format(
                                        fk_c, fk['parent_columns'][fk_i])
-                                   for fk_i, fk_c in enumerate(
+                                    for fk_i, fk_c in enumerate(
                                        fk['child_columns'])])))
                 if foreign_constraints_sql is not None and f_chromo is not None:
                     results = datastore_search_sql(
@@ -732,8 +732,8 @@ def _process_upload_file(lc: LocalCKAN,
             except ValidationError as e:
                 if 'constraint_info' in e.error_dict:
                     # type_ignore_reason: incomplete typing
-                    pgerror = e.error_dict['errors'][
-                        'foreign_constraint'][0]  # type: ignore
+                    pgerror = e.error_dict['errors'][  # type: ignore
+                        'foreign_constraint'][0]
                 elif 'info' in e.error_dict:
                     # because, where else would you put the error text?
                     # XXX improve this in datastore, please
@@ -793,36 +793,40 @@ def _render_recombinant_constraint_errors(lc: LocalCKAN,
                                           chromo: Dict[str, Any],
                                           action: str) -> str:
     # type_ignore_reason: incomplete typing
-    orig_errmsg = exception.error_dict['errors'][
-        'foreign_constraint'][0]  # type: ignore
+    orig_errmsg = exception.error_dict['errors'][  # type: ignore
+        'foreign_constraint'][0]
     foreign_error = chromo.get(
         'datastore_constraint_errors', {}).get(action)
     fk_err_template = chromo.get(
         'datastore_constraint_error_templates', {}).get(action)
     if foreign_error and not fk_err_template:
-        # type_ignore_reason: incomplete typing
         error_message = _parse_constraint_error_from_psql_error(
             exception, foreign_error)['errors'][
-                'foreign_constraint'][0]  # type: ignore
+                'foreign_constraint'][0]
     elif fk_err_template:
         ref_res_dict = lc.action.resource_show(
-            id=exception.error_dict['constraint_info']['ref_resource'])
+            # type_ignore_reason: incomplete typing
+            id=exception.error_dict['constraint_info']['ref_resource'])  # type: ignore
         ref_pkg_dict = lc.action.package_show(
             id=ref_res_dict['package_id'])
         dt_query = {}
-        _ref_keys = exception.error_dict['constraint_info'][
+        # type_ignore_reason: incomplete typing
+        _ref_keys = exception.error_dict['constraint_info'][  # type: ignore
             'ref_keys'].replace(' ', '').split(',')
-        _ref_values = exception.error_dict['constraint_info'][
+        # type_ignore_reason: incomplete typing
+        _ref_values = exception.error_dict['constraint_info'][  # type: ignore
             'ref_values'].replace(' ', '').split(',')
         for _i, key in enumerate(_ref_keys):
             dt_query[key] = _ref_values[_i]
         dt_query = json.dumps(dt_query, separators=(',', ':'))
-        error_message = render(fk_err_template,
-                               extra_vars=dict(
-                                   exception.error_dict['constraint_info'],
-                                   ref_resource=ref_res_dict,
-                                   ref_dataset=ref_pkg_dict,
-                                   dt_query=dt_query))
+        error_message = render(
+            fk_err_template,
+            extra_vars=dict(
+                # type_ignore_reason: incomplete typing
+                exception.error_dict['constraint_info'],  # type: ignore
+                ref_resource=ref_res_dict,
+                ref_dataset=ref_pkg_dict,
+                dt_query=dt_query))
     else:
         error_message = orig_errmsg
     return error_message
