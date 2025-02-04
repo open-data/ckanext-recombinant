@@ -3,7 +3,7 @@ from flask_babel import force_locale
 import re
 import simplejson as json
 from markupsafe import Markup
-import sqlalchemy as sa
+from sqlalchemy import text as sql_text
 
 from typing import Union, Dict, Tuple, Any
 from ckan.types import Response
@@ -50,8 +50,13 @@ from ckanext.recombinant.utils import get_constraint_error_from_psql_error
 
 from io import BytesIO
 
+# use import incase of ckan.datastore.sqlsearch.enabled = False
+from ckanext.datastore.logic.action import datastore_search_sql
 from ckanext.datastore.backend import DatastoreBackend
-from ckanext.datastore.backend.postgres import DatastorePostgresqlBackend
+from ckanext.datastore.backend.postgres import (
+    DatastorePostgresqlBackend,
+    identifier as sql_identifier
+)
 
 from ckanapi import NotFound, LocalCKAN
 
@@ -306,34 +311,43 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
 
         append_data(book, record_data, chromo)
 
+        resource_names = dict((r['id'], r['name']) for r in dataset['resources'])
         ds_info = lc.action.datastore_info(id=resource['id'])
         if 'foreignkeys' in ds_info['meta']:
             for fk in ds_info['meta']['foreignkeys']:
+                f_chromo = None
                 foreign_constraints_sql = None
                 if resource['id'] == fk['child_table']:
-                    foreign_constraints_sql = sa.text('''
-                        SELECT * FROM "{0}" parent
-                        JOIN "{1}" child ON {2}
-                        ORDER BY parent._id;
-                    '''.format(fk['parent_table'],
-                               fk['child_table'],
-                               ' AND '.join(['parent.{0} = child.{1}'.format(fk_c, fk['child_columns'][fk_i])
-                                             for fk_i, fk_c in enumerate(fk['parent_columns'])])))
+                    f_chromo = get_chromo(resource_names[fk['parent_table']])
+                    foreign_constraints_sql = sql_text('''
+                        SELECT parent.* FROM {0} parent
+                        JOIN {1} child ON {2}
+                        ORDER BY parent._id
+                    '''.format(sql_identifier(fk['parent_table']),
+                               sql_identifier(fk['child_table']),
+                               ' AND '.join(
+                                   ['parent.{0} = child.{1}'.format(
+                                       fk_c, fk['child_columns'][fk_i])
+                                   for fk_i, fk_c in enumerate(
+                                       fk['parent_columns'])])))
                 elif resource['id'] == fk['parent_table']:
-                    foreign_constraints_sql = sa.text('''
-                        SELECT * FROM "{0}" child
-                        JOIN "{1}" parent ON {2}
-                        ORDER BY child._id;
-                    '''.format(fk['child_table'],
-                               fk['parent_table'],
-                               ' AND '.join(['child.{0} = parent.{1}'.format(fk_c, fk['parent_columns'][fk_i])
-                                             for fk_i, fk_c in enumerate(fk['child_columns'])])))
-                if foreign_constraints_sql is not None:
-                    # TODO: get results and chromo and put them into the workbook
-                    continue
-                    # foreign_constraints_results = connection.execute(foreign_constraints_sql)
-                    for result in foreign_constraints_results.fetchall():
-                        continue
+                    f_chromo = get_chromo(resource_names[fk['child_table']])
+                    foreign_constraints_sql = sql_text('''
+                        SELECT child.* FROM {0} child
+                        JOIN {1} parent ON {2}
+                        ORDER BY child._id
+                    '''.format(sql_identifier(fk['child_table']),
+                               sql_identifier(fk['parent_table']),
+                               ' AND '.join(
+                                   ['child.{0} = parent.{1}'.format(
+                                       fk_c, fk['parent_columns'][fk_i])
+                                   for fk_i, fk_c in enumerate(
+                                       fk['child_columns'])])))
+                if foreign_constraints_sql is not None and f_chromo is not None:
+                    results = datastore_search_sql(
+                        {'ignore_auth': True}, {'sql': str(foreign_constraints_sql)})
+                    if results:
+                        append_data(book, results['records'], f_chromo)
 
     blob = BytesIO()
     book.save(blob)
