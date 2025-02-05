@@ -116,11 +116,17 @@ def remove_empty(dataset_type: Optional[List[str]] = None,
     is_flag=True,
     help="Force update of tables (required for changes to only primary keys/indexes)",
 )
+@click.option(
+    "-d",
+    "--dataset",
+    help="A dataset ID to update all resource tables for."
+)
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
 def update(dataset_type: Optional[List[str]] = None,
            all_types: bool = False,
            force_update: bool = False,
+           dataset: Optional[str] = None,
            verbose: bool = False):
     """
     Triggers recombinant update for recombinant resources
@@ -128,7 +134,7 @@ def update(dataset_type: Optional[List[str]] = None,
     Full Usage:\n
         recombinant update (-a | DATASET_TYPE ...) [-f]
     """
-    _update(dataset_type, all_types, force_update, verbose=verbose)
+    _update(dataset_type, all_types, force_update, dataset_id=dataset, verbose=verbose)
 
 
 @recombinant.command(short_help="Delete recombinant datasets and all their data.")
@@ -349,12 +355,25 @@ def _show(dataset_type: Optional[str],
 def _update(dataset_types: Optional[List[str]],
             all_types: bool = False,
             force_update: bool = False,
+            dataset_id: Optional[str] = None,
             verbose: bool = False):
     """
     Triggers recombinant update for recombinant resources
     """
     orgs = _get_orgs()
     lc = LocalCKAN()
+    if dataset_id:
+        dataset_dict = lc.action.package_show(id=dataset_id)
+        click.echo('%s %s updating single dataset %s' % (
+            dataset_dict['package_type'],
+            dataset_dict['organization']['name'],
+            dataset_id))
+        lc.action.recombinant_update(
+            owner_org=dataset_dict['organization']['name'],
+            dataset_type=dataset_dict['package_type'],
+            dataset_id=dataset_id,
+            force_update=force_update)
+        return
     for dtype in _expand_dataset_types(dataset_types, all_types):
         packages = _get_packages(dtype, orgs)
         existing = dict((p['owner_org'], p) for p in packages)

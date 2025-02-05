@@ -25,7 +25,7 @@ from ckan.plugins.toolkit import (
 
 from ckan.logic import ValidationError, NotAuthorized
 from ckan.model.group import Group
-from ckan.authz import has_user_permission_for_group_or_org
+from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
 
 from ckan.views.dataset import _get_package_type
 
@@ -51,6 +51,8 @@ from ckanext.datastore.backend.postgres import DatastorePostgresqlBackend
 
 from ckanapi import NotFound, LocalCKAN
 
+
+KEY_ERROR_MATCH = re.compile('"([^"]*)"')
 
 log = getLogger(__name__)
 recombinant = Blueprint('recombinant', __name__)
@@ -91,6 +93,13 @@ def upload(id: str) -> Response:
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=org['name'])
+    except KeyError as e:
+        return render(
+            'recombinant/force_update.html',
+            extra_vars={'key_errors': str(e).replace("'", ''),
+                        'dataset_id': dataset['id'],
+                        'res_name': resource_name,
+                        'owner_org': dataset['owner_org']})
     except BadExcelData as e:
         h.flash_error(_(e.message))
         return h.redirect_to('recombinant.preview_table',
@@ -297,7 +306,15 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
                              resource['id'])
             record_data += result['records']
 
-        append_data(book, record_data, chromo)
+        try:
+            append_data(book, record_data, chromo)
+        except KeyError as e:
+            return render(
+                'recombinant/force_update.html',
+                extra_vars={'key_errors': str(e).replace("'", ''),
+                            'dataset_id': dataset['id'],
+                            'res_name': resource['name'],
+                            'owner_org': dataset['owner_org']})
 
     blob = BytesIO()
     book.save(blob)
@@ -571,6 +588,34 @@ def preview_table(resource_name: str,
         })
 
 
+@recombinant.route('/recombinant/refresh/<resource_name>/<owner_org>',
+                   methods=['POST'])
+def refresh_dataset(resource_name: str, owner_org: str):
+    if 'confirm' in request.form:
+        dataset_id = request.form['dataset_id']
+        if not dataset_id:
+            h.flash_error(_('Could not determine dataset to update.'))
+        else:
+            lc = LocalCKAN()
+            try:
+                dataset_dict = lc.action.package_show(id=dataset_id)
+            except NotAuthorized:
+                return abort(404, _('Not authorized'))
+            try:
+                lc.action.recombinant_update(
+                    owner_org=dataset_dict['organization']['name'],
+                    dataset_type=dataset_dict['package_type'],
+                    dataset_id=dataset_id,
+                    force_update=True)
+                h.flash_success(_('Resources successfully refreshed.'))
+            except Exception:
+                h.flash_error(_('Unable to regenerate the resources.'))
+    return h.redirect_to(
+        'recombinant.preview_table',
+        resource_name=resource_name,
+        owner_org=owner_org)
+
+
 def _process_upload_file(lc: LocalCKAN,
                          dataset: Dict[str, Any],
                          upload_file: Union[str, FlaskFileStorage, FieldStorage],
@@ -687,6 +732,11 @@ def _process_upload_file(lc: LocalCKAN,
                     # type_ignore_reason: incomplete typing
                     pgerror = e.error_dict['info']['orig'][0].decode(  # type: ignore
                         'utf-8')
+                elif 'fields' in e.error_dict:
+                    # type_ignore_reason: incomplete typing
+                    pgerror = e.error_dict['fields'][0]  # type: ignore
+                    key = re.search(KEY_ERROR_MATCH, pgerror).group(1)
+                    raise KeyError(key)
                 else:
                     # type_ignore_reason: incomplete typing
                     pgerror = e.error_dict['records'][0]  # type: ignore

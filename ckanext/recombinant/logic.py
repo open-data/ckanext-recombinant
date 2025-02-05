@@ -59,6 +59,7 @@ def recombinant_update(context: Context, data_dict: DataDict):
     recombinant dataset type.
 
     :param dataset_type: recombinant dataset type
+    :param dataset_id: dataset id to update specifically for
     :param owner_org: organization name or id
     :param delete_resources: True to delete extra resources found
     :param force_update: True to force updating of datastore tables
@@ -146,6 +147,7 @@ def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
     '''
     dataset_type = get_or_bust(data_dict, 'dataset_type')
     owner_org = Group.get(get_or_bust(data_dict, 'owner_org'))
+    dataset_id = data_dict.get('dataset_id', None)
 
     if not owner_org:
         raise ValidationError(
@@ -163,7 +165,9 @@ def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
 
     lc = LocalCKAN(username=context['user'], context=fresh_context)
     result = lc.action.package_search(
-        q="type:%s AND organization:%s" % (dataset_type, owner_org.name),
+        q="type:%s AND organization:%s %s" % (
+            dataset_type, owner_org.name,
+            'AND id:{0}'.format(dataset_id) if dataset_id else ''),
         include_private=True,
         rows=2)
     return lc, geno, result['results']
