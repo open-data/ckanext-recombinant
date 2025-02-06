@@ -58,13 +58,19 @@ log = getLogger(__name__)
 recombinant = Blueprint('recombinant', __name__)
 
 
-@recombinant.route('/recombinant/upload/<id>', methods=['POST'])
+@recombinant.route('/recombinant/upload/<id>', methods=['GET', 'POST'])
 def upload(id: str) -> Response:
     package_type = _get_package_type(id)
     geno = get_geno(package_type)
     lc = LocalCKAN(username=g.user)
     dataset = lc.action.package_show(id=id)
     org = lc.action.organization_show(id=dataset['owner_org'])
+    if request.method != 'POST':
+        # handle page refreshes
+        h.flash_notice(_('Form not submitted, please try again.'))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=package_type,
+                             owner_org=org['name'])
     dry_run = 'validate' in request.form
     # resource_name is only required for redirect,
     # so do not need to heavily validate that it exists in the geno.
@@ -107,7 +113,7 @@ def upload(id: str) -> Response:
                              owner_org=org['name'])
 
 
-@recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['POST'])
+@recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['GET', 'POST'])
 def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     lc = LocalCKAN(username=g.user)
     filters = {}
@@ -121,6 +127,13 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     pkg = lc.action.package_show(id=id)
     res = lc.action.resource_show(id=resource_id)
     org = lc.action.organization_show(id=pkg['owner_org'])
+
+    if request.method != 'POST':
+        # handle page refreshes
+        h.flash_notice(_('Form not submitted, please try again.'))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=res['name'],
+                             owner_org=org['name'])
 
     dataset = lc.action.recombinant_show(
         dataset_type=pkg['type'], owner_org=org['name'])
@@ -589,27 +602,41 @@ def preview_table(resource_name: str,
 
 
 @recombinant.route('/recombinant/refresh/<resource_name>/<owner_org>',
-                   methods=['POST'])
+                   methods=['GET', 'POST'])
 def refresh_dataset(resource_name: str, owner_org: str):
+    if request.method != 'POST':
+        # handle page refreshes
+        h.flash_notice(_('Form not submitted, please try again.'))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=owner_org)
     if 'confirm' in request.form:
         dataset_id = request.form['dataset_id']
         if not dataset_id:
             h.flash_error(_('Could not determine dataset to update.'))
         else:
             lc = LocalCKAN()
-            try:
-                dataset_dict = lc.action.package_show(id=dataset_id)
-            except NotAuthorized:
-                return abort(404, _('Not authorized'))
+            dataset_dict = lc.action.package_show(id=dataset_id)
+            for res in dataset_dict['resources']:
+                if not h.check_access('datastore_delete',
+                                      {'resource_id': res['id'],
+                                       'filters': {}}):
+                    return abort(403, _('User {0} not authorized '
+                                        'to update resource {1}'.format(
+                                            str(g.user), res['id'])))
             try:
                 lc.action.recombinant_update(
                     owner_org=dataset_dict['organization']['name'],
-                    dataset_type=dataset_dict['package_type'],
+                    dataset_type=dataset_dict['type'],
                     dataset_id=dataset_id,
                     force_update=True)
                 h.flash_success(_('Resources successfully refreshed.'))
             except Exception:
-                h.flash_error(_('Unable to regenerate the resources.'))
+                h.flash_error(_(
+                    'Unable to regenerate the resources. Please contact '
+                    '<a href="mailto:open-ouvert@tbs-sct.gc.ca">'
+                    'open-ouvert@tbs-sct.gc.ca</a> for assistance.'),
+                    allow_html=True)
     return h.redirect_to(
         'recombinant.preview_table',
         resource_name=resource_name,

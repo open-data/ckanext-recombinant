@@ -365,12 +365,12 @@ def _update(dataset_types: Optional[List[str]],
     if dataset_id:
         dataset_dict = lc.action.package_show(id=dataset_id)
         click.echo('%s %s updating single dataset %s' % (
-            dataset_dict['package_type'],
+            dataset_dict['type'],
             dataset_dict['organization']['name'],
             dataset_id))
         lc.action.recombinant_update(
             owner_org=dataset_dict['organization']['name'],
-            dataset_type=dataset_dict['package_type'],
+            dataset_type=dataset_dict['type'],
             dataset_id=dataset_id,
             force_update=force_update)
         return
