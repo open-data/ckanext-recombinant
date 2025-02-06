@@ -113,11 +113,12 @@ def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
         try:
             ds = lc.action.datastore_search(
                 resource_id=resource['id'],
-                limit=1)
+                limit=0)
             datastore_correct = _datastore_match(r['fields'], ds['fields'])
             out['datastore_correct'] = datastore_correct
             resources_correct = resources_correct and datastore_correct
             out['datastore_rows'] = ds.get('total', 0)
+            out['datastore_active'] = True
         except NotFound:
             out['error'] = 'datastore table missing'
             resources_correct = False
@@ -259,6 +260,7 @@ def _update_datastore(lc: LocalCKAN,
             chromo['resource_name'], dataset['id'])
         resource_id = resource_ids[chromo['resource_name']]
         fields = datastore_fields(chromo['fields'], datastore_text_types)
+        delete_fields = False
         try:
             ds = lc.action.datastore_search(resource_id=resource_id, limit=0)
         except NotFound:
@@ -273,6 +275,17 @@ def _update_datastore(lc: LocalCKAN,
             for f in datastore_fields(chromo['fields'], datastore_text_types):
                 if f['id'] not in seen:
                     fields.append(f)
+            # remove any fields from DS not in Schema
+            new_fields = []
+            schema_field_ids = set(
+                f['id'] for f in datastore_fields(chromo['fields'],
+                                                  datastore_text_types))
+            for f in fields:
+                if f['id'] not in schema_field_ids:
+                    delete_fields = True
+                    continue
+                new_fields.append(f)
+            fields = new_fields
 
         trigger_names = _update_triggers(lc, chromo)
 
@@ -292,6 +305,7 @@ def _update_datastore(lc: LocalCKAN,
         lc.action.datastore_create(
             resource_id=resource_id,
             fields=fields,
+            delete_fields=delete_fields,
             primary_key=chromo.get('datastore_primary_key', []),
             foreign_keys=foreign_keys,
             indexes=chromo.get('datastore_indexes', []),
@@ -410,7 +424,8 @@ def _datastore_match(fs: List[Dict[str, Any]], fields: List[Dict[str, Any]]) -> 
     """
     # XXX: does not check types or extra columns at this time
     existing = set(c['id'] for c in fields)
-    return all(f['datastore_id'] in existing for f in fs)
+    return all(f['datastore_id'] in existing for f in fs
+               if not f.get('published_resource_computed_field', False))
 
 
 @chained_action

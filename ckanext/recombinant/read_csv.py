@@ -39,8 +39,7 @@ def csv_data_batch(csv_path: str,
 
         if strict:
             expected = [f['datastore_id'] for f in chromo['fields'] if not f.get(
-                'published_resource_computed_field')] + \
-                ['owner_org', 'owner_org_title']
+                'published_resource_computed_field')]
             assert cols == expected, 'column mismatch:\n{0}\n{1}'.format(
                 cols, expected)
 

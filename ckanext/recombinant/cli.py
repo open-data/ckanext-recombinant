@@ -471,7 +471,12 @@ def _load_one_csv_file(name: str) -> int:
     _path, csv_name = os.path.split(name)
     assert csv_name.endswith('.csv'), csv_name
     resource_name = csv_name[:-4]
-    click.echo(resource_name)
+    singular_org_name = None
+    if '.' in resource_name:
+        singular_org_name, resource_name = tuple(resource_name.split('.'))
+    click.echo('Resource name: %s' % resource_name)
+    if singular_org_name:
+        click.echo('Organization name: %s' % singular_org_name)
     chromo = get_chromo(resource_name)
 
     dataset_type = chromo['dataset_type']
@@ -480,6 +485,11 @@ def _load_one_csv_file(name: str) -> int:
     errors = 0
 
     for org_name, records in csv_data_batch(name, chromo):
+        if not org_name and not singular_org_name:
+            click.echo('could not find any org!')
+            return 1
+        if not org_name and singular_org_name:
+            org_name = singular_org_name
         results = lc.action.package_search(
             q='type:%s AND organization:%s' % (dataset_type, org_name),
             include_private=True,

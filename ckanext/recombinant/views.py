@@ -525,7 +525,8 @@ def preview_table(resource_name: str,
                 dataset_type=chromo['dataset_type'], owner_org=owner_org)
             # check that the resource has errors
             for _r in dataset['resources']:
-                if _r['name'] == resource_name and 'error' in _r:
+                if _r['name'] == resource_name and ('error' in _r or
+                                                    not _r['datastore_correct']):
                     raise NotFound
         except NotFound:
             try:
@@ -536,6 +537,7 @@ def preview_table(resource_name: str,
                     lc.action.recombinant_update(
                         dataset_type=chromo['dataset_type'], owner_org=owner_org,
                         force_update=True)
+                    h.flash_success(_('Resources successfully refreshed.'))
             except NotAuthorized as e:
                 return abort(403, e.message or '')
         return h.redirect_to(
