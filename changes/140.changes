@@ -1,0 +1,1 @@
+`recombinant_update` with `force` will now DROP old columns from the DataStore for fields that do not exist in the Schema.
