@@ -25,7 +25,7 @@ from ckan.plugins.toolkit import (
 
 from ckan.logic import ValidationError, NotAuthorized
 from ckan.model.group import Group
-from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
+from ckan.authz import has_user_permission_for_group_or_org
 
 from ckan.views.dataset import _get_package_type
 
@@ -59,7 +59,7 @@ recombinant = Blueprint('recombinant', __name__)
 
 
 @recombinant.route('/recombinant/upload/<id>', methods=['GET', 'POST'])
-def upload(id: str) -> Response:
+def upload(id: str) -> Union[Response, str]:
     package_type = _get_package_type(id)
     geno = get_geno(package_type)
     lc = LocalCKAN(username=g.user)
@@ -261,7 +261,7 @@ def _xlsx_response_headers() -> Tuple[str, str]:
 
 @recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx',
                    methods=['GET', 'POST'])
-def template(dataset_type: str, lang: str, owner_org: str) -> Response:
+def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, str]:
     """
     POST requests to this endpoint contain primary keys of
     records that are to be included in the excel file
@@ -762,7 +762,11 @@ def _process_upload_file(lc: LocalCKAN,
                 elif 'fields' in e.error_dict:
                     # type_ignore_reason: incomplete typing
                     pgerror = e.error_dict['fields'][0]  # type: ignore
-                    key = re.search(KEY_ERROR_MATCH, pgerror).group(1)
+                    key = re.search(KEY_ERROR_MATCH, str(pgerror))
+                    if key:
+                        key = key.group(1)
+                    else:
+                        key = _('unknown')
                     raise KeyError(key)
                 else:
                     # type_ignore_reason: incomplete typing
