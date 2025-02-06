@@ -32,7 +32,7 @@ from flask_babel import force_locale
 from datetime import datetime
 from decimal import Decimal
 
-SHEET_PROTECTION = False
+SHEET_PROTECTION = True
 DEFAULT_TEMPLATE_VERSION = 3
 
 HEADER_ROW, HEADER_HEIGHT = 1, 27
