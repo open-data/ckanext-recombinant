@@ -25,7 +25,7 @@ from ckan.plugins.toolkit import (
 
 from ckan.logic import ValidationError, NotAuthorized
 from ckan.model.group import Group
-from ckan.authz import has_user_permission_for_group_or_org
+from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
 
 from ckan.views.dataset import _get_package_type
 
@@ -533,10 +533,17 @@ def preview_table(resource_name: str,
                 if 'create' in request.form:
                     lc.action.recombinant_create(
                         dataset_type=chromo['dataset_type'], owner_org=owner_org)
-                else:
+                elif 'refresh-hard' in request.form or 'refresh' in request.form:
+                    if not is_sysadmin(g.user):
+                        # only sysadmins can refresh via UI
+                        return abort(404)
+                    delete_fields = False
+                    if 'refresh-hard' in request.form:
+                        delete_fields = True
                     lc.action.recombinant_update(
                         dataset_type=chromo['dataset_type'], owner_org=owner_org,
-                        force_update=True)
+                        force_update=True,
+                        delete_fields=delete_fields)
                     h.flash_success(_('Resources successfully refreshed.'))
             except NotAuthorized as e:
                 return abort(403, e.message or '')

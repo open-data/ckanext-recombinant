@@ -116,11 +116,18 @@ def remove_empty(dataset_type: Optional[List[str]] = None,
     is_flag=True,
     help="Force update of tables (required for changes to only primary keys/indexes)",
 )
+@click.option(
+    "-d",
+    "--delete-fields",
+    is_flag=True,
+    help="Deletes fields that are no longer in the Schema (requires --force-update)",
+)
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
 def update(dataset_type: Optional[List[str]] = None,
            all_types: bool = False,
            force_update: bool = False,
+           delete_fields: bool = False,
            verbose: bool = False):
     """
     Triggers recombinant update for recombinant resources
@@ -128,7 +135,7 @@ def update(dataset_type: Optional[List[str]] = None,
     Full Usage:\n
         recombinant update (-a | DATASET_TYPE ...) [-f]
     """
-    _update(dataset_type, all_types, force_update, verbose=verbose)
+    _update(dataset_type, all_types, force_update, delete_fields, verbose=verbose)
 
 
 @recombinant.command(short_help="Delete recombinant datasets and all their data.")
@@ -349,6 +356,7 @@ def _show(dataset_type: Optional[str],
 def _update(dataset_types: Optional[List[str]],
             all_types: bool = False,
             force_update: bool = False,
+            delete_fields: bool = False,
             verbose: bool = False):
     """
     Triggers recombinant update for recombinant resources
@@ -366,7 +374,8 @@ def _update(dataset_types: Optional[List[str]],
                 click.echo('%s %s updating' % (dtype, o))
                 lc.action.recombinant_update(
                     owner_org=o, dataset_type=dtype,
-                    force_update=force_update)
+                    force_update=force_update,
+                    delete_fields=delete_fields)
 
 
 def _expand_dataset_types(dataset_types: Optional[List[str]],

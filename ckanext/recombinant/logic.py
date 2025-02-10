@@ -62,6 +62,8 @@ def recombinant_update(context: Context, data_dict: DataDict):
     :param owner_org: organization name or id
     :param delete_resources: True to delete extra resources found
     :param force_update: True to force updating of datastore tables
+    :param delete_fields: True to delete old fields not in schema,
+                          requires force_update=True
     '''
     lc, geno, dataset = _action_get_dataset(context, data_dict)
 
@@ -70,7 +72,8 @@ def recombinant_update(context: Context, data_dict: DataDict):
         delete_resources=asbool(data_dict.get('delete_resources', False)))
     _update_datastore(
         lc, geno, dataset,
-        force_update=asbool(data_dict.get('force_update', False)))
+        force_update=asbool(data_dict.get('force_update', False)),
+        delete_fields=asbool(data_dict.get('delete_fields', False)))
 
 
 def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
@@ -245,7 +248,8 @@ def _update_dataset(lc: LocalCKAN,
 def _update_datastore(lc: LocalCKAN,
                       geno: Dict[str, Any],
                       dataset: Dict[str, Any],
-                      force_update: bool = False):
+                      force_update: bool = False,
+                      delete_fields: bool = False):
     """
     call lc.action.datastore_create to create tables or add
     columns to existing datastore tables based on dataset definition
@@ -260,7 +264,7 @@ def _update_datastore(lc: LocalCKAN,
             chromo['resource_name'], dataset['id'])
         resource_id = resource_ids[chromo['resource_name']]
         fields = datastore_fields(chromo['fields'], datastore_text_types)
-        delete_fields = False
+        do_delete_fields = False
         try:
             ds = lc.action.datastore_search(resource_id=resource_id, limit=0)
         except NotFound:
@@ -275,17 +279,18 @@ def _update_datastore(lc: LocalCKAN,
             for f in datastore_fields(chromo['fields'], datastore_text_types):
                 if f['id'] not in seen:
                     fields.append(f)
-            # remove any fields from DS not in Schema
-            new_fields = []
-            schema_field_ids = set(
-                f['id'] for f in datastore_fields(chromo['fields'],
-                                                  datastore_text_types))
-            for f in fields:
-                if f['id'] not in schema_field_ids:
-                    delete_fields = True
-                    continue
-                new_fields.append(f)
-            fields = new_fields
+            if delete_fields:
+                # remove any fields from DS not in Schema
+                new_fields = []
+                schema_field_ids = set(
+                    f['id'] for f in datastore_fields(chromo['fields'],
+                                                    datastore_text_types))
+                for f in fields:
+                    if f['id'] not in schema_field_ids:
+                        do_delete_fields = True
+                        continue
+                    new_fields.append(f)
+                fields = new_fields
 
         trigger_names = _update_triggers(lc, chromo)
 
@@ -305,7 +310,7 @@ def _update_datastore(lc: LocalCKAN,
         lc.action.datastore_create(
             resource_id=resource_id,
             fields=fields,
-            delete_fields=delete_fields,
+            delete_fields=do_delete_fields,
             primary_key=chromo.get('datastore_primary_key', []),
             foreign_keys=foreign_keys,
             indexes=chromo.get('datastore_indexes', []),

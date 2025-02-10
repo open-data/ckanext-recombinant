@@ -45,13 +45,14 @@
   {% block action_panels %}
     {% if dataset %}
       {% if 'error' not in resource %}
-        {% if not resource.datastore_correct %}
+        {% if g.userobj.sysadmin and not resource.datastore_correct %}
+          {# only let sysadmins refresh the recombinant record via UI #}
           <div class="module-alert alert alert-warning">
-            <h3>{{ _("The Recombinant resource is out of date") }}</h3>
+            <h3>{{ _("The Recombinant resource is out of date") }}{% snippet 'snippets/sysadmin_only.html' %}</h3>
             <p style="margin-bottom: 10px;">{{ _('You can refresh your resource in the database to try to solve the problem.') }}</p>
             <form id="create-pd-resource" method="post">
               {{ h.csrf_input() }}
-              <button type="submit" class="btn btn-info mrgn-bttm-md m-b-3" name="refresh">{{_('Refresh…')}}</button>
+              <button type="submit" class="btn btn-danger mrgn-bttm-md m-b-3" name="refresh-hard">{{_('Refresh…')}}</button>
             </form>
           </div>
         {% endif %}
