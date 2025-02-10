@@ -32,6 +32,7 @@ from ckan.views.dataset import _get_package_type
 
 from ckanext.recombinant.errors import (
     RecombinantException,
+    RecombinantFieldError,
     BadExcelData,
     format_trigger_error
 )
@@ -106,13 +107,15 @@ def upload(id: str) -> Union[Response, str]:
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=org['name'])
-    except KeyError as e:
-        return render(
-            'recombinant/force_update.html',
-            extra_vars={'key_errors': str(e).replace("'", ''),
-                        'dataset_id': dataset['id'],
-                        'res_name': resource_name,
-                        'owner_org': dataset['owner_org']})
+    except RecombinantFieldError as e:
+        h.flash_error(render('recombinant/snippets/outdated_error.html',
+                             extra_vars={'key_errors': str(e).replace("'", ''),
+                                         'dataset_id': dataset['id'],
+                                         'res_name': resource_name,
+                                         'owner_org': dataset['owner_org']}))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=org['name'])
     except BadExcelData as e:
         h.flash_error(_(e.message))
         return h.redirect_to('recombinant.preview_table',
@@ -331,13 +334,15 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
 
         try:
             append_data(book, record_data, chromo)
-        except KeyError as e:
-            return render(
-                'recombinant/force_update.html',
-                extra_vars={'key_errors': str(e).replace("'", ''),
-                            'dataset_id': dataset['id'],
-                            'res_name': resource['name'],
-                            'owner_org': dataset['owner_org']})
+        except RecombinantFieldError as e:
+            h.flash_error(render('recombinant/snippets/outdated_error.html',
+                                 extra_vars={'key_errors': str(e).replace("'", ''),
+                                             'dataset_id': dataset['id'],
+                                             'res_name': resource_name,
+                                             'owner_org': dataset['owner_org']}))
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=org['name'])
 
         resource_names = dict((r['id'], r['name']) for r in dataset['resources'])
         ds_info = lc.action.datastore_info(id=resource['id'])
@@ -665,13 +670,15 @@ def preview_table(resource_name: str,
 @recombinant.route('/recombinant/refresh/<resource_name>/<owner_org>',
                    methods=['GET', 'POST'])
 def refresh_dataset(resource_name: str, owner_org: str):
+    if not is_sysadmin(g.user):
+        return abort(403)
     if request.method != 'POST':
         # handle page refreshes
         h.flash_notice(_('Form not submitted, please try again.'))
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=owner_org)
-    if 'confirm' in request.form:
+    if 'refresh' in request.form:
         dataset_id = request.form['dataset_id']
         if not dataset_id:
             h.flash_error(_('Could not determine dataset to update.'))
@@ -832,7 +839,7 @@ def _process_upload_file(lc: LocalCKAN,
                         key = key.group(1)
                     else:
                         key = _('unknown')
-                    raise KeyError(key)
+                    raise RecombinantFieldError(key)
                 else:
                     # type_ignore_reason: incomplete typing
                     pgerror = e.error_dict['records'][0]  # type: ignore

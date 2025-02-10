@@ -21,7 +21,7 @@ from openpyxl.styles import (
 from typing import Any, Dict, List, Tuple, Optional, Union
 
 from ckanext.recombinant.tables import get_geno
-from ckanext.recombinant.errors import RecombinantException
+from ckanext.recombinant.errors import RecombinantException, RecombinantFieldError
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import (
     recombinant_choice_fields, recombinant_language_text)
@@ -175,6 +175,8 @@ def append_data(book: Workbook,
     current_row = DATA_FIRST_ROW
     for record in record_data:
         for col_num, field in template_cols_fields(chromo):
+            if field['datastore_id'] not in record:
+                raise RecombinantFieldError(field['datastore_id'])
             item = datastore_type_format(
                 record[field['datastore_id']], field['datastore_type'])
             sheet.cell(row=current_row, column=col_num).value = item
