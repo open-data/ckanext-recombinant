@@ -420,7 +420,7 @@ msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:150
 msgid "Refresh resource"
-msgstr "Rafraîchir le ressource"
+msgstr "Rafraîchir la ressource"
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:168
 #: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3

@@ -356,7 +356,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
                     foreign_constraints_sql = sql_text('''
                         SELECT parent.* FROM {0} parent
                         JOIN {1} child ON {2}
-                        ORDER BY parent._id
+                        ORDER BY parent._id DESC
                     '''.format(sql_identifier(fk['parent_table']),
                                sql_identifier(fk['child_table']),
                                ' AND '.join(
@@ -369,7 +369,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
                     foreign_constraints_sql = sql_text('''
                         SELECT child.* FROM {0} child
                         JOIN {1} parent ON {2}
-                        ORDER BY child._id
+                        ORDER BY child._id DESC
                     '''.format(sql_identifier(fk['child_table']),
                                sql_identifier(fk['parent_table']),
                                ' AND '.join(
