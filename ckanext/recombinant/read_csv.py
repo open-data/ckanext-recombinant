@@ -9,6 +9,7 @@ BATCH_SIZE = 15000
 
 def csv_data_batch(csv_path: str,
                    chromo: Dict[str, Any],
+                   ignore_fields: Optional[List[str]],
                    strict: bool = True) -> Generator[
                        Tuple[Optional[str], List[Dict[str, Any]]], None, None]:
     """
@@ -36,10 +37,17 @@ def csv_data_batch(csv_path: str,
             cols = [
                 f for f in csv_in.fieldnames
                 if f not in chromo.get('csv_org_extras', [])]
+            if ignore_fields:
+                cols = [
+                    f for f in csv_in.fieldnames
+                    if f not in ignore_fields]
 
         if strict:
             expected = [f['datastore_id'] for f in chromo['fields'] if not f.get(
                 'published_resource_computed_field')]
+            if ignore_fields:
+                expected = [f['datastore_id'] for f in chromo['fields'] if
+                            f['datastore_id'] not in ignore_fields]
             assert cols == expected, 'column mismatch:\n{0}\n{1}'.format(
                 cols, expected)
 

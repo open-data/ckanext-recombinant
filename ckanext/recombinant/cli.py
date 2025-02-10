@@ -514,7 +514,21 @@ def _load_one_csv_file(name: str) -> int:
     lc = LocalCKAN()
     errors = 0
 
-    for org_name, records in csv_data_batch(name, chromo):
+    # dynamic fields
+    dynamic_fields = [
+        'owner_org',
+        'owner_org_title',
+        'record_created',
+        'record_modified',
+        'user_modified'
+    ]
+    if 'csv_org_extras' in chromo:
+        dynamic_fields += chromo['csv_org_extras']
+    dynamic_fields += [f['datastore_id'] for f in chromo['fields'] if
+                       f.get('published_resource_computed_field', False)]
+
+    for org_name, records in csv_data_batch(name, chromo,
+                                            ignore_fields=dynamic_fields):
         if not org_name and not singular_org_name:
             click.echo('could not find any org!')
             return 1
@@ -559,16 +573,9 @@ def _load_one_csv_file(name: str) -> int:
 
         click.echo('- %s %s' % (org_name, len(records)))
 
-        # default org extras
-        org_extras = [
-            'owner_org',
-            'owner_org_title'
-        ]
-        if 'csv_org_extras' in chromo:
-            org_extras += chromo['csv_org_extras']
-        # remove any org extras
+        # remove any dynamic fields
         for r in records:
-            for e in org_extras:
+            for e in dynamic_fields:
                 if e not in r:
                     continue
                 del r[e]
