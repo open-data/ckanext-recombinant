@@ -284,7 +284,7 @@ def _update_datastore(lc: LocalCKAN,
                 new_fields = []
                 schema_field_ids = set(
                     f['id'] for f in datastore_fields(chromo['fields'],
-                                                    datastore_text_types))
+                                                      datastore_text_types))
                 for f in fields:
                     if f['id'] not in schema_field_ids:
                         do_delete_fields = True

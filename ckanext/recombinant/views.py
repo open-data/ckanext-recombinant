@@ -558,7 +558,10 @@ def preview_table(resource_name: str,
     except RecombinantException:
         return abort(404, _('Recombinant resource_name not found'))
 
-    if 'create' in request.form or 'refresh' in request.form:
+    if (
+      'create' in request.form or
+      'refresh-hard' in request.form or
+      'refresh' in request.form):
         # check if the user can update datasets for organization
         # admin and editors should be able to init recombinant records
         if not has_user_permission_for_group_or_org(org_object.id,
@@ -583,7 +586,7 @@ def preview_table(resource_name: str,
                 elif 'refresh-hard' in request.form or 'refresh' in request.form:
                     if not is_sysadmin(g.user):
                         # only sysadmins can refresh via UI
-                        return abort(404)
+                        return abort(403)
                     delete_fields = False
                     if 'refresh-hard' in request.form:
                         delete_fields = True
