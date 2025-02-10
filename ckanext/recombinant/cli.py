@@ -118,6 +118,12 @@ def remove_empty(dataset_type: Optional[List[str]] = None,
 )
 @click.option(
     "-d",
+    "--delete-fields",
+    is_flag=True,
+    help="Deletes fields that are no longer in the Schema (requires --force-update)",
+)
+@click.option(
+    "-D",
     "--dataset",
     help="A dataset ID to update all resource tables for."
 )
@@ -126,6 +132,7 @@ def remove_empty(dataset_type: Optional[List[str]] = None,
 def update(dataset_type: Optional[List[str]] = None,
            all_types: bool = False,
            force_update: bool = False,
+           delete_fields: bool = False,
            dataset: Optional[str] = None,
            verbose: bool = False):
     """
@@ -134,7 +141,8 @@ def update(dataset_type: Optional[List[str]] = None,
     Full Usage:\n
         recombinant update (-a | DATASET_TYPE ...) [-f]
     """
-    _update(dataset_type, all_types, force_update, dataset_id=dataset, verbose=verbose)
+    _update(dataset_type, all_types, force_update, delete_fields,
+            dataset_id=dataset, verbose=verbose)
 
 
 @recombinant.command(short_help="Delete recombinant datasets and all their data.")
@@ -355,6 +363,7 @@ def _show(dataset_type: Optional[str],
 def _update(dataset_types: Optional[List[str]],
             all_types: bool = False,
             force_update: bool = False,
+            delete_fields: bool = False,
             dataset_id: Optional[str] = None,
             verbose: bool = False):
     """
@@ -372,7 +381,8 @@ def _update(dataset_types: Optional[List[str]],
             owner_org=dataset_dict['organization']['name'],
             dataset_type=dataset_dict['type'],
             dataset_id=dataset_id,
-            force_update=force_update)
+            force_update=force_update,
+            delete_fields=delete_fields)
         return
     for dtype in _expand_dataset_types(dataset_types, all_types):
         packages = _get_packages(dtype, orgs)
@@ -385,7 +395,8 @@ def _update(dataset_types: Optional[List[str]],
                 click.echo('%s %s updating' % (dtype, o))
                 lc.action.recombinant_update(
                     owner_org=o, dataset_type=dtype,
-                    force_update=force_update)
+                    force_update=force_update,
+                    delete_fields=delete_fields)
 
 
 def _expand_dataset_types(dataset_types: Optional[List[str]],
@@ -490,7 +501,12 @@ def _load_one_csv_file(name: str) -> int:
     _path, csv_name = os.path.split(name)
     assert csv_name.endswith('.csv'), csv_name
     resource_name = csv_name[:-4]
-    click.echo(resource_name)
+    singular_org_name = None
+    if '.' in resource_name:
+        singular_org_name, resource_name = tuple(resource_name.split('.'))
+    click.echo('Resource name: %s' % resource_name)
+    if singular_org_name:
+        click.echo('Organization name: %s' % singular_org_name)
     chromo = get_chromo(resource_name)
 
     dataset_type = chromo['dataset_type']
@@ -499,6 +515,11 @@ def _load_one_csv_file(name: str) -> int:
     errors = 0
 
     for org_name, records in csv_data_batch(name, chromo):
+        if not org_name and not singular_org_name:
+            click.echo('could not find any org!')
+            return 1
+        if not org_name and singular_org_name:
+            org_name = singular_org_name
         results = lc.action.package_search(
             q='type:%s AND organization:%s' % (dataset_type, org_name),
             include_private=True,
