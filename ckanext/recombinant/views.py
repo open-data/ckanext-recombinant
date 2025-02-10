@@ -215,7 +215,8 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
             'recombinant.preview_table',
             resource_name=res['name'],
             owner_org=org['name'])
-    if 'confirm' not in request.form or request.method == 'GET':
+    # type_ignore_reason: incomplete typing
+    if 'confirm' not in request.form or request.method == 'GET':  # type: ignore
         return render('recombinant/confirm_delete.html',
                       extra_vars={'dataset': dataset,
                                   'resource': res,
