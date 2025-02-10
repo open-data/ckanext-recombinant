@@ -45,6 +45,17 @@
   {% block action_panels %}
     {% if dataset %}
       {% if 'error' not in resource %}
+        {% if g.userobj.sysadmin and not resource.datastore_correct %}
+          {# only let sysadmins refresh the recombinant record via UI #}
+          <div class="module-alert alert alert-warning">
+            <h3>{{ _("The Recombinant resource is out of date") }}{% snippet 'snippets/sysadmin_only.html' %}</h3>
+            <p style="margin-bottom: 10px;">{{ _('You can refresh your resource in the database to try to solve the problem.') }}</p>
+            <form id="create-pd-resource" method="post">
+              {{ h.csrf_input() }}
+              <button type="submit" class="btn btn-danger mrgn-bttm-md m-b-3" name="refresh-hard">{{_('Refresh…')}}</button>
+            </form>
+          </div>
+        {% endif %}
         <div class="wb-tabs">
           <div class="tabpanels">
             {% block update_panel %}
@@ -58,6 +69,34 @@
                 {% else %}
                   {% snippet "recombinant/snippets/xls_download.html",
                     pkg=dataset, errors=errors %}
+                {% endif %}
+                {% if g.userobj.sysadmin and resource.datastore_active %}
+                  {# only let sysadmins datastore dump via UI #}
+                  {% set filename = dataset.owner_org ~ '.' ~ resource.name %}
+                  <h3>{{ _('DataStore Dump') }}{% snippet 'snippets/sysadmin_only.html' %}</h3>
+                  <div>
+                    <button class="btn btn-primary dropdown-toggle" role="button" id="dropdownDownloadFormat" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ _('List of downloadable formats') }}">
+                        {{ _('Download') }}&nbsp;
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownDownloadFormat">
+                      <li>
+                        <a class="dropdown-item" href="{{ h.url_for('datastore.dump', resource_id=resource.id, bom=True, filename=filename) }}"
+                          target="_blank" rel="noreferrer"><span>CSV</span></a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="{{ h.url_for('datastore.dump', resource_id=resource.id, format='tsv', bom=True, filename=filename) }}"
+                          target="_blank" rel="noreferrer"><span>TSV</span></a>
+                      </li>
+                      <li>
+                          <a class="dropdown-item" href="{{ h.url_for('datastore.dump', resource_id=resource.id, format='json', filename=filename) }}"
+                          target="_blank" rel="noreferrer"><span>JSON</span></a>
+                      </li>
+                      <li>
+                          <a class="dropdown-item" href="{{ h.url_for('datastore.dump', resource_id=resource.id, format='xml', filename=filename) }}"
+                          target="_blank" rel="noreferrer"><span>XML</span></a>
+                      </li>
+                    </ul>
+                  </div>
                 {% endif %}
                 {% block notices %}{% endblock %}
               </details>
@@ -108,6 +147,7 @@
                 <p>{{_("We were unable to retrieve your proactive publication records from our database. Please contact <a href=\"open-ouvert@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a>.")}}</p>
                 {% if g.userobj.sysadmin %}
                   {# only let sysadmins refresh the recombinant record via UI #}
+                  <h4>{{ _('Refresh resource') }}{% snippet 'snippets/sysadmin_only.html' %}</h4>
                   <form id="create-pd-resource" method="post">
                     {{ h.csrf_input() }}
                     <button type="submit" class="btn btn-default mrgn-bttm-md m-b-3" name="refresh">{{_('Refresh…')}}</button>
