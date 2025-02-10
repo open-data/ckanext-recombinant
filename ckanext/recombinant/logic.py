@@ -59,6 +59,7 @@ def recombinant_update(context: Context, data_dict: DataDict):
     recombinant dataset type.
 
     :param dataset_type: recombinant dataset type
+    :param dataset_id: dataset id to update specifically for
     :param owner_org: organization name or id
     :param delete_resources: True to delete extra resources found
     :param force_update: True to force updating of datastore tables
@@ -119,6 +120,8 @@ def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
                 limit=0)
             datastore_correct = _datastore_match(r['fields'], ds['fields'])
             out['datastore_correct'] = datastore_correct
+            schema_correct = _schema_match(r['fields'], ds['fields'])
+            out['schema_correct'] = schema_correct
             resources_correct = resources_correct and datastore_correct
             out['datastore_rows'] = ds.get('total', 0)
             out['datastore_active'] = True
@@ -150,6 +153,7 @@ def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
     '''
     dataset_type = get_or_bust(data_dict, 'dataset_type')
     owner_org = Group.get(get_or_bust(data_dict, 'owner_org'))
+    dataset_id = data_dict.get('dataset_id', None)
 
     if not owner_org:
         raise ValidationError(
@@ -167,7 +171,9 @@ def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
 
     lc = LocalCKAN(username=context['user'], context=fresh_context)
     result = lc.action.package_search(
-        q="type:%s AND organization:%s" % (dataset_type, owner_org.name),
+        q="type:%s AND organization:%s %s" % (
+            dataset_type, owner_org.name,
+            'AND id:{0}'.format(dataset_id) if dataset_id else ''),
         include_private=True,
         rows=2)
     return lc, geno, result['results']
@@ -431,6 +437,17 @@ def _datastore_match(fs: List[Dict[str, Any]], fields: List[Dict[str, Any]]) -> 
     existing = set(c['id'] for c in fields)
     return all(f['datastore_id'] in existing for f in fs
                if not f.get('published_resource_computed_field', False))
+
+
+def _schema_match(fs: List[Dict[str, Any]], fields: List[Dict[str, Any]]) -> bool:
+    """
+    return True if datastore column fields are all fields defined in fs.
+    """
+    # XXX: does not check types or extra columns at this time
+    existing = set(f['datastore_id'] for f in fs
+                   if not f.get('published_resource_computed_field', False))
+    return all(c['id'] in existing for c in fields
+               if c['id'] != '_id')
 
 
 @chained_action

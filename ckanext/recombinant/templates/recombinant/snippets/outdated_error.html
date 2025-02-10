@@ -1,0 +1,21 @@
+<h3>{{_('Errors in Recombinant Resource')}}</h3>
+<p>{{ _('The Recombinant resource is out of date:') }}</p>
+<ul>
+    <li>{{ _('Field(s) <em>{0}</em> do not exist in the database for this resource.').format(key_errors) }}</li>
+</ul>
+{% if not g.userobj.sysadmin %}
+  <p>{{ _('Please contact <a href="mailto:open-ouvert@tbs-sct.gc.ca">open-ouvert@tbs-sct.gc.ca</a> for assistance.') }}</p>
+{% else %}
+  {# only let sysadmins refresh the recombinant record via UI #}
+  <div class="clearfix"></div>
+  <h3>{{ _('Refresh Recombinant Resource') }}{% snippet 'snippets/sysadmin_only.html' %}</h3>
+  <p>{{ _('You can refresh your resource in the database to try to solve the problem.') }}</p>
+  <div class="clearfix"></div>
+  <p class="form-actions">
+    <form id="recombinant-refresh-form" action="{{ h.url_for('recombinant.refresh_dataset', resource_name=res_name, owner_org=owner_org) }}" method="post">
+      {{ h.csrf_input() }}
+      <input type="hidden" name="dataset_id" value="{{ dataset_id }}"/>
+      <button class="btn btn-danger mrgn-bttm-md m-b-3" type="submit" name="refresh" >{{ _('Refresh…') }}</button>
+    </form>
+  </p>
+{% endif %}

@@ -32,6 +32,7 @@ from ckan.views.dataset import _get_package_type
 
 from ckanext.recombinant.errors import (
     RecombinantException,
+    RecombinantFieldError,
     BadExcelData,
     format_trigger_error
 )
@@ -59,17 +60,25 @@ from ckanext.datastore.backend.postgres import (
 from ckanapi import NotFound, LocalCKAN
 
 
+KEY_ERROR_MATCH = re.compile('"([^"]*)"')
+
 log = getLogger(__name__)
 recombinant = Blueprint('recombinant', __name__)
 
 
-@recombinant.route('/recombinant/upload/<id>', methods=['POST'])
-def upload(id: str) -> Response:
+@recombinant.route('/recombinant/upload/<id>', methods=['GET', 'POST'])
+def upload(id: str) -> Union[Response, str]:
     package_type = _get_package_type(id)
     geno = get_geno(package_type)
     lc = LocalCKAN(username=g.user)
     dataset = lc.action.package_show(id=id)
     org = lc.action.organization_show(id=dataset['owner_org'])
+    if request.method != 'POST':
+        # handle page refreshes
+        h.flash_notice(_('Form not submitted, please try again.'))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=package_type,
+                             owner_org=org['name'])
     dry_run = 'validate' in request.form
     # resource_name is only required for redirect,
     # so do not need to heavily validate that it exists in the geno.
@@ -98,6 +107,15 @@ def upload(id: str) -> Response:
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=org['name'])
+    except RecombinantFieldError as e:
+        h.flash_error(render('recombinant/snippets/outdated_error.html',
+                             extra_vars={'key_errors': str(e).replace("'", ''),
+                                         'dataset_id': dataset['id'],
+                                         'res_name': resource_name,
+                                         'owner_org': dataset['owner_org']}))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=org['name'])
     except BadExcelData as e:
         h.flash_error(_(e.message))
         return h.redirect_to('recombinant.preview_table',
@@ -119,6 +137,13 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     pkg = lc.action.package_show(id=id)
     res = lc.action.resource_show(id=resource_id)
     org = lc.action.organization_show(id=pkg['owner_org'])
+
+    if request.method != 'POST':
+        # handle page refreshes
+        h.flash_notice(_('Form not submitted, please try again.'))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=res['name'],
+                             owner_org=org['name'])
 
     dataset = lc.action.recombinant_show(
         dataset_type=pkg['type'], owner_org=org['name'])
@@ -190,7 +215,8 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
             'recombinant.preview_table',
             resource_name=res['name'],
             owner_org=org['name'])
-    if 'confirm' not in request.form or request.method == 'GET':
+    # type_ignore_reason: incomplete typing
+    if 'confirm' not in request.form or request.method == 'GET':  # type: ignore
         return render('recombinant/confirm_delete.html',
                       extra_vars={'dataset': dataset,
                                   'resource': res,
@@ -249,7 +275,7 @@ def _xlsx_response_headers() -> Tuple[str, str]:
 
 @recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx',
                    methods=['GET', 'POST'])
-def template(dataset_type: str, lang: str, owner_org: str) -> Response:
+def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, str]:
     """
     POST requests to this endpoint contain primary keys of
     records that are to be included in the excel file
@@ -307,7 +333,17 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Response:
                              resource['id'])
             record_data += result['records']
 
-        append_data(book, record_data, chromo)
+        try:
+            append_data(book, record_data, chromo)
+        except RecombinantFieldError as e:
+            h.flash_error(render('recombinant/snippets/outdated_error.html',
+                                 extra_vars={'key_errors': str(e).replace("'", ''),
+                                             'dataset_id': dataset['id'],
+                                             'res_name': resource_name,
+                                             'owner_org': dataset['owner_org']}))
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=org['name'])
 
         resource_names = dict((r['id'], r['name']) for r in dataset['resources'])
         ds_info = lc.action.datastore_info(id=resource['id'])
@@ -576,7 +612,8 @@ def preview_table(resource_name: str,
             # check that the resource has errors
             for _r in dataset['resources']:
                 if _r['name'] == resource_name and ('error' in _r or
-                                                    not _r['datastore_correct']):
+                                                    not _r['datastore_correct'] or
+                                                    not _r['schema_correct']):
                     raise NotFound
         except NotFound:
             try:
@@ -630,6 +667,50 @@ def preview_table(resource_name: str,
         'delete_errors': None,
         'filters': None
         })
+
+
+@recombinant.route('/recombinant/refresh/<resource_name>/<owner_org>',
+                   methods=['GET', 'POST'])
+def refresh_dataset(resource_name: str, owner_org: str):
+    if not is_sysadmin(g.user):
+        return abort(403)
+    if request.method != 'POST':
+        # handle page refreshes
+        h.flash_notice(_('Form not submitted, please try again.'))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=owner_org)
+    if 'refresh' in request.form:
+        dataset_id = request.form['dataset_id']
+        if not dataset_id:
+            h.flash_error(_('Could not determine dataset to update.'))
+        else:
+            lc = LocalCKAN()
+            dataset_dict = lc.action.package_show(id=dataset_id)
+            for res in dataset_dict['resources']:
+                if not h.check_access('datastore_delete',
+                                      {'resource_id': res['id'],
+                                       'filters': {}}):
+                    return abort(403, _('User {0} not authorized '
+                                        'to update resource {1}'.format(
+                                            str(g.user), res['id'])))
+            try:
+                lc.action.recombinant_update(
+                    owner_org=dataset_dict['organization']['name'],
+                    dataset_type=dataset_dict['type'],
+                    dataset_id=dataset_id,
+                    force_update=True)
+                h.flash_success(_('Resources successfully refreshed.'))
+            except Exception:
+                h.flash_error(_(
+                    'Unable to regenerate the resources. Please contact '
+                    '<a href="mailto:open-ouvert@tbs-sct.gc.ca">'
+                    'open-ouvert@tbs-sct.gc.ca</a> for assistance.'),
+                    allow_html=True)
+    return h.redirect_to(
+        'recombinant.preview_table',
+        resource_name=resource_name,
+        owner_org=owner_org)
 
 
 def _process_upload_file(lc: LocalCKAN,
@@ -752,6 +833,15 @@ def _process_upload_file(lc: LocalCKAN,
                     # type_ignore_reason: incomplete typing
                     pgerror = e.error_dict['info']['orig'][0].decode(  # type: ignore
                         'utf-8')
+                elif 'fields' in e.error_dict:
+                    # type_ignore_reason: incomplete typing
+                    pgerror = e.error_dict['fields'][0]  # type: ignore
+                    key = re.search(KEY_ERROR_MATCH, str(pgerror))
+                    if key:
+                        key = key.group(1)
+                    else:
+                        key = _('unknown')
+                    raise RecombinantFieldError(key)
                 else:
                     # type_ignore_reason: incomplete typing
                     pgerror = e.error_dict['records'][0]  # type: ignore
