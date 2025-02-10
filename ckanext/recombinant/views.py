@@ -611,7 +611,8 @@ def preview_table(resource_name: str,
             # check that the resource has errors
             for _r in dataset['resources']:
                 if _r['name'] == resource_name and ('error' in _r or
-                                                    not _r['datastore_correct']):
+                                                    not _r['datastore_correct'] or
+                                                    not _r['schema_correct']):
                     raise NotFound
         except NotFound:
             try:

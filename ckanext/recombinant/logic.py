@@ -120,6 +120,8 @@ def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
                 limit=0)
             datastore_correct = _datastore_match(r['fields'], ds['fields'])
             out['datastore_correct'] = datastore_correct
+            schema_correct = _schema_match(r['fields'], ds['fields'])
+            out['schema_correct'] = schema_correct
             resources_correct = resources_correct and datastore_correct
             out['datastore_rows'] = ds.get('total', 0)
             out['datastore_active'] = True
@@ -435,6 +437,17 @@ def _datastore_match(fs: List[Dict[str, Any]], fields: List[Dict[str, Any]]) -> 
     existing = set(c['id'] for c in fields)
     return all(f['datastore_id'] in existing for f in fs
                if not f.get('published_resource_computed_field', False))
+
+
+def _schema_match(fs: List[Dict[str, Any]], fields: List[Dict[str, Any]]) -> bool:
+    """
+    return True if datastore column fields are all fields defined in fs.
+    """
+    # XXX: does not check types or extra columns at this time
+    existing = set(f['datastore_id'] for f in fs
+                   if not f.get('published_resource_computed_field', False))
+    return all(c['id'] in existing for c in fields
+               if c['id'] != '_id')
 
 
 @chained_action

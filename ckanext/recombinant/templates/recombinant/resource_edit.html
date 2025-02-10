@@ -45,7 +45,7 @@
   {% block action_panels %}
     {% if dataset %}
       {% if 'error' not in resource %}
-        {% if g.userobj.sysadmin and not resource.datastore_correct %}
+        {% if g.userobj.sysadmin and (not resource.datastore_correct or not resource.schema_correct) %}
           {# only let sysadmins refresh the recombinant record via UI #}
           <div class="module-alert alert alert-warning">
             <h3>{{ _("The Recombinant resource is out of date") }}{% snippet 'snippets/sysadmin_only.html' %}</h3>
