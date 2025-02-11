@@ -9,7 +9,7 @@ BATCH_SIZE = 15000
 
 def csv_data_batch(csv_path: str,
                    chromo: Dict[str, Any],
-                   ignore_fields: Optional[List[str]],
+                   ignore_fields: Optional[List[str]] = None,
                    strict: bool = True) -> Generator[
                        Tuple[Optional[str], List[Dict[str, Any]]], None, None]:
     """
@@ -17,6 +17,8 @@ def csv_data_batch(csv_path: str,
 
     :param csv_path: file to parse
     :param chromo: recombinant resource definition
+    :param ignore_fields: List of fields to ignore when asserting
+                          columns and Schema fields.
     :param strict: True to fail on header mismatch
 
     :return a batch of records for at most one organization
