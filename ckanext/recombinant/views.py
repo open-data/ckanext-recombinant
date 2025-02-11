@@ -54,6 +54,7 @@ from ckanext.datastore.backend import DatastoreBackend
 from ckanext.datastore.backend.postgres import (
     DatastorePostgresqlBackend,
     identifier as sql_identifier,
+    literal_string as sql_literal_string,
     _parse_constraint_error_from_psql_error
 )
 
@@ -320,11 +321,17 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
         primary_keys = request.form.getlist('bulk-template')
         chromo = get_chromo(resource['name'])
         record_data = []
+        referential_filters = {}
 
         for keys in primary_keys:
             temp = keys.split(",")
             for f, pkf in zip(temp, pk_fields):
                 filters[pkf['datastore_id']] = f
+                if pkf['datastore_id'] not in referential_filters:
+                    referential_filters[pkf['datastore_id']] = []
+                f_literal = sql_literal_string(f)
+                if f_literal not in referential_filters[pkf['datastore_id']]:
+                    referential_filters[pkf['datastore_id']].append(f_literal)
             try:
                 result = lc.action.datastore_search(resource_id=resource['id'],
                                                     filters=filters)
@@ -356,6 +363,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
                     foreign_constraints_sql = sql_text('''
                         SELECT parent.* FROM {0} parent
                         JOIN {1} child ON {2}
+                        WHERE {3}
                         ORDER BY parent._id DESC
                     '''.format(sql_identifier(fk['parent_table']),
                                sql_identifier(fk['child_table']),
@@ -363,12 +371,17 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
                                    ['parent.{0} = child.{1}'.format(
                                        fk_c, fk['child_columns'][fk_i])
                                     for fk_i, fk_c in enumerate(
-                                       fk['parent_columns'])])))
+                                       fk['parent_columns'])]),
+                               ' AND '.join(
+                                   ['child.{0} IN ({1})'.format(
+                                       fk_i, ",".join(fk_p))
+                                    for fk_i, fk_p in referential_filters.items()])))
                 elif resource['id'] == fk['parent_table']:
                     f_chromo = get_chromo(resource_names[fk['child_table']])
                     foreign_constraints_sql = sql_text('''
                         SELECT child.* FROM {0} child
                         JOIN {1} parent ON {2}
+                        WHERE {3}
                         ORDER BY child._id DESC
                     '''.format(sql_identifier(fk['child_table']),
                                sql_identifier(fk['parent_table']),
@@ -376,7 +389,11 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
                                    ['child.{0} = parent.{1}'.format(
                                        fk_c, fk['parent_columns'][fk_i])
                                     for fk_i, fk_c in enumerate(
-                                       fk['child_columns'])])))
+                                       fk['child_columns'])]),
+                               ' AND '.join(
+                                   ['parent.{0} IN ({1})'.format(
+                                       fk_i, ",".join(fk_p))
+                                    for fk_i, fk_p in referential_filters.items()])))
                 if foreign_constraints_sql is not None and f_chromo is not None:
                     results = datastore_search_sql(
                         {'ignore_auth': True}, {'sql': str(foreign_constraints_sql)})
