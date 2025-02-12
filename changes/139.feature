@@ -1,1 +1,1 @@
-Now handles `KeyError` and `fields` errors when downloading and uploading Excel records, prompting the user to refresh the resource.
+Now handles specific `KeyError` exceptions and `fields` errors as `RecombinantFieldError` exception when downloading and uploading Excel records, showing the user a new error message. Sysadmins will be prompted to refresh the resource.

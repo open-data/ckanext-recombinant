@@ -1,1 +1,1 @@
-Improved the constraint error messages by including the referenced/referencing key values and resource. Add `{refKeys}`, `{refValues}`, and/or `{refTable}` in a defined constraint error message for dynamic string replacements. The `{refTable}` with be a URL link to the CKAN resource.
+Improved the constraint error messages by including the referenced/referencing key values and resource. Add `{refKeys}`, `{refValues}`, and/or `{refTable}` in a defined constraint error message for dynamic string replacements.
