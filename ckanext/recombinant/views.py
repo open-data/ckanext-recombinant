@@ -2,7 +2,6 @@ from flask import Blueprint, Response as FlaskResponse
 from flask_babel import force_locale
 import re
 import simplejson as json
-from sqlalchemy import text as sql_text
 
 from typing import Union, Dict, Tuple, Any, List
 from ckan.types import Response
@@ -48,13 +47,9 @@ from ckanext.recombinant.helpers import (
 
 from io import BytesIO
 
-# use import incase of ckan.datastore.sqlsearch.enabled = False
-from ckanext.datastore.logic.action import datastore_search_sql
 from ckanext.datastore.backend import DatastoreBackend
 from ckanext.datastore.backend.postgres import (
     DatastorePostgresqlBackend,
-    identifier as sql_identifier,
-    literal_string as sql_literal_string,
     _parse_constraint_error_from_psql_error
 )
 
@@ -321,17 +316,11 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
         primary_keys = request.form.getlist('bulk-template')
         chromo = get_chromo(resource['name'])
         record_data = []
-        referential_filters = {}
 
         for keys in primary_keys:
             temp = keys.split(",")
             for f, pkf in zip(temp, pk_fields):
                 filters[pkf['datastore_id']] = f
-                if pkf['datastore_id'] not in referential_filters:
-                    referential_filters[pkf['datastore_id']] = []
-                f_literal = sql_literal_string(f)
-                if f_literal not in referential_filters[pkf['datastore_id']]:
-                    referential_filters[pkf['datastore_id']].append(f_literal)
             try:
                 result = lc.action.datastore_search(resource_id=resource['id'],
                                                     filters=filters)
@@ -352,53 +341,58 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
                                  resource_name=resource_name,
                                  owner_org=org['name'])
 
-        resource_names = dict((r['id'], r['name']) for r in dataset['resources'])
+        # Get Referential Records:
+        # we should not assume that the Foreign Keys will be the same
+        # as the Primary Keys. Thus, we need to check the values in
+        # record_data and datastore_search with filters in the scenario
+        # that there are multiple Foreign Keys for one table. This
+        # should give the exact referenced/referencing records.
         ds_info = lc.action.datastore_info(id=resource['id'])
         if 'foreignkeys' in ds_info['meta']:
+            resource_names = dict((r['id'], r['name']) for r in dataset['resources'])
             for fk in ds_info['meta']['foreignkeys']:
                 f_chromo = None
-                foreign_constraints_sql = None
+                ref_record_data = []
                 if resource['id'] == fk['child_table']:
+                    if fk['parent_table'] not in resource_names:
+                        # do not include records from resources not in this dataset
+                        continue
                     f_chromo = get_chromo(resource_names[fk['parent_table']])
-                    foreign_constraints_sql = sql_text('''
-                        SELECT parent.* FROM {0} parent
-                        JOIN {1} child ON {2}
-                        WHERE {3}
-                        ORDER BY parent._id DESC
-                    '''.format(sql_identifier(fk['parent_table']),
-                               sql_identifier(fk['child_table']),
-                               ' AND '.join(
-                                   ['parent.{0} = child.{1}'.format(
-                                       fk_c, fk['child_columns'][fk_i])
-                                    for fk_i, fk_c in enumerate(
-                                       fk['parent_columns'])]),
-                               ' AND '.join(
-                                   ['child.{0} IN ({1})'.format(
-                                       fk_i, ",".join(fk_p))
-                                    for fk_i, fk_p in referential_filters.items()])))
+                    f_completed_filters = []
+                    for selected_record in record_data:
+                        # use the datastore_info column mapping as the
+                        # column names may be different between tables
+                        f_filters = dict(
+                            (fk_pc, selected_record[fk['child_columns'][fk_pi]])
+                            for fk_pi, fk_pc in enumerate(fk['parent_columns']))
+                        if f_filters in f_completed_filters:
+                            # prevent duplicate data retrieval
+                            continue
+                        f_completed_filters.append(f_filters)
+                        result = lc.action.datastore_search(
+                            resource_id=fk['parent_table'], filters=f_filters)
+                        ref_record_data += result['records']
                 elif resource['id'] == fk['parent_table']:
+                    if fk['child_table'] not in resource_names:
+                        # do not include records from resources not in this dataset
+                        continue
                     f_chromo = get_chromo(resource_names[fk['child_table']])
-                    foreign_constraints_sql = sql_text('''
-                        SELECT child.* FROM {0} child
-                        JOIN {1} parent ON {2}
-                        WHERE {3}
-                        ORDER BY child._id DESC
-                    '''.format(sql_identifier(fk['child_table']),
-                               sql_identifier(fk['parent_table']),
-                               ' AND '.join(
-                                   ['child.{0} = parent.{1}'.format(
-                                       fk_c, fk['parent_columns'][fk_i])
-                                    for fk_i, fk_c in enumerate(
-                                       fk['child_columns'])]),
-                               ' AND '.join(
-                                   ['parent.{0} IN ({1})'.format(
-                                       fk_i, ",".join(fk_p))
-                                    for fk_i, fk_p in referential_filters.items()])))
-                if foreign_constraints_sql is not None and f_chromo is not None:
-                    results = datastore_search_sql(
-                        {'ignore_auth': True}, {'sql': str(foreign_constraints_sql)})
-                    if results:
-                        append_data(book, results['records'], f_chromo)
+                    f_completed_filters = []
+                    for selected_record in record_data:
+                        # use the datastore_info column mapping as the
+                        # column names may be different between tables
+                        f_filters = dict(
+                            (fk_cc, selected_record[fk['parent_columns'][fk_ci]])
+                            for fk_ci, fk_cc in enumerate(fk['child_columns']))
+                        if f_filters in f_completed_filters:
+                            # prevent duplicate data retrieval
+                            continue
+                        f_completed_filters.append(f_filters)
+                        result = lc.action.datastore_search(
+                            resource_id=fk['child_table'], filters=f_filters)
+                        ref_record_data += result['records']
+                if ref_record_data and f_chromo is not None:
+                    append_data(book, ref_record_data, f_chromo)
 
     blob = BytesIO()
     book.save(blob)
