@@ -15,7 +15,7 @@
             {{ _('Template Excel spreadsheet') }}</a>
         </div>
         {% if pkg.template_updated %}
-        <p class='text-info'>{{ _('Last Updated') }}: {{ pkg.template_updated }}</p>
+        <p class='text-info'>{{ _('Last Updated') }}{{ _(':') }} {{ pkg.template_updated }}</p>
         {% endif %}
       </div>
     </div>
