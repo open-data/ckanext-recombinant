@@ -4,7 +4,7 @@
     <li>{{ _('Field(s) <em>{0}</em> do not exist in the database for this resource.').format(key_errors) }}</li>
 </ul>
 {% if not g.userobj.sysadmin %}
-  <p>{{ _('Please contact <a href="mailto:open-ouvert@tbs-sct.gc.ca">open-ouvert@tbs-sct.gc.ca</a> for assistance.') }}</p>
+  <p>{{ _('Please contact <a href="mailto:{support}">{support}</a> for assistance.').format(support=h.support_email_address()) }}</p>
 {% else %}
   {# only let sysadmins refresh the recombinant record via UI #}
   <div class="clearfix"></div>

@@ -144,7 +144,7 @@
               </summary>
               <h3>{{_("Error loading your records")}}</h3>
               <div class="col-md-12">
-                <p>{{_("We were unable to retrieve your proactive publication records from our database. Please contact <a href=\"open-ouvert@tbs-sct.gc.ca\">open-ouvert@tbs-sct.gc.ca</a>.")}}</p>
+                <p>{{ _("We were unable to retrieve your proactive publication records from our database. Please contact <a href=\"{support}\">{support}</a>.").format(support=h.support_email_address()) }}</p>
                 {% if g.userobj.sysadmin %}
                   {# only let sysadmins refresh the recombinant record via UI #}
                   <h4>{{ _('Refresh resource') }}{% snippet 'snippets/sysadmin_only.html' %}</h4>
