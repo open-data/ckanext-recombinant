@@ -717,7 +717,7 @@ def refresh_dataset(resource_name: str, owner_org: str):
                     'Unable to regenerate the resources. Please contact '
                     '<a href="mailto:{support}">'
                     '{support}</a> for assistance.').format(
-                        config.get('ckanext.canada.support_email_address')),
+                        h.support_email_address()),
                     allow_html=True)
     return h.redirect_to(
         'recombinant.preview_table',
@@ -770,7 +770,7 @@ def _process_upload_file(lc: LocalCKAN,
                       "version of the template and uploading again. If this "
                       "problem continues, send your Excel file to "
                       "{support} so we may investigate.").format(
-                          config.get('ckanext.canada.support_email_address')))
+                          h.support_email_address()))
 
             if sheet_name not in expected_sheet_names:
                 raise BadExcelData(_('Invalid file for this data type. ' +
@@ -808,7 +808,7 @@ def _process_upload_file(lc: LocalCKAN,
                       "version of the template and uploading again. If this "
                       "problem continues, send your Excel file to "
                       "{support} so we may investigate.").format(
-                          config.get('ckanext.canada.support_email_address')))
+                          h.support_email_address()))
 
             pk = chromo.get('datastore_primary_key', [])
             choice_fields = {
