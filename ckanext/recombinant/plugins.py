@@ -122,6 +122,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
             'recombinant_get_field': helpers.recombinant_get_field,
             'recombinant_published_resource_chromo':
                 helpers.recombinant_published_resource_chromo,
+            'support_email_address':
+                helpers.support_email_address,
             }
 
     def get_actions(self) -> Dict[str, Union[Action, ChainedAction]]:

@@ -715,8 +715,9 @@ def refresh_dataset(resource_name: str, owner_org: str):
             except Exception:
                 h.flash_error(_(
                     'Unable to regenerate the resources. Please contact '
-                    '<a href="mailto:open-ouvert@tbs-sct.gc.ca">'
-                    'open-ouvert@tbs-sct.gc.ca</a> for assistance.'),
+                    '<a href="mailto:{support}">'
+                    '{support}</a> for assistance.').format(
+                        h.support_email_address()),
                     allow_html=True)
     return h.redirect_to(
         'recombinant.preview_table',
@@ -768,7 +769,8 @@ def _process_upload_file(lc: LocalCKAN,
                       "uploaded. Please try copying your data into the latest "
                       "version of the template and uploading again. If this "
                       "problem continues, send your Excel file to "
-                      "open-ouvert@tbs-sct.gc.ca so we may investigate."))
+                      "{support} so we may investigate.").format(
+                          h.support_email_address()))
 
             if sheet_name not in expected_sheet_names:
                 raise BadExcelData(_('Invalid file for this data type. ' +
@@ -805,7 +807,8 @@ def _process_upload_file(lc: LocalCKAN,
                       "Please try copying your data into the latest "
                       "version of the template and uploading again. If this "
                       "problem continues, send your Excel file to "
-                      "open-ouvert@tbs-sct.gc.ca so we may investigate."))
+                      "{support} so we may investigate.").format(
+                          h.support_email_address()))
 
             pk = chromo.get('datastore_primary_key', [])
             choice_fields = {

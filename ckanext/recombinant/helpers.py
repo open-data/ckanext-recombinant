@@ -210,3 +210,7 @@ def recombinant_published_resource_chromo(res_id: str) -> Optional[Dict[str, Any
         return recombinant_get_chromo(resource_name)
     except RecombinantException:
         return {}
+
+
+def support_email_address() -> str:
+    return config.get('ckanext.canada.support_email_address', '')

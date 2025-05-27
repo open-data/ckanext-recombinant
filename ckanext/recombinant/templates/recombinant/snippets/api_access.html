@@ -231,4 +231,4 @@ ckan.action.datastore_records_delete(
 
 </div><!-- accordion -->
 
-<p>{% trans %}If you have modified these API Access instructions for another programming language please send them to <a href="mailto:open-ouvert@tbs-sct.gc.ca">open-ouvert@tbs-sct.gc.ca</a> and we may be able to post them here as well.{% endtrans %}</p>
+<p>{{ _('If you have modified these API Access instructions for another programming language please send them to <a href="mailto:{support}">{support}</a> and we may be able to post them here as well.').format(support=h.support_email_address()) }}</p>
