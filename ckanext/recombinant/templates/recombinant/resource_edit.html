@@ -49,7 +49,7 @@
           {# only let sysadmins refresh the recombinant record via UI #}
           <div class="module-alert alert alert-warning">
             <h3>{{ _("The Recombinant resource is out of date") }}{% snippet 'snippets/sysadmin_only.html' %}</h3>
-            <p style="margin-bottom: 10px;">{{ _('You can refresh your resource in the database to try to solve the problem.') }}</p>
+            <p class="recombinant-margin-bottom-10">{{ _('You can refresh your resource in the database to try to solve the problem.') }}</p>
             <form id="create-pd-resource" method="post">
               {{ h.csrf_input() }}
               <button type="submit" class="btn btn-danger mrgn-bttm-md m-b-3" name="refresh-hard">{{_('Refresh…')}}</button>
