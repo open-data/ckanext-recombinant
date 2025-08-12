@@ -81,19 +81,19 @@
                     <ul class="dropdown-menu" aria-labelledby="dropdownDownloadFormat">
                       <li>
                         <a class="dropdown-item" href="{{ h.url_for('datastore.dump', resource_id=resource.id, bom=True, filename=filename) }}"
-                          target="_blank" rel="noreferrer"><span>CSV</span></a>
+                          target="_blank" rel="noopener noreferrer"><span>CSV</span></a>
                       </li>
                       <li>
                         <a class="dropdown-item" href="{{ h.url_for('datastore.dump', resource_id=resource.id, format='tsv', bom=True, filename=filename) }}"
-                          target="_blank" rel="noreferrer"><span>TSV</span></a>
+                          target="_blank" rel="noopener noreferrer"><span>TSV</span></a>
                       </li>
                       <li>
                           <a class="dropdown-item" href="{{ h.url_for('datastore.dump', resource_id=resource.id, format='json', filename=filename) }}"
-                          target="_blank" rel="noreferrer"><span>JSON</span></a>
+                          target="_blank" rel="noopener noreferrer"><span>JSON</span></a>
                       </li>
                       <li>
                           <a class="dropdown-item" href="{{ h.url_for('datastore.dump', resource_id=resource.id, format='xml', filename=filename) }}"
-                          target="_blank" rel="noreferrer"><span>XML</span></a>
+                          target="_blank" rel="noopener noreferrer"><span>XML</span></a>
                       </li>
                     </ul>
                   </div>
