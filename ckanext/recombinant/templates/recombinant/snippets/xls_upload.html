@@ -16,12 +16,11 @@
       </label>
       {% block file_input %}
       <input required
-        class="form-control"
-        style="height: auto"
+        class="form-control recombinant-height-auto recombinant-upload-field"
         type="file"
         name="xls_update"
         id="xls_update"
-        oninvalid="setCustomValidity(' {{ _('You must provide a valid file') }} ')" onchange="setCustomValidity('')"
+        data-invalid-text="{{- _('You must provide a valid file') -}}"
         accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
       {% endblock %}
       {% if errors %}
@@ -36,7 +35,7 @@
     </div>
     <input type="hidden" name="resource_name" value="{{ resource.get('name') }}"/>
     <div class="clearfix"></div>
-    <div class="form-actions form-group" style="padding-top: 3px;">
+    <div class="form-actions form-group recombinant-form-button-wrapper">
       <button type="submit" class="btn btn-primary" name="upload">{{_('Submit')}}</button>
       <button type="submit" class="btn btn-default" name="validate">{{_('Check for Errors')}}</button>
     </div>
