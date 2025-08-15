@@ -4,8 +4,7 @@
   </div>
   <div class="{% block select_classes %} col-sm-10 {% endblock %}">
     {% block select_field %}
-      <select id="org-select" name="org_select" class="form-control form-select"
-        onchange="window.location.href=this.value">
+      <select id="org-select" name="org_select" class="form-control form-select recombinant-org-field">
         {% for org in h.organizations_available('read') %}
         <option value="{{ h.url_for('recombinant.preview_table', resource_name=resource_name, owner_org=org.name) }}"
         {% if selected.name == org.name %}selected="selected"{% endif %}

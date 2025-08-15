@@ -16,11 +16,11 @@
       </label>
       {% block file_input %}
       <input required
-        class="form-control recombinant-height-auto"
+        class="form-control recombinant-height-auto recombinant-upload-field"
         type="file"
         name="xls_update"
         id="xls_update"
-        oninvalid="setCustomValidity(' {{ _('You must provide a valid file') }} ')" onchange="setCustomValidity('')"
+        data-invalid-text="{{- _('You must provide a valid file') -}}"
         accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
       {% endblock %}
       {% if errors %}

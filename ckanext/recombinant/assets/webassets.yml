@@ -3,6 +3,11 @@ code_block_buttons:
     - js/code_block_buttons.js
   output: recombinant/%(version)s_code_block_buttons.js
 
+js_callbacks:
+  contents:
+    - js/recombinant_callbacks.js
+  output: recombinant/%(version)s_recombinant_callbacks.js
+
 main_css:
   contents:
     - css/recombinant.css
