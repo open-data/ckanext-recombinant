@@ -3,21 +3,27 @@ window.addEventListener('load', function(){
 
     let uploadField = $('.recombinant-upload-field');
     if( uploadField.length > 0 ){
-      $(uploadField).on('invalid', function(_event){
-        uploadField.setCustomValidity($(uploadField).attr('data-invalid-text'));
-      });
-      $(uploadField).on('change', function(_event){
-        uploadField.setCustomValidity('');
+      $(uploadField).each(function(_index, _uploadField){
+        // FIXME: not binding to node...
+        $(_uploadField).on('invalid', function(_event){
+          _uploadField[0].setCustomValidity($(_uploadField).attr('data-invalid-text'));
+        });
+        $(_uploadField).on('change', function(_event){
+          console.log($(_uploadField).attr('data-invalid-text'));
+          _uploadField[0].setCustomValidity('');
+        });
       });
     }
 
     let deleteField = $('.recombinant-delete-field');
     if( deleteField.length > 0 ){
-      $(deleteField).on('invalid', function(_event){
-        deleteField.setCustomValidity($(deleteField).attr('data-invalid-text'));
-      });
-      $(deleteField).on('change', function(_event){
-        deleteField.setCustomValidity('');
+      $(deleteField).each(function(_index, _deleteField){
+        $(_deleteField).on('invalid', function(_event){
+          _deleteField[0].setCustomValidity($(_deleteField).attr('data-invalid-text'));
+        });
+        $(_deleteField).on('change', function(_event){
+          _deleteField[0].setCustomValidity('');
+        });
       });
     }
 
