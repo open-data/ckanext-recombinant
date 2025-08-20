@@ -106,7 +106,11 @@
             h.recombinant_language_text(field.label)
             or field.datastore_id
             }}</div>
-            <div class="col-md-4"><code>{{ field_type }}</code></div>
+            <div class="col-md-4">
+              {% if has_extra  %}{{ field_type }}
+              {% else %}<code>{{ field_type }}</code>
+              {% endif %}
+            </div>
             <div class="col-md-1">{% if has_extra  %}»{% endif %}</div>
           </div>
         </div>
