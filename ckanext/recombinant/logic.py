@@ -1,7 +1,7 @@
 from six import string_types
 from ckan.plugins.toolkit import _, chained_action, h, side_effect_free
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from ckan.types import Context, DataDict, Action, ChainedAction
 
 from sqlalchemy import and_
@@ -18,7 +18,10 @@ from ckanext.recombinant.errors import (
     format_trigger_error
 )
 from ckanext.recombinant.datatypes import datastore_type
-from ckanext.recombinant.helpers import _read_choices_file
+from ckanext.recombinant.helpers import (
+    _read_choices_file,
+    _filter_choices_for_org
+)
 
 from ckanext.datastore.backend.postgres import literal_string
 
@@ -298,7 +301,8 @@ def _update_datastore(lc: LocalCKAN,
                     new_fields.append(f)
                 fields = new_fields
 
-        trigger_names = _update_triggers(lc, chromo)
+        trigger_names = _update_triggers(lc, chromo,
+                                         dataset['organization']['name'])
 
         chromo_foreign_keys = chromo.get('datastore_foreign_keys', None)
         foreign_keys = {}
@@ -324,9 +328,13 @@ def _update_datastore(lc: LocalCKAN,
             force=True)
 
 
-def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
+def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any],
+                     org_name: Optional[str] = None) -> List[str]:
     definitions = dict(chromo.get('trigger_strings', {}))
     trigger_names = []
+
+    org_specific_fields = set(
+        x for trigger in chromo.get('per_org_triggers', {}).values() for x in trigger)
 
     for f in chromo['fields']:
         if 'choices' in f:
@@ -335,14 +343,20 @@ def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
                     "trigger_string {name} can't be used because that "
                     "name is required for the {name} field choices".format(
                         name=f['datastore_id']))
-            definitions[f['datastore_id']] = sorted(f['choices'])
+            choice_definitions = f['choices']
+            if f['datastore_id'] in org_specific_fields:
+                _filter_choices_for_org(choice_definitions, org_name)
+            definitions[f['datastore_id']] = sorted(choice_definitions)
         elif 'choices_file' in f and '_path' in chromo:
             if f['datastore_id'] in definitions:
                 raise RecombinantConfigurationError(
                     "trigger_string {name} can't be used because that "
                     "name is required for the {name} field choices".format(
                         name=f['datastore_id']))
-            definitions[f['datastore_id']] = sorted(_read_choices_file(chromo, f))
+            choice_definitions = _read_choices_file(chromo, f)
+            if f['datastore_id'] in org_specific_fields:
+                _filter_choices_for_org(choice_definitions, org_name)
+            definitions[f['datastore_id']] = sorted(choice_definitions)
 
     for tr in chromo.get('triggers', []):
         if isinstance(tr, dict):
@@ -350,6 +364,8 @@ def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
                 raise RecombinantConfigurationError(
                     "inline trigger may have only one key: " + repr(tr.keys()))
             ((trname, trcode),) = tr.items()
+            if org_name and trname in chromo.get('per_org_triggers', {}):
+                trname += '_{}'.format(org_name.replace('-', '_'))
             trigger_names.append(trname)
             try:
                 lc.action.datastore_function_create(
@@ -362,6 +378,8 @@ def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
             except NotAuthorized:
                 pass  # normal users won't be able to reset triggers
         else:
+            if org_name and tr in chromo.get('per_org_triggers', {}):
+                tr += '_{}'.format(org_name.replace('-', '_'))
             trigger_names.append(tr)
     return trigger_names
 

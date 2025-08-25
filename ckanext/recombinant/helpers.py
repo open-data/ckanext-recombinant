@@ -128,9 +128,34 @@ def recombinant_example(resource_name: str,
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
 
 
+def _filter_choices_for_org(choices: Dict[str, Any],
+                            org_name: str):
+    invalid_choices = []
+    for choice_key, choice_obj in choices.items():
+        if 'valid_orgs' not in choice_obj:
+            continue
+        _valid_orgs = choice_obj['valid_orgs']
+        if isinstance(_valid_orgs, dict):
+            _valid_orgs = _valid_orgs.keys()
+        if org_name in _valid_orgs:
+            continue
+        invalid_choices.append(choice_key)
+    for key in invalid_choices:
+        del choices[key]
+
+
+def recombinant_org_specific_fields(resource_name: str) -> Dict[str, Any]:
+    chromo = recombinant_get_chromo(resource_name)
+    if not chromo:
+        return {}
+    return set(
+        x for trigger in chromo.get('per_org_triggers', {}).values() for x in trigger)
+
+
 def recombinant_choice_fields(resource_name: str,
                               all_languages: bool = False,
-                              prefer_lang: Optional[str] = None) -> Dict[str, Any]:
+                              prefer_lang: Optional[str] = None,
+                              org_name: Optional[str] = None) -> Dict[str, Any]:
     """
     Return a datastore_id: choices dict from the resource definition
     that contain lists of choices, with labels pre-translated
@@ -144,6 +169,9 @@ def recombinant_choice_fields(resource_name: str,
     chromo = recombinant_get_chromo(resource_name)
     if not chromo:
         return {}
+
+    org_specific_fields = set(
+        x for trigger in chromo.get('per_org_triggers', {}).values() for x in trigger)
 
     def build_choices(f: Dict[str, Any], choices: Dict[str, Any]):
         order_expr = f.get('choice_order_expression')
@@ -160,6 +188,8 @@ def recombinant_choice_fields(resource_name: str,
             key_fn = None  # type: ignore
 
         exclude_choices = f.get('exclude_choices', [])
+        if f['datastore_id'] in org_specific_fields:
+            _filter_choices_for_org(choices, org_name)
         out[f['datastore_id']] = [
             (v, choices[v] if all_languages
                 else recombinant_language_text(choices[v], prefer_lang))

@@ -236,6 +236,7 @@ def excel_data_dictionary(geno: Dict[str, Any],
             refs = []
             for rnum, chromo in enumerate(geno['resources'], 1):
                 _append_resource_ref_header(geno, refs, rnum)
+                # TODO: make this org specific!!!
                 choice_fields = recombinant_choice_fields(chromo['resource_name'])
                 for field in chromo['fields']:
                     if not field.get('import_template_include', True):
