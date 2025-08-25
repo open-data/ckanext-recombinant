@@ -466,6 +466,7 @@ def _schema_json(dataset_type: str, published_resource: bool = False) -> Respons
     for chromo in geno['resources']:
         resource = {}
         schema['resources'].append(resource)
+        # TODO: do org specific things for this!!!
         choice_fields = recombinant_choice_fields(
             chromo['resource_name'],
             all_languages=True)

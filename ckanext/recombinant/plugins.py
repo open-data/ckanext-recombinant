@@ -118,6 +118,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
             'recombinant_get_types': helpers.recombinant_get_types,
             'recombinant_example': helpers.recombinant_example,
             'recombinant_choice_fields': helpers.recombinant_choice_fields,
+            'recombinant_org_specific_fields':
+                helpers.recombinant_org_specific_fields,
             'recombinant_show_package': helpers.recombinant_show_package,
             'recombinant_get_field': helpers.recombinant_get_field,
             'recombinant_published_resource_chromo':
