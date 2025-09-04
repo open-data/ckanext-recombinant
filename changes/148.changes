@@ -1,0 +1,1 @@
+Replaced hardcoded HelpDesk email address with configurable setting to improve flexibility and maintainability.
