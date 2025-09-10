@@ -28,6 +28,7 @@ from ckan.model.group import Group
 from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
 
 from ckan.views.dataset import _get_package_type
+from ckan.views import nocache_store
 
 from ckanext.recombinant.errors import (
     RecombinantException,
@@ -271,6 +272,7 @@ def _xlsx_response_headers() -> Tuple[str, str]:
 
 @recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx',
                    methods=['GET', 'POST'])
+@nocache_store
 def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, str]:
     """
     POST requests to this endpoint contain primary keys of
@@ -428,11 +430,13 @@ def _data_dictionary(dataset_type: str,
 
 
 @recombinant.route('/recombinant-dictionary/<dataset_type>')
+@nocache_store
 def data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant-published-dictionary/<dataset_type>')
+@nocache_store
 def published_data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=True)
 
@@ -542,11 +546,13 @@ def _schema_json(dataset_type: str, published_resource: bool = False) -> Respons
 
 
 @recombinant.route('/recombinant-schema/<dataset_type>.json')
+@nocache_store
 def schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant-published-schema/<dataset_type>.json')
+@nocache_store
 def published_schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=True)
 
