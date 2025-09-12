@@ -596,7 +596,7 @@ def preview_table(resource_name: str,
         return h.redirect_to('user.login')
 
     org_object = Group.get(owner_org)
-    if not org_object:
+    if not org_object or getattr(org_object, 'state') != 'active':
         return abort(404, _('Organization not found'))
     if org_object.name != owner_org:
         return h.redirect_to(
