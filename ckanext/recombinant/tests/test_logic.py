@@ -1,6 +1,6 @@
 import pytest
 
-from ckan.tests.factories import Organization
+from ckan.tests.factories import Organization, Sysadmin
 from ckanext.recombinant.tests import RecombinantTestBase
 
 from ckanapi import LocalCKAN
@@ -17,6 +17,7 @@ class TestRecombinantLogic(RecombinantTestBase):
         """
         super(TestRecombinantLogic, self).setup_method(method)
 
+        self.sysadmin = Sysadmin()
         self.lc = LocalCKAN()
 
     def test_deleted_org(self):
@@ -27,7 +28,8 @@ class TestRecombinantLogic(RecombinantTestBase):
         _get_plugin().update_config(config)
         self.lc.action.recombinant_create(dataset_type='sample',
                                           owner_org=org['name'])
-        _lc, _geno, dataset = _action_get_dataset({'ignore_auth': True},
+        _lc, _geno, dataset = _action_get_dataset({'ignore_auth': True,
+                                                   'user': self.sysadmin['name']},
                                                   {'dataset_type': 'sample',
                                                    'owner_org': org['name']})
         self.lc.action.package_delete(id=dataset['id'])
