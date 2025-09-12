@@ -1,6 +1,6 @@
 import json
 import os.path
-from markupsafe import Markup, escape
+from markupsafe import Markup
 
 from typing import Dict, Any, Optional, List, Union
 
