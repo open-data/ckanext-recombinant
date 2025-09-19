@@ -28,6 +28,7 @@ from ckan.model.group import Group
 from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
 
 from ckan.views.dataset import _get_package_type
+from ckan.views import nocache_store
 
 from ckanext.recombinant.errors import (
     RecombinantException,
@@ -271,6 +272,7 @@ def _xlsx_response_headers() -> Tuple[str, str]:
 
 @recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx',
                    methods=['GET', 'POST'])
+@nocache_store
 def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, str]:
     """
     POST requests to this endpoint contain primary keys of
@@ -428,11 +430,13 @@ def _data_dictionary(dataset_type: str,
 
 
 @recombinant.route('/recombinant-dictionary/<dataset_type>')
+@nocache_store
 def data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant-published-dictionary/<dataset_type>')
+@nocache_store
 def published_data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=True)
 
@@ -543,11 +547,13 @@ def _schema_json(dataset_type: str, published_resource: bool = False) -> Respons
 
 
 @recombinant.route('/recombinant-schema/<dataset_type>.json')
+@nocache_store
 def schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant-published-schema/<dataset_type>.json')
+@nocache_store
 def published_schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=True)
 
@@ -591,7 +597,7 @@ def preview_table(resource_name: str,
         return h.redirect_to('user.login')
 
     org_object = Group.get(owner_org)
-    if not org_object:
+    if not org_object or getattr(org_object, 'state') != 'active':
         return abort(404, _('Organization not found'))
     if org_object.name != owner_org:
         return h.redirect_to(
@@ -718,7 +724,7 @@ def refresh_dataset(resource_name: str, owner_org: str):
                     'Unable to regenerate the resources. Please contact '
                     '<a href="mailto:{support}">'
                     '{support}</a> for assistance.').format(
-                        h.support_email_address()),
+                        support=h.support_email_address()),
                     allow_html=True)
     return h.redirect_to(
         'recombinant.preview_table',
@@ -771,7 +777,7 @@ def _process_upload_file(lc: LocalCKAN,
                       "version of the template and uploading again. If this "
                       "problem continues, send your Excel file to "
                       "{support} so we may investigate.").format(
-                          h.support_email_address()))
+                          support=h.support_email_address()))
 
             if sheet_name not in expected_sheet_names:
                 raise BadExcelData(_('Invalid file for this data type. ' +
@@ -809,7 +815,7 @@ def _process_upload_file(lc: LocalCKAN,
                       "version of the template and uploading again. If this "
                       "problem continues, send your Excel file to "
                       "{support} so we may investigate.").format(
-                          h.support_email_address()))
+                          support=h.support_email_address()))
 
             pk = chromo.get('datastore_primary_key', [])
             choice_fields = {

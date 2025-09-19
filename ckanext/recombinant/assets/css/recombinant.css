@@ -36,3 +36,15 @@
   border-bottom-right-radius: 4px !important;
   text-align: right !important;
 }
+body .recombinant-margin-bottom-10{
+  margin-bottom: 10px;
+}
+body .recombinant-form-button-wrapper{
+  padding-top: 3px;
+}
+body .recombinant-height-auto{
+  height: auto;
+}
+body .recombinant-cursor-help{
+  cursor: help;
+}

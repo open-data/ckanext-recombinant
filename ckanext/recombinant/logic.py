@@ -162,6 +162,9 @@ def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
         raise ValidationError(
             {'owner_org': _("Organization not found")})
 
+    if getattr(owner_org, 'state') != 'active':
+        raise NotFound(_("Organization not found"))
+
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:

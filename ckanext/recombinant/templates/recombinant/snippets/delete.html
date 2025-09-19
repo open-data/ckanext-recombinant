@@ -14,11 +14,11 @@
       <strong aria-required="true" class="required">{{ _('(required)') }}</strong>
     </label>
     <textarea required
-      class="form-control"
+      class="form-control recombinant-delete-field"
       type="input"
       name="bulk-delete"
       id="bulk-delete-field"
-      onchange="setCustomValidity('')" oninvalid="{{ 'setCustomValidity(\''+_('Please fill out this field.')+ '\')' }}"
+      data-invalid-text="{{- _('Please fill out this field.') -}}"
       >{% if filters %}{{ filters.get('bulk-delete', '') }}{% endif %}</textarea>
       {% if errors %}
         <span class="span-3 text-danger">
@@ -40,7 +40,7 @@
   <div>
   </div>
   <div class="clearfix"></div>
-  <div class="form-actions form-group" style="padding-top: 3px;">
+  <div class="form-actions form-group recombinant-delete-button-wrapper">
     <input class="btn btn-danger" type="submit" value="{{_('Delete')}}"/>
   </div>
 </form>

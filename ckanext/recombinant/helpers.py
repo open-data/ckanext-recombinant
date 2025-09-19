@@ -1,7 +1,8 @@
 import json
 import os.path
+from markupsafe import Markup
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 
 from ckan.plugins.toolkit import c, config
 from ckan.plugins.toolkit import _ as gettext
@@ -242,5 +243,19 @@ def recombinant_published_resource_chromo(res_id: str) -> Optional[Dict[str, Any
         return {}
 
 
-def support_email_address() -> str:
-    return config.get('ckanext.canada.support_email_address', '')
+def obfuscate_to_code_points(string: str,
+                             return_safe: bool = True) -> Union[Markup, str]:
+    """
+    Obfuscate each string character to its code point.
+    """
+    obfuscated_string = ''
+    for _s in string:
+        obfuscated_string += f'&#{ord(_s):03d};'
+    return Markup(obfuscated_string) if return_safe \
+        else obfuscated_string
+
+
+def support_email_address(xml_encode: bool = True) -> Union[Markup, str]:
+    return config.get('ckanext.canada.support_email_address', '') if not xml_encode \
+        else obfuscate_to_code_points(
+            config.get('ckanext.canada.support_email_address', ''))
