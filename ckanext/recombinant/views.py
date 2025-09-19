@@ -3,7 +3,7 @@ from flask_babel import force_locale
 import re
 import simplejson as json
 
-from typing import Union, Dict, Tuple, Any, List
+from typing import Union, Dict, Tuple, Any, List, Optional
 from ckan.types import Response
 
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
@@ -20,7 +20,8 @@ from ckan.plugins.toolkit import (
     aslist,
     config,
     request,
-    render
+    render,
+    get_action
 )
 
 from ckan.logic import ValidationError, NotAuthorized
@@ -411,22 +412,35 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
 
 
 def _data_dictionary(dataset_type: str,
-                     published_resource: bool = False) -> Response:
+                     published_resource: bool = False,
+                     org_name: Optional[str] = None) -> Response:
     try:
         geno = get_geno(dataset_type)
+        org = get_action('organization_show')({}, {'id': org_name})
     except RecombinantException:
         return abort(404, _('Recombinant dataset_type not found'))
+    except (NotAuthorized, NotFound):
+        return abort(404, _('Organization not found'))
 
-    book = excel_data_dictionary(geno, published_resource=published_resource)
+    book = excel_data_dictionary(geno, published_resource=published_resource,
+                                 org=org)
+    filename = f'{org_name}_{dataset_type}.xlsx' \
+        if org_name else f'{dataset_type}.xlsx'
     blob = BytesIO()
     book.save(blob)
     response = FlaskResponse(blob.getvalue())
     content_type, disposition_type = _xlsx_response_headers()
     response.headers['Content-Type'] = content_type
-    response.headers['Content-Disposition'] = '{}; filename="{}.xlsx"'.format(
+    response.headers['Content-Disposition'] = '{}; filename="{}"'.format(
         disposition_type,
-        dataset_type)
+        filename)
     return response
+
+
+@recombinant.route('/recombinant-dictionary/<org_name>_<dataset_type>')
+@nocache_store
+def org_based_data_dictionary(org_name: str, dataset_type: str) -> Response:
+    return _data_dictionary(dataset_type, published_resource=False, org_name=org_name)
 
 
 @recombinant.route('/recombinant-dictionary/<dataset_type>')
@@ -441,7 +455,8 @@ def published_data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=True)
 
 
-def _schema_json(dataset_type: str, published_resource: bool = False) -> Response:
+def _schema_json(dataset_type: str, published_resource: bool = False,
+                 org_name: Optional[str] = None) -> Response:
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
@@ -470,10 +485,10 @@ def _schema_json(dataset_type: str, published_resource: bool = False) -> Respons
     for chromo in geno['resources']:
         resource = {}
         schema['resources'].append(resource)
-        # TODO: do org specific things for this!!!
         choice_fields = recombinant_choice_fields(
             chromo['resource_name'],
-            all_languages=True)
+            all_languages=True,
+            org_name=org_name)
 
         pkeys = aslist(chromo['datastore_primary_key'])
 
@@ -544,6 +559,12 @@ def _schema_json(dataset_type: str, published_resource: bool = False) -> Respons
         'inline; filename="{0}.json"'.format(
             dataset_type))
     return response
+
+
+@recombinant.route('/recombinant-schema/<org_name>_<dataset_type>.json')
+@nocache_store
+def org_based_schema_json(org_name: str, dataset_type: str) -> Response:
+    return _schema_json(dataset_type, published_resource=False, org_name=org_name)
 
 
 @recombinant.route('/recombinant-schema/<dataset_type>.json')
