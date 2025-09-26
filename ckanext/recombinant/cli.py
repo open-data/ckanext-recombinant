@@ -690,7 +690,7 @@ def _write_one_csv(lc: LocalCKAN,
                 org_extras[ename] = ''
                 if ename in org:
                     org_extras[ename] = org[ename]
-                else:
+                elif 'extras' in org:
                     for e in org['extras']:
                         if e['key'] == ename:
                             org_extras[ename] = e['value']
