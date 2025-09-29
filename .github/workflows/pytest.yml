@@ -193,7 +193,7 @@ jobs:
           source /srv/app/venv/bin/activate
 
           ln -s /srv/app/src/ckan/test-core.ini /srv/app/src/ckanext-recombinant/links/test-core.ini
-          ln -s /srv/app/src/ckan/who.ini srv/app/src/ckanext-recombinant/links/who.ini
+          ln -s /srv/app/src/ckan/who.ini /srv/app/src/ckanext-recombinant/links/who.ini
           mkdir -p srv/app/src/ckanext-recombinant/links/ckanext/datastore/tests
           ln -s /srv/app/src/ckan/ckanext/datastore/tests/allowed_functions.txt /srv/app/src/ckanext-recombinant/links/ckanext/datastore/tests/allowed_functions.txt
           mkdir -p /srv/app/src/ckanext-recombinant/links/ckan/bin/postgres_init
