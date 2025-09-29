@@ -153,7 +153,7 @@ jobs:
                     printf "${srcName}: Up to date. Skipping..."
                 else
                     git pull || true;
-                    printf "${Green}${srcName}: Pulled updated code. Re-initializing in python environment..."
+                    printf "${srcName}: Pulled updated code. Re-initializing in python environment..."
                     cd /srv/app;
                     if [[ -f "$dir/requirements.txt" ]]; then
                         pip install -r $dir/requirements.txt || true;
@@ -194,7 +194,7 @@ jobs:
 
           ln -s /srv/app/src/ckan/test-core.ini /srv/app/src/ckanext-recombinant/links/test-core.ini
           ln -s /srv/app/src/ckan/who.ini /srv/app/src/ckanext-recombinant/links/who.ini
-          mkdir -p srv/app/src/ckanext-recombinant/links/ckanext/datastore/tests
+          mkdir -p /srv/app/src/ckanext-recombinant/links/ckanext/datastore/tests
           ln -s /srv/app/src/ckan/ckanext/datastore/tests/allowed_functions.txt /srv/app/src/ckanext-recombinant/links/ckanext/datastore/tests/allowed_functions.txt
           mkdir -p /srv/app/src/ckanext-recombinant/links/ckan/bin/postgres_init
           ln -s /srv/app/src/ckan/bin/postgres_init/1_create_ckan_db.sh /srv/app/src/ckanext-recombinant/links/ckan/bin/postgres_init/1_create_ckan_db.sh
@@ -332,7 +332,7 @@ jobs:
                     printf "${srcName}: Up to date. Skipping..."
                 else
                     git pull || true;
-                    printf "${Green}${srcName}: Pulled updated code. Re-initializing in python environment..."
+                    printf "${srcName}: Pulled updated code. Re-initializing in python environment..."
                     cd /srv/app;
                     if [[ -f "$dir/requirements.txt" ]]; then
                         pip install -r $dir/requirements.txt || true;

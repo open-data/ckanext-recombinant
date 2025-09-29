@@ -38,7 +38,7 @@ jobs:
                     printf "${srcName}: Up to date. Skipping..."
                 else
                     git pull || true;
-                    printf "${Green}${srcName}: Pulled updated code. Re-initializing in python environment..."
+                    printf "${srcName}: Pulled updated code. Re-initializing in python environment..."
                     cd /srv/app;
                     if [[ -f "$dir/requirements.txt" ]]; then
                         pip install -r $dir/requirements.txt || true;
@@ -77,7 +77,10 @@ jobs:
       - name: Install Node Dependencies
         if: steps.gitcheckout.outcome == 'success'
         run: |
+          source /srv/app/venv/bin/activate
           cd /srv/app/src/ckanext-recombinant
+          printf "Node Version: $(node --version)"
+          printf "NPM Version: $(npm --version)"
           npm ci
       - name: Check Types
         if: steps.gitcheckout.outcome == 'success'
@@ -85,4 +88,6 @@ jobs:
           export PYTHONPATH="${PYTHONPATH}:/srv/app/lib/python3.9/site-packages:/srv/app/src/ckanext-citeproc"
           source /srv/app/venv/bin/activate
           cd /srv/app/src/ckanext-recombinant
+          printf "Node Version: $(node --version)"
+          printf "NPM Version: $(npm --version)"
           npx pyright
