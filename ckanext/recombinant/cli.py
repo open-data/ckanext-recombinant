@@ -805,4 +805,5 @@ def _template(dataset_type: str,
     org = lc.action.organization_show(id=org_name)
     tmpl = excel_template(dataset_type, org)
     with open(output_file, 'w') as out:
-        tmpl.save(out)
+        # type_ignore_reason: incomplete typing
+        tmpl.save(out)  # type: ignore

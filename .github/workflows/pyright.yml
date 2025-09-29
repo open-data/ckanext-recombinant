@@ -81,7 +81,7 @@ jobs:
           cd /srv/app/src/ckanext-recombinant
           printf "\nNode Version: $(node --version)"
           printf "\nNPM Version: $(npm --version)"
-          printf "\nPython Version: $(python3 --version)"
+          printf "\nPython Version: $(python3 --version)\n"
           npm ci
       - name: Check Types
         if: steps.gitcheckout.outcome == 'success'
@@ -91,5 +91,5 @@ jobs:
           cd /srv/app/src/ckanext-recombinant
           printf "\nNode Version: $(node --version)"
           printf "\nNPM Version: $(npm --version)"
-          printf "\nPython Version: $(python3 --version)"
+          printf "\nPython Version: $(python3 --version)\n"
           npx pyright
