@@ -12,7 +12,7 @@ jobs:
     container:
       image: opendatacanada/ckan-pytest  # primary executor
     steps:
-     - name: Install Node
+      - name: Install Node
         run: |
           apk add nodejs npm
       - uses: actions/setup-node@v4
