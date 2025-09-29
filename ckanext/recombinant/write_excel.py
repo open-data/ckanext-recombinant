@@ -108,7 +108,7 @@ TYPE_HERE_STYLE = {
 
 
 def excel_template(dataset_type: str,
-                   org: Dict[str, Any]):
+                   org: Dict[str, Any]) -> Workbook:
     """
     return an openpyxl.Workbook object containing the sheet and header fields
     for passed dataset_type and org. Supports version 3 templates.
@@ -136,7 +136,7 @@ def excel_template(dataset_type: str,
             sheet.protection.formatRows = False
             sheet.protection.formatColumns = False
         # type_ignore_reason: incomplete typing
-        sheet: Worksheet = book.create_sheet()  # type: ignore
+        sheet: Worksheet = book.create_sheet()
 
     if version == 3:
         _populate_reference_sheet(sheet, geno, refs)
@@ -149,13 +149,13 @@ def excel_template(dataset_type: str,
     for i, (chromo, cranges) in enumerate(
             zip(geno['resources'], choice_ranges), 1):
         # type_ignore_reason: incomplete typing
-        sheet: Worksheet = book.create_sheet()  # type: ignore
+        sheet: Worksheet = book.create_sheet()
         _populate_excel_e_sheet(sheet, chromo, cranges)
         sheet.title = 'e{i}'.format(i=i)
         sheet.protection.enabled = SHEET_PROTECTION
         sheet.sheet_state = 'hidden'
         # type_ignore_reason: incomplete typing
-        sheet: Worksheet = book.create_sheet()  # type: ignore
+        sheet: Worksheet = book.create_sheet()
         _populate_excel_r_sheet(sheet, chromo)
         sheet.title = 'r{i}'.format(i=i)
         sheet.protection.enabled = SHEET_PROTECTION
@@ -171,7 +171,7 @@ def append_data(book: Workbook,
     fills rows of an openpyxl.Workbook with selected data from a datastore resource
     """
     # type_ignore_reason: incomplete typing
-    sheet: Worksheet = book[chromo['resource_name']]  # type: ignore
+    sheet: Worksheet = book[chromo['resource_name']]
     current_row = DATA_FIRST_ROW
     for record in record_data:
         for col_num, field in template_cols_fields(chromo):
@@ -384,7 +384,7 @@ def _populate_excel_sheet(book: Workbook,
             field.get('excel_heading', field['label'])).strip()
         # type_ignore_reason: incomplete typing
         cheadings_dimensions.height = max(
-            cheadings_default_height + CHEADINGS_HEIGHT,  # type: ignore
+            cheadings_default_height + CHEADINGS_HEIGHT,
             field_heading.count('\n') * LINE_HEIGHT + CHEADINGS_HEIGHT)
 
         col_heading_style = 'reco_cheading'
@@ -554,18 +554,19 @@ def _populate_excel_sheet(book: Workbook,
 
     sheet.freeze_panes = sheet[FREEZE_PANES]
 
-    apply_style(sheet.row_dimensions[HEADER_ROW], header_style)
-    apply_style(sheet.row_dimensions[CHEADINGS_ROW], cheadings_style)
-    apply_style(sheet.row_dimensions[CSTATUS_ROW], cheadings_style)
-    apply_style(sheet.row_dimensions[EXAMPLE_ROW], example_style)
+    # type_ignore_reason: incomplete typing
+    apply_style(sheet.row_dimensions[HEADER_ROW], header_style)  # type: ignore
+    apply_style(sheet.row_dimensions[CHEADINGS_ROW], cheadings_style)  # type: ignore
+    apply_style(sheet.row_dimensions[CSTATUS_ROW], cheadings_style)  # type: ignore
+    apply_style(sheet.row_dimensions[EXAMPLE_ROW], example_style)  # type: ignore
     for (c,) in sheet[EDGE_RANGE]:
         c.style = 'reco_edge'
 
     # trying to set the active cell (not working yet)
     select = "{col}{row}".format(col=DATA_FIRST_COL, row=DATA_FIRST_ROW)
     # type_ignore_reason: incomplete typing
-    sheet.sheet_view.selection[0].activeCell = select  # type: ignore
-    sheet.sheet_view.selection[0].sqref = select  # type: ignore
+    sheet.sheet_view.selection[0].activeCell = select
+    sheet.sheet_view.selection[0].sqref = select
 
     return cranges
 
@@ -652,14 +653,16 @@ def _populate_reference_sheet(sheet: Worksheet,
         REF_KEY_COL_NUM,
         recombinant_language_text(geno['title']),
         'reco_header')
-    apply_style(sheet.row_dimensions[REF_HEADER1_ROW], header1_style)
+    # type_ignore_reason: incomplete typing
+    apply_style(sheet.row_dimensions[REF_HEADER1_ROW], header1_style)  # type: ignore
     fill_cell(
         sheet,
         REF_HEADER2_ROW,
         REF_KEY_COL_NUM,
         _('Reference'),
         'reco_header2')
-    apply_style(sheet.row_dimensions[REF_HEADER2_ROW], header2_style)
+    # type_ignore_reason: incomplete typing
+    apply_style(sheet.row_dimensions[REF_HEADER2_ROW], header2_style)  # type: ignore
     for (c,) in sheet[REF_EDGE_RANGE]:
         c.style = 'reco_edge'
     sheet.row_dimensions[REF_HEADER1_ROW].height = REF_HEADER1_HEIGHT
@@ -674,7 +677,9 @@ def _populate_reference_sheet(sheet: Worksheet,
                 2,
                 ref_line[0],
                 'reco_header')
-            apply_style(sheet.row_dimensions[row_number], header1_style)
+            # type_ignore_reason: incomplete typing
+            apply_style(sheet.row_dimensions[row_number],  # type: ignore
+                        header1_style)
             sheet.row_dimensions[row_number].height = HEADER_HEIGHT
             # Reset field counter as we are doing a different resource now
             field_count = 1
@@ -733,8 +738,9 @@ def _populate_reference_sheet(sheet: Worksheet,
                 key_cell.style = 'reco_ref_attr'
                 value_cell.style = 'reco_ref_value'
                 sheet.row_dimensions[row_number].height = REF_CHOICE_HEADING_HEIGHT
-
-            apply_style(sheet.row_dimensions[row_number], REF_PAPER_STYLE)
+            # type_ignore_reason: incomplete typing
+            apply_style(sheet.row_dimensions[row_number],  # type: ignore
+                        REF_PAPER_STYLE)
 
     sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
     sheet.cell(row=1, column=RPAD_COL_NUM).value = None  # make sure rpad col exists
