@@ -29,20 +29,21 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
         ...
     :rtype: generator
     """
-    wb = load_workbook(f, read_only=True)
+    # type_ignore_reason: incomplete typing
+    wb = load_workbook(f, read_only=True)  # type: ignore
 
     for sheetname in wb.sheetnames:
         if sheetname == 'reference':
             return
         # type_ignore_reason: incomplete typing
-        sheet: Worksheet = wb[sheetname]  # type: ignore
+        sheet: Worksheet = wb[sheetname]
         rowiter = sheet.rows
         # type_ignore_reason: incomplete typing
-        organization_row = next(rowiter)  # type: ignore
+        organization_row = next(rowiter)
 
         # type_ignore_reason: incomplete typing
-        next(rowiter)  # type: ignore  /  skip label_row
-        names_row = next(rowiter)  # type: ignore
+        next(rowiter)
+        names_row = next(rowiter)
 
         org_name = organization_row[0].value
         if org_name and names_row[0].value != 'v3':
@@ -52,12 +53,12 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
                 org_name,
                 [c.value for c in names_row],
                 # type_ignore_reason: incomplete typing
-                _filter_bumf(rowiter, HEADER_ROWS_V2))  # type: ignore
+                _filter_bumf(rowiter, HEADER_ROWS_V2))
             continue
 
         # type_ignore_reason: incomplete typing
-        next(rowiter)  # type: ignore  /  skip cstatus_row
-        example_row = next(rowiter)  # type: ignore
+        next(rowiter)
+        example_row = next(rowiter)
         if example_row[0].value != 'e.g.' and example_row[0].value != 'ex.':
             raise BadExcelData('Example record on row 5 is missing')
 
