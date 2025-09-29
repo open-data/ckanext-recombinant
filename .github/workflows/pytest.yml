@@ -205,7 +205,6 @@ jobs:
 
           ckan -c /srv/app/src/ckanext-recombinant/test-core.ini db init
           ckan -c /srv/app/src/ckanext-recombinant/test-core.ini datastore set-permissions | psql -U postgres --set ON_ERROR_STOP=1
-          ckan -c /srv/app/src/ckanext-recombinant/test-core.ini canada update-triggers
           ckan -c /srv/app/src/ckanext-recombinant/test-core.ini recombinant create-triggers -a
           ckan -c /srv/app/src/ckanext-recombinant/test-core.ini db upgrade
           ckan -c /srv/app/src/ckanext-recombinant/test-core.ini db pending-migrations --apply
