@@ -44,9 +44,9 @@ def _check_matching_brackets(formula: str):
     Checks for balanced brackets.
     """
     lefts = [(t.start(), 1) for t in
-                re.finditer(r"\[", formula)]
+             re.finditer(r"\[", formula)]
     rights = [(t.start(), -1) for t in
-                re.finditer(r"\]", formula)]
+              re.finditer(r"\]", formula)]
     if len(lefts) < len(rights):
         raise RecombinantFieldError(
             'Encountered missing opening bracket [')
@@ -55,9 +55,9 @@ def _check_matching_brackets(formula: str):
             'Encountered missing closing bracket ]')
 
     lefts = [(t.start(), 1) for t in
-                re.finditer(r"\{", formula)]
+             re.finditer(r"\{", formula)]
     rights = [(t.start(), -1) for t in
-                re.finditer(r"\}", formula)]
+              re.finditer(r"\}", formula)]
     if len(lefts) < len(rights):
         raise RecombinantFieldError(
             'Encountered missing opening bracket {')
@@ -66,9 +66,9 @@ def _check_matching_brackets(formula: str):
             'Encountered missing closing bracket }')
 
     lefts = [(t.start(), 1) for t in
-                re.finditer(r"\(", formula)]
+             re.finditer(r"\(", formula)]
     rights = [(t.start(), -1) for t in
-                re.finditer(r"\)", formula)]
+              re.finditer(r"\)", formula)]
     if len(lefts) < len(rights):
         raise RecombinantFieldError(
             'Encountered missing opening bracket (')
