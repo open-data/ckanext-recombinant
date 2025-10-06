@@ -113,7 +113,7 @@ def check_excel_syntax(dataset_type: Optional[str] = None,
                             _check_matching_brackets(f.value)
                         except RecombinantFieldError as e:
                             errors = True
-                            click.echo('%s:%s.%s - syntax BAD' %
+                            click.echo('%s:%s.%s - excel_error_formula syntax BAD' %
                                        (dtype, resource['resource_name'],
                                         field['datastore_id']))
                             click.echo('\t%s' % e)
@@ -129,7 +129,7 @@ def check_excel_syntax(dataset_type: Optional[str] = None,
                             _check_matching_brackets(f.value)
                         except RecombinantFieldError as e:
                             errors = True
-                            click.echo('%s:%s.%s - syntax BAD' %
+                            click.echo('%s:%s.%s - excel_required_formula syntax BAD' %
                                        (dtype, resource['resource_name'],
                                         field['datastore_id']))
                             click.echo('\t%s' % e)
