@@ -3,6 +3,8 @@ import os
 import csv
 import sys
 import json
+import re
+from openpyxl.formula import Tokenizer
 
 from typing import Dict, List, Any, Optional, TextIO
 
@@ -20,6 +22,7 @@ from ckanext.recombinant.tables import (
 from ckanext.recombinant.read_csv import csv_data_batch
 from ckanext.recombinant.write_excel import excel_template
 from ckanext.recombinant.logic import _update_triggers
+from ckanext.recombinant.errors import RecombinantFieldError
 
 
 DATASTORE_PAGINATE = 10000  # max records for single datastore query
@@ -34,6 +37,106 @@ def recombinant():
     """Recombinant table management commands.
     """
     pass
+
+
+def _check_matching_brackets(formula: str):
+    """
+    Checks for balanced brackets.
+    """
+    lefts = [(t.start(), 1) for t in
+                re.finditer(r"\[", formula)]
+    rights = [(t.start(), -1) for t in
+                re.finditer(r"\]", formula)]
+    if len(lefts) < len(rights):
+        raise RecombinantFieldError(
+            'Encountered missing opening bracket [')
+    if len(lefts) > len(rights):
+        raise RecombinantFieldError(
+            'Encountered missing closing bracket ]')
+
+    lefts = [(t.start(), 1) for t in
+                re.finditer(r"\{", formula)]
+    rights = [(t.start(), -1) for t in
+                re.finditer(r"\}", formula)]
+    if len(lefts) < len(rights):
+        raise RecombinantFieldError(
+            'Encountered missing opening bracket {')
+    if len(lefts) > len(rights):
+        raise RecombinantFieldError(
+            'Encountered missing closing bracket }')
+
+    lefts = [(t.start(), 1) for t in
+                re.finditer(r"\(", formula)]
+    rights = [(t.start(), -1) for t in
+                re.finditer(r"\)", formula)]
+    if len(lefts) < len(rights):
+        raise RecombinantFieldError(
+            'Encountered missing opening bracket (')
+    if len(lefts) > len(rights):
+        raise RecombinantFieldError(
+            'Encountered missing closing bracket )')
+
+
+@recombinant.command(
+        short_help="Checks Excel formulae for basic syntax errors.")
+@click.argument("dataset_type", required=False)
+@click.argument("datastore_id", required=False)
+@click.option('-v', '--verbose', is_flag=True,
+              type=click.BOOL, help='Increase verbosity.')
+def check_excel_syntax(dataset_type: Optional[str] = None,
+                       datastore_id: Optional[str] = None,
+                       verbose: bool = False):
+    """
+    Check Excel formulae for basic syntax errors.
+    Checks excel_error_formula and excel_required_formula.
+
+    Full Usage:\n
+        recombinant check-excel-syntax [DATASET_TYPE [DATASTORE_ID]]
+    """
+    types = [dataset_type] if dataset_type else get_dataset_types()
+    for dtype in types:
+        geno = get_geno(dtype)
+        if verbose:
+            click.echo('Checking Excel formulae for type: %s' % dtype)
+        for resource in geno.get('resources', []):
+            if verbose:
+                click.echo('Checking Excel formulae for resource: %s' %
+                           resource['resource_name'])
+            for field in resource.get('fields', []):
+                if datastore_id and field['datastore_id'] != datastore_id:
+                    continue
+                if 'excel_error_formula' in field:
+                    formula = Tokenizer(field['excel_error_formula'])
+                    errors = False
+                    for f in formula.items:
+                        try:
+                            _check_matching_brackets(f.value)
+                        except RecombinantFieldError as e:
+                            errors = True
+                            click.echo('%s:%s.%s - syntax BAD' %
+                                       (dtype, resource['resource_name'],
+                                        field['datastore_id']))
+                            click.echo('\t%s' % e)
+                    if not errors and verbose:
+                        click.echo('%s:%s.%s - excel_error_formula syntax OK' %
+                                   (dtype, resource['resource_name'],
+                                    field['datastore_id']))
+                if 'excel_required_formula' in field:
+                    formula = Tokenizer(field['excel_required_formula'])
+                    errors = False
+                    for f in formula.items:
+                        try:
+                            _check_matching_brackets(f.value)
+                        except RecombinantFieldError as e:
+                            errors = True
+                            click.echo('%s:%s.%s - syntax BAD' %
+                                       (dtype, resource['resource_name'],
+                                        field['datastore_id']))
+                            click.echo('\t%s' % e)
+                    if not errors and verbose:
+                        click.echo('%s:%s.%s - excel_required_formula syntax OK' %
+                                   (dtype, resource['resource_name'],
+                                    field['datastore_id']))
 
 
 @recombinant.command(
