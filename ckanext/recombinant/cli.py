@@ -166,18 +166,25 @@ def show(dataset_type: Optional[str] = None,
     is_flag=True,
     help="All dataset types/resource names",
 )
+@click.option(
+    "-o",
+    "--org-name",
+    help="Organization name to create/update triggers for. E.g. tbs-sct",
+)
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
 def create_triggers(dataset_type: Optional[List[str]] = None,
                     all_types: bool = False,
-                    verbose: bool = False):
+                    verbose: bool = False,
+                    org_name: Optional[str] = None):
     """
     Create and update triggers
 
     Full Usage:\n
         recombinant create-triggers (-a | DATASET_TYPE ...)
     """
-    _create_triggers(dataset_type, all_types, verbose=verbose)
+    _create_triggers(dataset_type, all_types,
+                     verbose=verbose, org_name=org_name)
 
 
 @recombinant.command(
@@ -526,14 +533,25 @@ def _expand_resource_names(resource_names: Optional[List[str]],
 
 def _create_triggers(dataset_types: Optional[List[str]],
                      all_types: bool = False,
-                     verbose: bool = False):
+                     verbose: bool = False,
+                     org_name: Optional[str] = None):
     """
     Create and update triggers
     """
     lc = LocalCKAN()
     for dtype in _expand_dataset_types(dataset_types, all_types):
         for chromo in get_geno(dtype)['resources']:
-            _update_triggers(lc, chromo)
+            if chromo.get('per_org_triggers'):
+                # need to loop all datasets of this type...
+                orgs = [org_name] if org_name else _get_orgs()
+                packages = _get_packages(dtype, orgs)
+                existing = dict((p['owner_org'], p) for p in packages)
+                for o in orgs:
+                    if o not in existing:
+                        continue
+                    _update_triggers(lc, chromo, o)
+            else:
+                _update_triggers(lc, chromo)
 
 
 def _remove_empty(dataset_types: Optional[List[str]],
