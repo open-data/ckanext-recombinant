@@ -122,7 +122,10 @@
               <dl class="row">
                 {% block resource_data_dictionary_field scoped %}
                   {% call dictionary_field(_('ID')) %}{{ field.datastore_id }}{% endcall %}
-                  {% call dictionary_field(_('Format')) %}{{ h.recombinant_language_text(field.format_type) }}{% endcall %}
+                  {% call dictionary_field(_('Format')) %}
+                    {{ h.render_markdown(h.recombinant_language_text(field.format_type)) |
+                      replace('\n', '<br>' | safe) }}
+                  {% endcall %}
                   {{ extra_info }}
                 {% endblock %}
               </dl>
