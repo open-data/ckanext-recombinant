@@ -765,7 +765,9 @@ def _process_upload_file(lc: LocalCKAN,
                 break
             except BadExcelData as e:
                 raise e
-            except Exception:
+            except Exception as e:
+                log.info('Unexpected error while uploading Recombinant file:')
+                log.info(e)
                 # unfortunately this can fail in all sorts of ways
                 if asbool(config.get('debug', False)):
                     # on debug we want the real error
