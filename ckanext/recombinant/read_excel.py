@@ -17,6 +17,7 @@ HEADER_ROWS_V3 = 5
 
 
 def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
+               expected_sheet_names: List[str],
                file_contents: Optional[str] = None) -> Iterator[Any]:
     """
     Return a generator that opens the excel file f (name or file object)
@@ -35,6 +36,12 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
     for sheetname in wb.sheetnames:
         if sheetname == 'reference':
             return
+        if sheetname not in expected_sheet_names:
+            # NOTE: some Excel extensions and Macros create fully hidden
+            #       worksheets that act as a sort of database/index cache
+            #       for other sheets or external services such as Geo Services.
+            #       We want to skip these as those sheets will not have what we need.
+            continue
         # type_ignore_reason: incomplete typing
         sheet: Worksheet = wb[sheetname]
         rowiter = sheet.rows

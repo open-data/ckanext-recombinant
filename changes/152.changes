@@ -1,0 +1,1 @@
+Unexpected errors during PD Excel doc file uploads now log the exception. Now skips over unexpected "cache" worksheets in the Excel doc when processing uploaded files.
