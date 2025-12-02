@@ -750,7 +750,7 @@ def _process_upload_file(lc: LocalCKAN,
         (resource['name'], resource['id'])
         for resource in dataset['resources'])
 
-    upload_data = read_excel(upload_file)
+    upload_data = read_excel(upload_file, expected_sheet_names.keys())
     total_records = 0
     # type_ignore_reason: incomplete typing
     backend: DatastorePostgresqlBackend = DatastoreBackend.\
