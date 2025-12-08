@@ -19,8 +19,8 @@ HEADER_ROWS_V3 = 5
 
 
 def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
-               expected_sheet_names: List[str] = [],
-               bad_sheet_names: List[str] = [],
+               expected_sheet_names: List[str] = [],  # type: ignore[reportCallInDefaultInitializer] # noqa: E501
+               bad_sheet_names: List[str] = [],  # type: ignore[reportCallInDefaultInitializer] # noqa: E501
                file_contents: Optional[str] = None) -> Iterator[Any]:
     """
     Return a generator that opens the excel file f (name or file object)
