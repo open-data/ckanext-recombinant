@@ -8,6 +8,8 @@ from typing import Any, List, Dict, Iterator, Union, Optional, Tuple
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
 from cgi import FieldStorage
 
+from ckan.plugins.toolkit import _
+
 from ckanext.recombinant.datatypes import canonicalize
 from ckanext.recombinant.errors import BadExcelData
 
@@ -17,7 +19,8 @@ HEADER_ROWS_V3 = 5
 
 
 def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
-               expected_sheet_names: List[str],
+               expected_sheet_names: List[str] = [],
+               bad_sheet_names: List[str] = [],
                file_contents: Optional[str] = None) -> Iterator[Any]:
     """
     Return a generator that opens the excel file f (name or file object)
@@ -36,6 +39,12 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
     for sheetname in wb.sheetnames:
         if sheetname == 'reference':
             return
+        if sheetname in bad_sheet_names:
+            raise BadExcelData(_('Invalid file for this data type. ' +
+                                 'Sheet must be labeled "{0}", ' +
+                                 'but you supplied a sheet labeled "{1}"').format(
+                                 '"/"'.join(sorted(expected_sheet_names)),
+                                 sheetname))
         if sheetname not in expected_sheet_names:
             # NOTE: some Excel extensions and Macros create fully hidden
             #       worksheets that act as a sort of database/index cache
