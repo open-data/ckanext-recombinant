@@ -122,17 +122,19 @@
               </summary>
               {% snippet "recombinant/snippets/api_access.html", resource_id=resource.id, resource_name=resource.name, is_modal=false %}
             </details>
-            <details id="activity">
-              <summary><span class="glyphicon glyphicon-time"></span>
-                {{ _("Activity Stream") }}
-              </summary>
-              {% block activity_stream %}
-                <div class="mrgn-tp-lg"></div>
-                <a id="activity-stream-link" href="{{ h.url_for('activity.package_activity', id=dataset.id) }}">
-                  {{ _('Activity Stream') }}
-                </a>
-              {% endblock %}
-            </details>
+            {% if h.plugin_loaded('activity') %}
+              <details id="activity">
+                <summary><span class="glyphicon glyphicon-time"></span>
+                  {{ _("Activity Stream") }}
+                </summary>
+                {% block activity_stream %}
+                  <div class="mrgn-tp-lg"></div>
+                  <a id="activity-stream-link" href="{{ h.url_for('activity.package_activity', id=dataset.id) }}">
+                    {{ _('Activity Stream') }}
+                  </a>
+                {% endblock %}
+              </details>
+            {% endif %}
           </div>
         </div>
       {% else %}
