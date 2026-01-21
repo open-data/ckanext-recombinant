@@ -210,7 +210,8 @@ def datastore_type_format(value: Any,
 
 
 def excel_data_dictionary(geno: Dict[str, Any],
-                          published_resource: bool = False):
+                          published_resource: bool = False,
+                          org: Dict[str, Any] = {}):
     """
     return an openpyxl.Workbook object containing the field reference
     from geno, one sheet per language
@@ -236,7 +237,8 @@ def excel_data_dictionary(geno: Dict[str, Any],
             refs = []
             for rnum, chromo in enumerate(geno['resources'], 1):
                 _append_resource_ref_header(geno, refs, rnum)
-                choice_fields = recombinant_choice_fields(chromo['resource_name'])
+                choice_fields = recombinant_choice_fields(
+                    chromo['resource_name'], org_name=org.get('name', None))
                 for field in chromo['fields']:
                     if not field.get('import_template_include', True):
                         continue
@@ -252,7 +254,8 @@ def excel_data_dictionary(geno: Dict[str, Any],
                         _append_field_choices_rows(
                             refs,
                             choice_fields[field['datastore_id']],
-                            full_text_choices=full_text_choices)
+                            full_text_choices=full_text_choices,
+                            org=org)
 
             _populate_reference_sheet(sheet, geno, refs)
             # type_ignore_reason: incomplete typing
@@ -622,8 +625,12 @@ def _append_field_ref_rows(refs: List[Tuple[Optional[str], List[Any]]],
 
 def _append_field_choices_rows(refs: List[Tuple[Optional[str], List[Any]]],
                                choices: Dict[str, Any],
-                               full_text_choices: bool):
-    refs.append(('choice heading', [_('Values')]))
+                               full_text_choices: bool,
+                               org: Dict[str, Any] = {}):
+    # FIXME: check org_specific_fields
+    refs.append(('choice heading', [
+        _('Values') if not org.get('title') else
+        _('Values for ') + org_title_lang_hack(org['title'])]))
     max_length = 0
     for key, value in choices:
         if full_text_choices:
