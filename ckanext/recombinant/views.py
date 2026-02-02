@@ -441,8 +441,7 @@ def published_data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=True)
 
 
-def _schema_json(dataset_type: str, published_resource: bool = False,
-                 include_example: bool = True) -> Response:
+def _schema_json(dataset_type: str, published_resource: bool = False) -> Response:
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
@@ -527,7 +526,7 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
                 for ck, cv in choice_fields[fld['id']]:
                     choices[ck] = cv
 
-        if include_example and 'examples' in chromo:
+        if not published_resource and 'examples' in chromo:
             ex_record = chromo['examples']['record']
             example = {}
             for field in chromo['fields']:
@@ -555,9 +554,7 @@ def schema_json(dataset_type: str) -> Response:
 @recombinant.route('/recombinant-published-schema/<dataset_type>.json')
 @nocache_store
 def published_schema_json(dataset_type: str) -> Response:
-    include_example = asbool(request.args.get('include_example', False))
-    return _schema_json(dataset_type, published_resource=True,
-                        include_example=include_example)
+    return _schema_json(dataset_type, published_resource=True)
 
 
 @recombinant.route('/recombinant/<resource_name>')

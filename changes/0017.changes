@@ -1,1 +1,0 @@
-Added `include_example` URI parameter option to the `published_schema_json` route to allow for more robust DEPs.
