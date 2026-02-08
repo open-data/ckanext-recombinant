@@ -61,7 +61,7 @@ class TestRecombinantExcel(RecombinantTestBase):
         record_data = result['records']
 
         # write excel file
-        chromo = get_chromo(dataset['resources'][0]['id'])
+        chromo = get_chromo(dataset['resources'][0]['name'])
         book = excel_template(dataset['type'], org)
         append_data(book, record_data, chromo)
 
