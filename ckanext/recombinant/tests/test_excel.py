@@ -39,7 +39,7 @@ class TestRecombinantExcel(RecombinantTestBase):
         _lc, _geno, dataset = _action_get_dataset({'ignore_auth': True,
                                                    'user': self.sysadmin['name']},
                                                   {'dataset_type': 'sample',
-                                                   'owner_org': org['name']})
+                                                   'owner_org': self.org['name']})
         org = self.lc.action.organization_show(
             id=self.org['id'],
             include_datasets=False)
