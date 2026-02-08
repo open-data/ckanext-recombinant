@@ -56,7 +56,8 @@ class TestRecombinantExcel(RecombinantTestBase):
             force=True,
             method='insert',
             records=expected_records)
-        result = self.lc.action.datastore_search(resource_id=['resources'][0]['id'])
+        result = self.lc.action.datastore_search(
+            resource_id=dataset['resources'][0]['id'])
         record_data = result['records']
 
         # write excel file
