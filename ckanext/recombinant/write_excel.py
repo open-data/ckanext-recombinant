@@ -1026,7 +1026,7 @@ def org_title_lang_hack(title: str):
     """
     try:
         lang = h.lang()
-    except TypeError:
+    except (TypeError, RuntimeError):  # RuntimeError for outside flask request context
         lang = 'en'
     if lang == 'fr':
         return title.split(' | ')[-1]
