@@ -188,6 +188,7 @@ jobs:
           pip install -r test-requirements.txt
           python3 setup.py develop
           cd /srv/app/src/ckan
+          pip install -e .
           python3 setup.py develop
           pip install setuptools==70.0.0
           cd /srv/app
