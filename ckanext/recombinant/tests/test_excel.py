@@ -1,3 +1,4 @@
+from io import BytesIO
 from ckanapi import LocalCKAN
 
 from ckan.tests.factories import Organization, Sysadmin
@@ -64,6 +65,8 @@ class TestRecombinantExcel(RecombinantTestBase):
         chromo = get_chromo(dataset['resources'][0]['name'])
         book = excel_template(dataset['type'], org)
         append_data(book, record_data, chromo)
+        blob = BytesIO()
+        book.save(blob)
 
         # read excel file
         expected_sheet_names = dict(
