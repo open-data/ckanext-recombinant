@@ -35,17 +35,21 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
     """
     # type_ignore_reason: incomplete typing
     wb = load_workbook(f, read_only=True)  # type: ignore
-
     for sheetname in wb.sheetnames:
-        if sheetname == 'reference':
+
+        # NOTE: we lowercase uploaded worksheet names in the scenario
+        #       that users or Excel rename the worksheet
+        _sheetname = sheetname.lower()
+
+        if _sheetname == 'reference':
             return
-        if sheetname in bad_sheet_names:
+        if _sheetname in bad_sheet_names:
             raise BadExcelData(_('Invalid file for this data type. ' +
                                  'Sheet must be labeled "{0}", ' +
                                  'but you supplied a sheet labeled "{1}"').format(
                                  '"/"'.join(sorted(expected_sheet_names)),
-                                 sheetname))
-        if sheetname not in expected_sheet_names:
+                                 _sheetname))
+        if _sheetname not in expected_sheet_names:
             # NOTE: some Excel extensions and Macros create fully hidden
             #       worksheets that act as a sort of database/index cache
             #       for other sheets or external services such as Geo Services.
@@ -65,7 +69,7 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
         if org_name and names_row[0].value != 'v3':
             # v2 template
             yield (
-                sheetname,
+                _sheetname,
                 org_name,
                 [c.value for c in names_row],
                 # type_ignore_reason: incomplete typing
@@ -79,7 +83,7 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
             raise BadExcelData('Example record on row 5 is missing')
 
         yield (
-            sheetname,
+            _sheetname,
             names_row[1].value,
             [c.value for c in names_row[2:]],
             _filter_bumf((row[2:] for row in rowiter), HEADER_ROWS_V3))
