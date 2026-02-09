@@ -1,3 +1,4 @@
+import pytest
 from io import BytesIO
 from ckanapi import LocalCKAN
 
@@ -14,6 +15,7 @@ from ckanext.recombinant.write_excel import (
 from ckanext.recombinant.views import _process_upload_file
 
 
+@pytest.mark.usefixtures('with_request_context')
 class TestRecombinantExcel(RecombinantTestBase):
     @classmethod
     def setup_method(self, method):
@@ -26,7 +28,7 @@ class TestRecombinantExcel(RecombinantTestBase):
         self.org = Organization()
         self.lc = LocalCKAN()
 
-    def test_excel_template(self):
+    def test_excel_template(self, app):
         """
         Should be able to write and read and Excel template based
         on the Schema and DataStore records.
