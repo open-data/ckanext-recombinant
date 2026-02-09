@@ -49,10 +49,10 @@ class TestRecombinantExcel(RecombinantTestBase):
             id=self.org['id'],
             include_datasets=False)
 
-        expected_records = [
-            {'_id': 1, 'reference_number': 'sheet_test_1', 'year': 2026},
-            {'_id': 2, 'reference_number': 'sheet_test_2', 'year': 2025},
-            {'_id': 3, 'reference_number': 'sheet_test_3', 'year': 2024},
+        records = [
+            {'reference_number': 'sheet_test_1', 'year': 2026},
+            {'reference_number': 'sheet_test_2', 'year': 2025},
+            {'reference_number': 'sheet_test_3', 'year': 2024},
         ]
 
         # setup sample ds data
@@ -60,17 +60,17 @@ class TestRecombinantExcel(RecombinantTestBase):
             resource_id=dataset['resources'][0]['id'],
             force=True,
             method='insert',
-            records=expected_records)
+            records=records)
 
         # reference_number is primary key in sample, can update year
-        for r in expected_records:
+        for r in records:
             r['year'] = 2001
-        expected_records.append({'_id': 4, 'reference_number': 'sheet_test_new', 'year': 2026})
+        records.append({'reference_number': 'sheet_test_new', 'year': 2026})
 
         # write excel file, should not raise any exceptions
         chromo = get_chromo(dataset['resources'][0]['name'])
         book = excel_template(dataset['type'], org)
-        append_data(book, expected_records, chromo)
+        append_data(book, records, chromo)
         blob = BytesIO()
         book.save(blob)
 
@@ -82,6 +82,13 @@ class TestRecombinantExcel(RecombinantTestBase):
 
         result = self.lc.action.datastore_search(
             resource_id=dataset['resources'][0]['id'])
+
+        expected_records = [
+            {'_id': 1, 'reference_number': 'sheet_test_1', 'year': 2001},
+            {'_id': 2, 'reference_number': 'sheet_test_2', 'year': 2001},
+            {'_id': 3, 'reference_number': 'sheet_test_3', 'year': 2001},
+            {'_id': 4, 'reference_number': 'sheet_test_new', 'year': 2026},
+        ]
 
         assert result['total'] == 4
         assert result['records'] == expected_records
