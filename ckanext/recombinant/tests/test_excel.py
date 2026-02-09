@@ -1,10 +1,13 @@
 import pytest
+import flask
+import mock
 from io import BytesIO
 from ckanapi import LocalCKAN
 
 from ckan.tests.factories import Organization, Sysadmin
 from ckanext.recombinant.tests import RecombinantTestBase
 
+from ckan import model
 from ckan.plugins.toolkit import config
 from ckanext.recombinant.tables import _get_plugin, get_chromo
 from ckanext.recombinant.logic import _action_get_dataset
@@ -72,7 +75,10 @@ class TestRecombinantExcel(RecombinantTestBase):
         book.save(blob)
 
         # read excel file, should not raise any exceptions
-        _process_upload_file(self.lc, dataset, blob, {}, dry_run=False)
+        current_user = model.User.get(self.sysadmin['name'])
+        with mock.patch('ckan.lib.helpers.current_user', current_user):
+            flask.g.user = self.sysadmin['name']
+            _process_upload_file(self.lc, dataset, blob, {}, dry_run=False)
 
         result = self.lc.action.datastore_search(
             resource_id=dataset['resources'][0]['id'])
