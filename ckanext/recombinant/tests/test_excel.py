@@ -5,14 +5,13 @@ from ckan.tests.factories import Organization, Sysadmin
 from ckanext.recombinant.tests import RecombinantTestBase
 
 from ckan.plugins.toolkit import config
-from ckanext.recombinant.tables import _get_plugin, get_chromo, get_geno
+from ckanext.recombinant.tables import _get_plugin, get_chromo
 from ckanext.recombinant.logic import _action_get_dataset
-from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.write_excel import (
     excel_template,
     append_data
 )
-from ckanext.recombinant.helpers import recombinant_get_types
+from ckanext.recombinant.views import _process_upload_file
 
 
 class TestRecombinantExcel(RecombinantTestBase):
@@ -57,38 +56,24 @@ class TestRecombinantExcel(RecombinantTestBase):
             force=True,
             method='insert',
             records=expected_records)
-        result = self.lc.action.datastore_search(
-            resource_id=dataset['resources'][0]['id'])
-        record_data = result['records']
 
-        # write excel file
+        # reference_number is primary key in sample, can update year
+        for r in expected_records:
+            r['year'] = 2001
+        expected_records.append({'reference_number': 'sheet_test_new', 'year': 2026})
+
+        # write excel file, should not raise any exceptions
         chromo = get_chromo(dataset['resources'][0]['name'])
         book = excel_template(dataset['type'], org)
-        append_data(book, record_data, chromo)
+        append_data(book, expected_records, chromo)
         blob = BytesIO()
         book.save(blob)
 
-        # read excel file
-        expected_sheet_names = dict(
-            (resource['name'], resource['id'])
-            for resource in dataset['resources'])
-        bad_types = recombinant_get_types()
-        bad_types.remove(dataset['type'])
-        bad_sheet_names = []
-        for bt in bad_types:
-            brs = get_geno(bt).get('resources', [])
-            bad_sheet_names += [br['resource_name'] for br in brs]
-        upload_data = read_excel(book, expected_sheet_names.keys(), bad_sheet_names)
-        sheet_name, org_name, column_names, rows = next(upload_data)
+        # read excel file, should not raise any exceptions
+        _process_upload_file(self.lc, dataset, blob, {}, dry_run=False)
 
-        while column_names and column_names[-1] is None:
-            column_names.pop()
+        result = self.lc.action.datastore_search(
+            resource_id=dataset['resources'][0]['id'])
 
-        records = get_records(rows, [f for f in chromo['fields']],
-                              chromo.get('datastore_primary_key', []), {})
-
-        assert sheet_name == dataset['resources'][0]['name']
-        assert org_name == org['name']
-        assert column_names == ['reference_number', 'year']
-        assert len(records) == 3
-        assert records == expected_records
+        assert result['total'] == 4
+        assert result['records'] == expected_records
