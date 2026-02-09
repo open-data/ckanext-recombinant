@@ -50,9 +50,9 @@ class TestRecombinantExcel(RecombinantTestBase):
             include_datasets=False)
 
         expected_records = [
-            {'reference_number': 'sheet_test_1', 'year': 2026},
-            {'reference_number': 'sheet_test_2', 'year': 2025},
-            {'reference_number': 'sheet_test_3', 'year': 2024},
+            {'_id': 1, 'reference_number': 'sheet_test_1', 'year': 2026},
+            {'_id': 2, 'reference_number': 'sheet_test_2', 'year': 2025},
+            {'_id': 3, 'reference_number': 'sheet_test_3', 'year': 2024},
         ]
 
         # setup sample ds data
@@ -65,7 +65,7 @@ class TestRecombinantExcel(RecombinantTestBase):
         # reference_number is primary key in sample, can update year
         for r in expected_records:
             r['year'] = 2001
-        expected_records.append({'reference_number': 'sheet_test_new', 'year': 2026})
+        expected_records.append({'_id': 4, 'reference_number': 'sheet_test_new', 'year': 2026})
 
         # write excel file, should not raise any exceptions
         chromo = get_chromo(dataset['resources'][0]['name'])
