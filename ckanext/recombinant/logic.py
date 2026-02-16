@@ -1,7 +1,7 @@
 from six import string_types
 from ckan.plugins.toolkit import _, chained_action, h, side_effect_free
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from ckan.types import Context, DataDict, Action, ChainedAction
 
 from sqlalchemy import and_
@@ -301,8 +301,20 @@ def _update_datastore(lc: LocalCKAN,
                     new_fields.append(f)
                 fields = new_fields
 
-        trigger_names = _update_triggers(lc, chromo)
+        res_dict = lc.action.resource_show(id=resource_id)
+        pkg_dict = lc.action.package_show(id=res_dict['package_id'])
+        org_id = pkg_dict['owner_org']
 
+        # allow for fallback values from another table
+        fallback_table = chromo.get('datastore_fallback_table', None)
+        if fallback_table:
+            for _chromo in geno['resources']:
+                # try to get the resource id from chromo name
+                if fallback_table == _chromo['resource_name']:
+                    fallback_table = resource_ids[_chromo['resource_name']]
+                    break
+
+        # make the foreign key maps
         chromo_foreign_keys = chromo.get('datastore_foreign_keys', None)
         foreign_keys = {}
         if chromo_foreign_keys:
@@ -316,6 +328,11 @@ def _update_datastore(lc: LocalCKAN,
                 else:
                     foreign_keys[f_table] = field_map
 
+        trigger_names = _update_triggers(lc, chromo,
+                                         org_id=org_id,
+                                         fallback_table=fallback_table,
+                                         foreign_keys=foreign_keys)
+
         lc.action.datastore_create(
             resource_id=resource_id,
             fields=fields,
@@ -327,7 +344,10 @@ def _update_datastore(lc: LocalCKAN,
             force=True)
 
 
-def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
+def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any],
+                     org_id: Optional[str] = None,
+                     fallback_table: Optional[str] = None,
+                     foreign_keys: Optional[Dict[str, Any]] = None) -> List[str]:
     definitions = dict(chromo.get('trigger_strings', {}))
     trigger_names = []
 
@@ -366,6 +386,26 @@ def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
                 pass  # normal users won't be able to reset triggers
         else:
             trigger_names.append(tr)
+
+    # TODO: do fallback values here...
+    if fallback_table:
+        trigger_name = '%s_fallback_values_%s' % (chromo['resource_name'], org_id)
+        trigger_names.append(trigger_name)
+        trigger_string = """
+
+        """
+        try:
+            lc.action.datastore_function_create(
+                name=trigger_name,
+                or_replace=True,
+                rettype='trigger',
+                definition=str(trigger_string).format(**dict(
+                    (dkey, _pg_value(dvalue))
+                    for dkey, dvalue in definitions.items())))
+        except NotAuthorized:
+            pass  # normal users won't be able to reset triggers
+
+
     return trigger_names
 
 
