@@ -1,6 +1,8 @@
 # CKANEXT Recombinant
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/open-data/ckanext-recombinant/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/open-data/ckanext-recombinant/tree/master)
+[![Tests](https://github.com/open-data/ckanext-recombinant/actions/workflows/test.yml/badge.svg)](https://github.com/open-data/ckanext-recombinant/actions/workflows/test.yml)
+
+[![CodeCov](https://codecov.io/github/open-data/ckanext-recombinant/graph/badge.svg?token=aXdmn98Yu2)](https://codecov.io/github/open-data/ckanext-recombinant)
 
 | Table of Contents    |
 | -------- |

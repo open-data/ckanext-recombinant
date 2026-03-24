@@ -8,6 +8,8 @@ from typing import Any, List, Dict, Iterator, Union, Optional, Tuple
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
 from cgi import FieldStorage
 
+from ckan.plugins.toolkit import _
+
 from ckanext.recombinant.datatypes import canonicalize
 from ckanext.recombinant.errors import BadExcelData
 
@@ -17,6 +19,8 @@ HEADER_ROWS_V3 = 5
 
 
 def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
+               expected_sheet_names: List[str] = [],  # type: ignore[reportCallInDefaultInitializer] # noqa: E501
+               bad_sheet_names: List[str] = [],  # type: ignore[reportCallInDefaultInitializer] # noqa: E501
                file_contents: Optional[str] = None) -> Iterator[Any]:
     """
     Return a generator that opens the excel file f (name or file object)
@@ -29,40 +33,57 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
         ...
     :rtype: generator
     """
-    wb = load_workbook(f, read_only=True)
-
+    # type_ignore_reason: incomplete typing
+    wb = load_workbook(f, read_only=True)  # type: ignore
     for sheetname in wb.sheetnames:
-        if sheetname == 'reference':
+
+        # NOTE: we lowercase uploaded worksheet names in the scenario
+        #       that users or Excel rename the worksheet
+        _sheetname = sheetname.lower()
+
+        if _sheetname == 'reference':
             return
+        if _sheetname in bad_sheet_names:
+            raise BadExcelData(_('Invalid file for this data type. ' +
+                                 'Sheet must be labeled "{0}", ' +
+                                 'but you supplied a sheet labeled "{1}"').format(
+                                 '"/"'.join(sorted(expected_sheet_names)),
+                                 _sheetname))
+        if _sheetname not in expected_sheet_names:
+            # NOTE: some Excel extensions and Macros create fully hidden
+            #       worksheets that act as a sort of database/index cache
+            #       for other sheets or external services such as Geo Services.
+            #       We want to skip these as those sheets will not have what we need.
+            continue
         # type_ignore_reason: incomplete typing
-        sheet: Worksheet = wb[sheetname]  # type: ignore
+        sheet: Worksheet = wb[sheetname]
         rowiter = sheet.rows
         # type_ignore_reason: incomplete typing
-        organization_row = next(rowiter)  # type: ignore
+        organization_row = next(rowiter)
 
         # type_ignore_reason: incomplete typing
-        next(rowiter)  # type: ignore  /  skip label_row
-        names_row = next(rowiter)  # type: ignore
+        next(rowiter)
+        names_row = next(rowiter)
 
         org_name = organization_row[0].value
         if org_name and names_row[0].value != 'v3':
             # v2 template
             yield (
-                sheetname,
+                _sheetname,
                 org_name,
                 [c.value for c in names_row],
                 # type_ignore_reason: incomplete typing
-                _filter_bumf(rowiter, HEADER_ROWS_V2))  # type: ignore
+                _filter_bumf(rowiter, HEADER_ROWS_V2))
             continue
 
         # type_ignore_reason: incomplete typing
-        next(rowiter)  # type: ignore  /  skip cstatus_row
-        example_row = next(rowiter)  # type: ignore
+        next(rowiter)
+        example_row = next(rowiter)
         if example_row[0].value != 'e.g.' and example_row[0].value != 'ex.':
             raise BadExcelData('Example record on row 5 is missing')
 
         yield (
-            sheetname,
+            _sheetname,
             names_row[1].value,
             [c.value for c in names_row[2:]],
             _filter_bumf((row[2:] for row in rowiter), HEADER_ROWS_V3))

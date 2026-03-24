@@ -772,7 +772,16 @@ def _process_upload_file(lc: LocalCKAN,
         (resource['name'], resource['id'])
         for resource in dataset['resources'])
 
-    upload_data = read_excel(upload_file)
+    bad_types: List[str] = h.recombinant_get_types()
+    bad_types.remove(dataset['type'])
+    bad_sheet_names = []
+    for bt in bad_types:
+        brs = get_geno(bt).get('resources', [])
+        bad_sheet_names += [br['resource_name'] for br in brs]
+
+    # type_ignore_reason: incomplete typing
+    upload_data = read_excel(upload_file, expected_sheet_names.keys(),  # type: ignore
+                             bad_sheet_names)
     total_records = 0
     # type_ignore_reason: incomplete typing
     backend: DatastorePostgresqlBackend = DatastoreBackend.\
@@ -787,7 +796,9 @@ def _process_upload_file(lc: LocalCKAN,
                 break
             except BadExcelData as e:
                 raise e
-            except Exception:
+            except Exception as e:
+                log.info('Unexpected error while uploading Recombinant file:')
+                log.info(e)
                 # unfortunately this can fail in all sorts of ways
                 if asbool(config.get('debug', False)):
                     # on debug we want the real error

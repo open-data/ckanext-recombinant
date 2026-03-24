@@ -1,0 +1,23 @@
+# .coveragerc
+[report]
+omit =
+    */__init__.py
+    ckanext/recombinant/tests/
+    ckanext/recombinant/migration/
+    ckanext/recombinant/i18n/
+    ckanext/recombinant/assets/
+    ckanext/recombinant/public/
+    ckanext/recombinant/strings.py
+    ckanext/recombinant/extract.py
+    bin/
+    build/
+    conf/
+    links/
+    node_modules/
+    docs/
+    samples/
+    ckanext_recombinant.egg-info/
+    changes/
+    .github/
+    .pytest_cache/
+    setup.py
