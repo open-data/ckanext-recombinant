@@ -4,7 +4,7 @@ from markupsafe import Markup
 
 from typing import Dict, Any, Optional, List, Union
 
-from ckan.plugins.toolkit import c, config
+from ckan.plugins.toolkit import c, config, get_action
 from ckan.plugins.toolkit import _ as gettext
 import ckanapi
 from ckan.lib.helpers import lang
@@ -153,10 +153,12 @@ def recombinant_org_specific_fields(resource_name: str) -> Dict[str, Any]:
         x for trigger in chromo.get('per_org_triggers', {}).values() for x in trigger)
 
 
-def recombinant_choice_fields(resource_name: str,
-                              all_languages: bool = False,
-                              prefer_lang: Optional[str] = None,
-                              org_name: Optional[str] = None) -> Dict[str, Any]:
+def recombinant_choice_fields(
+        resource_name: str,
+        all_languages: bool = False,
+        prefer_lang: Optional[str] = None,
+        org_name: Optional[str] = None,
+        for_published_resource: Optional[bool] = False) -> Dict[str, Any]:
     """
     Return a datastore_id: choices dict from the resource definition
     that contain lists of choices, with labels pre-translated
@@ -189,7 +191,7 @@ def recombinant_choice_fields(resource_name: str,
             key_fn = None  # type: ignore
 
         exclude_choices = f.get('exclude_choices', [])
-        if f['datastore_id'] in org_specific_fields:
+        if f['datastore_id'] in org_specific_fields and not for_published_resource:
             _filter_choices_for_org(choices, org_name)
         out[f['datastore_id']] = [
             (v, choices[v] if all_languages
@@ -205,6 +207,57 @@ def recombinant_choice_fields(resource_name: str,
             build_choices(f, _read_choices_file(chromo, f))
 
     return out
+
+
+def recombinant_choice_field_valid_orgs(
+        resource_name: str, field_id: str,
+        prefer_lang: Optional[str] = None) -> Dict[str, Any]:
+    """
+
+    """
+    chromo = recombinant_get_chromo(resource_name)
+    if not chromo:
+        return {}
+
+    org_specific_fields = set(
+        x for trigger in chromo.get('per_org_triggers', {}).values() for x in trigger)
+
+    if field_id not in org_specific_fields:
+        return {}
+
+    recombinant_field = None
+    for f in chromo['fields']:
+        if f['datastore_id'] == field_id:
+            recombinant_field = f
+            break
+
+    if not recombinant_field:
+        return {}
+
+    choices = None
+    if 'choices' in recombinant_field:
+        choices = recombinant_field['choices']
+    elif 'choices_file' in f and '_path' in chromo:
+        choices = _read_choices_file(chromo, f)
+
+    if not choices:
+        return {}
+
+    keyed_orgs = {}
+    orgs = get_action('organization_list')({'ignore_auth': True}, {
+        'include_dataset_count': False,
+        'all_fields': True,
+        'include_extras': True,
+    })
+    for o in orgs:
+        keyed_orgs[o['name']] = recombinant_language_text(
+            o['title_translated'], prefer_lang) if \
+                'title_translated' in o else o['title']
+
+    # TODO: put org names and titles for the choices...
+    # FIXME: do we just do this in our yaml choices file so we do not have to always do it on the fly??
+
+    return {}
 
 
 def _read_choices_file(chromo: Dict[str, Any], f: Dict[str, Any]) -> Dict[str, Any]:

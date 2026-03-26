@@ -379,7 +379,8 @@ def _populate_excel_sheet(book: Workbook,
         else sheet.sheet_format.customHeight if sheet.sheet_format.customHeight \
         else sheet.sheet_format.defaultRowHeight
 
-    choice_fields = recombinant_choice_fields(chromo['resource_name'])
+    choice_fields = recombinant_choice_fields(chromo['resource_name'],
+                                              org_name=org.get('name', None))
     col_letter = 'C'
 
     for col_num, field in template_cols_fields(chromo):

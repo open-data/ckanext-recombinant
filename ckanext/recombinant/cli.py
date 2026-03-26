@@ -540,6 +540,8 @@ def _create_triggers(dataset_types: Optional[List[str]],
     """
     lc = LocalCKAN()
     for dtype in _expand_dataset_types(dataset_types, all_types):
+        if verbose:
+            click.echo('(re)Creating DataStore DB triggers for %s' % dtype)
         for chromo in get_geno(dtype)['resources']:
             if chromo.get('per_org_triggers'):
                 # need to loop all datasets of this type...
@@ -549,9 +551,17 @@ def _create_triggers(dataset_types: Optional[List[str]],
                 for o in orgs:
                     if o not in existing:
                         continue
+                    if verbose:
+                        click.echo('(re)Creating %s DataStore '
+                                   'DB triggers for Organization %s' % (dtype, o))
                     _update_triggers(lc, chromo, o)
+                    if verbose:
+                        click.echo('Successfully (re)created %s '
+                                   'triggers for Organization %s' % (dtype, o))
             else:
                 _update_triggers(lc, chromo)
+                if verbose:
+                    click.echo('Successfully (re)created triggers for %s' % dtype)
 
 
 def _remove_empty(dataset_types: Optional[List[str]],
