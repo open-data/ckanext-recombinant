@@ -340,6 +340,7 @@ def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any],
         x for trigger in chromo.get('per_org_triggers', {}).values() for x in trigger)
 
     for f in chromo['fields']:
+        # TODO: pass in an orgs list instead, and try to have it not constantly yaml load
         if 'choices' in f:
             if f['datastore_id'] in definitions:
                 raise RecombinantConfigurationError(

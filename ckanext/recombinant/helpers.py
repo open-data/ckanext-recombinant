@@ -213,7 +213,8 @@ def recombinant_choice_field_valid_orgs(
         resource_name: str, field_id: str,
         prefer_lang: Optional[str] = None) -> Dict[str, Any]:
     """
-
+    Return Organization translated titles for a Recombinant choice
+    field which uses valid_orgs
     """
     chromo = recombinant_get_chromo(resource_name)
     if not chromo:
@@ -254,10 +255,24 @@ def recombinant_choice_field_valid_orgs(
             o['title_translated'], prefer_lang) if \
                 'title_translated' in o else o['title']
 
+    return_dict = {}
+    for choice_key, choice_obj in choices.items():
+        if 'valid_orgs' not in choice_obj:
+            continue
+        _valid_orgs = choice_obj['valid_orgs']
+        if isinstance(_valid_orgs, dict):
+            _valid_orgs = _valid_orgs.keys()
+        if choice_key not in return_dict:
+            return_dict[choice_key] = {}
+        for o in _valid_orgs:
+            if o not in keyed_orgs:
+                return_dict[choice_key] = choice_key
+                continue
+            return_dict[choice_key] = keyed_orgs[o]
     # TODO: put org names and titles for the choices...
     # FIXME: do we just do this in our yaml choices file so we do not have to always do it on the fly??
 
-    return {}
+    return return_dict
 
 
 def _read_choices_file(chromo: Dict[str, Any], f: Dict[str, Any]) -> Dict[str, Any]:
