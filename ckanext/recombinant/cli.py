@@ -915,7 +915,8 @@ def _template(dataset_type: str,
         tmpl.save(out)  # type: ignore
 
 
-@recombinant.command()
+@recombinant.command(short_help=
+    "Run all the sql scripts from recombinant.reference_definitions")
 def create_ref_tables():
     """
     Run all the sql scripts from recombinant.reference_definitions
