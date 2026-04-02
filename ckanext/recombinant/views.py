@@ -3,7 +3,7 @@ from flask_babel import force_locale
 import re
 import simplejson as json
 
-from typing import Union, Dict, Tuple, Any, List
+from typing import Union, Dict, Tuple, Any, List, Optional
 from ckan.types import Response
 
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
@@ -441,7 +441,8 @@ def published_data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=True)
 
 
-def _schema_json(dataset_type: str, published_resource: bool = False) -> Response:
+def _schema_json(dataset_type: str, published_resource: bool = False,
+                 org_name: Optional[str] = None) -> Response:
     try:
         geno = get_geno(dataset_type)
     except RecombinantException:
@@ -472,7 +473,8 @@ def _schema_json(dataset_type: str, published_resource: bool = False) -> Respons
         schema['resources'].append(resource)
         choice_fields = recombinant_choice_fields(
             chromo['resource_name'],
-            all_languages=True)
+            all_languages=True,
+            org_name=org_name)
 
         pkeys = aslist(chromo['datastore_primary_key'])
 

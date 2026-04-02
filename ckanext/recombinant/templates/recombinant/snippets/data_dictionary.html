@@ -1,4 +1,5 @@
-{% set choice_fields=h.recombinant_choice_fields(chromo.resource_name) %}
+{% set choice_fields=h.recombinant_choice_fields(chromo.resource_name, org_name=organization.name if organization else none, for_published_resource=is_published_resource) %}
+{% set org_specifc_fields = chromo.get('org_specific_fields', []) %}
 
 <h3>{{ _("Data Dictionary") }}</h3>
 
@@ -56,7 +57,7 @@
         {% endcall %}
         {% set choices = choice_fields.get(field.datastore_id) %}
         {% if choices %}
-          {% call dictionary_field(_('Choices')) %}
+          {% call dictionary_field(_('Choices') if is_published_resource or field.datastore_id not in org_specifc_fields or not organization else _('Choices for ') ~ organization_display_name(organization, 120)) %}
             <table class="table table-striped table-bordered table-condensed" data-module-show-label="{{ _('Show more') }}" data-module-hide-label="{{ _('Hide') }}" data-module="table-toggle-more">
               <thead>
                 <tr>

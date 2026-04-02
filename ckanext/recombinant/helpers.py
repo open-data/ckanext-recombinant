@@ -1,6 +1,7 @@
 import json
 import os.path
 from markupsafe import Markup
+import sqlalchemy as sa
 
 from typing import Dict, Any, Optional, List, Union
 
@@ -8,6 +9,13 @@ from ckan.plugins.toolkit import c, config
 from ckan.plugins.toolkit import _ as gettext
 import ckanapi
 from ckan.lib.helpers import lang
+
+from ckanext.datastore.backend import DatastoreBackend
+from ckanext.datastore.backend.postgres import (
+    DatastorePostgresqlBackend,
+    identifier,
+    literal_string
+)
 
 from ckanext.recombinant.tables import (
     get_chromo, get_geno, get_dataset_types,
@@ -129,9 +137,12 @@ def recombinant_example(resource_name: str,
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
 
 
-def recombinant_choice_fields(resource_name: str,
-                              all_languages: bool = False,
-                              prefer_lang: Optional[str] = None) -> Dict[str, Any]:
+def recombinant_choice_fields(
+        resource_name: str,
+        all_languages: bool = False,
+        prefer_lang: Optional[str] = None,
+        org_name: Optional[str] = None,
+        for_published_resource: Optional[bool] = False) -> Dict[str, Any]:
     """
     Return a datastore_id: choices dict from the resource definition
     that contain lists of choices, with labels pre-translated
@@ -168,11 +179,34 @@ def recombinant_choice_fields(resource_name: str,
             if v not in exclude_choices
         ]
 
+    def build_choices_psql(f: Dict[str, Any]):
+        # type_ignore_reason: incomplete typing
+        backend: DatastorePostgresqlBackend = DatastoreBackend.\
+            get_active_backend()  # type: ignore
+        with backend._get_read_engine().begin() as connection:
+            filter_clause=f.get('choices_filter_query', '')
+            if filter_clause and r"{org}" in filter_clause and not org_name:
+                filter_clause = ''  # if no org_name passed, cannot query it
+            filter_clause = filter_clause.format(
+                org=literal_string(org_name) if org_name else '')
+            results = connection.execute(sa.text("""
+                SELECT * FROM {ref_table} {filter_clause}
+                ORDER BY {ds_id} ASC;
+            """.format(
+                ref_table=identifier(f['choices_reference_table']),
+                filter_clause=filter_clause,
+                ds_id=identifier(f['datastore_id'])
+            ))).mappings().fetchall()
+        # TODO: output results[f['datastore_id']], results['label_en|label_fr'] etc...
+        out[f['datastore_id']] = []
+
     for f in chromo['fields']:
         if 'choices' in f:
             build_choices(f, f['choices'])
         elif 'choices_file' in f and '_path' in chromo:
             build_choices(f, _read_choices_file(chromo, f))
+        elif 'choices_reference_table' in f:
+            build_choices_psql(f)
 
     return out
 
