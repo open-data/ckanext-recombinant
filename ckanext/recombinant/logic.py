@@ -4,7 +4,10 @@ from ckan.plugins.toolkit import _, chained_action, h, side_effect_free
 from typing import Dict, Any, List, Tuple
 from ckan.types import Context, DataDict, Action, ChainedAction
 
-from sqlalchemy import and_
+from sqlalchemy import (
+    and_,
+    text as sa_text
+)
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
@@ -20,7 +23,12 @@ from ckanext.recombinant.errors import (
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
 
-from ckanext.datastore.backend.postgres import literal_string
+from ckanext.datastore.backend import DatastoreBackend
+from ckanext.datastore.backend.postgres import (
+    DatastorePostgresqlBackend,
+    identifier,
+    literal_string
+)
 
 
 def recombinant_create(context: Context, data_dict: DataDict):
@@ -346,6 +354,24 @@ def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
                     "name is required for the {name} field choices".format(
                         name=f['datastore_id']))
             definitions[f['datastore_id']] = sorted(_read_choices_file(chromo, f))
+        elif 'choices_reference_table' in f:
+            if f['datastore_id'] in definitions:
+                raise RecombinantConfigurationError(
+                    "trigger_string {name} can't be used because that "
+                    "name is required for the {name} field choices".format(
+                        name=f['datastore_id']))
+            # type_ignore_reason: incomplete typing
+            backend: DatastorePostgresqlBackend = DatastoreBackend.\
+                get_active_backend()  # type: ignore
+            with backend._get_read_engine().begin() as connection:
+                results = connection.execute(sa_text("""
+                    SELECT {ds_id} FROM {ref_table}
+                    ORDER BY {ds_id} ASC;
+                """.format(
+                    ref_table=identifier(f['choices_reference_table']),
+                    ds_id=identifier(f['datastore_id'])
+                ))).fetchall()
+                definitions[f['datastore_id']] = [r[0] for r in results]
 
     for tr in chromo.get('triggers', []):
         if isinstance(tr, dict):
