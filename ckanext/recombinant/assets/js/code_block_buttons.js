@@ -72,5 +72,18 @@ window.addEventListener('load', function(){
 
     }
 
+    // Rebind fix for wet-boew tab redraw
+    let dictionaryTables = $('table.recombinant-data-dictionary[data-module="table-toggle-more"]');
+
+    if( dictionaryTables && dictionaryTables.length > 0 && typeof ckan != 'undefined' ){
+
+      $(dictionaryTables).each(function(_index, _table){
+
+        ckan.module.initialize(_table);
+
+      });
+
+    }
+
   });
 });

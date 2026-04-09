@@ -13,8 +13,7 @@ from ckan.lib.helpers import lang
 from ckanext.datastore.backend import DatastoreBackend
 from ckanext.datastore.backend.postgres import (
     DatastorePostgresqlBackend,
-    identifier,
-    literal_string
+    identifier
 )
 
 from ckanext.recombinant.tables import (
@@ -141,8 +140,7 @@ def recombinant_choice_fields(
         resource_name: str,
         all_languages: bool = False,
         prefer_lang: Optional[str] = None,
-        org_name: Optional[str] = None,
-        for_published_resource: Optional[bool] = False) -> Dict[str, Any]:
+        org_name: Optional[str] = None) -> Dict[str, Any]:
     """
     Return a datastore_id: choices dict from the resource definition
     that contain lists of choices, with labels pre-translated
@@ -184,11 +182,10 @@ def recombinant_choice_fields(
         backend: DatastorePostgresqlBackend = DatastoreBackend.\
             get_active_backend()  # type: ignore
         with backend._get_read_engine().begin() as connection:
-            filter_clause=f.get('choices_filter_query', '')
+            filter_clause = f.get('choices_filter_query', '')
             if filter_clause and r"{org}" in filter_clause and not org_name:
                 filter_clause = ''  # if no org_name passed, cannot query it
-            filter_clause = filter_clause.format(
-                org=literal_string(org_name) if org_name else '')
+            filter_clause = filter_clause.format(org=org_name if org_name else '')
             results = connection.execute(sa.text("""
                 SELECT * FROM {ref_table} {filter_clause}
                 ORDER BY {ds_id} ASC;
@@ -197,8 +194,13 @@ def recombinant_choice_fields(
                 filter_clause=filter_clause,
                 ds_id=identifier(f['datastore_id'])
             ))).mappings().fetchall()
-        # TODO: output results[f['datastore_id']], results['label_en|label_fr'] etc...
-        out[f['datastore_id']] = []
+        out[f['datastore_id']] = [
+            (r[f['datastore_id']],
+             dict(en=r['label_en'],
+                  fr=r['label_fr'],
+                  valid_orgs=r['org_years'])
+             if all_languages else
+             r['label_%s' % (prefer_lang or lang())]) for r in results]
 
     for f in chromo['fields']:
         if 'choices' in f:

@@ -62,11 +62,14 @@ REF_FIRST_ROW = 4
 REF_FIELD_NUM_COL, REF_FIELD_NUM_COL_NUM = 'A', 1
 REF_FIELD_NUM_MERGE = 'A{row}:B{row}'
 REF_FIELD_TITLE_HEIGHT = 24
-REF_FIELD_TITLE_MERGE = 'C{row}:D{row}'
+REF_FIELD_TITLE_MERGE = 'C{row}:E{row}'
+REF_FIELD_ATTR_MERGE = 'D{row}:E{row}'
 REF_KEY_COL, REF_KEY_COL_NUM = 'C', 3
 REF_KEY_WIDTH = 18
 REF_VALUE_COL, REF_VALUE_COL_NUM = 'D', 4
 REF_VALUE_WIDTH = 114
+REF_VALUE_ORG_COL, REF_VALUE_ORG_COL_NUM = 'E', 5
+REF_ORG_WIDTH = 25
 REF_CHOICE_HEADING_HEIGHT = 24
 REF_EDGE_RANGE = 'A1:A2'
 
@@ -74,20 +77,20 @@ DEFAULT_YEAR_MIN, DEFAULT_YEAR_MAX = '2018-50', '2018+50'
 
 DEFAULT_EDGE_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FF336B87'},
-    'Font': {'color': 'FFFFFF'}}
+    'Font': {'color': 'FFFFFFFF'}}
 DEFAULT_HEADER_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FF90AFC5'},
     'Font': {'bold': True, 'size': 16}}
 DEFAULT_CHEADING_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FF90AFC5'},
     'Alignment': {'wrapText': True},
-    'Font': {'color': '000000', 'underline': 'single'}}
+    'Font': {'color': 'FF000000', 'underline': 'single'}}
 DEFAULT_EXAMPLE_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFDDD9C4'},
     'Alignment': {'wrapText': True, 'vertical': 'top'}}
 DEFAULT_ERROR_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFC00000'},
-    'Font': {'color': 'FFFFFF'}}
+    'Font': {'color': 'FFFFFFFF'}}
 DEFAULT_REF_HEADER2_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FF90AFC5'},
     'Alignment': {'vertical': 'center'}}
@@ -97,7 +100,11 @@ REF_TITLE_STYLE = {
     'Font': {'underline': 'single'}}
 REF_ATTR_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFFFFFFF'},
-    'Font': {'color': '666666'},
+    'Font': {'color': 'FF666666'},
+    'Alignment': {'vertical': 'top'}}
+REF_SUBATTR_STYLE = {
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FF8C8351'},
+    'Font': {'color': 'FFF8F8F8', 'bold': True},
     'Alignment': {'vertical': 'top'}}
 REF_VALUE_STYLE = {
     'Alignment': {'wrapText': True, 'vertical': 'top'}}
@@ -211,7 +218,7 @@ def datastore_type_format(value: Any,
 
 def excel_data_dictionary(geno: Dict[str, Any],
                           published_resource: bool = False,
-                          org: Dict[str, Any] = {}):
+                          org: Optional[Dict[str, Any]] = None):
     """
     return an openpyxl.Workbook object containing the field reference
     from geno, one sheet per language
@@ -237,8 +244,14 @@ def excel_data_dictionary(geno: Dict[str, Any],
             refs = []
             for rnum, chromo in enumerate(geno['resources'], 1):
                 _append_resource_ref_header(geno, refs, rnum)
+
+                org_specifc_fields = chromo.get('org_specific_fields', [])
+
                 choice_fields = recombinant_choice_fields(
-                    chromo['resource_name'], org_name=org.get('name', None))
+                    chromo['resource_name'],
+                    all_languages=(published_resource and org_specifc_fields),
+                    org_name=org.get('name', None) if org else None)
+
                 for field in chromo['fields']:
                     if not field.get('import_template_include', True):
                         continue
@@ -255,7 +268,11 @@ def excel_data_dictionary(geno: Dict[str, Any],
                             refs,
                             choice_fields[field['datastore_id']],
                             full_text_choices=full_text_choices,
-                            org=org)
+                            org=org if field['datastore_id']
+                            in org_specifc_fields else None,
+                            published_resource=published_resource,
+                            org_specifc_field=field['datastore_id']
+                            in org_specifc_fields)
 
             _populate_reference_sheet(sheet, geno, refs)
             # type_ignore_reason: incomplete typing
@@ -306,6 +323,7 @@ def _build_styles(book: Workbook,
     build_named_style(book, 'reco_ref_number', REF_NUMBER_STYLE)
     build_named_style(book, 'reco_ref_title', REF_TITLE_STYLE)
     build_named_style(book, 'reco_ref_attr', REF_ATTR_STYLE)
+    build_named_style(book, 'reco_ref_subattr', REF_SUBATTR_STYLE)
     build_named_style(book, 'reco_ref_value', REF_VALUE_STYLE)
 
 
@@ -380,7 +398,7 @@ def _populate_excel_sheet(book: Workbook,
         else sheet.sheet_format.defaultRowHeight
 
     choice_fields = recombinant_choice_fields(
-        chromo['resource_name'], org_name=org.get('name', None))
+        chromo['resource_name'], org_name=org.get('name', None) if org else None)
     col_letter = 'C'
 
     for col_num, field in template_cols_fields(chromo):
@@ -464,6 +482,8 @@ def _populate_excel_sheet(book: Workbook,
         _append_field_ref_rows(refs, field, "#'{sheet}'!{col}{row}".format(
             sheet=sheet.title, col=col_letter, row=CHEADINGS_ROW))
 
+        org_specifc_fields = chromo.get('org_specific_fields', [])
+
         if field['datastore_id'] in choice_fields:
             full_text_choices = (
                 field['datastore_type'] != '_text' and field.get(
@@ -472,7 +492,10 @@ def _populate_excel_sheet(book: Workbook,
             max_choice_width = _append_field_choices_rows(
                 refs,
                 choice_fields[field['datastore_id']],
-                full_text_choices)
+                full_text_choices,
+                org=org if field['datastore_id'] in org_specifc_fields else None,
+                published_resource=False,
+                org_specifc_field=field['datastore_id'] in org_specifc_fields)
             refN = len(refs) + REF_FIRST_ROW - 2
 
             if full_text_choices:
@@ -627,18 +650,31 @@ def _append_field_ref_rows(refs: List[Tuple[Optional[str], List[Any]]],
 def _append_field_choices_rows(refs: List[Tuple[Optional[str], List[Any]]],
                                choices: Dict[str, Any],
                                full_text_choices: bool,
-                               org: Dict[str, Any] = {}):
-    refs.append(('choice heading', [
-        _('Values') if not org.get('title') else
-        _('Values for ') + org_title_lang_hack(org['title'])]))
+                               org: Optional[Dict[str, Any]] = None,
+                               published_resource: bool = False,
+                               org_specifc_field: bool = False):
+    if published_resource and org_specifc_field:
+        refs.append(('choice heading', [_('Values')]))
+        headers = [_('Value'), _('Label'), _('Valid Organizations')]
+        if full_text_choices:
+            headers = [_('Value'), _('Valid Organizations')]
+        refs.append(('choice subheading', headers))
+    else:
+        refs.append(('choice heading', [
+            _('Values') if not org or not org.get('title') else
+            _('Values for ') + org_title_lang_hack(org['title'])]))
     max_length = 0
     for key, value in choices:
+        _value = recombinant_language_text(value)
         if full_text_choices:
-            choice = ['{0}: {1}'.format(key, value)]
-        elif str(key) == value:
+            choice = ['{0}: {1}'.format(key, _value)]
+        elif str(key) == _value:
             choice = [str(key)]
         else:
-            choice = [str(key), value]
+            choice = [str(key), _value]
+        if published_resource and org_specifc_field:
+            choice.append('' if not value.get('valid_orgs') else
+                          ', '.join(value.get('valid_orgs')))
         refs.append(('choice' if not full_text_choices else
                      'choice_full_text', choice))
         max_length = max(max_length, len(choice[0]))  # used for full_text_choices
@@ -650,6 +686,8 @@ def _populate_reference_sheet(sheet: Worksheet,
                               refs: List[Tuple[Optional[str], List[Any]]]):
     field_count = 1
 
+    for i in range(1, 3):
+        sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=i))
     header1_style = dict(DEFAULT_HEADER_STYLE, **geno.get(
         'excel_header_style', {}))
     header2_style = dict(DEFAULT_REF_HEADER2_STYLE, **geno.get(
@@ -677,7 +715,7 @@ def _populate_reference_sheet(sheet: Worksheet,
 
     for row_number, (style, ref_line) in enumerate(refs, REF_FIRST_ROW - 1):
         if style == 'resource_title':
-            sheet.merge_cells('B{row}:D{row}'.format(row=row_number))
+            sheet.merge_cells('B{row}:E{row}'.format(row=row_number))
             fill_cell(
                 sheet,
                 row_number,
@@ -711,6 +749,7 @@ def _populate_reference_sheet(sheet: Worksheet,
 
             key_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
             value_cell: Cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
+            org_cell: Cell = sheet.cell(row=row_number, column=REF_VALUE_ORG_COL_NUM)
 
             if style == 'title':
                 sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))
@@ -732,19 +771,31 @@ def _populate_reference_sheet(sheet: Worksheet,
                 pad_cell.style = 'reco_example'
                 key_cell.style = 'reco_example'
                 value_cell.style = 'reco_example'
+                org_cell.style = 'reco_example'
             elif style == 'choice_full_text':
                 sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
                 pad_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
                 pad_cell.style = 'reco_example'
                 key_cell.style = 'reco_example'
                 value_cell.style = 'reco_example'
+                org_cell.style = 'reco_example'
             elif style == 'attr':
+                sheet.merge_cells(REF_FIELD_ATTR_MERGE.format(row=row_number))
                 key_cell.style = 'reco_ref_attr'
                 value_cell.style = 'reco_ref_value'
+                org_cell.style = 'reco_ref_value'
             elif style == 'choice heading':
+                sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
                 key_cell.style = 'reco_ref_attr'
                 value_cell.style = 'reco_ref_value'
+                org_cell.style = 'reco_ref_value'
                 sheet.row_dimensions[row_number].height = REF_CHOICE_HEADING_HEIGHT
+            elif style == 'choice subheading':
+                pad_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
+                pad_cell.style = 'reco_ref_subattr'
+                key_cell.style = 'reco_ref_subattr'
+                value_cell.style = 'reco_ref_subattr'
+                org_cell.style = 'reco_ref_subattr'
             # type_ignore_reason: incomplete typing
             apply_style(sheet.row_dimensions[row_number],  # type: ignore
                         REF_PAPER_STYLE)
@@ -754,6 +805,7 @@ def _populate_reference_sheet(sheet: Worksheet,
     sheet.column_dimensions[RPAD_COL].width = RPAD_WIDTH
     sheet.column_dimensions[REF_KEY_COL].width = REF_KEY_WIDTH
     sheet.column_dimensions[REF_VALUE_COL].width = REF_VALUE_WIDTH
+    sheet.column_dimensions[REF_VALUE_ORG_COL].width = REF_ORG_WIDTH
 
 
 def _populate_excel_e_sheet(sheet: Worksheet,

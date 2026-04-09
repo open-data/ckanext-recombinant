@@ -3,8 +3,6 @@
 {% block dictionary_view %}
   {% set chromo = h.recombinant_published_resource_chromo(res.id) %}
   {% if chromo %}
-    {# TODO: make org specific!!! this is the snippet for the published resource. so we need to display what options are valid for what orgs. need org names too??? #}
-    {% set choice_fields=h.recombinant_choice_fields(chromo.resource_name) %}
     <div class="module-content">
       {% snippet 'recombinant/snippets/data_dictionary.html',
         chromo=chromo, all_expanded=false, is_published_resource=true %}
