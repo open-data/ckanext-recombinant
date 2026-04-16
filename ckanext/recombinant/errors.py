@@ -30,6 +30,6 @@ def format_trigger_error(error_values: List[str]) -> Generator[str, None, None]:
     """
     for e in error_values:
         if '\uF8FF' in e:
-            yield _(e.split('\uF8FF')[0]).format(e.split('\uF8FF')[1])
+            yield _(e.split('\uF8FF')[0]).format(*e.split('\uF8FF')[1:])
         else:
             yield _(e)

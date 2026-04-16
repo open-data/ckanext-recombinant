@@ -184,7 +184,7 @@ def recombinant_choice_fields(
             get_active_backend()  # type: ignore
         with backend._get_read_engine().begin() as connection:
             filter_clause = f.get('choices_filter_query', '')
-            if filter_clause and r"{org}" in filter_clause and not org_name:
+            if filter_clause and "{org}" in filter_clause and not org_name:
                 filter_clause = ''  # if no org_name passed, cannot query it
             filter_clause = filter_clause.format(
                 org=literal_string(org_name) if org_name else '')
