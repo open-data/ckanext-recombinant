@@ -20,12 +20,7 @@ class IRecombinant(p.Interface):
     _genos = {}
     _chromos = {}
 
-    def get_choice_functions(self) -> Dict[str, Any]:
-        """
-        Python functions to be used as choices for more
-        advanced/dynamic choice options.
-        """
-        return {}
+    pass
 
 
 def _get_plugin():

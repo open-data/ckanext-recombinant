@@ -2,6 +2,7 @@ import json
 import os.path
 from markupsafe import Markup
 import sqlalchemy as sa
+from datetime import datetime
 
 from typing import Dict, Any, Optional, List, Union
 
@@ -137,6 +138,19 @@ def recombinant_example(resource_name: str,
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
 
 
+def get_choices_fiscal_year(min_year: Optional[int] = 2005,
+                            max_year: Optional[int] = None,
+                            month_start: Optional[int] = 4) -> List[str]:
+    """
+    Dynamically generate choices for fiscal years.
+    """
+    if not max_year:
+        max_year = datetime.now().year if \
+            datetime.now().month >= month_start else datetime.now().year - 1
+    return [f'{i}-{i + 1}'
+            for i in range(min_year, max_year + 1)]
+
+
 def recombinant_choice_fields(
         resource_name: str,
         all_languages: bool = False,
@@ -211,6 +225,9 @@ def recombinant_choice_fields(
             build_choices(f, _read_choices_file(chromo, f))
         elif 'choices_reference_table' in f:
             build_choices_psql(f)
+        elif 'choices_fiscal_year' in f:
+            out[f['datastore_id']] = [
+                (v, v) for v in get_choices_fiscal_year(**f['choices_fiscal_year'])]
 
     return out
 

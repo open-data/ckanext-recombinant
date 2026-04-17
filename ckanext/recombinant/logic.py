@@ -20,12 +20,7 @@ from ckanext.recombinant.errors import (
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
 
-from ckanext.datastore.backend import DatastoreBackend
-from ckanext.datastore.backend.postgres import (
-    DatastorePostgresqlBackend,
-    identifier,
-    literal_string
-)
+from ckanext.datastore.backend.postgres import literal_string
 
 
 def recombinant_create(context: Context, data_dict: DataDict):
