@@ -672,7 +672,7 @@ def _append_field_choices_rows(refs: List[Tuple[Optional[str], List[Any]]],
             choice = [str(key)]
         else:
             choice = [str(key), _value]
-        if published_resource and org_specifc_field:
+        if published_resource and org_specifc_field and isinstance(value, dict):
             choice.append(', '.join(value.get('valid_orgs', {}).keys()))
         refs.append(('choice' if not full_text_choices else
                      'choice_full_text', choice))
