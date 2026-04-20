@@ -1,0 +1,1 @@
+Added a new subcommand `create-ref-tables` which executes pSQL scripts defined in the `recombinant.reference_definitions` config option. This allows for creation of advanced DataStore tables outside of the CKAN framework. These tables are not editable by CKAN users.

@@ -1,5 +1,5 @@
 {% set org_specifc_fields = chromo.get('org_specific_fields', []) %}
-{% set choice_fields=h.recombinant_choice_fields(chromo.resource_name, all_languages=(is_published_resource and org_specifc_fields|length > 0), org_name=organization.name if organization else none) %}
+{% set choice_fields=h.recombinant_choice_fields(chromo.resource_name, all_languages=(is_published_resource and org_specifc_fields), org_name=organization.name if organization else none) %}
 
 <h3>{{ _("Data Dictionary") }}</h3>
 
@@ -21,11 +21,11 @@
   </div>
 </div>
 
-{% macro dictionary_field(label, col1_class='col-md-3', col2_class='col-md-9') %}
+{% macro dictionary_field(label, columns='narrow') %}
   {% set content = caller().strip() %}
   {% if content %}
-    <dt class="{{ col1_class }} text-secondary">{{ label }}</dt>
-    <dd class="{{ col2_class }}">{{ content }}</dd>
+    <dt class="{{ 'col-md-3' if columns == 'narrow' else 'col-md-12' }} text-secondary">{{ label }}</dt>
+    <dd class="{{ 'col-md-9' if columns == 'narrow' else 'col-md-12' }}">{{ content }}</dd>
   {% endif %}
 {% endmacro %}
 
@@ -58,18 +58,16 @@
         {% endcall %}
         {% set choices = choice_fields.get(field.datastore_id) %}
         {% if choices %}
-          {% set _class1 = 'col-md-3' %}
-          {% set _class2 = 'col-md-9' %}
+          {% set _colstyle = 'narrow' %}
           {% if is_published_resource or field.datastore_id not in org_specifc_fields or not organization %}
             {% set _label = _('Choices') %}
             {% if field.datastore_id in org_specifc_fields %}{# wider table #}
-              {% set _class1 = 'col-md-12' %}
-              {% set _class2 = 'col-md-12' %}
+              {% set _colstyle = 'wide' %}
             {% endif %}
           {% else %}
-            {% set _label = _('Choices for ') ~ organization_display_name(organization, 120) %}
+            {% set _label = _('Choices for {}').format(organization_display_name(organization, 120)) %}
           {% endif %}
-          {% call dictionary_field(_label, col1_class=_class1, col2_class=_class2) %}
+          {% call dictionary_field(_label, columns=_colstyle) %}
             {% set table_class = 'recombinant-data-dictionary-published' if is_published_resource else 'recombinant-data-dictionary' %}
             <table class="table table-striped table-bordered table-condensed {{ table_class }}" data-module-show-label="{{ _('Show more') }}" data-module-hide-label="{{ _('Hide') }}" data-module="table-toggle-more">
               <thead>
@@ -93,7 +91,7 @@
                     <td>{{ code }}</td>
                     <td>{{ h.recombinant_language_text(desc) }}</td>
                     {% if is_published_resource and field.datastore_id in org_specifc_fields %}
-                      <td>{{ '' if not desc.get('valid_orgs') else desc.get('valid_orgs').keys()|join(', ') }}</td>
+                      <td>{{ desc.get('valid_orgs', {}).keys()|join(', ') }}</td>
                     {% endif %}
                   </tr>
                 {% endfor %}
@@ -103,7 +101,7 @@
                       <td>{{ code }}</td>
                       <td>{{ h.recombinant_language_text(desc) }}</td>
                       {% if is_published_resource and field.datastore_id in org_specifc_fields %}
-                        <td>{{ '' if not desc.get('valid_orgs') else desc.get('valid_orgs').keys()|join(', ') }}</td>
+                        <td>{{ desc.get('valid_orgs', {}).keys()|join(', ') }}</td>
                       {% endif %}
                     </tr>
                   {% endfor %}

@@ -138,9 +138,9 @@ def recombinant_example(resource_name: str,
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
 
 
-def get_choices_fiscal_year(min_year: Optional[int] = 2005,
+def get_choices_fiscal_year(min_year: int = 2005,
                             max_year: Optional[int] = None,
-                            month_start: Optional[int] = 4) -> List[str]:
+                            month_start: int = 4) -> List[str]:
     """
     Dynamically generate choices for fiscal years.
     """
@@ -209,12 +209,12 @@ def recombinant_choice_fields(
                 ref_table=identifier(f['choices_reference_table']),
                 filter_clause=filter_clause,
                 ds_id=identifier(f['datastore_id'])
-            ))).mappings().fetchall()
+            ).replace(':', r'\:'))).mappings().fetchall()  # avoid bind params
         out[f['datastore_id']] = [
             (r[f['datastore_id']],
              dict(en=r['label_en'],
                   fr=r['label_fr'],
-                  valid_orgs=r['org_years'])
+                  valid_orgs=r.get('org_years') or {})
              if all_languages else
              r['label_%s' % (prefer_lang or lang())]) for r in results]
 

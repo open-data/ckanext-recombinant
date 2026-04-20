@@ -1,0 +1,1 @@
+Recombinant schemas now support `choices_reference_table` definition for fields, which can reference an existing table in the DataStore database. Choices are filterable with `choices_filter_query` which accepts a basic pSQL WHERE clause.

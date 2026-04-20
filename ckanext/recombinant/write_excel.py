@@ -662,7 +662,7 @@ def _append_field_choices_rows(refs: List[Tuple[Optional[str], List[Any]]],
     else:
         refs.append(('choice heading', [
             _('Values') if not org or not org.get('title') else
-            _('Values for ') + org_title_lang_hack(org['title'])]))
+            _('Values for {}').format(org_title_lang_hack(org['title']))]))
     max_length = 0
     for key, value in choices:
         _value = recombinant_language_text(value)
@@ -673,8 +673,7 @@ def _append_field_choices_rows(refs: List[Tuple[Optional[str], List[Any]]],
         else:
             choice = [str(key), _value]
         if published_resource and org_specifc_field:
-            choice.append('' if not value.get('valid_orgs') else
-                          ', '.join(value.get('valid_orgs')))
+            choice.append(', '.join(value.get('valid_orgs', {}).keys()))
         refs.append(('choice' if not full_text_choices else
                      'choice_full_text', choice))
         max_length = max(max_length, len(choice[0]))  # used for full_text_choices

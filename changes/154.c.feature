@@ -1,0 +1,1 @@
+Recombinant schemas now support `choices_fiscal_year` definition for fields. This is a YAML Mapping which can take `min_year (default: 2005)`, `max_year (default: current)`, and `month_start (default: 4/April)`

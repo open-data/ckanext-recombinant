@@ -416,8 +416,8 @@ def _data_dictionary(dataset_type: str,
                      org_name: Optional[str] = None) -> Response:
     try:
         geno = get_geno(dataset_type)
-        org = get_action('organization_show')({}, {'id': org_name}) if org_name \
-                else None
+        org = get_action('organization_show')(
+            {}, {'id': org_name}) if org_name else None
     except RecombinantException:
         return abort(404, _('Recombinant dataset_type not found'))
     except (NotAuthorized, NotFound):
