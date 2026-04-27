@@ -1,29 +1,31 @@
-{% set choice_fields=h.recombinant_choice_fields(chromo.resource_name) %}
+{% set org_specifc_fields = chromo.get('org_specific_fields', []) %}
+{% set choice_fields=h.recombinant_choice_fields(chromo.resource_name, all_languages=(is_published_resource and org_specifc_fields), org_name=organization.name if organization else none) %}
 
 <h3>{{ _("Data Dictionary") }}</h3>
 
 <div class="form-group control-medium row">
-  {% set excel_dictionary = 'recombinant.published_data_dictionary' if is_published_resource else 'recombinant.data_dictionary' %}
-  {% set json_dictionary = 'recombinant.published_schema_json' if is_published_resource else 'recombinant.schema_json' %}
+  {%- set excel_dictionary_link = h.url_for('recombinant.data_dictionary', dataset_type=chromo.dataset_type) -%}
+  {%- set json_dictionary_link = h.url_for('recombinant.schema_json', dataset_type=chromo.dataset_type) -%}
+  {%- if is_published_resource -%}
+    {%- set excel_dictionary_link = h.url_for('recombinant.published_data_dictionary', dataset_type=chromo.dataset_type) -%}
+    {%- set json_dictionary_link = h.url_for('recombinant.published_schema_json', dataset_type=chromo.dataset_type) -%}
+  {%- elif org_specifc_fields -%}
+    {%- set excel_dictionary_link = h.url_for('recombinant.org_based_data_dictionary', dataset_type=chromo.dataset_type, org_name=organization.name if organization else none) -%}
+    {%- set json_dictionary_link = h.url_for('recombinant.org_based_schema_json', dataset_type=chromo.dataset_type, org_name=organization.name if organization else none) -%}
+  {%- endif -%}
   <div class="col-md-6">
-    <a class="button" href="{{ h.url_for(
-      excel_dictionary,
-      dataset_type=chromo.dataset_type) }}"><span class="glyphicon glyphicon-download-alt"></span>
-      {{ _('Download data dictionary') }} XLSX</a>
+    <a class="button" href="{{- excel_dictionary_link -}}"><span class="glyphicon glyphicon-download-alt"></span>&nbsp;{{- _('Download data dictionary') }} XLSX</a>
   </div>
   <div class="col-md-6">
-    <a class="button" href="{{ h.url_for(
-      json_dictionary,
-      dataset_type=chromo.dataset_type) }}"><span class="glyphicon glyphicon-wrench"></span>
-      {{ _('Schema as JSON') }}</a>
+    <a class="button" href="{{- json_dictionary_link -}}"><span class="glyphicon glyphicon-wrench"></span>&nbsp;{{- _('Schema as JSON') -}}</a>
   </div>
 </div>
 
-{% macro dictionary_field(label) %}
+{% macro dictionary_field(label, columns='narrow') %}
   {% set content = caller().strip() %}
   {% if content %}
-    <dt class="col-md-3 text-secondary">{{ label }}</dt>
-    <dd class="col-md-9">{{ content }}</dd>
+    <dt class="{{ 'col-md-3' if columns == 'narrow' else 'col-md-12' }} text-secondary">{{ label }}</dt>
+    <dd class="{{ 'col-md-9' if columns == 'narrow' else 'col-md-12' }}">{{ content }}</dd>
   {% endif %}
 {% endmacro %}
 
@@ -56,12 +58,25 @@
         {% endcall %}
         {% set choices = choice_fields.get(field.datastore_id) %}
         {% if choices %}
-          {% call dictionary_field(_('Choices')) %}
-            <table class="table table-striped table-bordered table-condensed" data-module-show-label="{{ _('Show more') }}" data-module-hide-label="{{ _('Hide') }}" data-module="table-toggle-more">
+          {% set _colstyle = 'narrow' %}
+          {% if is_published_resource or field.datastore_id not in org_specifc_fields or not organization %}
+            {% set _label = _('Choices') %}
+            {% if field.datastore_id in org_specifc_fields %}{# wider table #}
+              {% set _colstyle = 'wide' %}
+            {% endif %}
+          {% else %}
+            {% set _label = _('Choices for {}').format(organization_display_name(organization, 120)) %}
+          {% endif %}
+          {% call dictionary_field(_label, columns=_colstyle) %}
+            {% set table_class = 'recombinant-data-dictionary-published' if is_published_resource else 'recombinant-data-dictionary' %}
+            <table class="table table-striped table-bordered table-condensed {{ table_class }}" data-module-show-label="{{ _('Show more') }}" data-module-hide-label="{{ _('Hide') }}" data-module="table-toggle-more">
               <thead>
                 <tr>
                   <th scope="col">{{ _('Code') }}</th>
                   <th scope="col">{{ _('Description') }}</th>
+                  {% if is_published_resource and field.datastore_id in org_specifc_fields %}
+                    <th scope="col">{{ _('Valid Organizations') }}</th>
+                  {% endif %}
                 </tr>
               </thead>
               {% set _choices = choices %}
@@ -74,14 +89,20 @@
                 {% for code, desc in _choices %}
                   <tr>
                     <td>{{ code }}</td>
-                    <td>{{ desc }}</td>
+                    <td>{{ h.recombinant_language_text(desc) }}</td>
+                    {% if is_published_resource and field.datastore_id in org_specifc_fields %}
+                      <td>{{ desc.get('valid_orgs', {}).keys()|join(', ') }}</td>
+                    {% endif %}
                   </tr>
                 {% endfor %}
                 {% if _more_choices %}
                   {% for code, desc in _more_choices %}
                     <tr class="toggle-more">
                       <td>{{ code }}</td>
-                      <td>{{ desc }}</td>
+                      <td>{{ h.recombinant_language_text(desc) }}</td>
+                      {% if is_published_resource and field.datastore_id in org_specifc_fields %}
+                        <td>{{ desc.get('valid_orgs', {}).keys()|join(', ') }}</td>
+                      {% endif %}
                     </tr>
                   {% endfor %}
                 {% endif %}

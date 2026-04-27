@@ -1,0 +1,1 @@
+Improved the `format_trigger_error` to support multiple splitting of the private code point `\uF8FF`. This allows for more dynamic data error messages, while still having the text go through the translation interfaces properly.

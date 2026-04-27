@@ -1,6 +1,8 @@
 import json
 import os.path
 from markupsafe import Markup
+import sqlalchemy as sa
+from datetime import datetime
 
 from typing import Dict, Any, Optional, List, Union
 
@@ -8,6 +10,13 @@ from ckan.plugins.toolkit import c, config
 from ckan.plugins.toolkit import _ as gettext
 import ckanapi
 from ckan.lib.helpers import lang
+
+from ckanext.datastore.backend import DatastoreBackend
+from ckanext.datastore.backend.postgres import (
+    DatastorePostgresqlBackend,
+    identifier,
+    literal_string
+)
 
 from ckanext.recombinant.tables import (
     get_chromo, get_geno, get_dataset_types,
@@ -129,9 +138,24 @@ def recombinant_example(resource_name: str,
     return left[2:] + ('\n' + left[2:]).join(out.split('\n')[1:-1])
 
 
-def recombinant_choice_fields(resource_name: str,
-                              all_languages: bool = False,
-                              prefer_lang: Optional[str] = None) -> Dict[str, Any]:
+def get_choices_fiscal_year(min_year: int = 2005,
+                            max_year: Optional[int] = None,
+                            month_start: int = 4) -> List[str]:
+    """
+    Dynamically generate choices for fiscal years.
+    """
+    if not max_year:
+        max_year = datetime.now().year if \
+            datetime.now().month >= month_start else datetime.now().year - 1
+    return [f'{i}-{i + 1}'
+            for i in range(min_year, max_year + 1)]
+
+
+def recombinant_choice_fields(
+        resource_name: str,
+        all_languages: bool = False,
+        prefer_lang: Optional[str] = None,
+        org_name: Optional[str] = None) -> Dict[str, Any]:
     """
     Return a datastore_id: choices dict from the resource definition
     that contain lists of choices, with labels pre-translated
@@ -168,11 +192,42 @@ def recombinant_choice_fields(resource_name: str,
             if v not in exclude_choices
         ]
 
+    def build_choices_psql(f: Dict[str, Any]):
+        # type_ignore_reason: incomplete typing
+        backend: DatastorePostgresqlBackend = DatastoreBackend.\
+            get_active_backend()  # type: ignore
+        with backend._get_read_engine().begin() as connection:
+            filter_clause = f.get('choices_filter_query', '')
+            if filter_clause and "{org}" in filter_clause and not org_name:
+                filter_clause = ''  # if no org_name passed, cannot query it
+            filter_clause = filter_clause.format(
+                org=literal_string(org_name) if org_name else '')
+            results = connection.execute(sa.text("""
+                SELECT * FROM {ref_table} {filter_clause}
+                ORDER BY {ds_id} ASC;
+            """.format(
+                ref_table=identifier(f['choices_reference_table']),
+                filter_clause=filter_clause,
+                ds_id=identifier(f['datastore_id'])
+            ).replace(':', r'\:'))).mappings().fetchall()  # avoid bind params
+        out[f['datastore_id']] = [
+            (r[f['datastore_id']],
+             dict(en=r['label_en'],
+                  fr=r['label_fr'],
+                  valid_orgs=r.get('org_years') or {})
+             if all_languages else
+             r['label_%s' % (prefer_lang or lang())]) for r in results]
+
     for f in chromo['fields']:
         if 'choices' in f:
             build_choices(f, f['choices'])
         elif 'choices_file' in f and '_path' in chromo:
             build_choices(f, _read_choices_file(chromo, f))
+        elif 'choices_reference_table' in f:
+            build_choices_psql(f)
+        elif 'choices_fiscal_year' in f:
+            out[f['datastore_id']] = [
+                (v, v) for v in get_choices_fiscal_year(**f['choices_fiscal_year'])]
 
     return out
 

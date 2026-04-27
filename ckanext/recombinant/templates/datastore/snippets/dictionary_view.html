@@ -3,12 +3,10 @@
 {% block dictionary_view %}
   {% set chromo = h.recombinant_published_resource_chromo(res.id) %}
   {% if chromo %}
-    {% set choice_fields=h.recombinant_choice_fields(chromo.resource_name) %}
     <div class="module-content">
       {% snippet 'recombinant/snippets/data_dictionary.html',
         chromo=chromo, all_expanded=false, is_published_resource=true %}
     </div>
-
   {% else %}
     {{ super() }}
   {% endif %}

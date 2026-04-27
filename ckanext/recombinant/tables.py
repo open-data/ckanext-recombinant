@@ -4,10 +4,14 @@ from files specified in the recombinant.definitions ini setting.
 
 This module provides access to those definitions.
 """
+import importlib
+import os
+
 from typing import List, Dict, Optional, Any
 
 import ckan.plugins as p
 
+from ckanext.datastore.cli import _parse_db_config
 from ckanext.recombinant.errors import RecombinantException
 
 
@@ -97,3 +101,27 @@ def get_target_datasets() -> List[str]:
     """
     genos = _get_plugin()._genos
     return sorted((t['target_dataset'] for t in genos.values()))
+
+
+def get_reference_tables_sql():
+    """
+    Compiles all sql scripts from recombinant.reference_definitions
+    """
+    ref_tables_uris = p.toolkit.config.get('recombinant.reference_definitions',
+                                           "").split()
+    write_url = _parse_db_config('ckan.datastore.write_url')
+    read_url = _parse_db_config('ckan.datastore.read_url')
+    sql = ""
+    for uri in ref_tables_uris:
+        module, file_name = uri.split(':', 1)
+        try:
+            m = importlib.import_module(module)
+        except ImportError:
+            raise RecombinantException('Could not load module path %s' % uri)
+        _p = m.__path__[0]
+        _p = os.path.join(_p, file_name)
+        if not os.path.exists(_p):
+            raise RecombinantException('File path does not exist %s' % uri)
+        with open(_p) as f:
+            sql += f.read()
+    return sql.format(readuser=read_url['db_user'], writeuser=write_url['db_user'])

@@ -5,11 +5,14 @@ import sys
 import json
 import re
 from openpyxl.formula import Tokenizer
+import sqlalchemy as sa
 
 from typing import Dict, List, Any, Optional, TextIO
 
 from ckan.logic import ValidationError
 from ckanapi import LocalCKAN, NotFound
+from ckanext.datastore.backend import DatastoreBackend
+from ckanext.datastore.backend.postgres import DatastorePostgresqlBackend
 
 from ckanext.recombinant.tables import (
     get_dataset_type_for_resource_name,
@@ -17,7 +20,8 @@ from ckanext.recombinant.tables import (
     get_chromo,
     get_geno,
     get_target_datasets,
-    get_resource_names
+    get_resource_names,
+    get_reference_tables_sql,
 )
 from ckanext.recombinant.read_csv import csv_data_batch
 from ckanext.recombinant.write_excel import excel_template
@@ -910,3 +914,17 @@ def _template(dataset_type: str,
     with open(output_file, 'w') as out:
         # type_ignore_reason: incomplete typing
         tmpl.save(out)  # type: ignore
+
+
+@recombinant.command(short_help="Run all the sql scripts "
+                                "from recombinant.reference_definitions")
+def create_ref_tables():
+    """
+    Run all the sql scripts from recombinant.reference_definitions
+    """
+    # type_ignore_reason: incomplete typing
+    backend: DatastorePostgresqlBackend = DatastoreBackend.\
+        get_active_backend()  # type: ignore
+    with backend._get_write_engine().begin() as connection:
+        connection.execute(sa.text(get_reference_tables_sql()))
+    click.echo('Done!')
