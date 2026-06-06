@@ -701,7 +701,7 @@ def _load_one_csv_file(name: str) -> int:
                 bad = int(err.error_dict['records_row'])  # type: ignore
                 errors |= 2
                 sys.stderr.write(json.dumps([
-                    err.error_dict['records'],
+                    err.error_dict.get('records', err.error_dict.get('errors')),
                     org_name,
                     records[offset + bad]]) + '\n')
                 # retry records that passed validation
