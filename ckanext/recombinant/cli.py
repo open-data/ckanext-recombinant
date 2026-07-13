@@ -536,7 +536,11 @@ def _create_triggers(dataset_types: Optional[List[str]],
     """
     lc = LocalCKAN()
     for dtype in _expand_dataset_types(dataset_types, all_types):
-        for chromo in get_geno(dtype)['resources']:
+        geno = get_geno(dtype)
+        if seq := geno.get('datastore_create_sequence'):
+            lc = LocalCKAN()
+            lc.action.datastore_sequence_create(name=seq, if_not_exists=True)
+        for chromo in geno['resources']:
             _update_triggers(lc, chromo)
 
 
