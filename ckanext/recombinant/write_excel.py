@@ -115,10 +115,15 @@ TYPE_HERE_STYLE = {
 
 
 def excel_template(dataset_type: str,
-                   org: Dict[str, Any]) -> Workbook:
+                   org: Dict[str, Any],
+                   edit_using__id: bool=False,
+                   edit_rows: int | None=None) -> Workbook:
     """
     return an openpyxl.Workbook object containing the sheet and header fields
     for passed dataset_type and org. Supports version 3 templates.
+
+    if `edit_using__id` is True the template will include a read-only `_id`
+    column and can only be used for editing existing records.
     """
     geno = get_geno(dataset_type)
     version = geno.get('template_version', DEFAULT_TEMPLATE_VERSION)
@@ -138,7 +143,8 @@ def excel_template(dataset_type: str,
         if version == 3:
             _append_resource_ref_header(geno, refs, rnum)
             choice_ranges.append(_populate_excel_sheet(
-                book, sheet, geno, chromo, org, refs, rnum))
+                book, sheet, geno, chromo, org, refs, rnum,
+                edit_using__id, edit_rows))
             sheet.protection.enabled = SHEET_PROTECTION
             sheet.protection.formatRows = False
             sheet.protection.formatColumns = False
@@ -172,15 +178,23 @@ def excel_template(dataset_type: str,
 
 def append_data(book: Workbook,
                 record_data: List[Dict[str, Any]],
-                chromo: Dict[str, Any]):
+                chromo: Dict[str, Any],
+                edit_using__id: bool=False):
 
     """
     fills rows of an openpyxl.Workbook with selected data from a datastore resource
     """
     # type_ignore_reason: incomplete typing
     sheet: Worksheet = book[chromo['resource_name']]
+
+    if edit_using__id:
+        # make RPAD column wider to use for record _id values
+        sheet.column_dimensions[RPAD_COL].width = REF_KEY_WIDTH
+
     current_row = DATA_FIRST_ROW
     for record in record_data:
+        if edit_using__id:
+            sheet.cell(row=current_row, column=RPAD_COL_NUM).value = record['_id']
         for col_num, field in template_cols_fields(chromo):
             if field['datastore_id'] not in record:
                 raise RecombinantFieldError(field['datastore_id'])
@@ -333,7 +347,10 @@ def _populate_excel_sheet(book: Workbook,
                           chromo: Dict[str, Any],
                           org: Dict[str, Any],
                           refs: List[Tuple[Optional[str], List[Any]]],
-                          resource_num: int) -> Dict[str, Any]:
+                          resource_num: int,
+                          edit_using__id: bool,
+                          edit_rows: int | None,
+                          ) -> Dict[str, Any]:
     """
     Format openpyxl sheet for the resource definition chromo and org.
     (Version 3)
@@ -347,7 +364,10 @@ def _populate_excel_sheet(book: Workbook,
     sheet.title = chromo['resource_name']
 
     cranges = {}
-    data_num_rows = chromo.get('excel_data_num_rows', DEFAULT_DATA_NUM_ROWS)
+    if edit_using__id and edit_rows is not None:
+        data_num_rows = edit_rows
+    else:
+        data_num_rows = chromo.get('excel_data_num_rows', DEFAULT_DATA_NUM_ROWS)
 
     required_style = dict(
         dict(DEFAULT_EDGE_STYLE, **geno.get('excel_edge_style', {})),
@@ -366,28 +386,48 @@ def _populate_excel_sheet(book: Workbook,
     for i in range(1, DATA_FIRST_ROW + data_num_rows):
         sheet.cell(row=i, column=1).value = None
 
-    sheet.merge_cells(EXAMPLE_MERGE)
-    fill_cell(sheet, EXAMPLE_ROW, 1, _('e.g.'), 'reco_example')
+    if edit_using__id:
+        sheet.row_dimensions[EXAMPLE_ROW].hidden = True
+        fill_cell(
+            sheet,
+            CHEADINGS_ROW,
+            RPAD_COL_NUM,
+            _('Record ID'),
+            'reco_cheading')
+    else:
+        sheet.merge_cells(EXAMPLE_MERGE)
+        fill_cell(sheet, EXAMPLE_ROW, 1, _('e.g.'), 'reco_example')
 
-    fill_cell(
-        sheet,
-        DATA_FIRST_ROW,
-        RPAD_COL_NUM,
-        '=IF(r{rnum}!{col}{row},"","▶")'.format(
-            rnum=resource_num,
-            col=RPAD_COL,
-            row=DATA_FIRST_ROW),
-        TYPE_HERE_STYLE)
+        fill_cell(
+            sheet,
+            DATA_FIRST_ROW,
+            RPAD_COL_NUM,
+            '=IF(r{rnum}!{col}{row},"","▶")'.format(
+                rnum=resource_num,
+                col=RPAD_COL,
+                row=DATA_FIRST_ROW),
+            TYPE_HERE_STYLE)
+
+    restriction = ''
+    sig = 'v3'
+    if chromo.get('edit_using__id'):
+        # template is update-only or insert-only
+        restriction = ' \N{em dash} ' + (
+            _('Edit existing records') if edit_using__id
+            else _('Create new records'))
+        sig = 'v3-update' if edit_using__id else 'v3-insert'
 
     fill_cell(
         sheet,
         HEADER_ROW,
         DATA_FIRST_COL_NUM,
         recombinant_language_text(chromo['title'])
-        + ' \N{em dash} ' + org_title_lang_hack(org['title']),
+        + ' \N{em dash} ' + org_title_lang_hack(org['title'])
+        + restriction,
         'reco_header')
 
-    sheet.cell(row=CODE_ROW, column=1).value = 'v3'  # template version
+    # template version
+    sheet.cell(row=CODE_ROW, column=1).value = sig
     # allow only upload to this org
     sheet.cell(row=CODE_ROW, column=2).value = org['name']
 

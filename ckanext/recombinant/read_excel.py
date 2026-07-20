@@ -66,27 +66,50 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
         names_row = next(rowiter)
 
         org_name = organization_row[0].value
-        if org_name and names_row[0].value != 'v3':
+        sig = names_row[0].value
+        if org_name and not sig.startswith('v3'):
             # v2 template
             yield (
                 _sheetname,
                 org_name,
                 [c.value for c in names_row],
                 # type_ignore_reason: incomplete typing
-                _filter_bumf(rowiter, HEADER_ROWS_V2))
+                _filter_bumf(rowiter, HEADER_ROWS_V2),
+                'upsert')
             continue
 
         # type_ignore_reason: incomplete typing
         next(rowiter)
         example_row = next(rowiter)
-        if example_row[0].value != 'e.g.' and example_row[0].value != 'ex.':
+        if (
+            sig != 'v3-update'  # we remove the example from update-only template
+            and example_row[0].value not in ('e.g.', 'ex.')
+        ):
             raise BadExcelData('Example record on row 5 is missing')
 
-        yield (
-            _sheetname,
-            names_row[1].value,
-            [c.value for c in names_row[2:]],
-            _filter_bumf((row[2:] for row in rowiter), HEADER_ROWS_V3))
+        if sig == 'v3-update':
+            yield (
+                _sheetname,
+                names_row[1].value,
+                ['_id'] + [c.value for c in names_row[2:]],
+                _filter_bumf((row[1:] for row in rowiter), HEADER_ROWS_V3),
+                'update')
+        elif sig == 'v3-insert':
+            yield (
+                _sheetname,
+                names_row[1].value,
+                [c.value for c in names_row[2:]],
+                _filter_bumf((row[2:] for row in rowiter), HEADER_ROWS_V3),
+                'insert')
+        elif sig == 'v3':
+            yield (
+                _sheetname,
+                names_row[1].value,
+                [c.value for c in names_row[2:]],
+                _filter_bumf((row[2:] for row in rowiter), HEADER_ROWS_V3),
+                'upsert')
+        else:
+            raise BadExcelData(f'Unknown signature {sig!r}, must be one: v3, v3-insert, v3-update')
 
 
 def _filter_bumf(rowiter: Iterator[Any],
