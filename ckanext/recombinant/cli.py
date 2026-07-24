@@ -926,9 +926,13 @@ def create_ref_tables():
     """
     Run all the sql scripts from recombinant.reference_definitions
     """
+    queries = get_reference_tables_sql()
+    if not queries:
+        raise click.ClickException(
+            'Unable to generate SQL queries. Check recombinant.reference_definitions')
     # type_ignore_reason: incomplete typing
     backend: DatastorePostgresqlBackend = DatastoreBackend.\
         get_active_backend()  # type: ignore
     with backend._get_write_engine().begin() as connection:
-        connection.execute(sa.text(get_reference_tables_sql()))
+        connection.execute(sa.text(queries))
     click.echo('Done!')
