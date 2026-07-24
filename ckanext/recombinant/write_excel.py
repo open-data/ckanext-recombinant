@@ -117,7 +117,7 @@ TYPE_HERE_STYLE = {
 def excel_template(dataset_type: str,
                    org: Dict[str, Any],
                    edit_using__id: bool=False,
-                   edit_rows: int | None=None) -> Workbook:
+                   edit_rows: Optional[int]=None) -> Workbook:
     """
     return an openpyxl.Workbook object containing the sheet and header fields
     for passed dataset_type and org. Supports version 3 templates.
@@ -349,7 +349,7 @@ def _populate_excel_sheet(book: Workbook,
                           refs: List[Tuple[Optional[str], List[Any]]],
                           resource_num: int,
                           edit_using__id: bool,
-                          edit_rows: int | None,
+                          edit_rows: Optional[int],
                           ) -> Dict[str, Any]:
     """
     Format openpyxl sheet for the resource definition chromo and org.
