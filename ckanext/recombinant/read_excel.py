@@ -109,7 +109,8 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
                 _filter_bumf((row[2:] for row in rowiter), HEADER_ROWS_V3),
                 'upsert')
         else:
-            raise BadExcelData(f'Unknown signature {sig!r}, must be one: v3, v3-insert, v3-update')
+            raise BadExcelData(
+                f'Unknown signature {sig!r}, must be one: v3, v3-insert, v3-update')
 
 
 def _filter_bumf(rowiter: Iterator[Any],

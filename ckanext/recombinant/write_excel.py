@@ -116,8 +116,8 @@ TYPE_HERE_STYLE = {
 
 def excel_template(dataset_type: str,
                    org: Dict[str, Any],
-                   edit_using__id: bool=False,
-                   edit_rows: Optional[int]=None) -> Workbook:
+                   edit_using__id: bool = False,
+                   edit_rows: Optional[int] = None) -> Workbook:
     """
     return an openpyxl.Workbook object containing the sheet and header fields
     for passed dataset_type and org. Supports version 3 templates.
@@ -179,7 +179,7 @@ def excel_template(dataset_type: str,
 def append_data(book: Workbook,
                 record_data: List[Dict[str, Any]],
                 chromo: Dict[str, Any],
-                edit_using__id: bool=False):
+                edit_using__id: bool = False):
 
     """
     fills rows of an openpyxl.Workbook with selected data from a datastore resource
