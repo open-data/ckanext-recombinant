@@ -60,6 +60,8 @@ resources:
       DECLARE
         errors text[][] := '{{}}';
         crval RECORD;
+        importing boolean NOT NULL := (SELECT importing
+            FROM datastore_user LIMIT 1);
       BEGIN
         errors := errors || required_error(NEW.year, 'year');
         errors := errors || required_error(NEW.value, 'value');
@@ -69,7 +71,7 @@ resources:
         END IF;
 
         IF errors = '{{}}' THEN
-          IF TG_OP = 'INSERT' THEN
+          IF NOT importing AND TG_OP = 'INSERT' THEN
             -- open_canada_id generation rule --
 
             -- Assign unique _id across *all* records and so that (_id % 97) == 5

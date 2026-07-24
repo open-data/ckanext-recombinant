@@ -622,10 +622,9 @@ def _load_one_csv_file(name: str) -> int:
 
     dataset_type = chromo['dataset_type']
     method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
-    lc = LocalCKAN()
+    lc = LocalCKAN(context={'datastore_import': True})  # required for importing _id
     errors = 0
 
-    # dynamic fields
     dynamic_fields = [
         'owner_org',
         'owner_org_title',
@@ -774,9 +773,10 @@ def _write_one_csv(lc: LocalCKAN,
                    chromo: Dict[str, Any],
                    outfile: TextIO):
     out = csv.writer(outfile)
-    column_ids = [
-        f['datastore_id'] for f in chromo['fields'] if
-        not f.get('published_resource_computed_field')] + \
+    column_ids = \
+        (['_id'] if chromo.get('edit_using__id') else []) + \
+        [f['datastore_id'] for f in chromo['fields'] if
+            not f.get('published_resource_computed_field')] + \
         chromo.get('csv_org_extras', []) + \
         ['owner_org', 'owner_org_title']
     out.writerow(column_ids)

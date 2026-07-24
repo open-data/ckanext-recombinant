@@ -45,11 +45,12 @@ def csv_data_batch(csv_path: str,
                     if f not in ignore_fields]
 
         if strict:
-            expected = [f['datastore_id'] for f in chromo['fields'] if not f.get(
-                'published_resource_computed_field')]
+            expected = \
+                (['_id'] if chromo.get('edit_using__id') else []) + \
+                [f['datastore_id'] for f in chromo['fields'] if not f.get(
+                    'published_resource_computed_field')]
             if ignore_fields:
-                expected = [f['datastore_id'] for f in chromo['fields'] if
-                            f['datastore_id'] not in ignore_fields]
+                expected = [f for f in expected if f not in ignore_fields]
             assert cols == expected, 'column mismatch:\n{0}\n{1}'.format(
                 cols, expected)
 
