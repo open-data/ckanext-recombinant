@@ -29,6 +29,7 @@ from ckanext.recombinant.logic import _update_triggers
 from ckanext.recombinant.errors import RecombinantFieldError
 
 
+BOM = "\N{bom}"
 DATASTORE_PAGINATE = 10000  # max records for single datastore query
 
 
@@ -277,9 +278,16 @@ def delete(dataset_type: Optional[List[str]] = None,
 @recombinant.command(
         short_help="Load CSV file(s) rows into recombinant resources datastore.")
 @click.argument("csv_file", type=click.File('r'), nargs=-1)
+@click.option('-t', '--dataset-type', help='Dataset type to import the CSV file into.')
+@click.option('-o', '--organization', help='Organization to try to load the data into.')
+@click.option('-E', '--error-file', type=click.File('w'),
+              help='Output CSV file for errors instead of stderr/stdout')
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
 def load_csv(csv_file: List[TextIO],
+             dataset_type: str = '',
+             organization: str = '',
+             error_file: Optional[TextIO] = None,
              verbose: bool = False):
     """
     Load CSV file(s) rows into recombinant resources datastore
@@ -287,7 +295,12 @@ def load_csv(csv_file: List[TextIO],
     Full Usage:\n
         recombinant load-csv CSV_FILE ...
     """
-    _load_csv_files(csv_file, verbose=verbose)
+    if len(csv_file) > 1 and dataset_type:
+        raise click.ClickException('Cannot define --dataset-type with multiple files')
+    if len(csv_file) > 1 and organization:
+        raise click.ClickException('Cannot define --organization with multiple files')
+    _load_csv_files(csv_file, dataset_type=dataset_type,
+                    organization=organization, error_file=error_file, verbose=verbose)
 
 
 @recombinant.command(
@@ -590,6 +603,9 @@ def _delete(dataset_types: Optional[List[str]],
 
 
 def _load_csv_files(csv_file_names: List[TextIO],
+                    dataset_type: str = '',
+                    organization: str = '',
+                    error_file: Optional[TextIO] = None,
                     verbose: bool = False) -> int:
     """
     Load CSV file(s) rows into recombinant resources datastore
@@ -597,20 +613,37 @@ def _load_csv_files(csv_file_names: List[TextIO],
     errs = 0
     for n in csv_file_names:
         # pass click.File prop
-        errs |= _load_one_csv_file(n.name)
+        errs |= _load_one_csv_file(n.name, dataset_type,
+                                   organization, error_file, verbose)
     return errs
 
 
-def _load_one_csv_file(name: str) -> int:
+def _load_one_csv_file(name: str, dataset_type: str = '',
+                       organization: str = '', error_file: Optional[TextIO] = None,
+                       verbose: bool = False) -> int:
     """
     Load CSV file rows into recombinant resources datastore
     """
+    out_format = 'json'
+    if error_file:
+        out_format = 'csv' if error_file.name.endswith('.csv') else 'json'
+        outf = error_file
+    else:
+        outf = sys.stderr
+
+    if out_format == 'csv':
+        # type_ignore_reason: incomplete click typing
+        outf.write(BOM)  # type: ignore
+        out = csv.writer(outf)  # type: ignore
+
     _path, csv_name = os.path.split(name)
     assert csv_name.endswith('.csv'), csv_name
-    resource_name = csv_name[:-4]
-    singular_org_name = None
-    if '.' in resource_name:
-        singular_org_name, resource_name = tuple(resource_name.split('.'))
+    resource_name = dataset_type
+    singular_org_name = organization
+    if not resource_name:
+        resource_name = csv_name[:-4]
+        if '.' in resource_name:
+            singular_org_name, resource_name = tuple(resource_name.split('.'))
     click.echo('Resource name: %s' % resource_name)
     if singular_org_name:
         click.echo('Organization name: %s' % singular_org_name)
@@ -634,6 +667,7 @@ def _load_one_csv_file(name: str) -> int:
     dynamic_fields += [f['datastore_id'] for f in chromo['fields'] if
                        f.get('published_resource_computed_field', False)]
 
+    write_csv_header = False
     for org_name, records in csv_data_batch(name, chromo,
                                             ignore_fields=dynamic_fields):
         if not org_name and not singular_org_name:
@@ -700,10 +734,26 @@ def _load_one_csv_file(name: str) -> int:
                 # type_ignore_reason: incomplete typing
                 bad = int(err.error_dict['records_row'])  # type: ignore
                 errors |= 2
-                sys.stderr.write(json.dumps([
-                    err.error_dict['records'],
-                    org_name,
-                    records[offset + bad]]) + '\n')
+                if out_format == 'csv' and error_file:
+                    if not write_csv_header:
+                        out.writerow([
+                            'errors',
+                            'org_name',
+                            *records[offset + bad].keys()
+                        ])
+                        write_csv_header = True
+                    out.writerow([
+                        err.error_dict['records'],
+                        org_name,
+                        *records[offset + bad].values()
+                    ])
+                else:
+                    # TODO: figure out JSON outputs
+                    outf.write(json.dumps([
+                        err.error_dict['records'],
+                        org_name,
+                        records[offset + bad]
+                    ]) + '\n')
                 # retry records that passed validation
                 good = records[offset: offset+bad]
                 if good:
@@ -714,6 +764,18 @@ def _load_one_csv_file(name: str) -> int:
                 offset += bad + 1  # skip and continue
             else:
                 break
+
+    if error_file:
+        # type_ignore_reason: incomplete click typing
+        outf.close()  # type: ignore
+
+    if errors:
+        click.echo('Finished with errors...')
+        if error_file:
+            click.echo('See %s for errors!' % error_file.name)
+    else:
+        click.echo('DONE!')
+
     return errors
 
 
