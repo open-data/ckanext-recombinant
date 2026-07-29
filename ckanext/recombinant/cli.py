@@ -37,7 +37,7 @@ DATASTORE_PAGINATE = 10000  # max records for single datastore query
 
 
 @contextmanager
-def suppress_logging(logger_name):
+def suppress_logging(logger_name: str):
     logger = logging.getLogger(logger_name)
     old_level = logger.level
 
@@ -651,6 +651,7 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
     Load CSV file rows into recombinant resources datastore
     """
     out_format = 'jsonl'
+    csv_writer = None
     if error_file:
         out_format = output_file_type
         outf = error_file
@@ -658,9 +659,8 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
         outf = sys.stderr
 
     if out_format == 'csv':
-        # type_ignore_reason: incomplete click typing
-        outf.write(BOM)  # type: ignore
-        out = csv.writer(outf)  # type: ignore
+        outf.write(BOM)
+        csv_writer = csv.writer(outf)
 
     if verbose:
         if error_file:
@@ -763,21 +763,20 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
             except ValidationError as err:
                 if 'records_row' not in err.error_dict:
                     if error_file:
-                        # type_ignore_reason: incomplete click typing
-                        outf.close()  # type: ignore
+                        outf.close()
                     raise
                 # type_ignore_reason: incomplete typing
                 bad = int(err.error_dict['records_row'])  # type: ignore
                 errors |= 2
-                if out_format == 'csv' and error_file:
+                if out_format == 'csv' and error_file and csv_writer:
                     if not write_csv_header:
-                        out.writerow([
+                        csv_writer.writerow([
                             'errors',
                             'org_name',
                             *records[offset + bad].keys()
                         ])
                         write_csv_header = True
-                    out.writerow([
+                    csv_writer.writerow([
                         err.error_dict['records'],
                         org_name,
                         *records[offset + bad].values()
@@ -800,8 +799,7 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
                 break
 
     if error_file:
-        # type_ignore_reason: incomplete click typing
-        outf.close()  # type: ignore
+        outf.close()
 
     if errors:
         click.echo('Finished with errors...')
