@@ -10,10 +10,11 @@ from pathlib import Path
 from openpyxl.formula import Tokenizer
 import sqlalchemy as sa
 
-from typing import Dict, List, Any, Optional, TextIO
+from typing import Dict, List, Any, Optional, TextIO, Union
 
 from ckan.logic import ValidationError
 from ckanapi import LocalCKAN, NotFound
+from ckanext.datastore.helpers import is_valid_field_name
 from ckanext.datastore.backend import DatastoreBackend
 from ckanext.datastore.backend.postgres import DatastorePostgresqlBackend
 
@@ -295,6 +296,9 @@ def delete(dataset_type: Optional[List[str]] = None,
 @click.argument("csv_file", type=click.File('r'), nargs=-1)
 @click.option('-t', '--dataset-type', help='Dataset type to import the CSV file into.')
 @click.option('-o', '--organization', help='Organization to try to load the data into.')
+@click.option('-m', '--mark', multiple=True,
+              help='Marks the loading context. These values are passed '
+                   'into the datastore_user temp session table')
 @click.option('-E', '--error-file', type=click.File('w'),
               help='Output CSV file for errors instead of stderr/stdout')
 @click.option('-v', '--verbose', is_flag=True,
@@ -302,6 +306,7 @@ def delete(dataset_type: Optional[List[str]] = None,
 def load_csv(csv_file: List[TextIO],
              dataset_type: str = '',
              organization: str = '',
+             mark: Optional[Union[str, List[str]]] = None,
              error_file: Optional[TextIO] = None,
              verbose: bool = False):
     """
@@ -320,9 +325,21 @@ def load_csv(csv_file: List[TextIO],
         if output_file_type not in ['csv', 'jsonl']:
             raise click.ClickException(
                 'Only csv and jsonl are supported for --error-file')
+    marks = ['recombinant_import']  # always have a default mark
+    if isinstance(mark, str):
+        if mark == 'recombinant_import':
+            raise click.ClickException('Cannot redefine default mark "recombinant_import"')
+        marks.append(mark)
+    else:
+        if 'recombinant_import' in mark:
+            raise click.ClickException('Cannot redefine default mark "recombinant_import"')
+        marks += mark
+    for m in marks:
+        if not is_valid_field_name(m) or ' ' in m:
+            raise click.ClickException('Invalid mark name "%s" for pSQL column' % m)
     with suppress_logging('ckanext.activity.logic.action'):
-        _load_csv_files(csv_file, dataset_type, organization, error_file,
-                        output_file_type, verbose)
+        _load_csv_files(csv_file, dataset_type, organization, marks,
+                        error_file, output_file_type, verbose)
 
 
 @recombinant.command(
@@ -627,6 +644,7 @@ def _delete(dataset_types: Optional[List[str]],
 def _load_csv_files(csv_file_names: List[TextIO],
                     dataset_type: str = '',
                     organization: str = '',
+                    marks: List[str] = [],
                     error_file: Optional[TextIO] = None,
                     output_file_type: Optional[str] = None,
                     verbose: bool = False) -> int:
@@ -637,13 +655,14 @@ def _load_csv_files(csv_file_names: List[TextIO],
     for n in csv_file_names:
         # pass click.File prop
         errs |= _load_one_csv_file(n.name, dataset_type,
-                                   organization, error_file,
+                                   organization, marks, error_file,
                                    output_file_type, verbose)
     return errs
 
 
 def _load_one_csv_file(name: str, dataset_type: str = '',
                        organization: str = '',
+                       marks: List[str] = [],
                        error_file: Optional[TextIO] = None,
                        output_file_type: Optional[str] = None,
                        verbose: bool = False) -> int:
@@ -683,7 +702,7 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
 
     dataset_type = chromo['dataset_type']
     method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
-    lc = LocalCKAN()
+    lc = LocalCKAN(context={'RECOMBINANT_MARKS': marks})
     errors = 0
 
     # dynamic fields
@@ -707,6 +726,11 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
             return 1
         if not org_name and singular_org_name:
             org_name = singular_org_name
+        elif singular_org_name and org_name != singular_org_name:
+            if verbose:
+                click.echo('%s does not match %s. Skipping...' % (
+                    org_name, singular_org_name))
+            continue
         results = lc.action.package_search(
             q='type:%s AND organization:%s' % (dataset_type, org_name),
             include_private=True,
