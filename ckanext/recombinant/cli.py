@@ -4,6 +4,8 @@ import csv
 import sys
 import json
 import re
+import logging
+from contextlib import contextmanager
 from pathlib import Path
 from openpyxl.formula import Tokenizer
 import sqlalchemy as sa
@@ -32,6 +34,18 @@ from ckanext.recombinant.errors import RecombinantFieldError
 
 BOM = "\N{bom}"
 DATASTORE_PAGINATE = 10000  # max records for single datastore query
+
+
+@contextmanager
+def suppress_logging(logger_name):
+    logger = logging.getLogger(logger_name)
+    old_level = logger.level
+
+    try:
+        logger.setLevel(logging.CRITICAL)
+        yield
+    finally:
+        logger.setLevel(old_level)
 
 
 def get_commands():
@@ -306,8 +320,9 @@ def load_csv(csv_file: List[TextIO],
         if output_file_type not in ['csv', 'jsonl']:
             raise click.ClickException(
                 'Only csv and jsonl are supported for --error-file')
-    _load_csv_files(csv_file, dataset_type, organization, error_file,
-                    output_file_type, verbose)
+    with suppress_logging('ckanext.activity.logic.action'):
+        _load_csv_files(csv_file, dataset_type, organization, error_file,
+                        output_file_type, verbose)
 
 
 @recombinant.command(
