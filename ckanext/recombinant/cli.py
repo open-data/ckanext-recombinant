@@ -4,6 +4,7 @@ import csv
 import sys
 import json
 import re
+from pathlib import Path
 from openpyxl.formula import Tokenizer
 import sqlalchemy as sa
 
@@ -299,8 +300,14 @@ def load_csv(csv_file: List[TextIO],
         raise click.ClickException('Cannot define --dataset-type with multiple files')
     if len(csv_file) > 1 and organization:
         raise click.ClickException('Cannot define --organization with multiple files')
-    _load_csv_files(csv_file, dataset_type=dataset_type,
-                    organization=organization, error_file=error_file, verbose=verbose)
+    output_file_type = None
+    if error_file:
+        output_file_type = Path(error_file.name).suffix[1:].lower()
+        if output_file_type not in ['csv', 'jsonl']:
+            raise click.ClickException(
+                'Only csv and jsonl are supported for --error-file')
+    _load_csv_files(csv_file, dataset_type, organization, error_file,
+                    output_file_type, verbose)
 
 
 @recombinant.command(
@@ -606,6 +613,7 @@ def _load_csv_files(csv_file_names: List[TextIO],
                     dataset_type: str = '',
                     organization: str = '',
                     error_file: Optional[TextIO] = None,
+                    output_file_type: Optional[str] = None,
                     verbose: bool = False) -> int:
     """
     Load CSV file(s) rows into recombinant resources datastore
@@ -614,19 +622,22 @@ def _load_csv_files(csv_file_names: List[TextIO],
     for n in csv_file_names:
         # pass click.File prop
         errs |= _load_one_csv_file(n.name, dataset_type,
-                                   organization, error_file, verbose)
+                                   organization, error_file,
+                                   output_file_type, verbose)
     return errs
 
 
 def _load_one_csv_file(name: str, dataset_type: str = '',
-                       organization: str = '', error_file: Optional[TextIO] = None,
+                       organization: str = '',
+                       error_file: Optional[TextIO] = None,
+                       output_file_type: Optional[str] = None,
                        verbose: bool = False) -> int:
     """
     Load CSV file rows into recombinant resources datastore
     """
-    out_format = 'json'
+    out_format = 'jsonl'
     if error_file:
-        out_format = 'csv' if error_file.name.endswith('.csv') else 'json'
+        out_format = output_file_type
         outf = error_file
     else:
         outf = sys.stderr
@@ -635,6 +646,12 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
         # type_ignore_reason: incomplete click typing
         outf.write(BOM)  # type: ignore
         out = csv.writer(outf)  # type: ignore
+
+    if verbose:
+        if error_file:
+            click.echo('Writing error outputs to %s' % error_file.name)
+        else:
+            click.echo('Writing error outputs to stderr')
 
     _path, csv_name = os.path.split(name)
     assert csv_name.endswith('.csv'), csv_name
@@ -730,6 +747,9 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
                     records=records[offset:])
             except ValidationError as err:
                 if 'records_row' not in err.error_dict:
+                    if error_file:
+                        # type_ignore_reason: incomplete click typing
+                        outf.close()  # type: ignore
                     raise
                 # type_ignore_reason: incomplete typing
                 bad = int(err.error_dict['records_row'])  # type: ignore
@@ -748,12 +768,11 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
                         *records[offset + bad].values()
                     ])
                 else:
-                    # TODO: figure out JSON outputs
-                    outf.write(json.dumps([
-                        err.error_dict['records'],
-                        org_name,
-                        records[offset + bad]
-                    ]) + '\n')
+                    outf.write(json.dumps({
+                        'errors': err.error_dict['records'],
+                        'org_name': org_name,
+                        'record': records[offset + bad]
+                    }) + '\n')
                 # retry records that passed validation
                 good = records[offset: offset+bad]
                 if good:
@@ -806,7 +825,7 @@ def _combine_csv(target_dir: Optional[str],
                                      resource_name + '.csv'), 'w', encoding='utf-8')
         else:
             outf = sys.stdout
-        outf.write("\N{bom}")
+        outf.write(BOM)
         dataset_type = get_dataset_type_for_resource_name(resource_name)
         if not dataset_type:
             if verbose:
