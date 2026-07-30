@@ -297,8 +297,8 @@ def delete(dataset_type: Optional[List[str]] = None,
 @click.option('-t', '--dataset-type', help='Dataset type to import the CSV file into.')
 @click.option('-o', '--organization', help='Organization to try to load the data into.')
 @click.option('-f', '--flag', multiple=True,
-              help='Flags the loading context with variable names. These values are passed '
-                   'into the datastore_app_context temp session table')
+              help='Flags the loading context with variable names. These values '
+                   'are passed into the datastore_app_context temp session table')
 @click.option('-E', '--error-file', type=click.File('w'),
               help='Output CSV file for errors instead of stderr/stdout')
 @click.option('-v', '--verbose', is_flag=True,
@@ -326,13 +326,15 @@ def load_csv(csv_file: List[TextIO],
             raise click.ClickException(
                 'Only csv and jsonl are supported for --error-file')
     flags = ['recombinant_import']  # always have a default flag
-    if isinstance(flag, str):
+    if flag and isinstance(flag, str):
         if flag == 'recombinant_import':
-            raise click.ClickException('Cannot redefine default flag "recombinant_import"')
+            raise click.ClickException(
+                'Cannot redefine default flag "recombinant_import"')
         flags.append(flag)
-    else:
+    elif flag:
         if 'recombinant_import' in flag:
-            raise click.ClickException('Cannot redefine default flag "recombinant_import"')
+            raise click.ClickException(
+                'Cannot redefine default flag "recombinant_import"')
         flags += flag
     for _f in flags:
         if not is_valid_field_name(_f) or ' ' in _f:
@@ -644,7 +646,7 @@ def _delete(dataset_types: Optional[List[str]],
 def _load_csv_files(csv_file_names: List[TextIO],
                     dataset_type: str = '',
                     organization: str = '',
-                    flags: List[str] = [],
+                    flags: Optional[List[str]] = None,
                     error_file: Optional[TextIO] = None,
                     output_file_type: Optional[str] = None,
                     verbose: bool = False) -> int:
@@ -662,7 +664,7 @@ def _load_csv_files(csv_file_names: List[TextIO],
 
 def _load_one_csv_file(name: str, dataset_type: str = '',
                        organization: str = '',
-                       flags: List[str] = [],
+                       flags: Optional[List[str]] = None,
                        error_file: Optional[TextIO] = None,
                        output_file_type: Optional[str] = None,
                        verbose: bool = False) -> int:
@@ -702,7 +704,7 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
 
     dataset_type = chromo['dataset_type']
     method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
-    lc = LocalCKAN(context={'DATASTORE_APP_CONTEXT_FLAGS': flags})
+    lc = LocalCKAN(context={'DATASTORE_APP_CONTEXT_FLAGS': flags} if flags else {})
     errors = 0
 
     # dynamic fields
