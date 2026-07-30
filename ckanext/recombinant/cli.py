@@ -646,7 +646,7 @@ def _delete(dataset_types: Optional[List[str]],
 def _load_csv_files(csv_file_names: List[TextIO],
                     dataset_type: str = '',
                     organization: str = '',
-                    flags: List[str] = [],
+                    flags: Optional[List[str]] = None,
                     error_file: Optional[TextIO] = None,
                     output_file_type: Optional[str] = None,
                     verbose: bool = False) -> int:
@@ -664,7 +664,7 @@ def _load_csv_files(csv_file_names: List[TextIO],
 
 def _load_one_csv_file(name: str, dataset_type: str = '',
                        organization: str = '',
-                       flags: List[str] = [],
+                       flags: Optional[List[str]] = None,
                        error_file: Optional[TextIO] = None,
                        output_file_type: Optional[str] = None,
                        verbose: bool = False) -> int:
@@ -704,7 +704,7 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
 
     dataset_type = chromo['dataset_type']
     method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
-    lc = LocalCKAN(context={'DATASTORE_APP_CONTEXT_FLAGS': flags})
+    lc = LocalCKAN(context={'DATASTORE_APP_CONTEXT_FLAGS': flags} if flags else {})
     errors = 0
 
     # dynamic fields
