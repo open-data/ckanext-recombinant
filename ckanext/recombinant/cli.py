@@ -296,9 +296,9 @@ def delete(dataset_type: Optional[List[str]] = None,
 @click.argument("csv_file", type=click.File('r'), nargs=-1)
 @click.option('-t', '--dataset-type', help='Dataset type to import the CSV file into.')
 @click.option('-o', '--organization', help='Organization to try to load the data into.')
-@click.option('-m', '--mark', multiple=True,
-              help='Marks the loading context. These values are passed '
-                   'into the datastore_user temp session table')
+@click.option('-f', '--flag', multiple=True,
+              help='Flags the loading context with variable names. These values are passed '
+                   'into the datastore_app_context temp session table')
 @click.option('-E', '--error-file', type=click.File('w'),
               help='Output CSV file for errors instead of stderr/stdout')
 @click.option('-v', '--verbose', is_flag=True,
@@ -306,7 +306,7 @@ def delete(dataset_type: Optional[List[str]] = None,
 def load_csv(csv_file: List[TextIO],
              dataset_type: str = '',
              organization: str = '',
-             mark: Optional[Union[str, List[str]]] = None,
+             flag: Optional[Union[str, List[str]]] = None,
              error_file: Optional[TextIO] = None,
              verbose: bool = False):
     """
@@ -325,20 +325,20 @@ def load_csv(csv_file: List[TextIO],
         if output_file_type not in ['csv', 'jsonl']:
             raise click.ClickException(
                 'Only csv and jsonl are supported for --error-file')
-    marks = ['recombinant_import']  # always have a default mark
-    if isinstance(mark, str):
-        if mark == 'recombinant_import':
-            raise click.ClickException('Cannot redefine default mark "recombinant_import"')
-        marks.append(mark)
+    flags = ['recombinant_import']  # always have a default flag
+    if isinstance(flag, str):
+        if flag == 'recombinant_import':
+            raise click.ClickException('Cannot redefine default flag "recombinant_import"')
+        flags.append(flag)
     else:
-        if 'recombinant_import' in mark:
-            raise click.ClickException('Cannot redefine default mark "recombinant_import"')
-        marks += mark
-    for m in marks:
-        if not is_valid_field_name(m) or ' ' in m:
-            raise click.ClickException('Invalid mark name "%s" for pSQL column' % m)
+        if 'recombinant_import' in flag:
+            raise click.ClickException('Cannot redefine default flag "recombinant_import"')
+        flags += flag
+    for _f in flags:
+        if not is_valid_field_name(_f) or ' ' in _f:
+            raise click.ClickException('Invalid flag name "%s" for pSQL column' % _f)
     with suppress_logging('ckanext.activity.logic.action'):
-        _load_csv_files(csv_file, dataset_type, organization, marks,
+        _load_csv_files(csv_file, dataset_type, organization, flags,
                         error_file, output_file_type, verbose)
 
 
@@ -644,7 +644,7 @@ def _delete(dataset_types: Optional[List[str]],
 def _load_csv_files(csv_file_names: List[TextIO],
                     dataset_type: str = '',
                     organization: str = '',
-                    marks: List[str] = [],
+                    flags: List[str] = [],
                     error_file: Optional[TextIO] = None,
                     output_file_type: Optional[str] = None,
                     verbose: bool = False) -> int:
@@ -655,14 +655,14 @@ def _load_csv_files(csv_file_names: List[TextIO],
     for n in csv_file_names:
         # pass click.File prop
         errs |= _load_one_csv_file(n.name, dataset_type,
-                                   organization, marks, error_file,
+                                   organization, flags, error_file,
                                    output_file_type, verbose)
     return errs
 
 
 def _load_one_csv_file(name: str, dataset_type: str = '',
                        organization: str = '',
-                       marks: List[str] = [],
+                       flags: List[str] = [],
                        error_file: Optional[TextIO] = None,
                        output_file_type: Optional[str] = None,
                        verbose: bool = False) -> int:
@@ -702,7 +702,7 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
 
     dataset_type = chromo['dataset_type']
     method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
-    lc = LocalCKAN(context={'RECOMBINANT_MARKS': marks})
+    lc = LocalCKAN(context={'DATASTORE_APP_CONTEXT_FLAGS': flags})
     errors = 0
 
     # dynamic fields
