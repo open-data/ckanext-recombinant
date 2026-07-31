@@ -294,29 +294,35 @@ def delete(dataset_type: Optional[List[str]] = None,
 @recombinant.command(
         short_help="Load CSV file(s) rows into recombinant resources datastore.")
 @click.argument("csv_file", type=click.File('r'), nargs=-1)
-@click.option('-t', '--dataset-type', help='Dataset type to import the CSV file into.')
-@click.option('-o', '--organization', help='Organization to try to load the data into.')
+@click.option('-t', '--resource-type',
+              help='Resource type to import the CSV file into.')
+@click.option('-o', '--organization',
+              help='Only load records for this organization. (e.g. tbs-sct)')
 @click.option('-f', '--flag', multiple=True,
               help='Flags the loading context with variable names. These values '
                    'are passed into the datastore_app_context temp session table')
+@click.option('-s', '--skip-validation', is_flag=True,
+              help='Skip all pSQL validation.')
 @click.option('-E', '--error-file', type=click.File('w'),
               help='Output CSV file for errors instead of stderr/stdout')
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
 def load_csv(csv_file: List[TextIO],
-             dataset_type: str = '',
+             resource_type: str = '',
              organization: str = '',
              flag: Optional[Union[str, List[str]]] = None,
+             skip_validation: Optional[bool] = False,
              error_file: Optional[TextIO] = None,
              verbose: bool = False):
     """
     Load CSV file(s) rows into recombinant resources datastore
 
+
     Full Usage:\n
         recombinant load-csv CSV_FILE ...
     """
-    if len(csv_file) > 1 and dataset_type:
-        raise click.ClickException('Cannot define --dataset-type with multiple files')
+    if len(csv_file) > 1 and resource_type:
+        raise click.ClickException('Cannot define --resource-type with multiple files')
     if len(csv_file) > 1 and organization:
         raise click.ClickException('Cannot define --organization with multiple files')
     output_file_type = None
@@ -339,8 +345,10 @@ def load_csv(csv_file: List[TextIO],
     for _f in flags:
         if not is_valid_field_name(_f) or ' ' in _f:
             raise click.ClickException('Invalid flag name "%s" for pSQL column' % _f)
+    if skip_validation:
+        flags.append('skip_validation')
     with suppress_logging('ckanext.activity.logic.action'):
-        _load_csv_files(csv_file, dataset_type, organization, flags,
+        _load_csv_files(csv_file, resource_type, organization, flags,
                         error_file, output_file_type, verbose)
 
 
@@ -644,7 +652,7 @@ def _delete(dataset_types: Optional[List[str]],
 
 
 def _load_csv_files(csv_file_names: List[TextIO],
-                    dataset_type: str = '',
+                    resource_type: str = '',
                     organization: str = '',
                     flags: Optional[List[str]] = None,
                     error_file: Optional[TextIO] = None,
@@ -656,13 +664,13 @@ def _load_csv_files(csv_file_names: List[TextIO],
     errs = 0
     for n in csv_file_names:
         # pass click.File prop
-        errs |= _load_one_csv_file(n.name, dataset_type,
+        errs |= _load_one_csv_file(n.name, resource_type,
                                    organization, flags, error_file,
                                    output_file_type, verbose)
     return errs
 
 
-def _load_one_csv_file(name: str, dataset_type: str = '',
+def _load_one_csv_file(name: str, resource_type: str = '',
                        organization: str = '',
                        flags: Optional[List[str]] = None,
                        error_file: Optional[TextIO] = None,
@@ -691,16 +699,15 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
 
     _path, csv_name = os.path.split(name)
     assert csv_name.endswith('.csv'), csv_name
-    resource_name = dataset_type
     singular_org_name = organization
-    if not resource_name:
-        resource_name = csv_name[:-4]
-        if '.' in resource_name:
-            singular_org_name, resource_name = tuple(resource_name.split('.'))
-    click.echo('Resource name: %s' % resource_name)
+    if not resource_type:
+        resource_type = csv_name[:-4]
+        if '.' in resource_type:
+            singular_org_name, resource_type = tuple(resource_type.split('.'))
+    click.echo('Resource name: %s' % resource_type)
     if singular_org_name:
         click.echo('Organization name: %s' % singular_org_name)
-    chromo = get_chromo(resource_name)
+    chromo = get_chromo(resource_type)
 
     dataset_type = chromo['dataset_type']
     method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
@@ -751,11 +758,11 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
             return 1
 
         for res in results[0]['resources']:
-            if res['name'] == resource_name:
+            if res['name'] == resource_type:
                 break
         else:
             click.echo('type:%s organization:%s missing resource:%s' % (
-                dataset_type, org_name, resource_name))
+                dataset_type, org_name, resource_type))
             return 1
 
         # convert list values to lists
