@@ -1,0 +1,1 @@
+When loading data via the `load-csv` subcommand, newline characters are now normalized to `\n`
