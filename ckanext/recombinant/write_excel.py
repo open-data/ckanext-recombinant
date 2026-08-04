@@ -272,7 +272,8 @@ def excel_data_dictionary(geno: Dict[str, Any],
                             in org_specifc_fields else None,
                             published_resource=published_resource,
                             org_specifc_field=field['datastore_id']
-                            in org_specifc_fields)
+                            in org_specifc_fields,
+                            choices_suffix=field.get('choices_suffix_filter'))
 
             _populate_reference_sheet(sheet, geno, refs)
             # type_ignore_reason: incomplete typing
@@ -495,7 +496,8 @@ def _populate_excel_sheet(book: Workbook,
                 full_text_choices,
                 org=org if field['datastore_id'] in org_specifc_fields else None,
                 published_resource=False,
-                org_specifc_field=field['datastore_id'] in org_specifc_fields)
+                org_specifc_field=field['datastore_id'] in org_specifc_fields,
+                choices_suffix=field.get('choices_suffix_filter'))
             refN = len(refs) + REF_FIRST_ROW - 2
 
             if full_text_choices:
@@ -652,7 +654,13 @@ def _append_field_choices_rows(refs: List[Tuple[Optional[str], List[Any]]],
                                full_text_choices: bool,
                                org: Optional[Dict[str, Any]] = None,
                                published_resource: bool = False,
-                               org_specifc_field: bool = False):
+                               org_specifc_field: bool = False,
+                               choices_suffix: Optional[Dict[str, Any]] = None):
+    if choices_suffix:
+        refs.append(('choice heading', [_('Value suffixes')]))
+        for suffix, _labels in choices_suffix.items():
+            suffix_label = recombinant_language_text(_labels)
+            refs.append(('choice', [str(suffix), suffix_label]))
     if published_resource and org_specifc_field:
         refs.append(('choice heading', [_('Values')]))
         headers = [_('Value'), _('Label'), _('Valid Organizations')]

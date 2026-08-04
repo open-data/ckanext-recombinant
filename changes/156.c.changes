@@ -1,0 +1,1 @@
+Now outputs choices suffixes into the Data Dictionaries. Defined via `choices_suffix_filter` which should be a dict of suffix value (key) and english and french labels (value)
