@@ -840,8 +840,9 @@ def _load_one_csv_file(name: str, resource_name: str = '',
                     bad = int(err.error_dict['records_row'])  # type: ignore
                     bad_record_count += 1
                     # type_ignore_reason: incomplete typing
-                    error_count += sum(  # type: ignore
-                        len(v) for v in err.error_dict['records'][0].values())
+                    error_count += sum(
+                        len(v) for v in
+                        err.error_dict['records'][0].values())  # type: ignore
 
                     # write errors to output
                     # type_ignore_reason: incomplete typing
