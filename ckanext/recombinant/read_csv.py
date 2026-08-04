@@ -75,7 +75,7 @@ def csv_data_batch(csv_path: str,
             # normalize newlines to \n
             row_dict = dict((k, v.replace('\r\n', '\n').replace('\r', '\n')
                              if isinstance(v, str) else v)
-                             for k, v in row_dict.items())
+                            for k, v in row_dict.items())
 
             records.append(row_dict)
             if len(records) >= BATCH_SIZE:

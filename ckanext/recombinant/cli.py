@@ -56,7 +56,7 @@ def suppress_logging(logger_name: str):
 
 @contextmanager
 def error_outputter(error_file: Optional[TextIO] = None,
-                    out_format: str = 'jsonl'):
+                    output_file_format: Optional[str] = 'jsonl'):
     """
     Output CSV loading errors to a file or stderr.
     """
@@ -66,13 +66,13 @@ def error_outputter(error_file: Optional[TextIO] = None,
     else:
         outf = sys.stderr
     try:
-        csv_writer = csv.writer(outf) if out_format == 'csv' else None
+        csv_writer = csv.writer(outf) if output_file_format == 'csv' else None
         wrote_header = False
 
         def _write_error(org_name: str, error: ErrorDict, data: Dict[str, Any]):
             nonlocal wrote_header
 
-            if out_format == 'csv' and csv_writer:
+            if output_file_format == 'csv' and csv_writer:
                 if not wrote_header:
                     csv_writer.writerow([
                         'org_name',
@@ -380,10 +380,10 @@ def load_csv(csv_file: List[TextIO],
         raise click.ClickException('Cannot define --resource-name with multiple files')
     if len(csv_file) > 1 and organization:
         raise click.ClickException('Cannot define --organization with multiple files')
-    output_file_type = None
+    output_file_format = None
     if error_file:
-        output_file_type = Path(error_file.name).suffix[1:].lower()
-        if output_file_type not in ['csv', 'jsonl']:
+        output_file_format = Path(error_file.name).suffix[1:].lower()
+        if output_file_format not in ['csv', 'jsonl']:
             raise click.ClickException(
                 'Only csv and jsonl are supported for --error-file')
     flags = ['recombinant_import']  # always have a default flag
@@ -399,7 +399,7 @@ def load_csv(csv_file: List[TextIO],
         flags.append('skip_validation')
     with suppress_logging('ckanext.activity.logic.action'):
         _load_csv_files(csv_file, resource_name, organization, flags,
-                        error_file, output_file_type, verbose)
+                        error_file, output_file_format, verbose)
 
 
 @recombinant.command(
@@ -706,7 +706,7 @@ def _load_csv_files(csv_file_names: List[TextIO],
                     organization: str = '',
                     flags: Optional[List[str]] = None,
                     error_file: Optional[TextIO] = None,
-                    output_file_type: Optional[str] = None,
+                    output_file_format: Optional[str] = None,
                     verbose: bool = False) -> int:
     """
     Load CSV file(s) rows into recombinant resources datastore
@@ -716,7 +716,7 @@ def _load_csv_files(csv_file_names: List[TextIO],
         # pass click.File prop
         errs |= _load_one_csv_file(n.name, resource_name,
                                    organization, flags, error_file,
-                                   output_file_type, verbose)
+                                   output_file_format, verbose)
     return errs  # exit code return
 
 
@@ -724,7 +724,7 @@ def _load_one_csv_file(name: str, resource_name: str = '',
                        organization: str = '',
                        flags: Optional[List[str]] = None,
                        error_file: Optional[TextIO] = None,
-                       output_file_type: Optional[str] = 'jsonl',
+                       output_file_format: Optional[str] = 'jsonl',
                        verbose: bool = False) -> int:
     """
     Load CSV file rows into recombinant resources datastore
@@ -768,7 +768,7 @@ def _load_one_csv_file(name: str, resource_name: str = '',
     dynamic_fields += [f['datastore_id'] for f in chromo['fields'] if
                        f.get('published_resource_computed_field', False)]
 
-    with error_outputter(error_file, output_file_type) as write_error:
+    with error_outputter(error_file, output_file_format) as write_error:
         for org_name, records in csv_data_batch(name, chromo,
                                                 ignore_fields=dynamic_fields):
             if not org_name and not organization:
@@ -785,7 +785,8 @@ def _load_one_csv_file(name: str, resource_name: str = '',
                 rows=2)['results']
 
             if not results:
-                lc.action.recombinant_create(dataset_type=dataset_type, owner_org=org_name)
+                lc.action.recombinant_create(dataset_type=dataset_type,
+                                             owner_org=org_name)
                 results = lc.action.package_search(
                     q='type:%s AND organization:%s' % (dataset_type, org_name),
                     include_private=True,
@@ -806,8 +807,8 @@ def _load_one_csv_file(name: str, resource_name: str = '',
 
             # convert list values to lists
             list_fields = [f['datastore_id'] for f in chromo['fields'] if
-                        f['datastore_type'] == '_text' and
-                        not f.get('published_resource_computed_field')]
+                           f['datastore_type'] == '_text' and
+                           not f.get('published_resource_computed_field')]
             if list_fields:
                 for r in records:
                     for k in list_fields:
@@ -838,12 +839,14 @@ def _load_one_csv_file(name: str, resource_name: str = '',
                     # type_ignore_reason: incomplete typing
                     bad = int(err.error_dict['records_row'])  # type: ignore
                     bad_record_count += 1
-                    error_count += sum(
+                    # type_ignore_reason: incomplete typing
+                    error_count += sum(  # type: ignore
                         len(v) for v in err.error_dict['records'][0].values())
 
                     # write errors to output
-                    write_error(org_name,
-                                err.error_dict['records'][0],
+                    # type_ignore_reason: incomplete typing
+                    write_error(org_name,  # type: ignore
+                                err.error_dict['records'][0],  # type: ignore
                                 records[offset + bad])
 
                     # retry records that passed validation
