@@ -555,7 +555,7 @@ def recombinant_datastore_search(up_func: Action,
     """
     Alias for datastore_search
     """
-    resource_id = get_or_bust(data_dict, 'resource_id')
+    resource_id = data_dict.get('resource_id', data_dict.get('id'))
     chromo = None
     try:
         UUID(resource_id)  # is a normal resource id
