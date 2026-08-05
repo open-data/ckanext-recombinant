@@ -628,4 +628,3 @@ def recombinant_package_show(up_func: Action,
     if not resource or not resource.package_id:
         raise NotFound
     return up_func(context, dict(data_dict, id=resource.package_id))
-
