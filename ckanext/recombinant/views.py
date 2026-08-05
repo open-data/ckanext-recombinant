@@ -28,7 +28,6 @@ from ckan.plugins.toolkit import (
 from ckan.logic import ValidationError, NotAuthorized
 from ckan.model.group import Group
 from ckan.model.resource import Resource
-from ckan.model.package import Package
 from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
 
 from ckan.views.dataset import _get_package_type
