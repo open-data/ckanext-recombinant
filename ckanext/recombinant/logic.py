@@ -1,4 +1,5 @@
 from six import string_types
+from uuid import UUID
 from ckan.plugins.toolkit import _, chained_action, h, side_effect_free
 
 from typing import Dict, Any, List, Tuple
@@ -8,6 +9,7 @@ from sqlalchemy import and_
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
+from ckan.model.resource import Resource
 from ckan.model.group import Group
 from ckan.common import asbool
 
@@ -461,9 +463,25 @@ def recombinant_datastore_info(up_func: Action,
     """
     Wraps datastore_info action to add Recombinant schema info
     to Recombinant resources and Published resources.
+
+    Alias for datastore_info
     """
-    info = up_func(context, data_dict)
     resource_id = data_dict.get('resource_id', data_dict.get('id'))
+
+    # alias datastore_info so datastore_info?id=ati works
+    chromo = None
+    try:
+        UUID(resource_id)  # is a normal resource id
+    except ValueError:
+        pass
+    try:
+        chromo = get_chromo(resource_id)
+    except RecombinantException:
+        pass
+    if chromo and chromo.get('published_resource_id'):
+        resource_id = chromo['published_resource_id']
+
+    info = up_func(context, dict(data_dict, id=resource_id))
     chromo = h.recombinant_published_resource_chromo(resource_id)
     package_type = ''
     recombinant_resource_name = ''
@@ -527,3 +545,86 @@ def recombinant_datastore_upsert(up_func: Action,
             for field, field_errs in record_errs.items():
                 record_errs[field] = list(format_trigger_error(field_errs))
         raise ValidationError(_error_dict)
+
+
+@chained_action
+@side_effect_free
+def recombinant_datastore_search(up_func: Action,
+                                 context: Context,
+                                 data_dict: DataDict) -> ChainedAction:
+    """
+    Alias for datastore_search
+    """
+    resource_id = data_dict.get('resource_id', data_dict.get('id'))
+    chromo = None
+    try:
+        UUID(resource_id)  # is a normal resource id
+        return up_func(context, data_dict)
+    except ValueError:
+        pass
+    try:
+        chromo = get_chromo(resource_id)
+    except RecombinantException:
+        pass
+    if not chromo or not chromo.get('published_resource_id'):
+        return up_func(context, data_dict)  # no recombinant with that resource name
+    return up_func(context, dict(data_dict,
+                                 resource_id=chromo['published_resource_id']))
+
+
+@chained_action
+@side_effect_free
+def recombinant_resource_show(up_func: Action,
+                              context: Context,
+                              data_dict: DataDict) -> ChainedAction:
+    """
+    Alias for resource_show
+    """
+    id = get_or_bust(data_dict, 'id')
+    chromo = None
+    try:
+        UUID(id)  # is a normal resource id
+        return up_func(context, data_dict)
+    except ValueError:
+        pass
+    try:
+        chromo = get_chromo(id)
+    except RecombinantException:
+        pass
+    if not chromo or not chromo.get('published_resource_id'):
+        return up_func(context, data_dict)  # no recombinant with that resource name
+    return up_func(context, dict(data_dict, id=chromo['published_resource_id']))
+
+
+@chained_action
+@side_effect_free
+def recombinant_package_show(up_func: Action,
+                             context: Context,
+                             data_dict: DataDict) -> ChainedAction:
+    """
+    Alias for package_show
+    """
+    id = get_or_bust(data_dict, 'id')
+    geno = None
+    try:
+        UUID(id)  # is a normal package id
+        return up_func(context, data_dict)
+    except ValueError:
+        pass
+    if id not in h.recombinant_get_types():
+        return up_func(context, data_dict)
+    try:
+        geno = get_geno(id)
+    except RecombinantException:
+        pass
+    if not geno or not geno.get('resources'):
+        return up_func(context, data_dict)  # no recombinant with that package type
+    res_id = None
+    for r in geno['resources']:
+        res_id = r.get('published_resource_id', res_id)
+    if not res_id:
+        return up_func(context, data_dict)  # no published resource for package type
+    resource = Resource.get(res_id)
+    if not resource or not resource.package_id:
+        raise NotFound
+    return up_func(context, dict(data_dict, id=resource.package_id))
