@@ -10,7 +10,8 @@ from pathlib import Path
 from openpyxl.formula import Tokenizer
 import sqlalchemy as sa
 
-from typing import Dict, List, Any, Optional, TextIO, Union
+from typing import Dict, List, Any, Optional, TextIO
+from ckan.types import ErrorDict
 
 from ckan.logic import ValidationError
 from ckanapi import LocalCKAN, NotFound
@@ -39,6 +40,10 @@ DATASTORE_PAGINATE = 10000  # max records for single datastore query
 
 @contextmanager
 def suppress_logging(logger_name: str):
+    """
+    Suppresses logging for a given logger name. Restores
+    it to its original state afterwards.
+    """
     logger = logging.getLogger(logger_name)
     old_level = logger.level
 
@@ -47,6 +52,53 @@ def suppress_logging(logger_name: str):
         yield
     finally:
         logger.setLevel(old_level)
+
+
+@contextmanager
+def error_outputter(error_file: Optional[TextIO] = None,
+                    output_file_format: Optional[str] = 'jsonl'):
+    """
+    Output CSV loading errors to a file or stderr.
+    """
+    if error_file:
+        outf = error_file
+        outf.write(BOM)
+    else:
+        outf = sys.stderr
+    try:
+        csv_writer = csv.writer(outf) if output_file_format == 'csv' else None
+        wrote_header = False
+
+        def _write_error(org_name: str, error: ErrorDict, data: Dict[str, Any]):
+            nonlocal wrote_header
+
+            if output_file_format == 'csv' and csv_writer:
+                if not wrote_header:
+                    csv_writer.writerow([
+                        'org_name',
+                        'errors',
+                        *data.keys(),
+                    ])
+                    wrote_header = True
+
+                csv_writer.writerow([
+                    org_name,
+                    error,
+                    *data.values(),
+                ])
+            else:
+                outf.write(json.dumps({
+                    'org_name': org_name,
+                    'errors': error,
+                    'record': data,
+                }) + '\n')
+
+            outf.flush()
+
+        yield _write_error
+    finally:
+        if error_file:
+            outf.close()
 
 
 def get_commands():
@@ -294,44 +346,48 @@ def delete(dataset_type: Optional[List[str]] = None,
 @recombinant.command(
         short_help="Load CSV file(s) rows into recombinant resources datastore.")
 @click.argument("csv_file", type=click.File('r'), nargs=-1)
-@click.option('-t', '--dataset-type', help='Dataset type to import the CSV file into.')
-@click.option('-o', '--organization', help='Organization to try to load the data into.')
+@click.option('-r', '--resource-name',
+              help='Resource name to import the CSV file into.')
+@click.option('-o', '--organization',
+              help='Only load records for this organization. (e.g. tbs-sct)')
 @click.option('-f', '--flag', multiple=True,
               help='Flags the loading context with variable names. These values '
                    'are passed into the datastore_app_context temp session table')
+@click.option('-s', '--skip-validation', is_flag=True,
+              help='Skip all pSQL validation.')
 @click.option('-E', '--error-file', type=click.File('w'),
-              help='Output CSV file for errors instead of stderr/stdout')
+              help='Output CSV or JSONL file for errors instead of stderr')
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
 def load_csv(csv_file: List[TextIO],
-             dataset_type: str = '',
+             resource_name: str = '',
              organization: str = '',
-             flag: Optional[Union[str, List[str]]] = None,
+             flag: Optional[List[str]] = None,
+             skip_validation: Optional[bool] = False,
              error_file: Optional[TextIO] = None,
              verbose: bool = False):
     """
     Load CSV file(s) rows into recombinant resources datastore
 
+
     Full Usage:\n
         recombinant load-csv CSV_FILE ...
+
+    If --organization is NOT passed, all organizations present in the file
+    will be processed, unless if the file follows a format of <org>.<type>.csv
     """
-    if len(csv_file) > 1 and dataset_type:
-        raise click.ClickException('Cannot define --dataset-type with multiple files')
+    if len(csv_file) > 1 and resource_name:
+        raise click.ClickException('Cannot define --resource-name with multiple files')
     if len(csv_file) > 1 and organization:
         raise click.ClickException('Cannot define --organization with multiple files')
-    output_file_type = None
+    output_file_format = None
     if error_file:
-        output_file_type = Path(error_file.name).suffix[1:].lower()
-        if output_file_type not in ['csv', 'jsonl']:
+        output_file_format = Path(error_file.name).suffix[1:].lower()
+        if output_file_format not in ['csv', 'jsonl']:
             raise click.ClickException(
                 'Only csv and jsonl are supported for --error-file')
     flags = ['recombinant_import']  # always have a default flag
-    if flag and isinstance(flag, str):
-        if flag == 'recombinant_import':
-            raise click.ClickException(
-                'Cannot redefine default flag "recombinant_import"')
-        flags.append(flag)
-    elif flag:
+    if flag:
         if 'recombinant_import' in flag:
             raise click.ClickException(
                 'Cannot redefine default flag "recombinant_import"')
@@ -339,9 +395,11 @@ def load_csv(csv_file: List[TextIO],
     for _f in flags:
         if not is_valid_field_name(_f) or ' ' in _f:
             raise click.ClickException('Invalid flag name "%s" for pSQL column' % _f)
+    if skip_validation:
+        flags.append('skip_validation')
     with suppress_logging('ckanext.activity.logic.action'):
-        _load_csv_files(csv_file, dataset_type, organization, flags,
-                        error_file, output_file_type, verbose)
+        _load_csv_files(csv_file, resource_name, organization, flags,
+                        error_file, output_file_format, verbose)
 
 
 @recombinant.command(
@@ -644,11 +702,11 @@ def _delete(dataset_types: Optional[List[str]],
 
 
 def _load_csv_files(csv_file_names: List[TextIO],
-                    dataset_type: str = '',
+                    resource_name: str = '',
                     organization: str = '',
                     flags: Optional[List[str]] = None,
                     error_file: Optional[TextIO] = None,
-                    output_file_type: Optional[str] = None,
+                    output_file_format: Optional[str] = None,
                     verbose: bool = False) -> int:
     """
     Load CSV file(s) rows into recombinant resources datastore
@@ -656,33 +714,21 @@ def _load_csv_files(csv_file_names: List[TextIO],
     errs = 0
     for n in csv_file_names:
         # pass click.File prop
-        errs |= _load_one_csv_file(n.name, dataset_type,
+        errs |= _load_one_csv_file(n.name, resource_name,
                                    organization, flags, error_file,
-                                   output_file_type, verbose)
-    return errs
+                                   output_file_format, verbose)
+    return errs  # exit code return
 
 
-def _load_one_csv_file(name: str, dataset_type: str = '',
+def _load_one_csv_file(name: str, resource_name: str = '',
                        organization: str = '',
                        flags: Optional[List[str]] = None,
                        error_file: Optional[TextIO] = None,
-                       output_file_type: Optional[str] = None,
+                       output_file_format: Optional[str] = 'jsonl',
                        verbose: bool = False) -> int:
     """
     Load CSV file rows into recombinant resources datastore
     """
-    out_format = 'jsonl'
-    csv_writer = None
-    if error_file:
-        out_format = output_file_type
-        outf = error_file
-    else:
-        outf = sys.stderr
-
-    if out_format == 'csv':
-        outf.write(BOM)
-        csv_writer = csv.writer(outf)
-
     if verbose:
         if error_file:
             click.echo('Writing error outputs to %s' % error_file.name)
@@ -691,21 +737,23 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
 
     _path, csv_name = os.path.split(name)
     assert csv_name.endswith('.csv'), csv_name
-    resource_name = dataset_type
-    singular_org_name = organization
     if not resource_name:
+        # get the resource name and possible org name from the filename
+        # this would be in the format of <org>.<type>.csv
         resource_name = csv_name[:-4]
         if '.' in resource_name:
-            singular_org_name, resource_name = tuple(resource_name.split('.'))
+            organization, resource_name = tuple(resource_name.split('.'))
     click.echo('Resource name: %s' % resource_name)
-    if singular_org_name:
-        click.echo('Organization name: %s' % singular_org_name)
+    if organization:
+        click.echo('Organization name: %s' % organization)
     chromo = get_chromo(resource_name)
 
     dataset_type = chromo['dataset_type']
     method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
-    lc = LocalCKAN(context={'DATASTORE_APP_CONTEXT_FLAGS': flags} if flags else {})
-    errors = 0
+    lc = LocalCKAN(context={'datastore_app_context_flags': flags} if flags else {})
+    error_count = 0
+    bad_record_count = 0
+    skipped_orgs = 0
 
     # dynamic fields
     dynamic_fields = [
@@ -720,121 +768,111 @@ def _load_one_csv_file(name: str, dataset_type: str = '',
     dynamic_fields += [f['datastore_id'] for f in chromo['fields'] if
                        f.get('published_resource_computed_field', False)]
 
-    write_csv_header = False
-    for org_name, records in csv_data_batch(name, chromo,
-                                            ignore_fields=dynamic_fields):
-        if not org_name and not singular_org_name:
-            click.echo('could not find any org!')
-            return 1
-        if not org_name and singular_org_name:
-            org_name = singular_org_name
-        elif singular_org_name and org_name != singular_org_name:
-            if verbose:
-                click.echo('%s does not match %s. Skipping...' % (
-                    org_name, singular_org_name))
-            continue
-        results = lc.action.package_search(
-            q='type:%s AND organization:%s' % (dataset_type, org_name),
-            include_private=True,
-            rows=2)['results']
-
-        if not results:
-            lc.action.recombinant_create(dataset_type=dataset_type, owner_org=org_name)
+    with error_outputter(error_file, output_file_format) as write_error:
+        for org_name, records in csv_data_batch(name, chromo,
+                                                ignore_fields=dynamic_fields):
+            if not org_name and not organization:
+                click.echo('could not find any org!')
+                return 1
+            if not org_name and organization:
+                org_name = organization
+            elif organization and org_name != organization:
+                skipped_orgs += 1
+                continue
             results = lc.action.package_search(
                 q='type:%s AND organization:%s' % (dataset_type, org_name),
                 include_private=True,
                 rows=2)['results']
 
-        if len(results) > 1:
-            click.echo('type:%s organization:%s multiple found!' % (
-                dataset_type, org_name))
-            return 1
+            if not results:
+                lc.action.recombinant_create(dataset_type=dataset_type,
+                                             owner_org=org_name)
+                results = lc.action.package_search(
+                    q='type:%s AND organization:%s' % (dataset_type, org_name),
+                    include_private=True,
+                    rows=2)['results']
 
-        for res in results[0]['resources']:
-            if res['name'] == resource_name:
-                break
-        else:
-            click.echo('type:%s organization:%s missing resource:%s' % (
-                dataset_type, org_name, resource_name))
-            return 1
+            if len(results) > 1:
+                click.echo('type:%s organization:%s multiple found!' % (
+                    dataset_type, org_name))
+                return 1
 
-        # convert list values to lists
-        list_fields = [f['datastore_id'] for f in chromo['fields'] if
-                       f['datastore_type'] == '_text' and
-                       not f.get('published_resource_computed_field')]
-        if list_fields:
+            for res in results[0]['resources']:
+                if res['name'] == resource_name:
+                    break
+            else:
+                click.echo('type:%s organization:%s missing resource:%s' % (
+                    dataset_type, org_name, resource_name))
+                return 1
+
+            # convert list values to lists
+            list_fields = [f['datastore_id'] for f in chromo['fields'] if
+                           f['datastore_type'] == '_text' and
+                           not f.get('published_resource_computed_field')]
+            if list_fields:
+                for r in records:
+                    for k in list_fields:
+                        if not r[k]:
+                            r[k] = []
+                        else:
+                            r[k] = r[k].split(',')
+
+            click.echo('- %s %s' % (org_name, len(records)))
+
+            # remove any dynamic fields
             for r in records:
-                for k in list_fields:
-                    if not r[k]:
-                        r[k] = []
-                    else:
-                        r[k] = r[k].split(',')
+                for e in dynamic_fields:
+                    if e not in r:
+                        continue
+                    del r[e]
 
-        click.echo('- %s %s' % (org_name, len(records)))
-
-        # remove any dynamic fields
-        for r in records:
-            for e in dynamic_fields:
-                if e not in r:
-                    continue
-                del r[e]
-
-        offset = 0
-        while offset < len(records):
-            try:
-                lc.action.datastore_upsert(
-                    method=method,
-                    resource_id=res['id'],
-                    records=records[offset:])
-            except ValidationError as err:
-                if 'records_row' not in err.error_dict:
-                    if error_file:
-                        outf.close()
-                    raise
-                # type_ignore_reason: incomplete typing
-                bad = int(err.error_dict['records_row'])  # type: ignore
-                errors |= 2
-                if out_format == 'csv' and error_file and csv_writer:
-                    if not write_csv_header:
-                        csv_writer.writerow([
-                            'errors',
-                            'org_name',
-                            *records[offset + bad].keys()
-                        ])
-                        write_csv_header = True
-                    csv_writer.writerow([
-                        err.error_dict['records'],
-                        org_name,
-                        *records[offset + bad].values()
-                    ])
-                else:
-                    outf.write(json.dumps({
-                        'errors': err.error_dict['records'],
-                        'org_name': org_name,
-                        'record': records[offset + bad]
-                    }) + '\n')
-                # retry records that passed validation
-                good = records[offset: offset+bad]
-                if good:
+            offset = 0
+            while offset < len(records):
+                try:
                     lc.action.datastore_upsert(
                         method=method,
                         resource_id=res['id'],
-                        records=good)
-                offset += bad + 1  # skip and continue
-            else:
-                break
+                        records=records[offset:])
+                except ValidationError as err:
+                    if 'records_row' not in err.error_dict:
+                        raise
+                    # type_ignore_reason: incomplete typing
+                    bad = int(err.error_dict['records_row'])  # type: ignore
+                    bad_record_count += 1
+                    # type_ignore_reason: incomplete typing
+                    error_count += sum(
+                        len(v) for v in
+                        err.error_dict['records'][0].values())  # type: ignore
 
-    if error_file:
-        outf.close()
+                    # write errors to output
+                    # type_ignore_reason: incomplete typing
+                    write_error(org_name,  # type: ignore
+                                err.error_dict['records'][0],  # type: ignore
+                                records[offset + bad])
 
-    if errors:
-        click.echo('Finished with errors...')
+                    # retry records that passed validation
+                    good = records[offset: offset+bad]
+                    if good:
+                        lc.action.datastore_upsert(
+                            method=method,
+                            resource_id=res['id'],
+                            records=good)
+                    offset += bad + 1  # skip and continue
+                else:
+                    break
+
+    if verbose and organization and skipped_orgs:
+        click.echo('Skipped %s organizations that did not match %s...' % (
+            skipped_orgs, organization))
+    if error_count:
+        click.echo('Finished with %s error(s) across %s invalid record(s)' %
+                   (error_count, bad_record_count))
         if error_file:
-            click.echo('See %s for errors!' % error_file.name)
+            click.echo('See %s for error(s)!' % error_file.name)
     else:
-        click.echo('DONE!')
+        click.echo('Finished without errors')
 
-    return errors
+    return 2 if error_count else 0  # exit code return
 
 
 def _combine_csv(target_dir: Optional[str],

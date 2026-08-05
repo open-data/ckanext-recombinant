@@ -537,6 +537,9 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
 
             fld['datastore_type'] = field['datastore_type']
 
+            if field.get('choices_suffix_filter'):
+                fld['choices_suffixes'] = field['choices_suffix_filter']
+
             if fld['id'] in choice_fields:
                 choices = {}
                 fld['choices'] = choices
