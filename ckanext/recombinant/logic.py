@@ -473,7 +473,11 @@ def recombinant_datastore_info(up_func: Action,
     try:
         UUID(resource_id)  # is a normal resource id
     except ValueError:
+        pass
+    try:
         chromo = get_chromo(resource_id)
+    except RecombinantException:
+        pass
     if chromo and chromo.get('published_resource_id'):
         resource_id = chromo['published_resource_id']
 
@@ -557,7 +561,11 @@ def recombinant_datastore_search(up_func: Action,
         UUID(resource_id)  # is a normal resource id
         return up_func(context, data_dict)
     except ValueError:
+        pass
+    try:
         chromo = get_chromo(resource_id)
+    except RecombinantException:
+        pass
     if not chromo or not chromo.get('published_resource_id'):
         return up_func(context, data_dict)  # no recombinant with that resource name
     return up_func(context, dict(data_dict,
@@ -578,7 +586,11 @@ def recombinant_resource_show(up_func: Action,
         UUID(id)  # is a normal resource id
         return up_func(context, data_dict)
     except ValueError:
+        pass
+    try:
         chromo = get_chromo(id)
+    except RecombinantException:
+        pass
     if not chromo or not chromo.get('published_resource_id'):
         return up_func(context, data_dict)  # no recombinant with that resource name
     return up_func(context, dict(data_dict, id=chromo['published_resource_id']))
@@ -598,9 +610,13 @@ def recombinant_package_show(up_func: Action,
         UUID(id)  # is a normal package id
         return up_func(context, data_dict)
     except ValueError:
-        if id not in h.recombinant_get_types():
-            return up_func(context, data_dict)
+        pass
+    if id not in h.recombinant_get_types():
+        return up_func(context, data_dict)
+    try:
         geno = get_geno(id)
+    except RecombinantException:
+        pass
     if not geno or not geno.get('resources'):
         return up_func(context, data_dict)  # no recombinant with that package type
     res_id = None
@@ -609,7 +625,7 @@ def recombinant_package_show(up_func: Action,
     if not res_id:
         return up_func(context, data_dict)  # no published resource for package type
     resource = Resource.get(res_id)
-    if not resource or not resource.package.id:
+    if not resource or not resource.package_id:
         raise NotFound
-    return up_func(context, dict(data_dict, id=resource.package.id))
+    return up_func(context, dict(data_dict, id=resource.package_id))
 

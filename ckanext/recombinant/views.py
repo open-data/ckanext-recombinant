@@ -77,14 +77,18 @@ def resource_alias(id: str) -> Union[Response, str]:
         UUID(id)  # is a normal resource id
         return abort(404)
     except ValueError:
+        pass
+    try:
         chromo = get_chromo(id)
+    except RecombinantException:
+        pass
     if not chromo or not chromo.get('published_resource_id'):
         return abort(404)
     res = Resource.get(chromo['published_resource_id'])
     if not res:
         return abort(404)
     return h.redirect_to('%s_resource.read' % res.package.type,
-                         id=res.package.id,
+                         id=res.package_id,
                          package_type=res.package.type,
                          resource_id=res.id)
 
