@@ -598,12 +598,14 @@ def recombinant_package_show(up_func: Action,
         UUID(id)  # is a normal package id
         return up_func(context, data_dict)
     except ValueError:
+        if id not in h.recombinant_get_types():
+            return up_func(context, data_dict)
         geno = get_geno(id)
     if not geno or not geno.get('resources'):
         return up_func(context, data_dict)  # no recombinant with that package type
     res_id = None
     for r in geno['resources']:
-        res_id = r.get('published_resource_id')
+        res_id = r.get('published_resource_id', res_id)
     if not res_id:
         return up_func(context, data_dict)  # no published resource for package type
     resource = Resource.get(res_id)
