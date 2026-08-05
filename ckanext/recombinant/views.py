@@ -1,6 +1,7 @@
 from flask import Blueprint, Response as FlaskResponse
 from flask_babel import force_locale
 import re
+from uuid import UUID
 import simplejson as json
 
 from typing import Union, Dict, Tuple, Any, List, Optional
@@ -26,6 +27,8 @@ from ckan.plugins.toolkit import (
 
 from ckan.logic import ValidationError, NotAuthorized
 from ckan.model.group import Group
+from ckan.model.resource import Resource
+from ckan.model.package import Package
 from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
 
 from ckan.views.dataset import _get_package_type
@@ -62,6 +65,32 @@ KEY_ERROR_MATCH = re.compile('"([^"]*)"')
 
 log = getLogger(__name__)
 recombinant = Blueprint('recombinant', __name__)
+
+
+@recombinant.route('/resource/<id>', methods=['GET'])
+def resource_alias(id: str) -> Union[Response, str]:
+    """
+    Redirect alias for direct resource_show view.
+    """
+    chromo = None
+    try:
+        UUID(id)  # is a normal resource id
+        return abort(404)
+    except ValueError:
+        pass
+    try:
+        chromo = get_chromo(id)
+    except RecombinantException:
+        pass
+    if not chromo or not chromo.get('published_resource_id'):
+        return abort(404)
+    res = Resource.get(chromo['published_resource_id'])
+    if not res:
+        return abort(404)
+    return h.redirect_to('%s_resource.read' % res.package.type,
+                         id=res.package_id,
+                         package_type=res.package.type,
+                         resource_id=res.id)
 
 
 @recombinant.route('/recombinant/upload/<id>', methods=['GET', 'POST'])

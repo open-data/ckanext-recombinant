@@ -1,0 +1,1 @@
+`package_show`, `resource_show`, `datastore_info`, and `datastore_search` now support aliases for Recombinant dataset types and resource names. E.g. `resource_show?id=ati` and `datastore_search?resource_id=ati` will query the `published_resource_id` for the Combined data of "ATI Summaries"
