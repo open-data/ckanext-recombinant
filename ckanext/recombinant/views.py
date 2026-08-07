@@ -667,8 +667,10 @@ def preview_table(resource_name: str,
 
     if (
       'create' in request.form or
+      'create-resource' in request.form or
       'refresh-hard' in request.form or
-      'refresh' in request.form):
+      'refresh' in request.form
+    ):
         # check if the user can update datasets for organization
         # admin and editors should be able to init recombinant records
         if not has_user_permission_for_group_or_org(org_object.id,
@@ -689,9 +691,17 @@ def preview_table(resource_name: str,
         except NotFound:
             try:
                 if 'create' in request.form:
+                    # brand new dataset
                     lc.action.recombinant_create(
                         dataset_type=chromo['dataset_type'], owner_org=owner_org)
+                    h.flash_success(_('Resources successfully created.'))
+                elif 'create-resource' in request.form:
+                    # missing resources
+                    lc.action.recombinant_update(
+                        dataset_type=chromo['dataset_type'], owner_org=owner_org)
+                    h.flash_success(_('Resource successfully created.'))
                 elif 'refresh-hard' in request.form or 'refresh' in request.form:
+                    # missing datastore table or fields
                     if not is_sysadmin(g.user):
                         # only sysadmins can refresh via UI
                         return abort(403)
@@ -723,7 +733,7 @@ def preview_table(resource_name: str,
             if r['name'] == resource_name:
                 break
         else:
-            return abort(404, _('Resource not found'))
+            r = None
     else:
         r = None
 

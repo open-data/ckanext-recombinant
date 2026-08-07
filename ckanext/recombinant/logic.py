@@ -38,7 +38,7 @@ def recombinant_create(context: Context, data_dict: DataDict):
     if results:
         raise ValidationError(
             {'owner_org': _("dataset type %s already exists for this organization") %
-             data_dict['dataset_type']})
+            data_dict['dataset_type']})
 
     resources = [
         # dummy url for old ckan compatibility reasons
@@ -93,8 +93,10 @@ def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
 
     resources = []
     resources_correct = True
+    resources_exist = []
 
     for resource in dataset['resources']:
+        resources_exist.append(resource['name'])
         out = {'id': resource['id'],
                'name': resource['name'],
                'description': resource['description']}
@@ -116,6 +118,8 @@ def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
         resources_correct = resources_correct and metadata_correct
         out['metadata_correct'] = metadata_correct
 
+        out['shortname'] = r.get('shortname', resource['description'])
+
         try:
             ds = lc.action.datastore_search(
                 resource_id=resource['id'],
@@ -132,6 +136,22 @@ def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
             resources_correct = False
 
         resources.append(out)
+
+    _i = 0
+    final_order_index = {}
+    for _name, _chromo in chromos.items():
+        final_order_index[_name] = _i
+        _i += 1
+        if _name in resources_exist:
+            continue
+        resources.append({
+            'id': None,
+            'name': _name,
+            'description': _chromo.get('title', _name),
+            'error': 'not found',
+        })
+
+    resources = sorted(resources, key=lambda r: final_order_index[r['name']])
 
     metadata_correct = _dataset_match(geno, dataset)
     return {

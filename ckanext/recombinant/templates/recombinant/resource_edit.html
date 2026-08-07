@@ -25,10 +25,10 @@
         {% for r in dataset.resources %}
           {% set num_label = separator ~ ungettext('{num} row', '{num} rows', r.get('datastore_rows', 0)).format(num=r.get('datastore_rows', 0)) %}
           {% if 'error' in r %}
-            {% set num_label = separator ~ _('Error') %}
+            {% set num_label = separator ~ (_('Get started…') if r.error == 'not found' else _('Error')) %}
           {% endif %}
           <li {% if r.id == resource.id %}class="active"{% endif %}>{%
-            link_for _(r.description) ~ num_label,
+            link_for _(r.shortname) ~ num_label,
             named_route='recombinant.preview_table',
             resource_name=r.name, owner_org=dataset.owner_org %}</li>
         {% endfor %}
@@ -137,48 +137,13 @@
             {% endif %}
           </div>
         </div>
+      {% elif resource.error == 'not found' %}
+        {% snippet "recombinant/snippets/panel_get_started.html", errors=errors, resource=resource %}
       {% else %}
-        <div class="wb-tabs">
-          <div class="tabpanels">
-            <details id="update" {% if errors %}open="open"{% endif %}>
-              <summary><span class="glyphicon glyphicon-warning-sign"></span>
-                {{ _("Error") }}
-              </summary>
-              <h3>{{_("Error loading your records")}}</h3>
-              <div class="col-md-12">
-                <p>{{ _("We were unable to retrieve your proactive publication records from our database. Please contact <a href=\"{support}\">{support}</a>.").format(support=h.support_email_address()) }}</p>
-                {% if g.userobj.sysadmin %}
-                  {# only let sysadmins refresh the recombinant record via UI #}
-                  <h4>{{ _('Refresh resource') }}{% snippet 'snippets/sysadmin_only.html' %}</h4>
-                  <form id="create-pd-resource" method="post">
-                    {{ h.csrf_input() }}
-                    <button type="submit" class="btn btn-default mrgn-bttm-md m-b-3" name="refresh">{{_('Refresh…')}}</button>
-                  </form>
-                {% endif %}
-              </div>
-            </details>
-          </div>
-        </div>
+        {% snippet "recombinant/snippets/panel_refresh.html", errors=errors %}
       {% endif %}
     {% else %}
-      <div class="wb-tabs">
-        <div class="tabpanels">
-          <details id="update" {% if errors %}open="open"{% endif %}>
-            <summary><span class="glyphicon glyphicon-import"></span>
-              {{ _("Import") }}
-            </summary>
-            <h3>{{_("Create and update records")}}</h3>
-            <div class="col-md-12">
-              <p>{{_("No records have been created for this organization")}}</p>
-              <form id="create-pd-resource" method="post">
-                {{ h.csrf_input() }}
-                <button type="submit" class="btn btn-default" name="create">{{_('Get started…')}}</button>
-              </form>
-              {{ self.notices() }}
-            </div>
-          </details>
-        </div>
-      </div>
+      {% snippet "recombinant/snippets/panel_get_started.html", errors=errors %}
     {% endif %}
   {% endblock action_panels %}
 {% endblock %}
