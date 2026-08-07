@@ -1,15 +1,15 @@
 # Translations template for ckanext-recombinant.
-# Copyright (C) 2025 ORGANIZATION
+# Copyright (C) 2026 ORGANIZATION
 # This file is distributed under the same license as the ckanext-recombinant
 # project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: ckanext-recombinant 2.0.0.dev0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-09-04 10:11-0400\n"
+"POT-Creation-Date: 2026-08-07 15:08+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -33,138 +33,153 @@ msgstr ""
 msgid "Cannot delete Datastore for type: %s. Use datastore_records_delete instead."
 msgstr ""
 
-#: ckanext/recombinant/logic.py:38
+#: ckanext/recombinant/logic.py:40
 #, python-format
 msgid "dataset type %s already exists for this organization"
 msgstr ""
 
-#: ckanext/recombinant/logic.py:160 ckanext/recombinant/views.py:594
+#: ckanext/recombinant/logic.py:182 ckanext/recombinant/logic.py:185
+#: ckanext/recombinant/views.py:452 ckanext/recombinant/views.py:651
 msgid "Organization not found"
 msgstr ""
 
-#: ckanext/recombinant/logic.py:166
+#: ckanext/recombinant/logic.py:191
 msgid "Recombinant dataset type not found"
 msgstr ""
 
-#: ckanext/recombinant/logic.py:194
+#: ckanext/recombinant/logic.py:219
 msgid "Multiple datasets exist for type {0} org {1}"
+msgstr ""
+
+#: ckanext/recombinant/read_excel.py:47 ckanext/recombinant/views.py:854
+msgid ""
+"Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
+"supplied a sheet labeled \"{1}\""
 msgstr ""
 
 #: ckanext/recombinant/validators.py:20
 msgid "Cannot assign foreign keys to a non-recombinant resource."
 msgstr ""
 
-#: ckanext/recombinant/views.py:74 ckanext/recombinant/views.py:139
-#: ckanext/recombinant/views.py:690
+#: ckanext/recombinant/views.py:104 ckanext/recombinant/views.py:169
+#: ckanext/recombinant/views.py:757
 msgid "Form not submitted, please try again."
 msgstr ""
 
-#: ckanext/recombinant/views.py:95
+#: ckanext/recombinant/views.py:125
 msgid "No errors found."
 msgstr ""
 
-#: ckanext/recombinant/views.py:99
+#: ckanext/recombinant/views.py:129
 msgid "Your file was successfully uploaded into the central system."
 msgstr ""
 
-#: ckanext/recombinant/views.py:131 ckanext/recombinant/views.py:707
-#: ckanext/recombinant/views.py:785
+#: ckanext/recombinant/views.py:161 ckanext/recombinant/views.py:774
+#: ckanext/recombinant/views.py:863
 msgid "User {0} not authorized to update resource {1}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:185
+#: ckanext/recombinant/views.py:215
 msgid "Wrong number of fields, expected {num}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:197
+#: ckanext/recombinant/views.py:227
 msgid "Invalid fields"
 msgstr ""
 
-#: ckanext/recombinant/views.py:200
+#: ckanext/recombinant/views.py:230
 #, python-format
 msgid "No matching records found \"%s\""
 msgstr ""
 
-#: ckanext/recombinant/views.py:203
+#: ckanext/recombinant/views.py:233
 msgid "Multiple matching records found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:241
+#: ckanext/recombinant/views.py:271
 msgid "{num} deleted."
 msgstr ""
 
-#: ckanext/recombinant/views.py:287 ckanext/recombinant/views.py:298
+#: ckanext/recombinant/views.py:318 ckanext/recombinant/views.py:329
 msgid "Not found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:303
+#: ckanext/recombinant/views.py:334
 #, python-format
 msgid ""
 "Unable to download template.\n"
 "%s"
 msgstr ""
 
-#: ckanext/recombinant/views.py:313 ckanext/recombinant/views.py:666
+#: ckanext/recombinant/views.py:344
 msgid "Resource not found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:328
+#: ckanext/recombinant/views.py:359
 #, python-format
 msgid "Unauthorized to read resource %s"
 msgstr ""
 
-#: ckanext/recombinant/views.py:416 ckanext/recombinant/views.py:444
+#: ckanext/recombinant/views.py:450 ckanext/recombinant/views.py:492
 msgid "Recombinant dataset_type not found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:457 ckanext/recombinant/views.py:479
+#: ckanext/recombinant/views.py:505 ckanext/recombinant/views.py:528
 msgid "title"
 msgstr ""
 
-#: ckanext/recombinant/views.py:458
+#: ckanext/recombinant/views.py:506
 msgid "notes"
 msgstr ""
 
-#: ckanext/recombinant/views.py:500 ckanext/recombinant/views.py:502
+#: ckanext/recombinant/views.py:549 ckanext/recombinant/views.py:551
 msgid "Mandatory"
 msgstr ""
 
-#: ckanext/recombinant/views.py:504
+#: ckanext/recombinant/views.py:553
 msgid "Conditional"
 msgstr ""
 
-#: ckanext/recombinant/views.py:506
+#: ckanext/recombinant/views.py:555
 msgid "Optional"
 msgstr ""
 
-#: ckanext/recombinant/views.py:559
+#: ckanext/recombinant/views.py:616
 msgid "No organizations found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:563 ckanext/recombinant/views.py:606
+#: ckanext/recombinant/views.py:620 ckanext/recombinant/views.py:663
 msgid "Recombinant resource_name not found"
 msgstr ""
 
-#: ckanext/recombinant/views.py:617
+#: ckanext/recombinant/views.py:676
 #, python-format
 msgid "User %s not authorized to create packages"
 msgstr ""
 
-#: ckanext/recombinant/views.py:645 ckanext/recombinant/views.py:714
+#: ckanext/recombinant/views.py:694
+msgid "Resources successfully created."
+msgstr ""
+
+#: ckanext/recombinant/views.py:699
+msgid "Resource successfully created."
+msgstr ""
+
+#: ckanext/recombinant/views.py:712 ckanext/recombinant/views.py:781
 msgid "Resources successfully refreshed."
 msgstr ""
 
-#: ckanext/recombinant/views.py:697
+#: ckanext/recombinant/views.py:764
 msgid "Could not determine dataset to update."
 msgstr ""
 
-#: ckanext/recombinant/views.py:716
+#: ckanext/recombinant/views.py:783
 msgid ""
 "Unable to regenerate the resources. Please contact <a "
 "href=\"mailto:{support}\">{support}</a> for assistance."
 msgstr ""
 
-#: ckanext/recombinant/views.py:768
+#: ckanext/recombinant/views.py:846
 msgid ""
 "The server encountered a problem processing the file uploaded. Please try "
 "copying your data into the latest version of the template and uploading "
@@ -172,19 +187,13 @@ msgid ""
 " investigate."
 msgstr ""
 
-#: ckanext/recombinant/views.py:776
-msgid ""
-"Invalid file for this data type. Sheet must be labeled \"{0}\", but you "
-"supplied a sheet labeled \"{1}\""
-msgstr ""
-
-#: ckanext/recombinant/views.py:789
+#: ckanext/recombinant/views.py:867
 msgid ""
 "Invalid sheet for this organization. Sheet must be labeled for {0}, but you "
 "supplied a sheet for {1}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:806
+#: ckanext/recombinant/views.py:884
 msgid ""
 "This template is out of date. Please try copying your data into the latest "
 "version of the template and uploading again. If this problem continues, send "
@@ -193,85 +202,103 @@ msgstr ""
 
 #: ckanext/recombinant/templates/snippets/stream.html:8
 #: ckanext/recombinant/templates/snippets/stream.html:12
-#: ckanext/recombinant/views.py:857
+#: ckanext/recombinant/views.py:935
 msgid "unknown"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:18
-#: ckanext/recombinant/views.py:866
+#: ckanext/recombinant/views.py:944
 msgid ":"
 msgstr ""
 
-#: ckanext/recombinant/views.py:880
+#: ckanext/recombinant/views.py:958
 msgid "Invalid input syntax for type integer: {}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:883
+#: ckanext/recombinant/views.py:961
 msgid "Invalid input syntax for type integer"
 msgstr ""
 
-#: ckanext/recombinant/views.py:885
+#: ckanext/recombinant/views.py:963
 msgid "Sheet {0} Row {1}:"
 msgstr ""
 
-#: ckanext/recombinant/views.py:892
+#: ckanext/recombinant/views.py:970
 msgid "Error while importing data: {0}"
 msgstr ""
 
-#: ckanext/recombinant/views.py:895
+#: ckanext/recombinant/views.py:973
 msgid "The template uploaded is empty"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:120
+#: ckanext/recombinant/write_excel.py:127
 #, python-format
 msgid "Unsupported template version: %s"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:349
+#: ckanext/recombinant/write_excel.py:370
 msgid "e.g."
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:124
-#: ckanext/recombinant/write_excel.py:594
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:145
+#: ckanext/recombinant/write_excel.py:622
 msgid "ID"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:42
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:64
-#: ckanext/recombinant/write_excel.py:598
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:44
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:76
+#: ckanext/recombinant/write_excel.py:626
 msgid "Description"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:46
-#: ckanext/recombinant/write_excel.py:602
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:48
+#: ckanext/recombinant/write_excel.py:630
 msgid "Obligation"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:51
-#: ckanext/recombinant/write_excel.py:606
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:53
+#: ckanext/recombinant/write_excel.py:634
 msgid "Occurrence"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:610
+#: ckanext/recombinant/write_excel.py:638
 msgid "Validation"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:125
-#: ckanext/recombinant/write_excel.py:614
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:146
+#: ckanext/recombinant/write_excel.py:642
 msgid "Format"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:54
-#: ckanext/recombinant/write_excel.py:618
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:56
+#: ckanext/recombinant/write_excel.py:646
 msgid "Character Limit"
 msgstr ""
 
-#: ckanext/recombinant/write_excel.py:625
+#: ckanext/recombinant/write_excel.py:657 ckanext/recombinant/write_excel.py:664
 msgid "Values"
 msgstr ""
 
+#: ckanext/recombinant/write_excel.py:658 ckanext/recombinant/write_excel.py:660
+msgid "Value"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:41
+#: ckanext/recombinant/write_excel.py:658
+msgid "Label"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:78
+#: ckanext/recombinant/write_excel.py:658 ckanext/recombinant/write_excel.py:660
+msgid "Valid Organizations"
+msgstr ""
+
+#: ckanext/recombinant/write_excel.py:665
+msgid "Values for {}"
+msgstr ""
+
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:114
-#: ckanext/recombinant/write_excel.py:660
+#: ckanext/recombinant/write_excel.py:706
 msgid "Reference"
 msgstr ""
 
@@ -300,8 +327,8 @@ msgid "French Description"
 msgstr ""
 
 #: ckanext/recombinant/templates/package/activity.html:6
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:127
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:132
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:128
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:133
 msgid "Activity Stream"
 msgstr ""
 
@@ -327,7 +354,13 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:28
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:143
+#: ckanext/recombinant/templates/recombinant/snippets/panel_get_started.html:13
+#: ckanext/recombinant/templates/recombinant/snippets/panel_get_started.html:19
+msgid "Get started…"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/resource_edit.html:28
+#: ckanext/recombinant/templates/recombinant/snippets/panel_refresh.html:5
 msgid "Error"
 msgstr ""
 
@@ -341,13 +374,13 @@ msgid "You can refresh your resource in the database to try to solve the problem
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:55
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:153
 #: ckanext/recombinant/templates/recombinant/snippets/outdated_error.html:18
+#: ckanext/recombinant/templates/recombinant/snippets/panel_refresh.html:15
 msgid "Refresh…"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:64
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:166
+#: ckanext/recombinant/templates/recombinant/snippets/panel_get_started.html:5
 msgid "Import"
 msgstr ""
 
@@ -371,33 +404,6 @@ msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/resource_edit.html:121
 msgid "API Access"
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:145
-msgid "Error loading your records"
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:147
-msgid ""
-"We were unable to retrieve your proactive publication records from our "
-"database. Please contact <a href=\"{support}\">{support}</a>."
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:150
-msgid "Refresh resource"
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:168
-#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
-msgid "Create and update records"
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:170
-msgid "No records have been created for this organization"
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/resource_edit.html:173
-msgid "Get started…"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/api_access.html:3
@@ -496,43 +502,43 @@ msgid ""
 "we may be able to post them here as well."
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:3
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:4
 msgid "Data Dictionary"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:12
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:17
 msgid "Download data dictionary"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:18
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:20
 msgid "Schema as JSON"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:39
-msgid "Label"
-msgstr ""
-
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:47
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:49
 msgid "Primary key"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:48
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:50
 msgid "Required"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:59
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:63
 msgid "Choices"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:60
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:68
+msgid "Choices for {}"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:72
 msgid "Show more"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:60
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:72
 msgid "Hide"
 msgstr ""
 
-#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:63
+#: ckanext/recombinant/templates/recombinant/snippets/data_dictionary.html:75
 msgid "Code"
 msgstr ""
 
@@ -575,6 +581,33 @@ msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/outdated_error.html:11
 msgid "Refresh Recombinant Resource"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/panel_get_started.html:7
+#: ckanext/recombinant/templates/recombinant/snippets/xls_upload.html:3
+msgid "Create and update records"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/panel_get_started.html:10
+msgid "No records have been created for: "
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/panel_get_started.html:16
+msgid "No records have been created for this organization"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/panel_refresh.html:7
+msgid "Error loading your records"
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/panel_refresh.html:9
+msgid ""
+"We were unable to retrieve your proactive publication records from our "
+"database. Please contact <a href=\"{support}\">{support}</a>."
+msgstr ""
+
+#: ckanext/recombinant/templates/recombinant/snippets/panel_refresh.html:12
+msgid "Refresh resource"
 msgstr ""
 
 #: ckanext/recombinant/templates/recombinant/snippets/xls_base.html:15
