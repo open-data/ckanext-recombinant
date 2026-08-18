@@ -70,6 +70,20 @@
           {% call dictionary_field(_label, columns=_colstyle) %}
             {% set table_class = 'recombinant-data-dictionary-published' if is_published_resource else 'recombinant-data-dictionary' %}
             <table class="table table-striped table-bordered table-condensed {{ table_class }}" data-module-show-label="{{ _('Show more') }}" data-module-hide-label="{{ _('Hide') }}" data-module="table-toggle-more">
+              {% if field.choices_suffix_filter %}
+                <tbody class="recombinant-data-dictionary-suffix-ref">
+                  <tr>
+                    <th scope="col">{{- _('Suffix') -}}</th>
+                    <th scope="col" colspan="{{2 if is_published_resource and field.datastore_id in org_specifc_fields else 1}}">{{- _('Description') -}}</th>
+                  </tr>
+                  {% for suffix, suffix_labels in field.choices_suffix_filter.items() %}
+                    <tr>
+                      <td>{{- suffix -}}</td>
+                      <td colspan="{{2 if is_published_resource and field.datastore_id in org_specifc_fields else 1}}">{{- h.recombinant_language_text(suffix_labels) -}}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              {% endif %}
               <thead>
                 <tr>
                   <th scope="col">{{ _('Code') }}</th>
