@@ -277,6 +277,85 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
         )
 
 
+@recombinant.route('/recombinant/delete_dataset/<id>/<resource_id>',
+                   methods=['GET', 'POST'])
+def delete_dataset(id: str, resource_id: str) -> Union[str, Response]:
+    """
+    UI for sysadmins to delete an entire Recombinant dataset. This will
+    delete the datastore table, the resources, and the dataset.
+
+    Cannot delete the dataset if any of the resources have datastore data.
+    """
+    lc = LocalCKAN(username=g.user)
+
+    if not is_sysadmin(g.user):
+        # only sysadmins can delete via UI
+        return abort(403)
+
+    pkg = lc.action.package_show(id=id)
+    res = lc.action.resource_show(id=resource_id)
+    org = lc.action.organization_show(id=pkg['owner_org'])
+
+    if request.method != 'POST':
+        # handle page refreshes
+        h.flash_notice(_('Form not submitted, please try again.'))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=res['name'],
+                             owner_org=org['name'])
+
+    dataset = lc.action.recombinant_show(
+        dataset_type=pkg['type'], owner_org=org['name'])
+
+    for r in dataset.get('resources', []):
+        _l = r['shortname']
+        try:
+            result = lc.action.datastore_search(resource_id=r['id'], limit=0)
+        except NotFound:
+            continue
+        if result.get('total', 0) > 0:
+            h.flash_error(_('Cannot delete dataset because \"%s\" contains records.') %
+                          _(_l))
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=res['name'],
+                                 owner_org=org['name'])
+
+    if 'cancel' in request.form:
+        return h.redirect_to(
+            'recombinant.preview_table',
+            resource_name=res['name'],
+            owner_org=org['name'])
+    # type_ignore_reason: incomplete typing
+    if 'confirm' not in request.form or request.method == 'GET':  # type: ignore
+        return render('recombinant/confirm_dataset_delete.html',
+                      extra_vars={'dataset': dataset,
+                                  'resource': res,
+                                  'org_title': h.get_translated(org, 'title')})
+    if request.method == 'POST':
+        # delete datastore tables
+        for r in dataset.get('resources', []):
+            _l = r['shortname']
+            try:
+                lc.action.datastore_delete(resource_id=r['id'])
+                h.flash_success(_('Deleted table for \"%s\"') % _(_l))
+            except NotFound:
+                pass
+            try:
+                lc.action.resource_delete(id=r['id'])
+                h.flash_success(_('Deleted resource for \"%s\"') % _(_l))
+            except NotFound:
+                pass
+        try:
+            lc.action.package_delete(id=pkg['id'])
+            h.flash_success(_('Deleted dataset'))
+        except NotFound:
+            pass
+
+    return h.redirect_to(
+        'recombinant.preview_table',
+        resource_name=res['name'],
+        owner_org=org['name'])
+
+
 def _xlsx_response_headers() -> Tuple[str, str]:
     """
     Returns tuple of content type and disposition type.
