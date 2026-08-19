@@ -265,16 +265,29 @@ def create_triggers(dataset_type: Optional[List[str]] = None,
 )
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def remove_empty(dataset_type: Optional[List[str]] = None,
                  all_types: bool = False,
-                 verbose: bool = False):
+                 verbose: bool = False,
+                 no_log_suppression: bool = False):
     """
     Delete datastore tables and packages for empty recombinant resources
 
     Full Usage:\n
         recombinant remove-empty (-a | DATASET_TYPE ...)
     """
-    _remove_empty(dataset_type, all_types, verbose=verbose)
+    if no_log_suppression:
+        _remove_empty(dataset_type, all_types, verbose=verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
+        _remove_empty(dataset_type, all_types, verbose=verbose)
 
 
 @recombinant.command(
@@ -305,20 +318,34 @@ def remove_empty(dataset_type: Optional[List[str]] = None,
 )
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def update(dataset_type: Optional[List[str]] = None,
            all_types: bool = False,
            force_update: bool = False,
            delete_fields: bool = False,
            dataset: Optional[str] = None,
-           verbose: bool = False):
+           verbose: bool = False,
+           no_log_suppression: bool = False):
     """
     Triggers recombinant update for recombinant resources
 
     Full Usage:\n
         recombinant update (-a | DATASET_TYPE ...) [-f]
     """
-    _update(dataset_type, all_types, force_update, delete_fields,
-            dataset_id=dataset, verbose=verbose)
+    if no_log_suppression:
+        _update(dataset_type, all_types, force_update, delete_fields,
+                dataset_id=dataset, verbose=verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
+        _update(dataset_type, all_types, force_update, delete_fields,
+                dataset_id=dataset, verbose=verbose)
 
 
 @recombinant.command(short_help="Delete recombinant datasets and all their data.")
@@ -331,16 +358,29 @@ def update(dataset_type: Optional[List[str]] = None,
 )
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def delete(dataset_type: Optional[List[str]] = None,
            all_types: bool = False,
-           verbose: bool = False):
+           verbose: bool = False,
+           no_log_suppression: bool = False):
     """
     Delete recombinant datasets and all their data
 
     Full Usage:\n
         recombinant delete (-a | DATASET_TYPE ...)
     """
-    _delete(dataset_type, all_types, verbose=verbose)
+    if no_log_suppression:
+        _delete(dataset_type, all_types, verbose=verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
+        _delete(dataset_type, all_types, verbose=verbose)
 
 
 @recombinant.command(
@@ -359,13 +399,16 @@ def delete(dataset_type: Optional[List[str]] = None,
               help='Output CSV or JSONL file for errors instead of stderr')
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def load_csv(csv_file: List[TextIO],
              resource_name: str = '',
              organization: str = '',
              flag: Optional[List[str]] = None,
              skip_validation: Optional[bool] = False,
              error_file: Optional[TextIO] = None,
-             verbose: bool = False):
+             verbose: bool = False,
+             no_log_suppression: bool = False):
     """
     Load CSV file(s) rows into recombinant resources datastore
 
@@ -397,7 +440,18 @@ def load_csv(csv_file: List[TextIO],
             raise click.ClickException('Invalid flag name "%s" for pSQL column' % _f)
     if skip_validation:
         flags.append('skip_validation')
-    with suppress_logging('ckanext.activity.logic.action'):
+
+    if no_log_suppression:
+        _load_csv_files(csv_file, resource_name, organization, flags,
+                        error_file, output_file_format, verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
         _load_csv_files(csv_file, resource_name, organization, flags,
                         error_file, output_file_format, verbose)
 
@@ -468,15 +522,28 @@ def dataset_types(dataset_type: Optional[List[str]] = None,
 @click.argument("dataset_type", nargs=-1)
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def remove_broken(dataset_type: List[str],
-                  verbose: bool = False):
+                  verbose: bool = False,
+                  no_log_suppression: bool = False):
     """
     Low-level command to remove datasets with missing datastore tables
 
     Full Usage:\n
         recombinant remove-broken DATASET_TYPE ...
     """
-    _remove_broken(dataset_type, verbose=verbose)
+    if no_log_suppression:
+        _remove_broken(dataset_type, verbose=verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
+        _remove_broken(dataset_type, verbose=verbose)
 
 
 @recombinant.command(
@@ -650,6 +717,8 @@ def _create_triggers(dataset_types: Optional[List[str]],
     for dtype in _expand_dataset_types(dataset_types, all_types):
         for chromo in get_geno(dtype)['resources']:
             _update_triggers(lc, chromo)
+            if verbose:
+                click.echo('Updated triggers for %s' % chromo['resource_name'])
 
 
 def _remove_empty(dataset_types: Optional[List[str]],
