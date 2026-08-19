@@ -307,13 +307,14 @@ def delete_dataset(id: str, resource_id: str) -> Union[str, Response]:
         dataset_type=pkg['type'], owner_org=org['name'])
 
     for r in dataset.get('resources', []):
+        l = r['shortname']
         try:
             result = lc.action.datastore_search(resource_id=r['id'], limit=0)
         except NotFound:
             continue
         if result.get('total', 0) > 0:
             h.flash_error(_('Cannot delete dataset because \"%s\" contains records.') %
-                          _(r['shortname']))
+                          _(l))
             return h.redirect_to('recombinant.preview_table',
                                  resource_name=res['name'],
                                  owner_org=org['name'])
@@ -332,14 +333,15 @@ def delete_dataset(id: str, resource_id: str) -> Union[str, Response]:
     if request.method == 'POST':
         # delete datastore tables
         for r in dataset.get('resources', []):
+            l = r['shortname']
             try:
                 lc.action.datastore_delete(resource_id=r['id'])
-                h.flash_success(_('Deleted table for \"%s\"') % _(r['shortname']))
+                h.flash_success(_('Deleted table for \"%s\"') % _(l))
             except NotFound:
                 pass
             try:
                 lc.action.resource_delete(id=r['id'])
-                h.flash_success(_('Deleted resource for \"%s\"') % _(r['shortname']))
+                h.flash_success(_('Deleted resource for \"%s\"') % _(l))
             except NotFound:
                 pass
         try:
