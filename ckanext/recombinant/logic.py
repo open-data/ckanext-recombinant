@@ -38,7 +38,7 @@ def recombinant_create(context: Context, data_dict: DataDict):
     if results:
         raise ValidationError(
             {'owner_org': _("dataset type %s already exists for this organization") %
-            data_dict['dataset_type']})
+             data_dict['dataset_type']})
 
     resources = [
         # dummy url for old ckan compatibility reasons
