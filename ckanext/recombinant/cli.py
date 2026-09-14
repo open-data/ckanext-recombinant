@@ -279,15 +279,18 @@ def delete(dataset_type: Optional[List[str]] = None,
 @click.argument("csv_file", type=click.File('r'), nargs=-1)
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-i', '--insert', is_flag=True,
+              type=click.BOOL, help='Insert records (do not update existing).')
 def load_csv(csv_file: List[TextIO],
-             verbose: bool = False):
+             verbose: bool,
+             insert: bool):
     """
     Load CSV file(s) rows into recombinant resources datastore
 
     Full Usage:\n
         recombinant load-csv CSV_FILE ...
     """
-    _load_csv_files(csv_file, verbose=verbose)
+    _load_csv_files(csv_file, verbose=verbose, method='insert' if insert else None)
 
 
 @recombinant.command(
@@ -594,18 +597,19 @@ def _delete(dataset_types: Optional[List[str]],
 
 
 def _load_csv_files(csv_file_names: List[TextIO],
-                    verbose: bool = False) -> int:
+                    verbose: bool = False,
+                    method: str | None = None) -> int:
     """
     Load CSV file(s) rows into recombinant resources datastore
     """
     errs = 0
     for n in csv_file_names:
         # pass click.File prop
-        errs |= _load_one_csv_file(n.name)
+        errs |= _load_one_csv_file(n.name, method)
     return errs
 
 
-def _load_one_csv_file(name: str) -> int:
+def _load_one_csv_file(name: str, method: str | None) -> int:
     """
     Load CSV file rows into recombinant resources datastore
     """
@@ -621,7 +625,8 @@ def _load_one_csv_file(name: str) -> int:
     chromo = get_chromo(resource_name)
 
     dataset_type = chromo['dataset_type']
-    method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
+    if not method:
+        method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
     lc = LocalCKAN(context={'datastore_import': True})  # required for importing _id
     errors = 0
 
@@ -636,6 +641,8 @@ def _load_one_csv_file(name: str) -> int:
         dynamic_fields += chromo['csv_org_extras']
     dynamic_fields += [f['datastore_id'] for f in chromo['fields'] if
                        f.get('published_resource_computed_field', False)]
+    if method == 'insert':
+        dynamic_fields.append('_id')
 
     for org_name, records in csv_data_batch(name, chromo,
                                             ignore_fields=dynamic_fields):
