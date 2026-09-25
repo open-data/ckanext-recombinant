@@ -48,3 +48,10 @@ body .recombinant-height-auto{
 body .recombinant-cursor-help{
   cursor: help;
 }
+body tbody.recombinant-data-dictionary-suffix-ref{
+  display: table-header-group !important;
+}
+body tbody.recombinant-data-dictionary-suffix-ref th,
+body tbody.recombinant-data-dictionary-suffix-ref td{
+  background-color: #d9edf7 !important;
+}

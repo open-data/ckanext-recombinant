@@ -1,6 +1,7 @@
 from flask import Blueprint, Response as FlaskResponse
 from flask_babel import force_locale
 import re
+from uuid import UUID
 import simplejson as json
 
 from typing import Union, Dict, Tuple, Any, List, Optional
@@ -26,6 +27,7 @@ from ckan.plugins.toolkit import (
 
 from ckan.logic import ValidationError, NotAuthorized
 from ckan.model.group import Group
+from ckan.model.resource import Resource
 from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
 
 from ckan.views.dataset import _get_package_type
@@ -62,6 +64,32 @@ KEY_ERROR_MATCH = re.compile('"([^"]*)"')
 
 log = getLogger(__name__)
 recombinant = Blueprint('recombinant', __name__)
+
+
+@recombinant.route('/resource/<id>', methods=['GET'])
+def resource_alias(id: str) -> Union[Response, str]:
+    """
+    Redirect alias for direct resource_show view.
+    """
+    chromo = None
+    try:
+        UUID(id)  # is a normal resource id
+        return abort(404)
+    except ValueError:
+        pass
+    try:
+        chromo = get_chromo(id)
+    except RecombinantException:
+        pass
+    if not chromo or not chromo.get('published_resource_id'):
+        return abort(404)
+    res = Resource.get(chromo['published_resource_id'])
+    if not res:
+        return abort(404)
+    return h.redirect_to('%s_resource.read' % res.package.type,
+                         id=res.package_id,
+                         package_type=res.package.type,
+                         resource_id=res.id)
 
 
 @recombinant.route('/recombinant/upload/<id>', methods=['GET', 'POST'])
@@ -247,6 +275,85 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
         resource_name=res['name'],
         owner_org=org['name'],
         )
+
+
+@recombinant.route('/recombinant/delete_dataset/<id>/<resource_id>',
+                   methods=['GET', 'POST'])
+def delete_dataset(id: str, resource_id: str) -> Union[str, Response]:
+    """
+    UI for sysadmins to delete an entire Recombinant dataset. This will
+    delete the datastore table, the resources, and the dataset.
+
+    Cannot delete the dataset if any of the resources have datastore data.
+    """
+    lc = LocalCKAN(username=g.user)
+
+    if not is_sysadmin(g.user):
+        # only sysadmins can delete via UI
+        return abort(403)
+
+    pkg = lc.action.package_show(id=id)
+    res = lc.action.resource_show(id=resource_id)
+    org = lc.action.organization_show(id=pkg['owner_org'])
+
+    if request.method != 'POST':
+        # handle page refreshes
+        h.flash_notice(_('Form not submitted, please try again.'))
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=res['name'],
+                             owner_org=org['name'])
+
+    dataset = lc.action.recombinant_show(
+        dataset_type=pkg['type'], owner_org=org['name'])
+
+    for r in dataset.get('resources', []):
+        _l = r['shortname']
+        try:
+            result = lc.action.datastore_search(resource_id=r['id'], limit=0)
+        except NotFound:
+            continue
+        if result.get('total', 0) > 0:
+            h.flash_error(_('Cannot delete dataset because \"%s\" contains records.') %
+                          _(_l))
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=res['name'],
+                                 owner_org=org['name'])
+
+    if 'cancel' in request.form:
+        return h.redirect_to(
+            'recombinant.preview_table',
+            resource_name=res['name'],
+            owner_org=org['name'])
+    # type_ignore_reason: incomplete typing
+    if 'confirm' not in request.form or request.method == 'GET':  # type: ignore
+        return render('recombinant/confirm_dataset_delete.html',
+                      extra_vars={'dataset': dataset,
+                                  'resource': res,
+                                  'org_title': h.get_translated(org, 'title')})
+    if request.method == 'POST':
+        # delete datastore tables
+        for r in dataset.get('resources', []):
+            _l = r['shortname']
+            try:
+                lc.action.datastore_delete(resource_id=r['id'])
+                h.flash_success(_('Deleted table for \"%s\"') % _(_l))
+            except NotFound:
+                pass
+            try:
+                lc.action.resource_delete(id=r['id'])
+                h.flash_success(_('Deleted resource for \"%s\"') % _(_l))
+            except NotFound:
+                pass
+        try:
+            lc.action.package_delete(id=pkg['id'])
+            h.flash_success(_('Deleted dataset'))
+        except NotFound:
+            pass
+
+    return h.redirect_to(
+        'recombinant.preview_table',
+        resource_name=res['name'],
+        owner_org=org['name'])
 
 
 def _xlsx_response_headers() -> Tuple[str, str]:
@@ -548,6 +655,9 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
 
             fld['datastore_type'] = field['datastore_type']
 
+            if field.get('choices_suffix_filter'):
+                fld['choices_suffixes'] = field['choices_suffix_filter']
+
             if fld['id'] in choice_fields:
                 choices = {}
                 fld['choices'] = choices
@@ -647,8 +757,10 @@ def preview_table(resource_name: str,
 
     if (
       'create' in request.form or
+      'create-resource' in request.form or
       'refresh-hard' in request.form or
-      'refresh' in request.form):
+      'refresh' in request.form
+    ):
         # check if the user can update datasets for organization
         # admin and editors should be able to init recombinant records
         if not has_user_permission_for_group_or_org(org_object.id,
@@ -669,9 +781,17 @@ def preview_table(resource_name: str,
         except NotFound:
             try:
                 if 'create' in request.form:
+                    # brand new dataset
                     lc.action.recombinant_create(
                         dataset_type=chromo['dataset_type'], owner_org=owner_org)
+                    h.flash_success(_('Resources successfully created.'))
+                elif 'create-resource' in request.form:
+                    # missing resources
+                    lc.action.recombinant_update(
+                        dataset_type=chromo['dataset_type'], owner_org=owner_org)
+                    h.flash_success(_('Resource successfully created.'))
                 elif 'refresh-hard' in request.form or 'refresh' in request.form:
+                    # missing datastore table or fields
                     if not is_sysadmin(g.user):
                         # only sysadmins can refresh via UI
                         return abort(403)
@@ -703,7 +823,7 @@ def preview_table(resource_name: str,
             if r['name'] == resource_name:
                 break
         else:
-            return abort(404, _('Resource not found'))
+            r = None
     else:
         r = None
 

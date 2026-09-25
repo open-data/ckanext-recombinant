@@ -1,0 +1,21 @@
+<div class="wb-tabs">
+  <div class="tabpanels">
+    <details id="update" {% if errors %}open="open"{% endif %}>
+      <summary><span class="glyphicon glyphicon-warning-sign"></span>
+        {{ _("Error") }}
+      </summary>
+      <h3>{{_("Error loading your records")}}</h3>
+      <div class="col-md-12">
+        <p>{{ _("We were unable to retrieve your proactive publication records from our database. Please contact <a href=\"{support}\">{support}</a>.").format(support=h.support_email_address()) }}</p>
+        {% if g.userobj.sysadmin %}
+          {# only let sysadmins refresh the recombinant record via UI #}
+          <h4>{{ _('Refresh resource') }}{% snippet 'snippets/sysadmin_only.html' %}</h4>
+          <form id="create-pd-resource" method="post">
+            {{ h.csrf_input() }}
+            <button type="submit" class="btn btn-default mrgn-bttm-md m-b-3" name="refresh">{{_('Refresh…')}}</button>
+          </form>
+        {% endif %}
+      </div>
+    </details>
+  </div>
+</div>

@@ -1,0 +1,36 @@
+{% extends "page.html" %}
+
+{% block subtitle %}{{ _("Confirm Dataset Delete") }}{% endblock %}
+
+{% block primary_content_inner %}
+  {% block form %}
+    <p>{{ _('Are you sure you want to delete this dataset?') }}</p>
+
+    <div class="mrgn-tp-lg mrgn-bttm-lg col-md-6">
+      <table class="table table-responsive">
+        <thead>
+          <th scope="col" class="col-sm-1 border-0"></th>
+          <th scope="col">{{- org_title -}}</th>
+        </thead>
+        <tbody>
+          {% for r in dataset.resources %}
+            <tr>
+              <td class="text-danger border-0"><i class="fa fa-minus-circle" aria-hidden="true"></i></td>
+              <td class="bg-danger text-danger">{{ _(r.shortname) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="clearfix"></div>
+
+    <p class="form-actions">
+      <form id="recombinant-confirm-delete-dataset-form" action="{{ h.url_for('recombinant.delete_dataset',id=dataset.id, resource_id=resource.id) }}" method="post">
+        {{ h.csrf_input() }}
+        <button class="btn" type="submit" name="cancel" >{{ _('Cancel') }}</button>
+        <button class="btn btn-danger" type="submit" name="confirm" >{{ _('Confirm Delete') }}</button>
+      </form>
+    </p>
+  {% endblock %}
+{% endblock %}

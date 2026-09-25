@@ -133,7 +133,10 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
             'recombinant_show': logic.recombinant_show,
             'datastore_info': logic.recombinant_datastore_info,
             'datastore_upsert': logic.recombinant_datastore_upsert,
-            }
+            'datastore_search': logic.recombinant_datastore_search,
+            'resource_show': logic.recombinant_resource_show,
+            'package_show': logic.recombinant_package_show,
+        }
 
     # IAuthFunctions
     def get_auth_functions(self) -> Dict[str, Union[AuthFunction,

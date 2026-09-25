@@ -4,13 +4,18 @@ import csv
 import sys
 import json
 import re
+import logging
+from contextlib import contextmanager
+from pathlib import Path
 from openpyxl.formula import Tokenizer
 import sqlalchemy as sa
 
 from typing import Dict, List, Any, Optional, TextIO
+from ckan.types import ErrorDict
 
 from ckan.logic import ValidationError
 from ckanapi import LocalCKAN, NotFound
+from ckanext.datastore.helpers import is_valid_field_name
 from ckanext.datastore.backend import DatastoreBackend
 from ckanext.datastore.backend.postgres import DatastorePostgresqlBackend
 
@@ -29,7 +34,71 @@ from ckanext.recombinant.logic import _update_triggers
 from ckanext.recombinant.errors import RecombinantFieldError
 
 
+BOM = "\N{bom}"
 DATASTORE_PAGINATE = 10000  # max records for single datastore query
+
+
+@contextmanager
+def suppress_logging(logger_name: str):
+    """
+    Suppresses logging for a given logger name. Restores
+    it to its original state afterwards.
+    """
+    logger = logging.getLogger(logger_name)
+    old_level = logger.level
+
+    try:
+        logger.setLevel(logging.CRITICAL)
+        yield
+    finally:
+        logger.setLevel(old_level)
+
+
+@contextmanager
+def error_outputter(error_file: Optional[TextIO] = None,
+                    output_file_format: Optional[str] = 'jsonl'):
+    """
+    Output CSV loading errors to a file or stderr.
+    """
+    if error_file:
+        outf = error_file
+        outf.write(BOM)
+    else:
+        outf = sys.stderr
+    try:
+        csv_writer = csv.writer(outf) if output_file_format == 'csv' else None
+        wrote_header = False
+
+        def _write_error(org_name: str, error: ErrorDict, data: Dict[str, Any]):
+            nonlocal wrote_header
+
+            if output_file_format == 'csv' and csv_writer:
+                if not wrote_header:
+                    csv_writer.writerow([
+                        'org_name',
+                        'errors',
+                        *data.keys(),
+                    ])
+                    wrote_header = True
+
+                csv_writer.writerow([
+                    org_name,
+                    error,
+                    *data.values(),
+                ])
+            else:
+                outf.write(json.dumps({
+                    'org_name': org_name,
+                    'errors': error,
+                    'record': data,
+                }) + '\n')
+
+            outf.flush()
+
+        yield _write_error
+    finally:
+        if error_file:
+            outf.close()
 
 
 def get_commands():
@@ -196,16 +265,29 @@ def create_triggers(dataset_type: Optional[List[str]] = None,
 )
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def remove_empty(dataset_type: Optional[List[str]] = None,
                  all_types: bool = False,
-                 verbose: bool = False):
+                 verbose: bool = False,
+                 no_log_suppression: bool = False):
     """
     Delete datastore tables and packages for empty recombinant resources
 
     Full Usage:\n
         recombinant remove-empty (-a | DATASET_TYPE ...)
     """
-    _remove_empty(dataset_type, all_types, verbose=verbose)
+    if no_log_suppression:
+        _remove_empty(dataset_type, all_types, verbose=verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
+        _remove_empty(dataset_type, all_types, verbose=verbose)
 
 
 @recombinant.command(
@@ -236,20 +318,34 @@ def remove_empty(dataset_type: Optional[List[str]] = None,
 )
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def update(dataset_type: Optional[List[str]] = None,
            all_types: bool = False,
            force_update: bool = False,
            delete_fields: bool = False,
            dataset: Optional[str] = None,
-           verbose: bool = False):
+           verbose: bool = False,
+           no_log_suppression: bool = False):
     """
     Triggers recombinant update for recombinant resources
 
     Full Usage:\n
         recombinant update (-a | DATASET_TYPE ...) [-f]
     """
-    _update(dataset_type, all_types, force_update, delete_fields,
-            dataset_id=dataset, verbose=verbose)
+    if no_log_suppression:
+        _update(dataset_type, all_types, force_update, delete_fields,
+                dataset_id=dataset, verbose=verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
+        _update(dataset_type, all_types, force_update, delete_fields,
+                dataset_id=dataset, verbose=verbose)
 
 
 @recombinant.command(short_help="Delete recombinant datasets and all their data.")
@@ -262,35 +358,106 @@ def update(dataset_type: Optional[List[str]] = None,
 )
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def delete(dataset_type: Optional[List[str]] = None,
            all_types: bool = False,
-           verbose: bool = False):
+           verbose: bool = False,
+           no_log_suppression: bool = False):
     """
     Delete recombinant datasets and all their data
 
     Full Usage:\n
         recombinant delete (-a | DATASET_TYPE ...)
     """
-    _delete(dataset_type, all_types, verbose=verbose)
+    if no_log_suppression:
+        _delete(dataset_type, all_types, verbose=verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
+        _delete(dataset_type, all_types, verbose=verbose)
 
 
 @recombinant.command(
         short_help="Load CSV file(s) rows into recombinant resources datastore.")
 @click.argument("csv_file", type=click.File('r'), nargs=-1)
+@click.option('-r', '--resource-name',
+              help='Resource name to import the CSV file into.')
+@click.option('-o', '--organization',
+              help='Only load records for this organization. (e.g. tbs-sct)')
+@click.option('-f', '--flag', multiple=True,
+              help='Flags the loading context with variable names. These values '
+                   'are passed into the datastore_app_context temp session table')
+@click.option('-s', '--skip-validation', is_flag=True,
+              help='Skip all pSQL validation.')
+@click.option('-E', '--error-file', type=click.File('w'),
+              help='Output CSV or JSONL file for errors instead of stderr')
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
 @click.option('-i', '--insert', is_flag=True,
               type=click.BOOL, help='Insert records (do not update existing).')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def load_csv(csv_file: List[TextIO],
-             verbose: bool,
-             insert: bool):
+             resource_name: str = '',
+             organization: str = '',
+             flag: Optional[List[str]] = None,
+             skip_validation: Optional[bool] = False,
+             error_file: Optional[TextIO] = None,
+             verbose: bool = False,
+             insert: bool = False,
+             no_log_suppression: bool = False):
     """
     Load CSV file(s) rows into recombinant resources datastore
 
+
     Full Usage:\n
         recombinant load-csv CSV_FILE ...
+
+    If --organization is NOT passed, all organizations present in the file
+    will be processed, unless if the file follows a format of <org>.<type>.csv
     """
-    _load_csv_files(csv_file, verbose=verbose, method='insert' if insert else None)
+    if len(csv_file) > 1 and resource_name:
+        raise click.ClickException('Cannot define --resource-name with multiple files')
+    if len(csv_file) > 1 and organization:
+        raise click.ClickException('Cannot define --organization with multiple files')
+    output_file_format = None
+    if error_file:
+        output_file_format = Path(error_file.name).suffix[1:].lower()
+        if output_file_format not in ['csv', 'jsonl']:
+            raise click.ClickException(
+                'Only csv and jsonl are supported for --error-file')
+    flags = ['recombinant_import']  # always have a default flag
+    if flag:
+        if 'recombinant_import' in flag:
+            raise click.ClickException(
+                'Cannot redefine default flag "recombinant_import"')
+        flags += flag
+    for _f in flags:
+        if not is_valid_field_name(_f) or ' ' in _f:
+            raise click.ClickException('Invalid flag name "%s" for pSQL column' % _f)
+    if skip_validation:
+        flags.append('skip_validation')
+
+    if no_log_suppression:
+        _load_csv_files(csv_file, resource_name, organization, flags,
+                        error_file, output_file_format, verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
+        _load_csv_files(csv_file, resource_name, organization, flags,
+                        error_file, output_file_format, verbose,
+                        method='insert' if insert else None)
 
 
 @recombinant.command(
@@ -359,15 +526,28 @@ def dataset_types(dataset_type: Optional[List[str]] = None,
 @click.argument("dataset_type", nargs=-1)
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-L', '--no-log-suppression', is_flag=True,
+              type=click.BOOL, help='Do not suppress the python logs.')
 def remove_broken(dataset_type: List[str],
-                  verbose: bool = False):
+                  verbose: bool = False,
+                  no_log_suppression: bool = False):
     """
     Low-level command to remove datasets with missing datastore tables
 
     Full Usage:\n
         recombinant remove-broken DATASET_TYPE ...
     """
-    _remove_broken(dataset_type, verbose=verbose)
+    if no_log_suppression:
+        _remove_broken(dataset_type, verbose=verbose)
+        return
+
+    with (
+        suppress_logging('ckanext.activity.logic.action'),
+        suppress_logging('ckanext.validation.plugin'),
+        suppress_logging('ckanext.datastore.logic.action'),
+        suppress_logging('ckanext.datastore.backend.postgres')
+    ):
+        _remove_broken(dataset_type, verbose=verbose)
 
 
 @recombinant.command(
@@ -545,6 +725,8 @@ def _create_triggers(dataset_types: Optional[List[str]],
             lc.action.datastore_sequence_create(name=seq, if_not_exists=True)
         for chromo in geno['resources']:
             _update_triggers(lc, chromo)
+            if verbose:
+                click.echo('Updated triggers for %s' % chromo['resource_name'])
 
 
 def _remove_empty(dataset_types: Optional[List[str]],
@@ -597,6 +779,11 @@ def _delete(dataset_types: Optional[List[str]],
 
 
 def _load_csv_files(csv_file_names: List[TextIO],
+                    resource_name: str = '',
+                    organization: str = '',
+                    flags: Optional[List[str]] = None,
+                    error_file: Optional[TextIO] = None,
+                    output_file_format: Optional[str] = None,
                     verbose: bool = False,
                     method: str | None = None) -> int:
     """
@@ -605,30 +792,48 @@ def _load_csv_files(csv_file_names: List[TextIO],
     errs = 0
     for n in csv_file_names:
         # pass click.File prop
-        errs |= _load_one_csv_file(n.name, method)
-    return errs
+        errs |= _load_one_csv_file(n.name, resource_name,
+                                   organization, flags, error_file,
+                                   output_file_format, verbose, method)
+    return errs  # exit code return
 
 
-def _load_one_csv_file(name: str, method: str | None) -> int:
+def _load_one_csv_file(name: str, resource_name: str = '',
+                       organization: str = '',
+                       flags: Optional[List[str]] = None,
+                       error_file: Optional[TextIO] = None,
+                       output_file_format: Optional[str] = 'jsonl',
+                       verbose: bool = False,
+                       method: str | None) -> int:
     """
     Load CSV file rows into recombinant resources datastore
     """
+    if verbose:
+        if error_file:
+            click.echo('Writing error outputs to %s' % error_file.name)
+        else:
+            click.echo('Writing error outputs to stderr')
+
     _path, csv_name = os.path.split(name)
     assert csv_name.endswith('.csv'), csv_name
-    resource_name = csv_name[:-4]
-    singular_org_name = None
-    if '.' in resource_name:
-        singular_org_name, resource_name = tuple(resource_name.split('.'))
+    if not resource_name:
+        # get the resource name and possible org name from the filename
+        # this would be in the format of <org>.<type>.csv
+        resource_name = csv_name[:-4]
+        if '.' in resource_name:
+            organization, resource_name = tuple(resource_name.split('.'))
     click.echo('Resource name: %s' % resource_name)
-    if singular_org_name:
-        click.echo('Organization name: %s' % singular_org_name)
+    if organization:
+        click.echo('Organization name: %s' % organization)
     chromo = get_chromo(resource_name)
 
     dataset_type = chromo['dataset_type']
     if not method:
         method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
-    lc = LocalCKAN(context={'datastore_import': True})  # required for importing _id
-    errors = 0
+    lc = LocalCKAN(context={'datastore_app_context_flags': flags} if flags else {})
+    error_count = 0
+    bad_record_count = 0
+    skipped_orgs = 0
 
     dynamic_fields = [
         'owner_org',
@@ -644,87 +849,111 @@ def _load_one_csv_file(name: str, method: str | None) -> int:
     if method == 'insert':
         dynamic_fields.append('_id')
 
-    for org_name, records in csv_data_batch(name, chromo,
-                                            ignore_fields=dynamic_fields):
-        if not org_name and not singular_org_name:
-            click.echo('could not find any org!')
-            return 1
-        if not org_name and singular_org_name:
-            org_name = singular_org_name
-        results = lc.action.package_search(
-            q='type:%s AND organization:%s' % (dataset_type, org_name),
-            include_private=True,
-            rows=2)['results']
-
-        if not results:
-            lc.action.recombinant_create(dataset_type=dataset_type, owner_org=org_name)
+    with error_outputter(error_file, output_file_format) as write_error:
+        for org_name, records in csv_data_batch(name, chromo,
+                                                ignore_fields=dynamic_fields):
+            if not org_name and not organization:
+                click.echo('could not find any org!')
+                return 1
+            if not org_name and organization:
+                org_name = organization
+            elif organization and org_name != organization:
+                skipped_orgs += 1
+                continue
             results = lc.action.package_search(
                 q='type:%s AND organization:%s' % (dataset_type, org_name),
                 include_private=True,
                 rows=2)['results']
 
-        if len(results) > 1:
-            click.echo('type:%s organization:%s multiple found!' % (
-                dataset_type, org_name))
-            return 1
+            if not results:
+                lc.action.recombinant_create(dataset_type=dataset_type,
+                                             owner_org=org_name)
+                results = lc.action.package_search(
+                    q='type:%s AND organization:%s' % (dataset_type, org_name),
+                    include_private=True,
+                    rows=2)['results']
 
-        for res in results[0]['resources']:
-            if res['name'] == resource_name:
-                break
-        else:
-            click.echo('type:%s organization:%s missing resource:%s' % (
-                dataset_type, org_name, resource_name))
-            return 1
+            if len(results) > 1:
+                click.echo('type:%s organization:%s multiple found!' % (
+                    dataset_type, org_name))
+                return 1
 
-        # convert list values to lists
-        list_fields = [f['datastore_id'] for f in chromo['fields'] if
-                       f['datastore_type'] == '_text' and
-                       not f.get('published_resource_computed_field')]
-        if list_fields:
+            for res in results[0]['resources']:
+                if res['name'] == resource_name:
+                    break
+            else:
+                click.echo('type:%s organization:%s missing resource:%s' % (
+                    dataset_type, org_name, resource_name))
+                return 1
+
+            # convert list values to lists
+            list_fields = [f['datastore_id'] for f in chromo['fields'] if
+                           f['datastore_type'] == '_text' and
+                           not f.get('published_resource_computed_field')]
+            if list_fields:
+                for r in records:
+                    for k in list_fields:
+                        if not r[k]:
+                            r[k] = []
+                        else:
+                            r[k] = r[k].split(',')
+
+            click.echo('- %s %s' % (org_name, len(records)))
+
+            # remove any dynamic fields
             for r in records:
-                for k in list_fields:
-                    if not r[k]:
-                        r[k] = []
-                    else:
-                        r[k] = r[k].split(',')
+                for e in dynamic_fields:
+                    if e not in r:
+                        continue
+                    del r[e]
 
-        click.echo('- %s %s' % (org_name, len(records)))
-
-        # remove any dynamic fields
-        for r in records:
-            for e in dynamic_fields:
-                if e not in r:
-                    continue
-                del r[e]
-
-        offset = 0
-        while offset < len(records):
-            try:
-                lc.action.datastore_upsert(
-                    method=method,
-                    resource_id=res['id'],
-                    records=records[offset:])
-            except ValidationError as err:
-                if 'records_row' not in err.error_dict:
-                    raise
-                # type_ignore_reason: incomplete typing
-                bad = int(err.error_dict['records_row'])  # type: ignore
-                errors |= 2
-                sys.stderr.write(json.dumps([
-                    err.error_dict['records'],
-                    org_name,
-                    records[offset + bad]]) + '\n')
-                # retry records that passed validation
-                good = records[offset: offset+bad]
-                if good:
+            offset = 0
+            while offset < len(records):
+                try:
                     lc.action.datastore_upsert(
                         method=method,
                         resource_id=res['id'],
-                        records=good)
-                offset += bad + 1  # skip and continue
-            else:
-                break
-    return errors
+                        records=records[offset:])
+                except ValidationError as err:
+                    if 'records_row' not in err.error_dict:
+                        raise
+                    # type_ignore_reason: incomplete typing
+                    bad = int(err.error_dict['records_row'])  # type: ignore
+                    bad_record_count += 1
+                    # type_ignore_reason: incomplete typing
+                    error_count += sum(
+                        len(v) for v in
+                        err.error_dict['records'][0].values())  # type: ignore
+
+                    # write errors to output
+                    # type_ignore_reason: incomplete typing
+                    write_error(org_name,  # type: ignore
+                                err.error_dict['records'][0],  # type: ignore
+                                records[offset + bad])
+
+                    # retry records that passed validation
+                    good = records[offset: offset+bad]
+                    if good:
+                        lc.action.datastore_upsert(
+                            method=method,
+                            resource_id=res['id'],
+                            records=good)
+                    offset += bad + 1  # skip and continue
+                else:
+                    break
+
+    if verbose and organization and skipped_orgs:
+        click.echo('Skipped %s organizations that did not match %s...' % (
+            skipped_orgs, organization))
+    if error_count:
+        click.echo('Finished with %s error(s) across %s invalid record(s)' %
+                   (error_count, bad_record_count))
+        if error_file:
+            click.echo('See %s for error(s)!' % error_file.name)
+    else:
+        click.echo('Finished without errors')
+
+    return 2 if error_count else 0  # exit code return
 
 
 def _combine_csv(target_dir: Optional[str],
@@ -754,7 +983,7 @@ def _combine_csv(target_dir: Optional[str],
                                      resource_name + '.csv'), 'w', encoding='utf-8')
         else:
             outf = sys.stdout
-        outf.write("\N{bom}")
+        outf.write(BOM)
         dataset_type = get_dataset_type_for_resource_name(resource_name)
         if not dataset_type:
             if verbose:
