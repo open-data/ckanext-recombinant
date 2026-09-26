@@ -785,7 +785,7 @@ def _load_csv_files(csv_file_names: List[TextIO],
                     error_file: Optional[TextIO] = None,
                     output_file_format: Optional[str] = None,
                     verbose: bool = False,
-                    method: str | None = None) -> int:
+                    method: Optional[str] = None) -> int:
     """
     Load CSV file(s) rows into recombinant resources datastore
     """
