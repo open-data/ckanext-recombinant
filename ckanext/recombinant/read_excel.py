@@ -67,7 +67,7 @@ def read_excel(f: Union[str, FlaskFileStorage, FieldStorage],
 
         org_name = organization_row[0].value
         sig = names_row[0].value
-        if org_name and not sig.startswith('v3'):
+        if org_name and not str(sig).startswith('v3'):
             # v2 template
             yield (
                 _sheetname,

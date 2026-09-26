@@ -1039,6 +1039,9 @@ def _process_upload_file(lc: LocalCKAN,
                 elif 'key' in e.error_dict:
                     # type_ignore_reason: incomplete typing
                     pgerror = e.error_dict['key'][0]  # type: ignore
+                else:
+                    pgerror = e.error_dict
+
                 if isinstance(pgerror, dict):
                     pgerror = '; '.join(
                         (h.recombinant_language_text(
