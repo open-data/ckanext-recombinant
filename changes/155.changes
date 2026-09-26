@@ -1,1 +1,3 @@
-Create test sample recombinant definition with example of custom primary key generation
+- insert and edit-only templates (edit_using__id = true)
+- datastore_create_sequence support
+- test sample recombinant definition with example of custom primary key generation
