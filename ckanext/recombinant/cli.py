@@ -804,7 +804,7 @@ def _load_one_csv_file(name: str, resource_name: str = '',
                        error_file: Optional[TextIO] = None,
                        output_file_format: Optional[str] = 'jsonl',
                        verbose: bool = False,
-                       method: str | None) -> int:
+                       method: str | None = None) -> int:
     """
     Load CSV file rows into recombinant resources datastore
     """
