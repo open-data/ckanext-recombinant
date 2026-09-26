@@ -1,0 +1,117 @@
+dataset_type: sampledeluxe
+target_dataset: sampledeluxe
+
+
+title: Sample PK-Deluxe Dataset Type
+shortname: Sample PK-Deluxe Dataset Type
+notes: Sample PK-Deluxe Dataset Type
+
+datastore_create_sequence: sample_pk_deluxe_seq
+
+template_version: 3
+
+portal_type: dataset
+collection: sample
+
+resources:
+- title: Sample Resource
+  resource_name: sampledeluxe
+
+  published_resource_id: 1495491e-338c-43ec-9995-ecb48c67beef
+  edit_using__id: true
+
+  create_form: true
+  edit_form: true
+  fields:
+  - datastore_id: year
+    datastore_type: year
+    label: Year
+    description:
+      en: Sample Year Field
+      fr: SampleYear Field FR
+    obligation: Mandatory
+    excel_required: true
+    form_required: true
+    validation: This field must not be empty
+    excel_column_width: 10
+    extract_date_year: true
+    form_attrs:
+      size: 20
+
+  - datastore_id: value
+    datastore_type: int
+    label: Value
+    obligation: Mandatory
+    excel_required: true
+    form_required: true
+    validation: This field must not be empty
+    excel_column_width: 10
+
+  datastore_primary_key: year
+  datastore_indexes: ""
+
+  default_preview_sort: year
+
+  excel_example_height: 100
+  excel_data_num_rows: 500
+
+  triggers:
+  - test_trigger_1: |
+      DECLARE
+        errors text[][] := '{{}}';
+        crval RECORD;
+        importing boolean NOT NULL := (SELECT importing
+            FROM datastore_user LIMIT 1);
+      BEGIN
+        errors := errors || required_error(NEW.year, 'year');
+        errors := errors || required_error(NEW.value, 'value');
+
+        IF TG_OP = 'UPDATE' THEN
+          errors := errors || required_error(NEW._id, '_id');
+        END IF;
+
+        IF errors = '{{}}' THEN
+          IF NOT importing AND TG_OP = 'INSERT' THEN
+            -- open_canada_id generation rule --
+
+            -- Assign unique _id across *all* records and so that (_id % 97) == 5
+            -- These _id values are exported as open_canada_id in the combined csv dataset
+
+            -- The last two _id digits are check digits. Mod 97 prevents almost all numeric
+            -- typos (Mod 97 is also used for international bank account check digits)
+
+            -- 5 chosen only because this is a Sample and 5 looks like an S.
+            -- open_canada_id values for other record types use values
+            -- different than 5 so that open_canada_ids are unique across all record types
+
+            -- Use check digits from 03-99 because numbers ending in 00 look approximate,
+            -- i.e. for all open_canada_id values (_id % 100) > 2
+
+            NEW._id := nextval('sample_pk_deluxe_seq') * 100 + 99;
+            NEW._id := NEW._id - (NEW._id - 5) % 97;
+          END IF;
+          RETURN NEW;
+        END IF;
+        RAISE EXCEPTION E'TAB-DELIMITED\t%', array_to_string(errors, E'\t');
+      END;
+
+  examples:
+    record:
+      year: 2026
+      value: 42
+    filter_one:
+      year: 2026
+    sort: year desc
+
+excel_edge_style:
+  PatternFill:
+    fgColor: FF336B87
+    patternType: solid
+excel_header_style:
+  PatternFill:
+    patternType: solid
+    fgColor: FF6832e3
+excel_column_heading_style:
+  PatternFill:
+    patternType: solid
+    fgColor: FFEFEFEF
