@@ -1,4 +1,4 @@
-from typing import List, Any, Generator
+from typing import Any, Generator
 
 from ckan.plugins.toolkit import _
 
@@ -20,7 +20,7 @@ class BadExcelData(Exception):
         self.message = message
 
 
-def format_trigger_error(error_values: List[str]) -> Generator[str, None, None]:
+def format_trigger_error(error_values: Any) -> Generator[str, None, None]:
     """
     Format PSQL function errors from raised ValidationError exceptions.
 
@@ -28,6 +28,9 @@ def format_trigger_error(error_values: List[str]) -> Generator[str, None, None]:
     unicode private code point (\\uF8FF) in order to do string
     replacements, allowing i18n support in the framework.
     """
+    if not isinstance(list, error_values):
+        raise ValueError(f'bad error_values type: {type(error_values)}')
+
     for e in error_values:
-        err, *args = e.split('\uF8FF')
+        err, *args = str(e).split('\uF8FF')
         yield _(err).format(*args)

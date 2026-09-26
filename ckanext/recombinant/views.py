@@ -413,7 +413,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
         except RecombinantException as e:
             return abort(400, _('Unable to download template.\n%s') % e)
 
-    elif request.method == 'POST':
+    else:
         filters = {}
         resource_name = request.form.get('resource_name', '')
         for r in dataset['resources']:
