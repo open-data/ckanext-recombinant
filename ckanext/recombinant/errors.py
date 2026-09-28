@@ -28,7 +28,7 @@ def format_trigger_error(error_values: Any) -> Generator[str, None, None]:
     unicode private code point (\\uF8FF) in order to do string
     replacements, allowing i18n support in the framework.
     """
-    if not isinstance(list, error_values):
+    if not isinstance(error_values, list):
         raise ValueError(f'bad error_values type: {type(error_values)}')
 
     for e in error_values:
