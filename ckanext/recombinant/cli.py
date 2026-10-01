@@ -399,6 +399,8 @@ def delete(dataset_type: Optional[List[str]] = None,
               help='Output CSV or JSONL file for errors instead of stderr')
 @click.option('-v', '--verbose', is_flag=True,
               type=click.BOOL, help='Increase verbosity.')
+@click.option('-i', '--insert', is_flag=True,
+              type=click.BOOL, help='Insert records (do not update existing).')
 @click.option('-L', '--no-log-suppression', is_flag=True,
               type=click.BOOL, help='Do not suppress the python logs.')
 def load_csv(csv_file: List[TextIO],
@@ -408,6 +410,7 @@ def load_csv(csv_file: List[TextIO],
              skip_validation: Optional[bool] = False,
              error_file: Optional[TextIO] = None,
              verbose: bool = False,
+             insert: bool = False,
              no_log_suppression: bool = False):
     """
     Load CSV file(s) rows into recombinant resources datastore
@@ -443,7 +446,8 @@ def load_csv(csv_file: List[TextIO],
 
     if no_log_suppression:
         _load_csv_files(csv_file, resource_name, organization, flags,
-                        error_file, output_file_format, verbose)
+                        error_file, output_file_format, verbose,
+                        method='insert' if insert else None)
         return
 
     with (
@@ -453,7 +457,8 @@ def load_csv(csv_file: List[TextIO],
         suppress_logging('ckanext.datastore.backend.postgres')
     ):
         _load_csv_files(csv_file, resource_name, organization, flags,
-                        error_file, output_file_format, verbose)
+                        error_file, output_file_format, verbose,
+                        method='insert' if insert else None)
 
 
 @recombinant.command(
@@ -715,7 +720,11 @@ def _create_triggers(dataset_types: Optional[List[str]],
     """
     lc = LocalCKAN()
     for dtype in _expand_dataset_types(dataset_types, all_types):
-        for chromo in get_geno(dtype)['resources']:
+        geno = get_geno(dtype)
+        if seq := geno.get('datastore_create_sequence'):
+            lc = LocalCKAN()
+            lc.action.datastore_sequence_create(name=seq, if_not_exists=True)
+        for chromo in geno['resources']:
             _update_triggers(lc, chromo)
             if verbose:
                 click.echo('Updated triggers for %s' % chromo['resource_name'])
@@ -776,7 +785,8 @@ def _load_csv_files(csv_file_names: List[TextIO],
                     flags: Optional[List[str]] = None,
                     error_file: Optional[TextIO] = None,
                     output_file_format: Optional[str] = None,
-                    verbose: bool = False) -> int:
+                    verbose: bool = False,
+                    method: Optional[str] = None) -> int:
     """
     Load CSV file(s) rows into recombinant resources datastore
     """
@@ -785,7 +795,7 @@ def _load_csv_files(csv_file_names: List[TextIO],
         # pass click.File prop
         errs |= _load_one_csv_file(n.name, resource_name,
                                    organization, flags, error_file,
-                                   output_file_format, verbose)
+                                   output_file_format, verbose, method)
     return errs  # exit code return
 
 
@@ -794,7 +804,8 @@ def _load_one_csv_file(name: str, resource_name: str = '',
                        flags: Optional[List[str]] = None,
                        error_file: Optional[TextIO] = None,
                        output_file_format: Optional[str] = 'jsonl',
-                       verbose: bool = False) -> int:
+                       verbose: bool = False,
+                       method: Optional[str] = None) -> int:
     """
     Load CSV file rows into recombinant resources datastore
     """
@@ -818,13 +829,13 @@ def _load_one_csv_file(name: str, resource_name: str = '',
     chromo = get_chromo(resource_name)
 
     dataset_type = chromo['dataset_type']
-    method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
+    if not method:
+        method = 'upsert' if chromo.get('datastore_primary_key') else 'insert'
     lc = LocalCKAN(context={'datastore_app_context_flags': flags} if flags else {})
     error_count = 0
     bad_record_count = 0
     skipped_orgs = 0
 
-    # dynamic fields
     dynamic_fields = [
         'owner_org',
         'owner_org_title',
@@ -836,6 +847,8 @@ def _load_one_csv_file(name: str, resource_name: str = '',
         dynamic_fields += chromo['csv_org_extras']
     dynamic_fields += [f['datastore_id'] for f in chromo['fields'] if
                        f.get('published_resource_computed_field', False)]
+    if method == 'insert':
+        dynamic_fields.append('_id')
 
     with error_outputter(error_file, output_file_format) as write_error:
         for org_name, records in csv_data_batch(name, chromo,
@@ -997,9 +1010,10 @@ def _write_one_csv(lc: LocalCKAN,
                    chromo: Dict[str, Any],
                    outfile: TextIO):
     out = csv.writer(outfile)
-    column_ids = [
-        f['datastore_id'] for f in chromo['fields'] if
-        not f.get('published_resource_computed_field')] + \
+    column_ids = \
+        (['_id'] if chromo.get('edit_using__id') else []) + \
+        [f['datastore_id'] for f in chromo['fields'] if
+            not f.get('published_resource_computed_field')] + \
         chromo.get('csv_org_extras', []) + \
         ['owner_org', 'owner_org_title']
     out.writerow(column_ids)

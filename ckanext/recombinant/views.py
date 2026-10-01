@@ -407,12 +407,13 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
     except NotFound:
         return abort(404, _('Not found'))
 
-    try:
-        book = excel_template(dataset_type, org)
-    except RecombinantException as e:
-        return abort(400, _('Unable to download template.\n%s') % e)
+    if request.method == 'GET':
+        try:
+            book = excel_template(dataset_type, org)
+        except RecombinantException as e:
+            return abort(400, _('Unable to download template.\n%s') % e)
 
-    if request.method == 'POST':
+    else:
         filters = {}
         resource_name = request.form.get('resource_name', '')
         for r in dataset['resources']:
@@ -427,6 +428,10 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
         chromo = get_chromo(resource['name'])
         record_data = []
 
+        edit_using__id = bool(chromo.get('edit_using__id'))
+        if edit_using__id:
+            pk_fields = [{'datastore_id': '_id'}]
+
         for keys in primary_keys:
             temp = keys.split(",")
             for f, pkf in zip(temp, pk_fields):
@@ -440,7 +445,13 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
             record_data += result['records']
 
         try:
-            append_data(book, record_data, chromo)
+            book = excel_template(
+                dataset_type, org, edit_using__id, len(record_data))
+        except RecombinantException as e:
+            return abort(400, _('Unable to download template.\n%s') % e)
+
+        try:
+            append_data(book, record_data, chromo, edit_using__id)
         except RecombinantFieldError as e:
             h.flash_error(render('recombinant/snippets/outdated_error.html',
                                  extra_vars={'key_errors': str(e).replace("'", ''),
@@ -912,7 +923,7 @@ def _process_upload_file(lc: LocalCKAN,
     try:
         while True:
             try:
-                sheet_name, org_name, column_names, rows = next(upload_data)
+                sheet_name, org_name, column_names, rows, method = next(upload_data)
             except StopIteration:
                 break
             except BadExcelData as e:
@@ -961,6 +972,12 @@ def _process_upload_file(lc: LocalCKAN,
             expected_columns = [f['datastore_id'] for f in chromo['fields']
                                 if f.get('import_template_include', True) and
                                 not f.get('published_resource_computed_field')]
+            if method == 'update':
+                expected_columns = ['_id'] + expected_columns
+                pk = ['_id']
+            else:
+                pk = chromo.get('datastore_primary_key', [])
+
             if column_names != expected_columns:
                 raise BadExcelData(
                     _("This template is out of date. "
@@ -970,7 +987,6 @@ def _process_upload_file(lc: LocalCKAN,
                       "{support} so we may investigate.").format(
                           support=h.support_email_address()))
 
-            pk = chromo.get('datastore_primary_key', [])
             choice_fields = {
                 f['datastore_id']:
                     'full' if f.get('excel_full_text_choices') else True
@@ -979,12 +995,13 @@ def _process_upload_file(lc: LocalCKAN,
 
             records = get_records(
                 rows,
-                [f for f in chromo['fields'] if f.get(
+                ([{'datastore_id': '_id', 'datastore_type': 'int'}]
+                    if method == 'update' else [])
+                + [f for f in chromo['fields'] if f.get(
                     'import_template_include', True) and not f.get(
                         'published_resource_computed_field')],
                 pk,
                 choice_fields)
-            method = 'upsert' if pk else 'insert'
             total_records += len(records)
             if not records:
                 continue
@@ -1016,9 +1033,15 @@ def _process_upload_file(lc: LocalCKAN,
                     else:
                         key = _('unknown')
                     raise RecombinantFieldError(key)
-                else:
+                elif 'records' in e.error_dict:
                     # type_ignore_reason: incomplete typing
                     pgerror = e.error_dict['records'][0]  # type: ignore
+                elif 'key' in e.error_dict:
+                    # type_ignore_reason: incomplete typing
+                    pgerror = e.error_dict['key'][0]  # type: ignore
+                else:
+                    pgerror = e.error_dict
+
                 if isinstance(pgerror, dict):
                     pgerror = '; '.join(
                         (h.recombinant_language_text(

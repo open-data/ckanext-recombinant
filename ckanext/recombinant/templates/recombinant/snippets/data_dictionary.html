@@ -34,8 +34,8 @@
     {% if (field.get('visible_to_public', true) and not field.get('published_resource_computed_field', false)) or (is_published_resource and field.get('published_resource_computed_field', false)) %}
 
       {% set field_type %}{{
-        field.datastore_type[1:] ~ '[]' if field.datastore_type[0] == '_'
-        else field.datastore_type }}{% endset %}
+        _(field.datastore_type[1:]) ~ '[]' if field.datastore_type[0] == '_'
+        else _(field.datastore_type) }}{% endset %}
 
       {% set extra_info -%}
         {% call dictionary_field(_('Label')) %}
