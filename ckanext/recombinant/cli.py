@@ -446,7 +446,8 @@ def load_csv(csv_file: List[TextIO],
 
     if no_log_suppression:
         _load_csv_files(csv_file, resource_name, organization, flags,
-                        error_file, output_file_format, verbose)
+                        error_file, output_file_format, verbose,
+                        method='insert' if insert else None)
         return
 
     with (
