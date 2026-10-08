@@ -3,6 +3,7 @@
 {% block dictionary_view %}
   {% set chromo = h.recombinant_published_resource_chromo(res.id) %}
   {% if chromo %}
+    {% asset 'recombinant/main_css' %}
     <div class="module-content">
       {% snippet 'recombinant/snippets/data_dictionary.html',
         chromo=chromo, all_expanded=false, is_published_resource=true %}
