@@ -55,3 +55,66 @@ body tbody.recombinant-data-dictionary-suffix-ref th,
 body tbody.recombinant-data-dictionary-suffix-ref td{
   background-color: #d9edf7 !important;
 }
+body .recombinant-dictionary[data-published-resource="True"] > .panel{
+  margin-bottom: -6px !important;
+  border-radius: 0 !important;
+  border-color: rgba(51, 51, 51, 0.125) !important;
+}
+body .recombinant-dictionary[data-published-resource="True"] > .panel:first-of-type{
+  border-top-left-radius: 0.25rem !important;
+  border-top-right-radius: 0.25rem !important;
+}
+body .recombinant-dictionary[data-published-resource="True"] > .panel:last-of-type{
+  border-bottom-right-radius: 0.25rem !important;
+  border-bottom-left-radius: 0.25rem !important;
+}
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading{
+  background-color: transparent !important;
+  border-color: rgba(51, 51, 51, 0.125) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+}
+body .recombinant-dictionary[data-published-resource="True"] .panel-body{
+  border-top-color: rgba(51, 51, 51, 0.125) !important;
+}
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading > .panel-title{
+  padding: 1rem 0.5rem !important;
+  margin: 0 !important;
+  transition-duration: 0.325s;
+  align-items: center !important;
+  position: relative !important;
+}
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading > .panel-title:hover,
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading > .panel-title:active,
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading > .panel-title:focus{
+  background-color: rgba(51, 51, 51, 0.125);
+}
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading *{
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  font-family: Lato,sans-serif !important;
+  color: #333333 !important;
+}
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading > .panel-title:not(.collapsed){
+  background-color: #e9f0f3 !important;
+}
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading > .panel-title:not(.collapsed) *{
+  color: #1d6075 !important;
+}
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading .recombinant-dictionary-item-expand{
+  font-size: 24px !important;
+  line-height: 1 !important;
+  width: 12px;
+  height: 12px;
+  display: block;
+  transition-duration: 0.125s;
+  transform-origin: center;
+  transform: translateX(-50%) translateY(-50%) rotate(90deg);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+body .recombinant-dictionary[data-published-resource="True"] .panel-heading > .panel-title:not(.collapsed) .recombinant-dictionary-item-expand{
+  transform: translateX(-200%) translateY(-50%) rotate(-90deg);
+}
