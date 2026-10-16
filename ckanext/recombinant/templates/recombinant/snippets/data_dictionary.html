@@ -29,7 +29,7 @@
   {% endif %}
 {% endmacro %}
 
-<div class="panel-group">
+<div class="panel-group recombinant-dictionary" data-published-resource="{{- is_published_resource -}}">
   {% for field in chromo.fields %}
     {% if (field.get('visible_to_public', true) and not field.get('published_resource_computed_field', false)) or (is_published_resource and field.get('published_resource_computed_field', false)) %}
 
@@ -146,7 +146,7 @@
               {% else %}<code>{{ field_type }}</code>
               {% endif %}
             </div>
-            <div class="col-md-1">{% if has_extra  %}»{% endif %}</div>
+            <div class="col-md-1">{% if has_extra  %}<span class="recombinant-dictionary-item-expand">»</span>{% endif %}</div>
           </div>
         </div>
         {% if has_extra or all_expanded %}
