@@ -1,12 +1,23 @@
 {% extends 'recombinant/snippets/xls_base.html' %}
 
-{% block title %}{{_('Download template Excel spreadsheet')}}{% endblock %}
+{% block title %}
+  {{_('Download template Excel spreadsheet')}}
+{% endblock %}
 
 {% block form %}
-<form enctype="multipart/form-data" id="dataset-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action=''>
-{{ h.csrf_input() }}
+  {% if not info_collection %}
+    <form enctype="multipart/form-data"
+          id="dataset-form"
+          class="dataset-form dataset-resource-form form-horizontal"
+          method="post"
+          action=''>
+    {{ h.csrf_input() }}
+  {% endif %}
 {% endblock %}
+
 {% block upload_submit %}
-  <div class="clear"></div>
+  {% if not info_collection %}
+    <div class="clear"></div>
+  {% endif %}
 {% endblock %}
 

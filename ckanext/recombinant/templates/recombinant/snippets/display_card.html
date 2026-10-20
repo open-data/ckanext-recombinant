@@ -1,0 +1,25 @@
+<article class="panel panel-default mrgn-bttm-sm relative recombinant-preview-card">
+  <header class="panel-heading">
+    {% set primary_key = chromo['datastore_primary_key'] %}
+    {% if primary_key.__class__.__name__ == 'list' %}
+      {% set ns = namespace(pk_vals=[]) %}
+      {% for f in primary_key %}
+        {% do ns.pk_vals.append(record[f]) %}
+      {% endfor %}
+      {% set pk_vals = ns.pk_vals|join(',') %}
+    {% else %}
+      {% set pk_vals = record[chromo['datastore_primary_key']] %}
+    {% endif %}
+    <a href="{{ h.url_for('recombinant.preview_record', resource_name=chromo.resource_name, owner_org=organization.name, pk_vals=pk_vals) }}">
+      <h4 class="panel-title">{{ record[chromo['display_card']['title_field']] }}</h4>
+    </a>
+    <a href="" class="btn btn-default btn-small btn-sm"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
+    <a href="" class="btn btn-danger btn-small btn-sm"><i class="fa fa-trash" aria-hidden="true"></i>&nbsp;{{ _('Delete') }}</a>
+  </header>
+  <div class="panel-body">
+    {% for f in chromo['display_card']['display_fields'] %}
+      {% set field = h.recombinant_get_field(chromo['resource_name'], f) %}
+      <div><strong>{{ h.recombinant_language_text(field.label or f) }}{{ _(':') }}</strong>&nbsp;&nbsp;{{ record[f] }}</div>
+    {% endfor %}
+  </div>
+</article>

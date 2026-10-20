@@ -1,0 +1,33 @@
+{% extends "page.html" %}
+
+{%- macro organization_display_name(org, trunc) -%}
+  {%- block organization_display scoped -%}
+    {%- set org_title = h.get_translated(org, 'title') or org.name -%}
+    {{- org_title|truncate(trunc) if trun else org_title -}}
+  {%- endblock -%}
+{%- endmacro -%}
+
+{% block breadcrumb_content %}
+  <li>{% link_for _(resource_description), named_route='recombinant.type_redirect',
+    resource_name=resource_name %}</li>
+  <li>{% link_for organization_display_name(organization, 60), named_route='recombinant.preview_table',
+    resource_name=resource_name, owner_org=organization.name %}</li>
+  <li class="active"><a href="javascript:void(0);" title="{{ pk_vals }}">{{ pk_vals }}</a></li>
+{% endblock %}
+
+{% block subtitle %}{{ _(resource_description) }} - {{ organization_display_name(organization) }} - {{ pk_vals }}{% endblock %}
+
+{% block content_action %}
+  <a href="" class="btn btn-default"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
+  <a href="" class="btn btn-danger"><i class="fa fa-trash" aria-hidden="true"></i>&nbsp;{{ _('Delete') }}</a>
+{% endblock %}
+
+{% block content_primary_nav %}
+  <li><a href="{{ h.url_for('recombinant.preview_table', resource_name=resource_name, owner_org=organization.name) }}"><i class="fa fa-arrow-left" aria-hidden="true"></i>&nbsp;{{ _('All Records') }}</a></li>
+{% endblock %}
+
+{% block primary_content_inner %}
+  <div class="mrgn-tp-lg mrgn-bttm-lg col-md-12">
+    TODO: output record...
+  </div>
+{% endblock %}

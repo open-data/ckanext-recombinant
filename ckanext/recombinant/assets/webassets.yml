@@ -12,3 +12,13 @@ main_css:
   contents:
     - css/recombinant.css
   output: recombinant/%(version)s_recombinant.css
+
+cascading_select:
+  contents:
+    - js/cascading_select.js
+  output: recombinant/%(version)s_cascading_select.js
+
+recombinant_webforms:
+  contents:
+    - js/recombinant_webform.js
+  output: recombinant/%(version)s_recombinant_webform.js

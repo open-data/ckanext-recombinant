@@ -118,3 +118,20 @@ body .recombinant-dictionary[data-published-resource="True"] .panel-heading .rec
 body .recombinant-dictionary[data-published-resource="True"] .panel-heading > .panel-title:not(.collapsed) .recombinant-dictionary-item-expand{
   transform: translateX(-200%) translateY(-50%) rotate(-90deg);
 }
+
+body article.recombinant-preview-card header.panel-heading{
+  display: flex;
+  flex-wrap: nowrap;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+body article.recombinant-preview-card header.panel-heading a:first-of-type{
+  display: inline;
+  flex: 1
+}
+
+body article.recombinant-preview-card header.panel-heading a:not(:first-of-type){
+  margin-left: 10px;
+}

@@ -124,6 +124,10 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
                 helpers.recombinant_published_resource_chromo,
             'support_email_address':
                 helpers.support_email_address,
+            'get_datatable_snippet':
+                helpers.get_datatable_snippet,
+            'enable_datatable_editor':
+                helpers.enable_datatable_editor,
             }
 
     def get_actions(self) -> Dict[str, Union[Action, ChainedAction]]:
@@ -214,6 +218,7 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
         dataset_definitions[t['dataset_type']] = url
 
         for chromo in t['resources']:
+            chromo['info_collection'] = t.get('info_collection', False)
             if chromo['resource_name'] in resource_definitions:
                 raise RecombinantException(
                     'Recombinant resource_name "%s" is already '

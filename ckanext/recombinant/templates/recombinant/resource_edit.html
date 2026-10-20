@@ -61,14 +61,14 @@
             {% block update_panel %}
               <details id="update" {% if errors %}open="open"{% endif %}>
                 <summary><span class="glyphicon glyphicon-import"></span>
-                  {{ _("Import") }}
+                  {{ _("Records") if info_collection else _("Import") }}
                 </summary>
                 {% if h.check_access('package_update', {'id': dataset.id }) %}
                   {% snippet "recombinant/snippets/xls_upload.html",
-                    pkg=dataset, resource=resource, errors=errors %}
+                    pkg=dataset, resource=resource, errors=errors, info_collection=info_collection %}
                 {% else %}
                   {% snippet "recombinant/snippets/xls_download.html",
-                    pkg=dataset, errors=errors %}
+                    pkg=dataset, errors=errors, info_collection=info_collection %}
                 {% endif %}
                 {% if g.userobj.sysadmin and resource.datastore_active %}
                   {# only let sysadmins datastore dump via UI #}
@@ -114,7 +114,7 @@
                 {{ _("Reference") }}
               </summary>
               {% snippet "recombinant/snippets/data_dictionary.html",
-                chromo=h.recombinant_get_chromo(resource.name), all_expanded=true, is_published_resource=false, organization=organization, organization_display_name=organization_display_name %}
+                chromo=chromo, all_expanded=true, is_published_resource=false, organization=organization, organization_display_name=organization_display_name %}
             </details>
             <details id="api">
               <summary><span class="glyphicon glyphicon-wrench"></span>
@@ -146,6 +146,22 @@
       {% snippet "recombinant/snippets/panel_get_started.html", errors=errors %}
     {% endif %}
   {% endblock action_panels %}
+  {% block record_output %}
+    {% if info_collection %}
+      <div>
+        <h3>{{ _('Records') }}</h3>
+        {% if not records %}
+          <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
+        {% else %}
+          {% for r in records %}
+            {% snippet "recombinant/snippets/display_card.html", record=r, chromo=chromo, organization=organization %}
+          {% endfor %}
+        {% endif %}
+      </div>
+    {% elif resource and 'error' not in resource %}
+      {{ h.get_datatable_snippet(resource.name, resource.id, organization.name, dataset.dataset_type) }}
+    {% endif %}
+  {% endblock record_output %}
 {% endblock %}
 
 {% block links %}
