@@ -360,7 +360,7 @@ def get_datatable_snippet(resource_name: str,
         user_dict = {}
     enable_new_template = config['ckanext.recombinant.enable_datatable_enhanced']
     if not enable_new_template:
-        enable_new_template = user_dict.get('opt_in_features__recombinant_datatables',
+        enable_new_template = user_dict.get('opt_in_features__pd_datatables',
                                             enable_new_template)
     snippet = 'recombinant_datatable.html' if enable_new_template \
         else 'recombinant_datatable_depr.html'

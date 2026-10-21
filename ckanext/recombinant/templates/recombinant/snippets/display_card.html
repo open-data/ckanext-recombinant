@@ -10,10 +10,10 @@
     {% else %}
       {% set pk_vals = record[chromo['datastore_primary_key']] %}
     {% endif %}
-    <a href="{{ h.url_for('recombinant.preview_record', resource_name=chromo.resource_name, owner_org=organization.name, pk_vals=pk_vals) }}">
+    <a href="{{ h.url_for('recombinant.preview_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk_vals) }}">
       <h4 class="panel-title">{{ record[chromo['display_card']['title_field']] }}</h4>
     </a>
-    <a href="" class="btn btn-default btn-small btn-sm"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
+    <a href="{{ h.url_for('recombinant.update_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk_vals) }}" class="btn btn-default btn-small btn-sm"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
     <a href="" class="btn btn-danger btn-small btn-sm"><i class="fa fa-trash" aria-hidden="true"></i>&nbsp;{{ _('Delete') }}</a>
   </header>
   <div class="panel-body">

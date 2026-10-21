@@ -8,7 +8,7 @@
 {% set geno = h.recombinant_get_geno(dataset_type) %}
 {% set chromo = h.recombinant_get_chromo(resource_name) %}
 {% set can_edit = h.check_access('resource_update', {'id': resource_id}) %}
-{% set editor_enabled = h.enable_pd_datatable_editor() %}
+{% set editor_enabled = h.enable_datatable_editor() %}
 {% set fk_links = {} %}
 {% for _res_name, _fkeys in foreign_keys.items() %}
   {% do fk_links.update({_res_name: h.url_for('recombinant.preview_table', resource_name=_res_name, owner_org=owner_org)}) %}
@@ -109,7 +109,7 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/select/3.0.0/css/select.bootstrap5.min.css" integrity="sha384-TlxQ7BelG5MWHP/TbW8dDV3/3kwuo6rinsUsoQdbLGPvurwx/DA2Z49RVLIOxVrG" crossorigin="anonymous" nonce="{{- h.get_inline_script_nonce() -}}"><!-- Select Extension -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/keytable/2.12.1/css/keyTable.bootstrap5.min.css" integrity="sha384-9rz3zS4qleWOOeZmPIp29dWk7GYvmx2zNp0FlRKbtHHY0T8fHci0uuiTB9SwHYbv" crossorigin="anonymous" nonce="{{- h.get_inline_script_nonce() -}}"><!-- KeyTable Extension -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/plug-ins/2.2.2/features/searchHighlight/dataTables.searchHighlight.css" integrity="sha384-3FGcHDS9wKlVV/Pu4y1kojpLsNxlE3jQjdm1N0p7RC9f6xPdRAj78js3ELGiGP/j" crossorigin="anonymous" nonce="{{- h.get_inline_script_nonce() -}}"><!-- Highlight Extension -->
-{% asset 'canada_datatables/pd_datatable_css' %}
+{% asset 'recombinant/recombinant_datatables_css' %}
 {#
   NOTE: to avoid unsafe JS eval, we render the js_error_evals via jinja2.
         because of this, we cannot pass this object into the CKAN JS Module
@@ -201,7 +201,7 @@
 <script type="text/javascript" src="https://cdn.datatables.net/keytable/2.12.1/js/dataTables.keyTable.min.js" integrity="sha384-NpM9cy4W0hbpF01CF3uXWZjVV0Q3qBPDaQlLcm92tD/4zpTXoj716Q1VkXFb7/t7" crossorigin="anonymous" nonce="{{- h.get_inline_script_nonce() -}}" defer></script><!-- KeyTable Extension -->
 <script type="text/javascript" src="https://cdn.datatables.net/keytable/2.12.1/js/keyTable.bootstrap5.min.js" integrity="sha384-LjqAejAs/gUORIoPKSXkTcNT0qFKpirTWZ4RvIlbwjgY1TYGi7E7dCoyTFZM1q68" crossorigin="anonymous" nonce="{{- h.get_inline_script_nonce() -}}" defer></script><!-- KeyTable Extension -->
 <script type="text/javascript" src="https://cdn.datatables.net/plug-ins/2.2.2/features/searchHighlight/dataTables.searchHighlight.min.js" integrity="sha384-XDdmvsWg5e1/POTILjMFvB3KtrBqRk5W1CG9aoi1+K6bBMPHQAvlKEiekndU6CTp" crossorigin="anonymous" nonce="{{- h.get_inline_script_nonce() -}}" defer></script><!-- Highlight Extension -->
-{% asset 'canada_datatables/pd_datatable_js' %}
+{% asset 'recombinant/recombinant_datatables_js' %}
 <style nonce="{{- h.get_inline_script_nonce() -}}">
   {# NOTE: need inline visibility to fully prevent load flashing in datatables #}
   body .pd-datatables-pre-render-hidden{

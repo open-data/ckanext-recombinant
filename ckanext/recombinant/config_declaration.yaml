@@ -1,0 +1,14 @@
+version: 1
+groups:
+  - annotation: ckanext-recombinant settings
+    options:
+      - key: ckanext.recombinant.enable_datatable_enhanced
+        default: false
+        description: |
+          Enables the improved DataTables for Recombinant type resources.
+        validators: boolean_validator
+      - key: ckanext.recombinant.enable_datatable_editor
+        default: false
+        description: |
+          Enables the custom DataTables editor for Recombinant type resources.
+        validators: boolean_validator

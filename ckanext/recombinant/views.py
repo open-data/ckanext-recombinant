@@ -68,7 +68,6 @@ from ckanext.datastore.backend.postgres import (
 from ckanapi import NotFound, LocalCKAN
 
 # TODO: DEPRECATED: REMOVE AFTER FULL PD DATATABLES QA
-import re
 import datetime
 from pytz import timezone, utc
 this_tz = timezone('America/Montreal')
@@ -917,7 +916,10 @@ def preview_table(resource_name: str,
     if chromo['info_collection']:
         try:
             result = lc.action.datastore_search(resource_id=r['id'])
-            records = result['records']
+            if result and 'records' in result:
+                records = result['records']
+        except NotFound:
+            pass  # resource/dataset not initialized yet
         except NotAuthorized:
             return abort(403, _('Unauthorized to read resource %s') % r['id'])
 
@@ -937,13 +939,15 @@ def preview_table(resource_name: str,
     })
 
 
-@recombinant.route('/recombinant/<resource_name>/<owner_org>/<pk_vals>', methods=['GET'])
+@recombinant.route('/recombinant/<resource_name>/<owner_org>/<pk>',
+                   methods=['GET'])
 def preview_record(resource_name: str,
                    owner_org: str,
-                   pk_vals: str) -> Union[str, Response]:
-    primary_key_vals = pk_vals.split(',')
+                   pk: str) -> Union[str, Response]:
     if not g.user:
         return h.redirect_to('user.login')
+
+    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
 
     org_object = Group.get(owner_org)
     if not org_object or getattr(org_object, 'state') != 'active':
@@ -953,7 +957,7 @@ def preview_record(resource_name: str,
             'recombinant.preview_record',
             resource_name=resource_name,
             owner_org=org_object.name,
-            pk_vals=pk_vals
+            pk=pk
         )
 
     try:
@@ -992,7 +996,7 @@ def preview_record(resource_name: str,
             resource_id=r['id'], filters=filters, limit=1)
         if len(result['records']) == 0:
             return abort(404, _('Record %s not found for Organization %s') %
-                         (pk_vals, owner_org))
+                         (pk, owner_org))
         record = result['records'][0]
     except NotAuthorized:
         return abort(403, _('Unauthorized to read resource %s') % r['id'])
@@ -1001,7 +1005,7 @@ def preview_record(resource_name: str,
         'dataset_type': chromo['dataset_type'],
         'resource_description': chromo['title'],
         'chromo': chromo,
-        'pk_vals': pk_vals,
+        'pk': pk,
         'resource_name': chromo['resource_name'],
         'record': record,
         'resource': r,
@@ -1009,9 +1013,12 @@ def preview_record(resource_name: str,
     })
 
 
-@recombinant.route('/recombinant/create-record/<owner_org>/<resource_name>',
+@recombinant.route('/recombinant-create-record/<owner_org>/<resource_name>',
                    methods=['GET', 'POST'])
 def create_record(owner_org: str, resource_name: str):
+    if not g.user:
+        return h.redirect_to('user.login')
+
     lc = LocalCKAN(username=g.user)
 
     try:
@@ -1025,7 +1032,6 @@ def create_record(owner_org: str, resource_name: str):
 
         h.check_access(
             'datastore_upsert',
-            {'user': g.user, 'auth_user_obj': g.userobj},
             {'resource_id': res['id']})
     except NotAuthorized:
         return abort(403, _('Unauthorized to create a resource for this package'))
@@ -1133,9 +1139,12 @@ def create_record(owner_org: str, resource_name: str):
                   })
 
 
-@recombinant.route('/recombinant/update-record/<owner_org>/<resource_name>/<pk>',
+@recombinant.route('/recombinant-update-record/<owner_org>/<resource_name>/<pk>',
                    methods=['GET', 'POST'])
 def update_record(owner_org: str, resource_name: str, pk: str):
+    if not g.user:
+        return h.redirect_to('user.login')
+
     pk_list = [_url_part_unescape(p) for p in pk.split(',')]
 
     lc = LocalCKAN(username=g.user)
@@ -1151,7 +1160,6 @@ def update_record(owner_org: str, resource_name: str, pk: str):
 
         h.check_access(
             'datastore_upsert',
-            {'user': g.user, 'auth_user_obj': g.userobj},
             {'resource_id': res['id']})
     except NotAuthorized:
         abort(403, _('Unauthorized to update dataset'))
@@ -1267,7 +1275,7 @@ def update_record(owner_org: str, resource_name: str, pk: str):
                   })
 
 
-@recombinant.route('/recombinant/upsert_data/<owner_org>/<resource_name>',
+@recombinant.route('/recombinant-upsert-data/<owner_org>/<resource_name>',
                    methods=['POST'])
 def upsert_data(owner_org: str, resource_name: str):
     """
@@ -1390,7 +1398,7 @@ def upsert_data(owner_org: str, resource_name: str):
     return _finish_ok(return_dict)
 
 
-@recombinant.route('/recombinant/refresh/<resource_name>/<owner_org>',
+@recombinant.route('/recombinant-refresh/<resource_name>/<owner_org>',
                    methods=['GET', 'POST'])
 def refresh_dataset(resource_name: str, owner_org: str):
     if not is_sysadmin(g.user):

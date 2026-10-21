@@ -70,7 +70,7 @@
       serverSide: true,
       processing: true,
       ajax: {
-        "url": "{{ h.url_for('canada.datatable', resource_name=resource_name, resource_id=resource_id,) }}",
+        "url": "{{ h.url_for('recombinant.datatable_depr', resource_name=resource_name, resource_id=resource_id,) }}",
         "type": "POST",
         "data": function(data){
           if( searchParams.has('dt_query') ){  // pass search query from URI param
@@ -218,7 +218,7 @@
         {extend:"selected",text:"{{_('Delete records')}}",className:"canada-wet-datatable-btn-danger",action: function ( e, dt, button, config ){
             // closing form tag needed for py webtest lib
             var form = $('<form></form>',{
-              action : "{{ h.url_for('canada.delete_selected_records', resource_id=resource_id) }}",
+              action : "{{ h.url_for('recombinant.delete_selected_records', resource_id=resource_id) }}",
               method : "post"
             });
             form.append($('<input>').attr({

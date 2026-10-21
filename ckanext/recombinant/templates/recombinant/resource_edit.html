@@ -158,10 +158,17 @@
           {% endfor %}
         {% endif %}
       </div>
-    {% elif resource and 'error' not in resource %}
-      {{ h.get_datatable_snippet(resource.name, resource.id, organization.name, dataset.dataset_type) }}
     {% endif %}
   {% endblock record_output %}
+{% endblock %}
+
+{% block primary %}
+  {{ super() }}
+  {% block record_table %}
+    {% if not info_collection and resource and 'error' not in resource %}
+      {{ h.get_datatable_snippet(resource.name, resource.id, organization.name, dataset.dataset_type) }}
+    {% endif %}
+  {% endblock record_table %}
 {% endblock %}
 
 {% block links %}

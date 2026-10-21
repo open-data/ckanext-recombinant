@@ -42,6 +42,7 @@ from ckanext.recombinant.errors import RecombinantException
 from ckanext.datastore.interfaces import IDataDictionaryForm
 
 
+@p.toolkit.blanket.config_declarations
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslation):
     p.implements(tables.IRecombinant)
     p.implements(p.IConfigurer)

@@ -22,3 +22,26 @@ recombinant_webforms:
   contents:
     - js/recombinant_webform.js
   output: recombinant/%(version)s_recombinant_webform.js
+
+recombinant_datatables_css_depr:
+  contents:
+    - datatables/recombinant_datatables_depr.css
+  output: recombinant/%(version)s_recombinant_datatables_depr.css
+
+recombinant_datatables_css:
+  contents:
+    - datatables/recombinant_datatable.css
+  output: recombinant/%(version)s_recombinant_datatable.css
+
+recombinant_datatables_js_depr:
+  contents:
+    - datatables/recombinant_datatables_depr.js
+  output: recombinant/%(version)s_recombinant_datatables_depr.js
+
+recombinant_datatables_js:
+  contents:
+    - datatables/recombinant_datatables.js
+  extra:
+    preload:
+      - base/main  # need ckan JS and jQuery
+  output: recombinant/%(version)s_recombinant_datatables.js
