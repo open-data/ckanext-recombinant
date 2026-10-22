@@ -219,7 +219,6 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
         dataset_definitions[t['dataset_type']] = url
 
         for chromo in t['resources']:
-            chromo['info_collection'] = t.get('info_collection', False)
             if chromo['resource_name'] in resource_definitions:
                 raise RecombinantException(
                     'Recombinant resource_name "%s" is already '

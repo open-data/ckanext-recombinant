@@ -79,6 +79,42 @@ log = getLogger(__name__)
 recombinant = Blueprint('recombinant', __name__)
 
 
+def _get_recombinant_view_context_vars(
+        lc: LocalCKAN, resource_name: str, owner_org: str) -> Tuple[Dict[str, Any],
+                                                                    Dict[str, Any],
+                                                                    Dict[str, Any],
+                                                                    List[str],
+                                                                    Dict[str, Any],
+                                                                    Dict[str, Any],
+                                                                    Dict[str, Any],
+                                                                    Dict[str, Any]]:
+    """
+    Gets all of the common/required schemas and metadata
+    for Recombinant views.
+    """
+    chromo = h.recombinant_get_chromo(resource_name)
+    rcomb = lc.action.recombinant_show(
+        owner_org=owner_org,
+        dataset_type=chromo['dataset_type'])
+    resource = None
+    for r in rcomb['resources']:
+        if r['name'] == resource_name:
+            resource = r
+            break
+    if not resource:
+        raise NotFound(_('Resource %s not found for Organization %s') %
+                       (resource_name, owner_org))
+    organization = lc.action.organization_show(id=owner_org)
+    if organization['state'] != 'active':
+        raise NotFound(_('Organization not found'))
+    dataset = lc.action.package_show(id=rcomb['id'])
+    geno = get_geno(dataset['type'])
+    pk_fields = aslist(chromo['datastore_primary_key'])
+    choice_fields = _get_choice_fields(resource_name, org_name=owner_org)
+    return rcomb, geno, chromo, pk_fields, choice_fields, \
+        dataset, resource, organization
+
+
 @recombinant.route('/resource/<id>', methods=['GET'])
 def resource_alias(id: str) -> Union[Response, str]:
     """
@@ -288,6 +324,89 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
         resource_name=res['name'],
         owner_org=org['name'],
         )
+
+
+@recombinant.route('/recombinant/delete-single-record/<resource_id>/<pk>',
+                   methods=['GET', 'POST'])
+def delete_single_record(resource_id: str, pk: str) -> Union[str, Response]:
+    if not g.user:
+        return h.redirect_to('user.login')
+
+    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
+    came_from = request.args.get('came_from')
+    if came_from not in ['preview_record', 'preview_table']:
+        came_from = 'preview_record'
+
+    lc = LocalCKAN(username=g.user)
+
+    if not h.check_access('datastore_records_delete',
+                          {'resource_id': resource_id, 'filters': {}}):
+        return abort(403, _('User {0} not authorized to update resource {1}'
+                            .format(str(g.user), resource_id)))
+
+    try:
+        res = lc.action.resource_show(id=resource_id)
+        pkg = lc.action.package_show(id=res['package_id'])
+        org = lc.action.organization_show(id=pkg['owner_org'])
+        dataset = lc.action.recombinant_show(
+            dataset_type=pkg['type'], owner_org=org['name'])
+    except (NotFound, NotAuthorized):
+        return abort(404, _('Not found'))
+
+    if 'cancel' in request.form:
+        if came_from == 'preview_record':
+            return h.redirect_to('recombinant.preview_record',
+                                 resource_name=res['name'],
+                                 owner_org=org['name'],
+                                 pk=pk)
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=res['name'],
+                             owner_org=org['name'])
+    if request.method != 'POST' or 'confirm' not in request.form:
+        return render('recombinant/confirm_single_delete.html',
+                       extra_vars={
+                           'dataset': dataset,
+                           'resource': res,
+                           'num': 1,
+                           'pk': pk,
+                           'pk_list': primary_key_vals})
+
+    chromo = get_chromo(res['name'])
+    filters = {}
+    if isinstance(chromo['datastore_primary_key'], list):
+        for i, k in enumerate(chromo['datastore_primary_key']):
+            filters[k] = primary_key_vals[i]
+    else:
+        filters[chromo['datastore_primary_key']] = primary_key_vals
+
+    try:
+        lc.action.datastore_records_delete(
+            resource_id=res['id'], filters=filters)
+    except NotFound:
+        h.flash_error(_('Not found') + ' ' + str(filters))
+    except ValidationError as e:
+        if 'constraint_info' in e.error_dict:
+            error_message = _render_recombinant_constraint_errors(
+                lc, e, get_chromo(res['name']), 'delete')
+            h.flash_error(error_message)
+            if came_from == 'preview_record':
+                return h.redirect_to('recombinant.preview_record',
+                                     resource_name=res['name'],
+                                     owner_org=org['name'],
+                                     pk=pk)
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=res['name'],
+                                 owner_org=org['name'])
+        raise
+
+    h.flash_success(_("Deleted record {key}.").format(
+        key=','.join(primary_key_vals)))
+
+    return h.redirect_to(
+        'recombinant.preview_table',
+        resource_name=res['name'],
+        owner_org=org['name'],
+    )
 
 
 @recombinant.route('/recombinant/delete-selected-records/<resource_id>',
@@ -913,7 +1032,7 @@ def preview_table(resource_name: str,
         r = None
 
     records = None
-    if chromo['info_collection']:
+    if chromo.get('display_card'):
         try:
             result = lc.action.datastore_search(resource_id=r['id'])
             if result and 'records' in result:
@@ -929,7 +1048,6 @@ def preview_table(resource_name: str,
         'resource_description': chromo['title'],
         'chromo': chromo,
         'resource_name': chromo['resource_name'],
-        'info_collection': chromo['info_collection'],
         'records': records,
         'resource': r,
         'organization': org,
@@ -1020,34 +1138,34 @@ def create_record(owner_org: str, resource_name: str):
         return h.redirect_to('user.login')
 
     lc = LocalCKAN(username=g.user)
-
     try:
-        chromo = h.recombinant_get_chromo(resource_name)
-        rcomb = lc.action.recombinant_show(
-            owner_org=owner_org,
-            dataset_type=chromo['dataset_type'])
-        [res] = [r for r in rcomb['resources'] if r['name'] == resource_name]
-
-        org = lc.action.organization_show(id=owner_org)
-
-        h.check_access(
-            'datastore_upsert',
-            {'resource_id': res['id']})
+        rcomb, geno, chromo, pk_fields, choice_fields, \
+        dataset, resource, organization = \
+            _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+        h.check_access('datastore_upsert', {'resource_id': resource['id']})
+    except NotFound as e:
+        return abort(404, e)
     except NotAuthorized:
-        return abort(403, _('Unauthorized to create a resource for this package'))
+        return abort(403, _('Unauthorized to create a record for this resource'))
 
-    choice_fields = _get_choice_fields(resource_name, org_name=owner_org)
-    pk_fields = aslist(chromo['datastore_primary_key'])
+    template_vars = {
+        'rcomb': rcomb,
+        'geno': geno,
+        'chromo': chromo,
+        'pk_fields': pk_fields,
+        'choice_fields': choice_fields,
+        'dataset': dataset,
+        'resource': resource,
+        'organization': organization,
+    }
 
     if request.method == 'POST':
         post_data = parse_params(request.form, ignore_keys=['save'])
 
         if 'cancel' in post_data:
-            return h.redirect_to(
-                'recombinant.preview_table',
-                resource_name=resource_name,
-                owner_org=rcomb['owner_org'],
-                )
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=rcomb['owner_org'])
 
         data, err = _clean_check_type_errors(
             post_data,
@@ -1059,7 +1177,7 @@ def create_record(owner_org: str, resource_name: str):
         data = _normalize_record_newlines(data)
         try:
             lc.action.datastore_upsert(
-                resource_id=res['id'],
+                resource_id=resource['id'],
                 method='insert',
                 records=[{k: None if k in err else v for (k, v) in data.items()}],
                 dry_run=bool(err))
@@ -1105,38 +1223,25 @@ def create_record(owner_org: str, resource_name: str):
 
         if err or error_summary:
             return render('recombinant/create_record.html',
-                          extra_vars={
-                              'data': data,
-                              'resource_name': resource_name,
-                              'chromo_title': chromo['title'],
-                              'choice_fields': choice_fields,
-                              'owner_org': rcomb['owner_org'],
-                              'org_dict': org,
-                              # prevent rendering error on parent template
-                              'pkg_dict': {},
-                              'errors': err,
-                              'error_summary': error_summary,
-                          })
+                          extra_vars=dict(template_vars,
+                                          data=data,
+                                          # prevent rendering error on parent template
+                                          pkg_dict={},
+                                          errors=err,
+                                          error_summary=error_summary))
 
         h.flash_notice(_('Record Created'))
 
-        return h.redirect_to(
-            'recombinant.preview_table',
-            resource_name=resource_name,
-            owner_org=rcomb['owner_org'],
-        )
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=rcomb['owner_org'])
 
     return render('recombinant/create_record.html',
-                  extra_vars={
-                      'data': {},
-                      'resource_name': resource_name,
-                      'chromo_title': chromo['title'],
-                      'choice_fields': choice_fields,
-                      'owner_org': rcomb['owner_org'],
-                      'org_dict': org,
-                      'pkg_dict': {},  # prevent rendering error on parent template
-                      'errors': {},
-                  })
+                  extra_vars=dict(template_vars,
+                                  data={},
+                                  # prevent rendering error on parent template
+                                  pkg_dict={},
+                                  errors={}))
 
 
 @recombinant.route('/recombinant-update-record/<owner_org>/<resource_name>/<pk>',
@@ -1145,30 +1250,36 @@ def update_record(owner_org: str, resource_name: str, pk: str):
     if not g.user:
         return h.redirect_to('user.login')
 
-    pk_list = [_url_part_unescape(p) for p in pk.split(',')]
-
     lc = LocalCKAN(username=g.user)
-
     try:
-        chromo = h.recombinant_get_chromo(resource_name)
-        rcomb = lc.action.recombinant_show(
-            owner_org=owner_org,
-            dataset_type=chromo['dataset_type'])
-        [res] = [r for r in rcomb['resources'] if r['name'] == resource_name]
-
-        org = lc.action.organization_show(id=owner_org)
-
-        h.check_access(
-            'datastore_upsert',
-            {'resource_id': res['id']})
+        rcomb, geno, chromo, pk_fields, choice_fields, \
+        dataset, resource, organization = \
+            _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+        h.check_access('datastore_upsert', {'resource_id': resource['id']})
+    except NotFound as e:
+        return abort(404, e)
     except NotAuthorized:
         abort(403, _('Unauthorized to update dataset'))
 
-    pk_fields = aslist(chromo['datastore_primary_key'])
+    template_vars = {
+        'rcomb': rcomb,
+        'geno': geno,
+        'chromo': chromo,
+        'pk_fields': pk_fields,
+        'choice_fields': choice_fields,
+        'dataset': dataset,
+        'resource': resource,
+        'organization': organization,
+    }
+
+    pk_list = [_url_part_unescape(p) for p in pk.split(',')]
+    came_from = request.args.get('came_from')
+    if came_from not in ['preview_record', 'preview_table']:
+        came_from = 'preview_record'
     pk_filter = dict(zip(pk_fields, pk_list))
 
     records = lc.action.datastore_search(
-        resource_id=res['id'],
+        resource_id=resource['id'],
         filters=pk_filter)['records']
     if len(records) == 0:
         abort(404, _('Not found'))
@@ -1192,17 +1303,18 @@ def update_record(owner_org: str, resource_name: str, pk: str):
         else:
             data[f['datastore_id']] = val
 
-    choice_fields = _get_choice_fields(resource_name, data, org_name=owner_org)
-
     if request.method == 'POST':
         post_data = parse_params(request.form, ignore_keys=['save'] + pk_fields)
 
         if 'cancel' in post_data:
-            return h.redirect_to(
-                'recombinant.preview_table',
-                resource_name=resource_name,
-                owner_org=rcomb['owner_org'],
-                )
+            if came_from == 'preview_record':
+                return h.redirect_to('recombinant.preview_table',
+                                     resource_name=resource_name,
+                                     owner_org=rcomb['owner_org'],
+                                     pk=pk)
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=rcomb['owner_org'])
 
         data, err = _clean_check_type_errors(
             post_data,
@@ -1220,7 +1332,7 @@ def update_record(owner_org: str, resource_name: str, pk: str):
 
         try:
             lc.action.datastore_upsert(
-                resource_id=res['id'],
+                resource_id=resource['id'],
                 # method='update',    FIXME not raising ValidationErrors
                 records=[{k: None if k in err else v for (k, v) in data.items()}],
                 dry_run=bool(err))
@@ -1239,40 +1351,31 @@ def update_record(owner_org: str, resource_name: str, pk: str):
 
         if err or error_summary:
             return render('recombinant/update_record.html',
-                          extra_vars={
-                              'data': data,
-                              'resource_name': resource_name,
-                              'chromo_title': chromo['title'],
-                              'choice_fields': choice_fields,
-                              'pk_fields': pk_fields,
-                              'owner_org': rcomb['owner_org'],
-                              'org_dict': org,
-                              # prevent rendering error on parent template
-                              'pkg_dict': {},
-                              'errors': err,
-                              'error_summary': error_summary})
+                          extra_vars=dict(template_vars,
+                                          data=data,
+                                          # prevent rendering error on parent template
+                                          pkg_dict={},
+                                          errors=err,
+                                          error_summary=error_summary))
 
         h.flash_notice(_('Record %s Updated') % ','.join(pk_list))
 
-        return h.redirect_to(
-            'recombinant.preview_table',
-            resource_name=resource_name,
-            owner_org=rcomb['owner_org'],
-            )
+        if came_from == 'preview_record':
+            return h.redirect_to('recombinant.preview_record',
+                                 resource_name=resource_name,
+                                 owner_org=rcomb['owner_org'],
+                                 pk=pk)
+
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=rcomb['owner_org'])
 
     return render('recombinant/update_record.html',
-                  extra_vars={
-                      'data': data,
-                      'resource_name': resource_name,
-                      'chromo_title': chromo['title'],
-                      'choice_fields': choice_fields,
-                      'pk_fields': pk_fields,
-                      'owner_org': rcomb['owner_org'],
-                      'org_dict': org,
-                      # prevent rendering error on parent template
-                      'pkg_dict': {},
-                      'errors': {},
-                  })
+                  extra_vars=dict(template_vars,
+                                  data=data,
+                                  # prevent rendering error on parent template
+                                  pkg_dict={},
+                                  errors={}))
 
 
 @recombinant.route('/recombinant-upsert-data/<owner_org>/<resource_name>',

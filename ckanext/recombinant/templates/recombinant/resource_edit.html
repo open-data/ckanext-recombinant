@@ -61,14 +61,14 @@
             {% block update_panel %}
               <details id="update" {% if errors %}open="open"{% endif %}>
                 <summary><span class="glyphicon glyphicon-import"></span>
-                  {{ _("Records") if info_collection else _("Import") }}
+                  {{ _("Records") if chromo.get('webform_only') else _("Import") }}
                 </summary>
                 {% if h.check_access('package_update', {'id': dataset.id }) %}
                   {% snippet "recombinant/snippets/xls_upload.html",
-                    pkg=dataset, resource=resource, errors=errors, info_collection=info_collection %}
+                    pkg=dataset, resource=resource, errors=errors, chromo=chromo %}
                 {% else %}
                   {% snippet "recombinant/snippets/xls_download.html",
-                    pkg=dataset, errors=errors, info_collection=info_collection %}
+                    pkg=dataset, errors=errors, chromo=chromo %}
                 {% endif %}
                 {% if g.userobj.sysadmin and resource.datastore_active %}
                   {# only let sysadmins datastore dump via UI #}
@@ -147,14 +147,14 @@
     {% endif %}
   {% endblock action_panels %}
   {% block record_output %}
-    {% if info_collection %}
+    {% if chromo.get('display_card') %}
       <div>
         <h3>{{ _('Records') }}</h3>
         {% if not records %}
           <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
         {% else %}
           {% for r in records %}
-            {% snippet "recombinant/snippets/display_card.html", record=r, chromo=chromo, organization=organization %}
+            {% snippet "recombinant/snippets/display_card.html", record=r, chromo=chromo, organization=organization, resource=resource %}
           {% endfor %}
         {% endif %}
       </div>
@@ -165,7 +165,7 @@
 {% block primary %}
   {{ super() }}
   {% block record_table %}
-    {% if not info_collection and resource and 'error' not in resource %}
+    {% if not chromo.get('display_card') and resource and 'error' not in resource %}
       {{ h.get_datatable_snippet(resource.name, resource.id, organization.name, dataset.dataset_type) }}
     {% endif %}
   {% endblock record_table %}

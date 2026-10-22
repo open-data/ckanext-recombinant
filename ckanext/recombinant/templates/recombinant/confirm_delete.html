@@ -16,7 +16,7 @@
         <thead>
           <th scope="col" class="col-sm-1 border-0"></th>
           {% for c in primary_keys %}
-            <th scope="col">{{ c['label'][h.lang()] }}</th>
+            <th scope="col">{{ c['label'][h.lang()] or c['label'] }}</th>
           {% endfor %}
         </thead>
         <tbody>

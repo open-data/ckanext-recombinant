@@ -18,8 +18,8 @@
 {% block subtitle %}{{ _(resource_description) }} - {{ organization_display_name(organization) }} - {{ pk }}{% endblock %}
 
 {% block content_action %}
-  <a href="{{ h.url_for('recombinant.update_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk) }}" class="btn btn-default"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
-  <a href="" class="btn btn-danger"><i class="fa fa-trash" aria-hidden="true"></i>&nbsp;{{ _('Delete') }}</a>
+  <a href="{{ h.url_for('recombinant.update_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk, came_from='preview_record') }}" class="btn btn-default"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
+  <a href="{{ h.url_for('recombinant.delete_single_record', resource_id=resource.id, pk=pk, came_from='preview_record') }}" class="btn btn-danger"><i class="fa fa-trash" aria-hidden="true"></i>&nbsp;{{ _('Delete') }}</a>
 {% endblock %}
 
 {% block content_primary_nav %}

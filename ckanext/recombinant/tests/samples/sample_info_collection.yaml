@@ -8,7 +8,6 @@ notes: Sample Info Collection Dataset Type
 
 
 template_version: 3
-info_collection: true
 
 portal_type: dataset
 collection: sample
@@ -27,6 +26,7 @@ resources:
 
   create_form: true
   edit_form: true
+  webform_only: true
   fields:
   - datastore_id: reference_number
     label:

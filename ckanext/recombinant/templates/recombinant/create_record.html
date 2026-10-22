@@ -1,16 +1,16 @@
 {% extends "package/base_form_page.html" %}
 
 {% block page_title %}
-  <h1 id="wb-cont">{{- h.recombinant_language_text(chromo_title) -}}</h1>
-  <h2 class="wb-invisible">{{- h.get_translated(org_dict, 'title') -}}</h2>
+  <h1 id="wb-cont">{{- h.recombinant_language_text(chromo['title']) -}}</h1>
+  <h2 class="wb-invisible">{{- h.get_translated(organization, 'title') -}}</h2>
   <h3>{{ _("Create Record") }}</h3>
 {% endblock %}
 {% block subtitle %}{{ _("Create Record") }}{% endblock %}
 
 {% block breadcrumb_content %}
-  <li>{{ h.nav_link(h.recombinant_language_text(chromo_title),
+  <li>{{ h.nav_link(h.recombinant_language_text(chromo['title']),
                     named_route='recombinant.preview_table',
-                    resource_name=resource_name,
+                    resource_name=chromo['resource_name'],
                     owner_org=owner_org) }}</li>
   <li>{{ _("Create Record") }}</li>
 {% endblock %}
@@ -25,7 +25,6 @@
             <p>{{ error_summary }}</p>
           {% endif %}
           {% if errors %}
-            {%- set chromo = h.recombinant_get_chromo(resource_name) -%}
             <p>{{ _('The form contains invalid entries:') }}</p>
             <ul>
               {% for field in chromo.fields -%}
@@ -43,7 +42,6 @@
 
     {% block basic_fields %}{% endblock %}
 
-    {%- set chromo = h.recombinant_get_chromo(resource_name) -%}
     <div class='container-fluid mrgn-bttm-lg'>
       {%- for f in chromo.fields %}
         {%- if f.get('import_template_include', True) and not f.get('published_resource_computed_field', false) %}
@@ -98,7 +96,7 @@
 
 {%- block scripts -%}
   {{ super() }}
-  {% if h.recombinant_get_chromo(resource_name).get('cascading_select_fields') %}
+  {% if chromo.get('cascading_select_fields') %}
     {% asset 'recombinant/cascading_select' %}
   {% endif %}
   {% asset 'recombinant/recombinant_webforms' %}

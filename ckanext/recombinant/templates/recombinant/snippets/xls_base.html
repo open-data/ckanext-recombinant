@@ -3,7 +3,7 @@
   <form>
   {{ h.csrf_input() }}
 {% endblock %}
-  {% if not info_collection %}
+  {% if not chromo.get('webform_only') %}
     <div class="col-md-6">
       <div class="col-md-12">
         <div class="form-group control-medium">

@@ -10,7 +10,7 @@
     <a class="btn btn-default" href="{{ h.url_for('recombinant.create_record', owner_org=pkg.owner_org, resource_name=resource.name) }}">
       <i class="glyphicon glyphicon-plus-sign"></i>&nbsp;{{ _("Create Single Record") }}
     </a>
-    {% if not info_collection %}
+    {% if not chromo.get('webform_only') %}
       <h4>{{ _("Create and update multiple records") }}</h4>
       {% set geno = h.recombinant_get_geno(pkg.dataset_type) %}
       {% if 'template_warning' in geno %}
@@ -22,7 +22,7 @@
       {% endif %}
     {% endif %}
   {% endif %}
-  {% if not info_collection %}
+  {% if not chromo.get('webform_only') %}
     <form enctype="multipart/form-data"
           id="dataset-form"
           class="dataset-form dataset-resource-form form-horizontal"
@@ -33,7 +33,7 @@
 {% endblock %}
 
 {% block upload_submit %}
-  {% if not info_collection %}
+  {% if not chromo.get('webform_only') %}
     <div class="col-md-6">
       <div class="col-md-12">
         <div class="form-group control-medium {% if errors %}has-error{% endif %}">
@@ -71,7 +71,7 @@
 {% endblock %}
 
 {% block messages %}
-  {% if not info_collection %}
+  {% if not chromo.get('webform_only') %}
     <p id="paste-special" class="wb-dismissable">{% trans %}To ensure the validation rules within the template are maintained, please paste your data using the “Paste Values” function. This can be done by right-clicking, selecting <kbd>Paste Special</kbd> and then clicking <kbd>Unicode Text</kbd>.{% endtrans %}</p>
   {% endif %}
   {% set geno = h.recombinant_get_geno(pkg.dataset_type) %}

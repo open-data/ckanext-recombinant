@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block form %}
-  {% if not info_collection %}
+  {% if not chromo.get('webform_only') %}
     <form enctype="multipart/form-data"
           id="dataset-form"
           class="dataset-form dataset-resource-form form-horizontal"
@@ -16,7 +16,7 @@
 {% endblock %}
 
 {% block upload_submit %}
-  {% if not info_collection %}
+  {% if not chromo.get('webform_only') %}
     <div class="clear"></div>
   {% endif %}
 {% endblock %}
