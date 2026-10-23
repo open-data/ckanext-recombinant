@@ -1,3 +1,12 @@
+{#
+Adds the Excel Upload form.
+
+rcomb       - The Recombinant dict
+resource    - The resource dict
+errors      - List of error strings
+chromo      - The Recombinant Chromo dict
+geno        - The Recombinant Geno dict
+#}
 {% extends 'recombinant/snippets/xls_base.html' %}
 
 {% block title %}
@@ -5,14 +14,12 @@
 {% endblock %}
 
 {% block form %}
-  {% set chromo = h.recombinant_get_chromo(resource.name) %}
   {% if chromo.create_form %}
-    <a class="btn btn-default" href="{{ h.url_for('recombinant.create_record', owner_org=pkg.owner_org, resource_name=resource.name) }}">
+    <a class="btn btn-default" href="{{ h.url_for('recombinant.create_record', owner_org=rcomb.owner_org, resource_name=resource.name) }}">
       <i class="glyphicon glyphicon-plus-sign"></i>&nbsp;{{ _("Create Single Record") }}
     </a>
     {% if not chromo.get('webform_only') %}
       <h4>{{ _("Create and update multiple records") }}</h4>
-      {% set geno = h.recombinant_get_geno(pkg.dataset_type) %}
       {% if 'template_warning' in geno %}
         <div class="col-md-12">
           <div class="alert alert-warning">
@@ -27,7 +34,7 @@
           id="dataset-form"
           class="dataset-form dataset-resource-form form-horizontal"
           method="post"
-          action="{{ h.url_for('recombinant.upload', id=pkg.id) }}">
+          action="{{ h.url_for('recombinant.upload', id=rcomb.id) }}">
     {{ h.csrf_input() }}
   {% endif %}
 {% endblock %}
@@ -74,7 +81,6 @@
   {% if not chromo.get('webform_only') %}
     <p id="paste-special" class="wb-dismissable">{% trans %}To ensure the validation rules within the template are maintained, please paste your data using the “Paste Values” function. This can be done by right-clicking, selecting <kbd>Paste Special</kbd> and then clicking <kbd>Unicode Text</kbd>.{% endtrans %}</p>
   {% endif %}
-  {% set geno = h.recombinant_get_geno(pkg.dataset_type) %}
   {% if 'upload_warn' in geno %}
     <div class="col-md-12">
       <div class="alert alert-warning font-weight-bold fw-bold">

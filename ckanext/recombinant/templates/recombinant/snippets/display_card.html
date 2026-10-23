@@ -1,3 +1,12 @@
+{#
+Base template snippet for Recombinant forms.
+
+rcomb       - The Recombinant dict
+resource    - The resource dict
+errors      - List of error strings
+chromo      - The Recombinant Chromo dict
+geno        - The Recombinant Geno dict
+#}
 <article class="panel panel-default mrgn-bttm-sm relative recombinant-preview-card">
   <header class="panel-heading">
     {% set primary_key = chromo['datastore_primary_key'] %}

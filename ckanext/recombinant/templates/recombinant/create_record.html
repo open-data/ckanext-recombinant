@@ -1,3 +1,19 @@
+{#
+Create a single DataStore record for a Recombinant resource.
+
+rcomb           - The Recombinant dict
+geno            - The Recombinant Geno dict
+chromo          - The Recombinant Chromo dict
+pk_fields       - List of strings of primary keys
+choice_fields   - Dict of choice fields
+dataset         - The dataset dict
+resource        - The resource dict
+organization    - The organization dict
+data            - Form data, in the format of a datastore record dict
+pkg_dict        - Empty dict (req. for package/base_form_page.html)
+errors          - Errors in webform
+error_summary   - Error string in webform
+#}
 {% extends "package/base_form_page.html" %}
 
 {% block page_title %}

@@ -23,6 +23,7 @@ resources:
     display_fields:
       - year
       - description
+  preview_snippet: recombinant/snippets/sampleinfo.html
 
   create_form: true
   edit_form: true

@@ -1,3 +1,12 @@
+{#
+Base template snippet for Recombinant forms.
+
+rcomb       - The Recombinant dict
+resource    - The resource dict
+errors      - List of error strings
+chromo      - The Recombinant Chromo dict
+geno        - The Recombinant Geno dict
+#}
 <h3>{% block title %}{% endblock %}</h3>
 {% block form %}
   <form>
@@ -10,13 +19,13 @@
           <label for="xls_download">{{ _('Download') }}</label>
           <div class="form-control">
             <a id="xls_download" class="button" href="{{ h.url_for('recombinant.template',
-              dataset_type=pkg.dataset_type,
+              dataset_type=rcomb.dataset_type,
               lang=h.lang(),
-              owner_org=pkg.owner_org) }}"><span class="glyphicon glyphicon-download-alt"></span>
+              owner_org=rcomb.owner_org) }}"><span class="glyphicon glyphicon-download-alt"></span>
               {{ _('Template Excel spreadsheet') }}</a>
           </div>
-          {% if pkg.template_updated %}
-          <p class='text-info'>{{ _('Last Updated') }}{{ _(':') }} {{ pkg.template_updated }}</p>
+          {% if rcomb.template_updated %}
+          <p class='text-info'>{{ _('Last Updated') }}{{ _(':') }} {{ rcomb.template_updated }}</p>
           {% endif %}
         </div>
       </div>

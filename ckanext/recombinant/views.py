@@ -80,37 +80,91 @@ recombinant = Blueprint('recombinant', __name__)
 
 
 def _get_recombinant_view_context_vars(
-        lc: LocalCKAN, resource_name: str, owner_org: str) -> Tuple[Dict[str, Any],
-                                                                    Dict[str, Any],
-                                                                    Dict[str, Any],
-                                                                    List[str],
-                                                                    Dict[str, Any],
-                                                                    Dict[str, Any],
-                                                                    Dict[str, Any],
-                                                                    Dict[str, Any]]:
+        lc: LocalCKAN,
+        resource_name: str,
+        owner_org: str) -> Tuple[Optional[Dict[str, Any]],
+                                 Optional[Dict[str, Any]],
+                                 Optional[Dict[str, Any]],
+                                 Optional[List[str]],
+                                 Optional[Dict[str, Any]],
+                                 Optional[Dict[str, Any]],
+                                 Optional[Dict[str, Any]],
+                                 Optional[Dict[str, Any]]]:
     """
     Gets all of the common/required schemas and metadata
     for Recombinant views.
+
+    NOTE: returns None for elements which may raise NotFound
+          or RecombinantException exceptions as users would need
+          to initialize the dataset and resources.
+
+    NOTE: each view method is still responsible for raising NotFound
+          exceptions / returning abort(404) for None type variables
+          returned from this function.
     """
-    chromo = h.recombinant_get_chromo(resource_name)
-    rcomb = lc.action.recombinant_show(
-        owner_org=owner_org,
-        dataset_type=chromo['dataset_type'])
-    resource = None
+    # get the chromo
+    chromo: Optional[Dict[str, Any]] = None
+    try:
+        chromo = get_chromo(resource_name)
+    except RecombinantException:
+        # Recombinant resource %s not found
+        pass
+
+    # get the recombinant dict
+    rcomb: Optional[Dict[str, Any]] = None
+    try:
+        rcomb = lc.action.recombinant_show(
+            owner_org=owner_org,
+            dataset_type=chromo['dataset_type'])
+    except (RecombinantException, NotFound):
+        # Recombinant resource %s not found
+        # Recombinant dataset %s not found
+        pass
+
+    # get the resource dict
+    resource: Optional[Dict[str, Any]] = None
     for r in rcomb['resources']:
         if r['name'] == resource_name:
             resource = r
             break
-    if not resource:
-        raise NotFound(_('Resource %s not found for Organization %s') %
-                       (resource_name, owner_org))
-    organization = lc.action.organization_show(id=owner_org)
-    if organization['state'] != 'active':
-        raise NotFound(_('Organization not found'))
-    dataset = lc.action.package_show(id=rcomb['id'])
-    geno = get_geno(dataset['type'])
-    pk_fields = aslist(chromo['datastore_primary_key'])
-    choice_fields = _get_choice_fields(resource_name, org_name=owner_org)
+
+    # get the organization dict
+    organization: Optional[Dict[str, Any]] = None
+    try:
+        organization = lc.action.organization_show(id=owner_org)
+        if organization['state'] != 'active':
+            organization = None
+    except NotFound:
+        # Organization not found
+        pass
+
+    # get the dataset dict
+    dataset: Optional[Dict[str, Any]] = None
+    try:
+        dataset = lc.action.package_show(id=rcomb['id'])
+    except NotFound:
+        # Dataset not found
+        pass
+
+    # get the geno
+    geno: Optional[Dict[str, Any]] = None
+    try:
+        geno = get_geno(rcomb['dataset_type'])
+    except RecombinantException:
+        # Recombinant type %s not found
+        pass
+
+    # get the primary key field IDs as a list
+    pk_fields: Optional[List[str]] = None
+    if chromo:
+        pk_fields = aslist(chromo['datastore_primary_key'])
+
+    # get the choice fields
+    choice_fields: Optional[Dict[str, Any]] = None
+    if chromo:
+        choice_fields = _get_choice_fields(resource_name, org_name=owner_org)
+
+    # return everything
     return rcomb, geno, chromo, pk_fields, choice_fields, \
         dataset, resource, organization
 
@@ -943,21 +997,40 @@ def preview_table(resource_name: str,
     if not g.user:
         return h.redirect_to('user.login')
 
-    org_object = Group.get(owner_org)
-    if not org_object or getattr(org_object, 'state') != 'active':
-        return abort(404, _('Organization not found'))
-    if org_object.name != owner_org:
-        return h.redirect_to(
-            'recombinant.preview_table',
-            resource_name=resource_name,
-            owner_org=org_object.name,
-        )
-
     lc = LocalCKAN(username=g.user, context={'ignore_auth': True})
+    rcomb, geno, chromo, pk_fields, choice_fields, \
+    dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if organization and organization['name'] != owner_org:
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=organization['name'])
+
     try:
-        chromo = get_chromo(resource_name)
-    except RecombinantException:
-        return abort(404, _('Recombinant resource_name not found'))
+        h.check_access('datastore_upsert', {'resource_id': resource['id']})
+    except NotAuthorized as e:
+        return abort(403, e.message or '')
+
+    template_vars = {
+        'rcomb': rcomb,
+        'geno': geno,
+        'chromo': chromo,
+        'pk_fields': pk_fields,
+        'choice_fields': choice_fields,
+        'dataset': dataset,
+        'resource': resource,
+        'organization': organization,
+    }
+
+    # check that the resource has errors
+    has_errors = False
+    if resource and (
+        'error' in resource or
+        not resource['datastore_correct'] or
+        not resource['schema_correct']
+    ):
+        has_errors = True
 
     if (
       'create' in request.form or
@@ -967,22 +1040,12 @@ def preview_table(resource_name: str,
     ):
         # check if the user can update datasets for organization
         # admin and editors should be able to init recombinant records
-        if not has_user_permission_for_group_or_org(org_object.id,
+        if not has_user_permission_for_group_or_org(organization['id'],
                                                     g.user,
                                                     'update_dataset'):
             return abort(403, _('User %s not authorized to create packages') %
                          (str(g.user)))
-        try:
-            # check if the dataset exists
-            dataset = lc.action.recombinant_show(
-                dataset_type=chromo['dataset_type'], owner_org=owner_org)
-            # check that the resource has errors
-            for _r in dataset['resources']:
-                if _r['name'] == resource_name and ('error' in _r or
-                                                    not _r['datastore_correct'] or
-                                                    not _r['schema_correct']):
-                    raise NotFound
-        except NotFound:
+        if not dataset or has_errors:
             try:
                 if 'create' in request.form:
                     # brand new dataset
@@ -1009,52 +1072,28 @@ def preview_table(resource_name: str,
                     h.flash_success(_('Resources successfully refreshed.'))
             except NotAuthorized as e:
                 return abort(403, e.message or '')
-        return h.redirect_to(
-            'recombinant.preview_table',
-            resource_name=resource_name,
-            owner_org=owner_org,
-            )
-
-    try:
-        dataset = lc.action.recombinant_show(
-            dataset_type=chromo['dataset_type'], owner_org=owner_org)
-    except NotFound:
-        dataset = None
-    org = lc.action.organization_show(id=owner_org)
-
-    if dataset:
-        for r in dataset['resources']:
-            if r['name'] == resource_name:
-                break
-        else:
-            r = None
-    else:
-        r = None
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=owner_org)
 
     records = None
-    if chromo.get('display_card'):
+    if chromo.get('display_card') and resource:
         try:
-            result = lc.action.datastore_search(resource_id=r['id'])
+            result = lc.action.datastore_search(resource_id=resource['id'])
             if result and 'records' in result:
                 records = result['records']
         except NotFound:
             pass  # resource/dataset not initialized yet
         except NotAuthorized:
-            return abort(403, _('Unauthorized to read resource %s') % r['id'])
+            return abort(403, _('Unauthorized to read resource %s') % resource['id'])
 
-    return render('recombinant/resource_edit.html', extra_vars={
-        'dataset': dataset,
-        'dataset_type': chromo['dataset_type'],
-        'resource_description': chromo['title'],
-        'chromo': chromo,
-        'resource_name': chromo['resource_name'],
-        'records': records,
-        'resource': r,
-        'organization': org,
-        'errors': None,
-        'delete_errors': None,
-        'filters': None
-    })
+    return render('recombinant/resource_edit.html',
+                  extra_vars=dict(template_vars,
+                                  dataset_type=geno['dataset_type'],
+                                  records=records,
+                                  errors=None,
+                                  delete_errors=None,
+                                  filters=None))
 
 
 @recombinant.route('/recombinant/<resource_name>/<owner_org>/<pk>',
@@ -1065,53 +1104,43 @@ def preview_record(resource_name: str,
     if not g.user:
         return h.redirect_to('user.login')
 
-    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
-
-    org_object = Group.get(owner_org)
-    if not org_object or getattr(org_object, 'state') != 'active':
-        return abort(404, _('Organization not found'))
-    if org_object.name != owner_org:
-        return h.redirect_to(
-            'recombinant.preview_record',
-            resource_name=resource_name,
-            owner_org=org_object.name,
-            pk=pk
-        )
-
-    try:
-        chromo = get_chromo(resource_name)
-    except RecombinantException:
-        return abort(404, _('Recombinant resource_name not found'))
-
     lc = LocalCKAN(username=g.user, context={'ignore_auth': True})
     try:
-        # check if the dataset exists
-        dataset = lc.action.recombinant_show(
-            dataset_type=chromo['dataset_type'], owner_org=owner_org)
+        rcomb, geno, chromo, pk_fields, choice_fields, \
+        dataset, resource, organization = \
+            _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+        h.check_access('datastore_upsert', {'resource_id': resource['id']})
+        if organization['name'] != owner_org:
+            return h.redirect_to('recombinant.preview_record',
+                                 resource_name=resource_name,
+                                 owner_org=organization['name'],
+                                 pk=pk)
+    except NotFound as e:
+        return abort(404, e.message or '')
     except NotAuthorized as e:
         return abort(403, e.message or '')
-    org = lc.action.organization_show(id=owner_org)
 
-    if dataset:
-        for r in dataset['resources']:
-            if r['name'] == resource_name:
-                break
-        else:
-            r = None
-    else:
-        r = None
+    template_vars = {
+        'rcomb': rcomb,
+        'geno': geno,
+        'chromo': chromo,
+        'pk_fields': pk_fields,
+        'choice_fields': choice_fields,
+        'dataset': dataset,
+        'resource': resource,
+        'organization': organization,
+    }
+
+    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
 
     record = None
     filters = {}
-    if isinstance(chromo['datastore_primary_key'], list):
-        for i, k in enumerate(chromo['datastore_primary_key']):
-            filters[k] = primary_key_vals[i]
-    else:
-        filters[chromo['datastore_primary_key']] = primary_key_vals
+    for i, k in enumerate(pk_fields):
+        filters[k] = primary_key_vals[i]
 
     try:
         result = lc.action.datastore_search(
-            resource_id=r['id'], filters=filters, limit=1)
+            resource_id=resource['id'], filters=filters, limit=1)
         if len(result['records']) == 0:
             return abort(404, _('Record %s not found for Organization %s') %
                          (pk, owner_org))
@@ -1119,16 +1148,10 @@ def preview_record(resource_name: str,
     except NotAuthorized:
         return abort(403, _('Unauthorized to read resource %s') % r['id'])
 
-    return render('recombinant/record_preview.html', extra_vars={
-        'dataset_type': chromo['dataset_type'],
-        'resource_description': chromo['title'],
-        'chromo': chromo,
-        'pk': pk,
-        'resource_name': chromo['resource_name'],
-        'record': record,
-        'resource': r,
-        'organization': org,
-    })
+    return render('recombinant/record_preview.html',
+                  extra_vars=dict(template_vars,
+                                  pk=pk,
+                                  record=record))
 
 
 @recombinant.route('/recombinant-create-record/<owner_org>/<resource_name>',
@@ -1144,7 +1167,7 @@ def create_record(owner_org: str, resource_name: str):
             _get_recombinant_view_context_vars(lc, resource_name, owner_org)
         h.check_access('datastore_upsert', {'resource_id': resource['id']})
     except NotFound as e:
-        return abort(404, e)
+        return abort(404, e.message or '')
     except NotAuthorized:
         return abort(403, _('Unauthorized to create a record for this resource'))
 
@@ -1257,7 +1280,7 @@ def update_record(owner_org: str, resource_name: str, pk: str):
             _get_recombinant_view_context_vars(lc, resource_name, owner_org)
         h.check_access('datastore_upsert', {'resource_id': resource['id']})
     except NotFound as e:
-        return abort(404, e)
+        return abort(404, e.message or '')
     except NotAuthorized:
         abort(403, _('Unauthorized to update dataset'))
 
