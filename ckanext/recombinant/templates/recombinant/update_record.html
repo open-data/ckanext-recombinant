@@ -10,9 +10,11 @@ dataset         - The dataset dict
 resource        - The resource dict
 organization    - The organization dict
 data            - Form data, in the format of a datastore record dict
+pk              - The string value of primary keys to delete
 pkg_dict        - Empty dict (req. for package/base_form_page.html)
 errors          - Errors in webform
 error_summary   - Error string in webform
+came_from       - URI parameter of view to redirect back to
 #}
 {% extends "package/base_form_page.html" %}
 
@@ -32,8 +34,9 @@ error_summary   - Error string in webform
 {% endblock %}
 
 {% block form %}
-  <form method="POST" id="update_record" novalidate>
+  <form method="POST" action="{{ h.url_for('recombinant.update_record', resource_name=resource.name, owner_org=rcomb.owner_org, pk=pk, came_from=came_from) }}" id="update_record" novalidate>
     {{ h.csrf_input() }}
+    <input type="hidden" name="came_from" value="{{ came_from }}" />
     {% block errors %}
       {%- if errors or error_summary -%}
         <div class="error-explanation alert alert-danger">

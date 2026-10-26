@@ -1,3 +1,13 @@
+{#
+Confirm deletion of a Recombinant dataset.
+
+rcomb         - The Recombinant dict
+resource      - The resource dict
+num           - The number of records to delete
+pk            - The string value of primary keys to delete
+pk_list       - The list values of primary keys to delete
+came_from     - URI parameter of view to redirect back to
+#}
 {% extends "page.html" %}
 
 {% block subtitle %}{{ _("Confirm Delete") }}{% endblock %}
@@ -31,9 +41,10 @@
     <div class="clearfix"></div>
 
     <p class="form-actions">
-      <form id="recombinant-confirm-select-delete-form" action="{{ h.url_for('recombinant.delete_single_record', resource_id=resource.id, pk=pk) }}" method="post">
+      <form id="recombinant-confirm-select-delete-form" action="{{ h.url_for('recombinant.delete_single_record', resource_name=resource.name, owner_org=rcomb.owner_org, pk=pk, came_from=came_from) }}" method="post">
         {{ h.csrf_input() }}
         <input type="hidden" name="select-delete" value="{{ pk }}" />
+        <input type="hidden" name="came_from" value="{{ came_from }}" />
         <button class="btn" type="submit" name="cancel" >{{ _('Cancel') }}</button>
         <button class="btn btn-danger" type="submit" name="confirm" >{{ _('Confirm Delete') }}</button>
       </form>

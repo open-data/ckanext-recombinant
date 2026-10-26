@@ -171,7 +171,7 @@ filters         - Filters on page (req. for package/base_form_page.html)
           <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
         {% else %}
           {% for r in records %}
-            {% snippet "recombinant/snippets/display_card.html", record=r, chromo=chromo, organization=organization, resource=resource %}
+            {% snippet "recombinant/snippets/display_card.html", rcomb=rcomb, record=r, chromo=chromo, organization=organization, resource=resource %}
           {% endfor %}
         {% endif %}
       </div>

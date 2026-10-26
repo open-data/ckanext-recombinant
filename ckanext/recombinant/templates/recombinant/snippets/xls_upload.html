@@ -1,11 +1,11 @@
 {#
 Adds the Excel Upload form.
 
-rcomb       - The Recombinant dict
-resource    - The resource dict
-errors      - List of error strings
-chromo      - The Recombinant Chromo dict
-geno        - The Recombinant Geno dict
+rcomb          The Recombinant dict
+resource      - The resource dict
+errors        - List of error strings
+chromo        - The Recombinant Chromo dict
+geno          - The Recombinant Geno dict
 #}
 {% extends 'recombinant/snippets/xls_base.html' %}
 
@@ -34,7 +34,7 @@ geno        - The Recombinant Geno dict
           id="dataset-form"
           class="dataset-form dataset-resource-form form-horizontal"
           method="post"
-          action="{{ h.url_for('recombinant.upload', id=rcomb.id) }}">
+          action="{{ h.url_for('recombinant.upload', owner_org=rcomb.owner_org, resource_name=resource.name) }}">
     {{ h.csrf_input() }}
   {% endif %}
 {% endblock %}

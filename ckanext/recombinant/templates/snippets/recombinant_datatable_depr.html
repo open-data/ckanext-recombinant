@@ -218,7 +218,7 @@
         {extend:"selected",text:"{{_('Delete records')}}",className:"canada-wet-datatable-btn-danger",action: function ( e, dt, button, config ){
             // closing form tag needed for py webtest lib
             var form = $('<form></form>',{
-              action : "{{ h.url_for('recombinant.delete_selected_records', resource_id=resource_id) }}",
+              action : "{{ h.url_for('recombinant.delete_selected_records', resource_name=resource_name, owner_org=owner_org) }}",
               method : "post"
             });
             form.append($('<input>').attr({

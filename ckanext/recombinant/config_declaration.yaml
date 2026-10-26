@@ -2,6 +2,12 @@ version: 1
 groups:
   - annotation: ckanext-recombinant settings
     options:
+      - key: ckanext.recombinant.sysadmin_org_redirect
+        default: tbs-sct
+        description: |
+          Set the organization name for sysadmin to redirect to
+          when navigating to a Recombinant route without an
+          org name in the URI.
       - key: ckanext.recombinant.enable_datatable_enhanced
         default: false
         description: |

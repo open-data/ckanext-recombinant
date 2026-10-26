@@ -1,3 +1,10 @@
+{#
+Confirm deletion of a Recombinant dataset.
+
+rcomb         - The Recombinant dict
+resource      - The resource dict
+organization  - The organization dict
+#}
 {% extends "page.html" %}
 
 {% block subtitle %}{{ _("Confirm Dataset Delete") }}{% endblock %}
@@ -10,10 +17,10 @@
       <table class="table table-responsive">
         <thead>
           <th scope="col" class="col-sm-1 border-0"></th>
-          <th scope="col">{{- org_title -}}</th>
+          <th scope="col">{{- h.get_translated(organization, 'title') -}}</th>
         </thead>
         <tbody>
-          {% for r in dataset.resources %}
+          {% for r in rcomb.resources %}
             <tr>
               <td class="text-danger border-0"><i class="fa fa-minus-circle" aria-hidden="true"></i></td>
               <td class="bg-danger text-danger">{{ _(r.shortname) }}</td>
@@ -26,7 +33,7 @@
     <div class="clearfix"></div>
 
     <p class="form-actions">
-      <form id="recombinant-confirm-delete-dataset-form" action="{{ h.url_for('recombinant.delete_dataset',id=dataset.id, resource_id=resource.id) }}" method="post">
+      <form id="recombinant-confirm-delete-dataset-form" action="{{ h.url_for('recombinant.delete_dataset', resource_name=resource.name, owner_org=rcomb.owner_org) }}" method="post">
         {{ h.csrf_input() }}
         <button class="btn" type="submit" name="cancel" >{{ _('Cancel') }}</button>
         <button class="btn btn-danger" type="submit" name="confirm" >{{ _('Confirm Delete') }}</button>

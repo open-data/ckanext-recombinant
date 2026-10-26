@@ -13,7 +13,7 @@ filters     - The filter dict used for deleting by primary keys
     <div class="mrgn-lft-md mrgn-rght-md">
       <form id="delete-form"
         class="dataset-form dataset-resource-form form-horizontal" method="post"
-        action="{{ h.url_for('recombinant.delete_records', id=rcomb.id, resource_id=resource.id) }}">
+        action="{{ h.url_for('recombinant.delete_records', resource_name=resource.name, owner_org=rcomb.owner_org) }}">
         {{ h.csrf_input() }}
         <div class="form-group control-medium {% if errors %}has-error{% endif %}">
           <label for="bulk-delete-field" class="required" aria-required="true">
@@ -62,7 +62,7 @@ filters     - The filter dict used for deleting by primary keys
     <h3>{{ _('Delete Dataset') }}{% snippet 'snippets/sysadmin_only.html' %}</h3>
     <form id="delete-dataset-form"
           method="post"
-          action="{{ h.url_for('recombinant.delete_dataset', id=rcomb.id, resource_id=resource.id) }}">
+          action="{{ h.url_for('recombinant.delete_dataset', resource_name=resource.name, owner_org=rcomb.owner_org) }}">
       {{ h.csrf_input() }}
       <div class="clearfix"></div>
       <div class="form-actions form-group recombinant-delete-button-wrapper">

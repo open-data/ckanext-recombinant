@@ -239,7 +239,7 @@
      data-module-edit_single_uri="{{- h.url_for('recombinant.update_record', resource_name=resource_name, owner_org=owner_org, pk='') -}}"
      data-module-edit_records_uri="{{- h.url_for('recombinant.template', dataset_type=dataset_type, lang=lang, owner_org=owner_org) -}}"
      data-module-upsert_records_uri="{{- h.url_for('recombinant.upsert_data', resource_name=resource_name, owner_org=owner_org) -}}"
-     data-module-delete_records_uri="{{- h.url_for('recombinant.delete_selected_records', resource_id=resource_id) -}}"
+     data-module-delete_records_uri="{{- h.url_for('recombinant.delete_selected_records', resource_name=resource_name, owner_org=owner_org) -}}"
      data-module-ajax_uri="{{- h.url_for('recombinant.datatable', resource_name=resource_name, resource_id=resource_id) -}}"
      data-module-table_styles='{{ tableStyles|tojson }}'
      data-module-primary_keys='{{ primary_keys|tojson }}'
