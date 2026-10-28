@@ -32,11 +32,9 @@ from ckan.plugins.toolkit import (
 from ckan.config.middleware.flask_app import csrf
 from ckan import model
 from ckan.logic import ValidationError, NotAuthorized, parse_params
-from ckan.model.group import Group
 from ckan.model.resource import Resource
 from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
 
-from ckan.views.dataset import _get_package_type
 from ckan.views import nocache_store
 from ckan.views.api import _finish, _finish_ok
 
@@ -85,8 +83,8 @@ def _get_recombinant_view_context_vars(
         owner_org: str) -> Tuple[Optional[Dict[str, Any]],
                                  Optional[Dict[str, Any]],
                                  Optional[Dict[str, Any]],
-                                 Optional[List[str]],
-                                 Optional[Dict[str, Any]],
+                                 List[str],
+                                 Dict[str, Any],
                                  Optional[Dict[str, Any]],
                                  Optional[Dict[str, Any]],
                                  Optional[Dict[str, Any]]]:
@@ -110,7 +108,9 @@ def _get_recombinant_view_context_vars(
         # Recombinant resource %s not found
         pass
     if not chromo:
-        return (None,) * 8
+        # can't do anything without a defined schema in Recombinant,
+        # just do an early return of all None for speed.
+        return None, None, None, [], {}, None, None, None
 
     # get the recombinant dict
     rcomb: Optional[Dict[str, Any]] = None
@@ -135,7 +135,7 @@ def _get_recombinant_view_context_vars(
     organization: Optional[Dict[str, Any]] = None
     try:
         organization = lc.action.organization_show(id=owner_org)
-        if organization['state'] != 'active':
+        if organization and organization['state'] != 'active':
             organization = None
     except NotFound:
         # Organization not found
@@ -160,12 +160,12 @@ def _get_recombinant_view_context_vars(
             pass
 
     # get the primary key field IDs as a list
-    pk_fields: Optional[List[str]] = None
+    pk_fields: List[str] = []
     if chromo:
         pk_fields = aslist(chromo['datastore_primary_key'])
 
     # get the choice fields
-    choice_fields: Optional[Dict[str, Any]] = None
+    choice_fields: Dict[str, Any] = {}
     if chromo:
         choice_fields = _get_choice_fields(resource_name, org_name=owner_org)
 
@@ -208,15 +208,22 @@ def upload(resource_name: str, owner_org: str) -> Union[Response, str]:
         return h.redirect_to('user.login')
 
     lc = LocalCKAN(username=g.user)
-    rcomb, geno, _chromo, _pk_fields, _choice_fields, \
-    dataset, resource, organization = \
+    rcomb, geno, chromo, _pk_fields, _choice_fields, \
+        dataset, resource, organization = \
         _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
     if not rcomb or not dataset or not resource:
         return abort(404, _('Resource not found'))
 
     if not organization:
         return abort(404, _('Organization not found'))
+
+    if chromo.get('webform_only'):
+        return abort(404, _('Excel Templating is not supported for %s') %
+                     geno['dataset_type'])
 
     if request.method != 'POST':
         # handle page refreshes
@@ -269,9 +276,12 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
         return h.redirect_to('user.login')
 
     lc = LocalCKAN(username=g.user)
-    rcomb, _geno, chromo, pk_fields, _choice_fields, \
-    dataset, resource, organization = \
+    rcomb, geno, chromo, pk_fields, _choice_fields, \
+        dataset, resource, organization = \
         _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
     if not rcomb or not dataset or not resource:
         return abort(404, _('Resource not found'))
@@ -281,8 +291,9 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
 
     if not h.check_access('datastore_records_delete',
                           {'resource_id': resource['id'], 'filters': {}}):
-        return abort(403, _('User {0} not authorized to update resource {1}')
-                                .format(str(g.user), resource['id']))
+        return abort(403, _('User {0} not authorized '
+                            'to update resource {1}').format(str(g.user),
+                                                             resource['id']))
 
     if request.method != 'POST':
         # handle page refreshes
@@ -399,9 +410,12 @@ def delete_single_record(resource_name: str, owner_org: str,
         return h.redirect_to('user.login')
 
     lc = LocalCKAN(username=g.user)
-    rcomb, _geno, chromo, pk_fields, _choice_fields, \
-    dataset, resource, organization = \
+    rcomb, geno, chromo, pk_fields, _choice_fields, \
+        dataset, resource, organization = \
         _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
     if not rcomb or not dataset or not resource:
         return abort(404, _('Resource not found'))
@@ -411,8 +425,9 @@ def delete_single_record(resource_name: str, owner_org: str,
 
     if not h.check_access('datastore_records_delete',
                           {'resource_id': resource['id'], 'filters': {}}):
-        return abort(403, _('User {0} not authorized to update resource {1}')
-                                .format(str(g.user), resource['id']))
+        return abort(403, _('User {0} not authorized '
+                            'to update resource {1}').format(str(g.user),
+                                                             resource['id']))
 
     primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
     came_from = request.form.get('came_from') if request.method == 'POST' \
@@ -431,13 +446,13 @@ def delete_single_record(resource_name: str, owner_org: str,
                              owner_org=owner_org)
     if request.method != 'POST' or 'confirm' not in request.form:
         return render('recombinant/confirm_single_delete.html',
-                       extra_vars={
-                           'rcomb': rcomb,
-                           'resource': resource,
-                           'num': 1,
-                           'pk': pk,
-                           'pk_list': primary_key_vals,
-                           'came_from': came_from})
+                      extra_vars={
+                          'rcomb': rcomb,
+                          'resource': resource,
+                          'num': 1,
+                          'pk': pk,
+                          'pk_list': primary_key_vals,
+                          'came_from': came_from})
 
     filters = {}
     try:
@@ -488,9 +503,12 @@ def delete_selected_records(resource_name: str,
         return h.redirect_to('user.login')
 
     lc = LocalCKAN(username=g.user)
-    rcomb, _geno, chromo, pk_fields, _choice_fields, \
-    dataset, resource, organization = \
+    rcomb, geno, chromo, pk_fields, _choice_fields, \
+        dataset, resource, organization = \
         _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
     if not rcomb or not dataset or not resource:
         return abort(404, _('Resource not found'))
@@ -500,8 +518,9 @@ def delete_selected_records(resource_name: str,
 
     if not h.check_access('datastore_records_delete',
                           {'resource_id': resource['id'], 'filters': {}}):
-        return abort(403, _('User {0} not authorized to update resource {1}')
-                             .format(str(g.user), resource['id']))
+        return abort(403, _('User {0} not authorized '
+                            'to update resource {1}').format(str(g.user),
+                                                             resource['id']))
 
     records = request.form.getlist('select-delete')
 
@@ -562,9 +581,12 @@ def delete_dataset(resource_name: str, owner_org: str) -> Union[str, Response]:
         return abort(403)
 
     lc = LocalCKAN(username=g.user)
-    rcomb, _geno, _chromo, _pk_fields, _choice_fields, \
-    dataset, resource, organization = \
+    rcomb, geno, chromo, _pk_fields, _choice_fields, \
+        dataset, resource, organization = \
         _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
     if not rcomb or not dataset or not resource:
         return abort(404, _('Dataset not found'))
@@ -677,6 +699,12 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
             include_datasets=False)
     except NotFound:
         return abort(404, _('Not found'))
+
+    for r in dataset.get('resources'):
+        chromo = get_chromo(r['name'])
+        if chromo.get('webform_only'):
+            return abort(404, _('Excel Templating is not supported for %s') %
+                         dataset_type)
 
     if request.method == 'GET':
         try:
@@ -1035,8 +1063,11 @@ def preview_table(resource_name: str,
 
     lc = LocalCKAN(username=g.user, context={'ignore_auth': True})
     rcomb, geno, chromo, pk_fields, choice_fields, \
-    dataset, resource, organization = \
+        dataset, resource, organization = \
         _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
     if not organization:
         return abort(404, _('Organization not found'))
@@ -1046,7 +1077,8 @@ def preview_table(resource_name: str,
                              resource_name=resource_name,
                              owner_org=organization['name'])
 
-    if not h.check_access('datastore_upsert', {'resource_id': resource['id']}):
+    if resource and not h.check_access('datastore_upsert',
+                                       {'resource_id': resource['id']}):
         return abort(403, _('Not authoirzed to manage Recombinant resource.'))
 
     template_vars = {
@@ -1123,7 +1155,7 @@ def preview_table(resource_name: str,
     if chromo.get('display_card') and resource:
         record_query = request.form.get('record_query') \
             if 'record_query' in request.form else request.args.get(
-                'record_query' , '')
+                'record_query', '')
         filters = {}
         if record_query:
             string_query = record_query.split(',')
@@ -1151,7 +1183,9 @@ def preview_table(resource_name: str,
 
     return render('recombinant/resource_edit.html',
                   extra_vars=dict(template_vars,
-                                  dataset_type=geno['dataset_type'],
+                                  # NOTE: magic key, assigned during definition
+                                  #       loading in main plugin class.
+                                  dataset_type=chromo['dataset_type'],
                                   records=records,
                                   record_query=record_query,
                                   record_query_error=record_query_error,
@@ -1174,8 +1208,11 @@ def preview_record(resource_name: str,
 
     lc = LocalCKAN(username=g.user, context={'ignore_auth': True})
     rcomb, geno, chromo, pk_fields, choice_fields, \
-    dataset, resource, organization = \
+        dataset, resource, organization = \
         _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
     if not rcomb or not dataset or not resource:
         return abort(404, _('Resource not found'))
@@ -1241,8 +1278,11 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
 
     lc = LocalCKAN(username=g.user)
     rcomb, geno, chromo, pk_fields, choice_fields, \
-    dataset, resource, organization = \
+        dataset, resource, organization = \
         _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
     if not rcomb or not dataset or not resource:
         return abort(404, _('Resource not found'))
@@ -1365,8 +1405,11 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
 
     lc = LocalCKAN(username=g.user)
     rcomb, geno, chromo, pk_fields, choice_fields, \
-    dataset, resource, organization = \
+        dataset, resource, organization = \
         _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
     if not rcomb or not dataset or not resource:
         return abort(404, _('Resource not found'))
@@ -1739,9 +1782,9 @@ def _process_upload_file(lc: LocalCKAN,
 
             if not h.check_access('datastore_upsert',
                                   {'resource_id': expected_sheet_names[sheet_name]}):
-                return abort(403, _('User {0} not authorized to update resource {1}')
-                                    .format(str(g.user),
-                                            expected_sheet_names[sheet_name]))
+                return abort(403, _('User {0} not authorized to '
+                                    'update resource {1}').format(
+                                        str(g.user), expected_sheet_names[sheet_name]))
 
             if org_name != owner_org:
                 raise BadExcelData(_(

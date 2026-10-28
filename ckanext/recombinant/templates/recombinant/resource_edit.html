@@ -167,7 +167,7 @@ filters             - Filters on page (req. for package/base_form_page.html)
     {% endif %}
   {% endblock action_panels %}
   {% block record_output %}
-    {% if chromo.get('display_card') %}
+    {% if resource and chromo.get('display_card') %}
       <div id="records">
         <h3>{{ _('Records') }}</h3>
         <div class="canada-resource-search-wrapper">
