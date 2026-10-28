@@ -1,19 +1,22 @@
 {#
 Main page for editing Recombinant datasets, resources, and records.
 
-rcomb           - The Recombinant dict
-geno            - The Recombinant Geno dict
-chromo          - The Recombinant Chromo dict
-pk_fields       - List of strings of primary keys
-choice_fields   - Dict of choice fields
-dataset         - The dataset dict
-resource        - The resource dict
-organization    - The organization dict
-dataset_type    - The dataset type (req. for package/base_form_page.html)
-records         - The DataStore records (if chromo['display_card'])
-errors          - Error on page (req. for package/base_form_page.html)
-delete_errors   - Error on page (req. for package/base_form_page.html)
-filters         - Filters on page (req. for package/base_form_page.html)
+rcomb               - The Recombinant dict
+geno                - The Recombinant Geno dict
+chromo              - The Recombinant Chromo dict
+pk_fields           - List of strings of primary keys
+choice_fields       - Dict of choice fields
+dataset             - The dataset dict
+resource            - The resource dict
+organization        - The organization dict
+dataset_type        - The dataset type (req. for package/base_form_page.html)
+records             - The DataStore records (if chromo['display_card'])
+record_query        - The string query for record queries (if chromo['display_card'])
+record_query_error  - The string error for a record query (if chromo['display_card'])
+pk_labels           - List of primary key labels
+errors              - Error on page (req. for package/base_form_page.html)
+delete_errors       - Error on page (req. for package/base_form_page.html)
+filters             - Filters on page (req. for package/base_form_page.html)
 #}
 {% extends 'package/base_form_page.html' %}
 
@@ -165,14 +168,62 @@ filters         - Filters on page (req. for package/base_form_page.html)
   {% endblock action_panels %}
   {% block record_output %}
     {% if chromo.get('display_card') %}
-      <div>
+      <div id="records">
         <h3>{{ _('Records') }}</h3>
+        <div class="canada-resource-search-wrapper">
+          <form id="dataset-resource-search" class="dataset-resource-search mrgn-bttm-md mrgn-tp-md" method="get" action="#records" data-module="select-switch" role="search">
+            <input type="text" class="field form-control" id="record_query" autocomplete="off" name="record_query" value="{{ record_query }}" placeholder="{{ ','.join(pk_labels) }}">
+            <span class="input-group-btn">
+              <button class="btn btn-primary btn-small" type="submit">
+                <i class="fa fa-search" aria-hidden="true"></i><span class="wb-inv">{{ _('Search') }}</span>
+              </button>
+            </span>
+          </form>
+        </div>
         {% if not records %}
-          <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
+          {% if record_query_error %}
+            <p><i class="fa fa-warning" aria-hidden="true"></i>&nbsp;&nbsp;<em>{{ record_query_error }}</em></p>
+          {% elif record_query %}
+            <p><em>{{ _('Did not find any records with {pks} matching "{pk_vals}"').format(pks=','.join(pk_labels), pk_vals=record_query) }}</em></p>
+          {% else %}
+            <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
+          {% endif %}
         {% else %}
-          {% for r in records %}
+          {% set PAGER = 10 %}
+          {% set page = request.args.get('page', 1) | int %}
+          {% set total = records | length %}
+          {% set total_pages = (total // PAGER) + (1 if total % PAGER else 0) %}
+          {% set start = (page - 1) * PAGER %}
+          {% set end = start + PAGER %}
+          {% set paginated_records = records[start:end] %}
+          {% set record_query = '&q=' ~ record_query if record_query else '' %}
+          {% for r in paginated_records %}
             {% snippet "recombinant/snippets/display_card.html", rcomb=rcomb, record=r, chromo=chromo, organization=organization, resource=resource %}
           {% endfor %}
+          {% if total_pages > 1 %}
+            <nav aria-label="Records pagination" class="dataset-resource-pager">
+              <ul class="pagination">
+                {% if page > 1 %}
+                  <li><a href="?res_page={{ page - 1 }}{{- record_query -}}#records" rel="prev">{{ _('Previous') }}</a></li>
+                {% endif %}
+
+                {% for p in range(1, total_pages + 1) %}
+                  {% if p == page %}
+                    <li class="active">
+                      <span>{{ p }}</span>
+                    </li>
+                  {% else %}
+                    <li>
+                      <a href="{{ h.url_for('recombinant.preview_table', resource_name=resource.name, owner_org=organization.name, page=p) }}{{- record_query -}}#records">{{ p }}</a>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+                {% if page < total_pages %}
+                  <li><a href="?page={{ page + 1 }}{{- record_query -}}#records" rel="next">{{ _('Next') }}</a></li>
+                {% endif %}
+              </ul>
+            </nav>
+          {% endif %}
         {% endif %}
       </div>
     {% endif %}
@@ -197,4 +248,27 @@ filters         - Filters on page (req. for package/base_form_page.html)
   {{ super() }}
   {% asset 'recombinant/code_block_buttons' %}
   {% asset 'recombinant/js_callbacks' %}
+  <script nonce="{{- h.get_inline_script_nonce() if 'get_inline_script_nonce' in h else '' -}}">
+    window.addEventListener('load', function(){
+      $(document).ready(function(){
+        const recordQuery = {{- (record_query or none) | tojson -}};
+        if( recordQuery != null && recordQuery.length > 0 ){
+          const recordQueries = recordQuery.split(',');
+          let recordSpans = $('#records').find('.recombinant-preview-card').find('span[data-ds-id]');
+          $(recordQueries).each(function(_i, _recordQuery){
+            console.log(_recordQuery);
+            const regexMatch = new RegExp('(' + _recordQuery + ')', 'gi');
+            if( recordSpans.length > 0 ){
+              $(recordSpans).each(function(_index, _recordSpan){
+                if( ! regexMatch.test($(_recordSpan).text().trim()) ){
+                  return true;  // continue
+                }
+                $(_recordSpan).html($(_recordSpan).text().trim().replace(regexMatch, '<mark class="highlight">$1</mark>'));
+              });
+            }
+          });
+        }
+      });
+    });
+  </script>
 {%- endblock -%}

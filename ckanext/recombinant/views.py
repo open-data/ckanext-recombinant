@@ -109,6 +109,8 @@ def _get_recombinant_view_context_vars(
     except RecombinantException:
         # Recombinant resource %s not found
         pass
+    if not chromo:
+        return (None,) * 8
 
     # get the recombinant dict
     rcomb: Optional[Dict[str, Any]] = None
@@ -116,7 +118,7 @@ def _get_recombinant_view_context_vars(
         rcomb = lc.action.recombinant_show(
             owner_org=owner_org,
             dataset_type=chromo['dataset_type'])
-    except (RecombinantException, NotFound, TypeError):
+    except (RecombinantException, NotFound):
         # Recombinant resource %s not found
         # Recombinant dataset %s not found
         pass
@@ -141,19 +143,21 @@ def _get_recombinant_view_context_vars(
 
     # get the dataset dict
     dataset: Optional[Dict[str, Any]] = None
-    try:
-        dataset = lc.action.package_show(id=rcomb['id'])
-    except (NotFound, TypeError):
-        # Dataset not found
-        pass
+    if rcomb:
+        try:
+            dataset = lc.action.package_show(id=rcomb['id'])
+        except NotFound:
+            # Dataset not found
+            pass
 
     # get the geno
     geno: Optional[Dict[str, Any]] = None
-    try:
-        geno = get_geno(rcomb['dataset_type'])
-    except (RecombinantException, TypeError):
-        # Recombinant type %s not found
-        pass
+    if rcomb:
+        try:
+            geno = get_geno(rcomb['dataset_type'])
+        except RecombinantException:
+            # Recombinant type %s not found
+            pass
 
     # get the primary key field IDs as a list
     pk_fields: Optional[List[str]] = None
@@ -199,7 +203,7 @@ def resource_alias(id: str) -> Union[Response, str]:
 @recombinant.route(
     '/recombinant/upload/<resource_name>/<owner_org>',
     methods=['GET', 'POST'])
-def upload(resource_name: str, owner_org: str, id: str) -> Union[Response, str]:
+def upload(resource_name: str, owner_org: str) -> Union[Response, str]:
     if not g.user:
         return h.redirect_to('user.login')
 
@@ -1110,11 +1114,36 @@ def preview_table(resource_name: str,
                              owner_org=owner_org)
 
     records = None
+    record_query = None
+    record_query_error = None
+    pk_labels = []
+    pk_field_dicts = recombinant_primary_key_fields(resource_name)
+    for f in pk_field_dicts:
+        pk_labels.append(h.recombinant_language_text(f['label']))
     if chromo.get('display_card') and resource:
+        record_query = request.form.get('record_query') \
+            if 'record_query' in request.form else request.args.get(
+                'record_query' , '')
+        filters = {}
+        if record_query:
+            string_query = record_query.split(',')
+            log.info(string_query)
+            try:
+                for i, k in enumerate(pk_fields):
+                    filters[k] = string_query[i]
+            except IndexError:
+                record_query_error = _('Invalid search parameter "%s". Expected: %s') \
+                    % (record_query, ','.join(pk_labels))
+                pass
         try:
-            result = lc.action.datastore_search(resource_id=resource['id'])
+            result = lc.action.datastore_search(resource_id=resource['id'],
+                                                filters=filters,
+                                                limit=MAX_INT)
             if result and 'records' in result:
                 records = result['records']
+        except ValidationError:
+            record_query_error = _('Invalid search parameter "%s". Expected: %s') \
+                % (record_query, ','.join(pk_labels))
         except NotFound:
             pass  # resource/dataset not initialized yet
         except NotAuthorized:
@@ -1124,6 +1153,9 @@ def preview_table(resource_name: str,
                   extra_vars=dict(template_vars,
                                   dataset_type=geno['dataset_type'],
                                   records=records,
+                                  record_query=record_query,
+                                  record_query_error=record_query_error,
+                                  pk_labels=pk_labels,
                                   errors=None,
                                   delete_errors=None,
                                   filters=None))
@@ -1151,17 +1183,13 @@ def preview_record(resource_name: str,
     if not organization:
         return abort(404, _('Organization not found'))
 
-    if not chromo.get('preview_snippet'):
-        return abort(404, _('Record preview not supported for type %s') %
-                     geno['dataset_type'])
-
     if organization['name'] != owner_org:
         return h.redirect_to('recombinant.preview_record',
                              resource_name=resource_name,
                              owner_org=organization['name'],
                              pk=pk)
 
-    if not h.check_access('datastore_upsert', {'resource_id': resource['id']}):
+    if not h.check_access('datastore_search', {'resource_id': resource['id']}):
         return abort(403, _('Not authorized to view resource.'))
 
     template_vars = {
@@ -1402,7 +1430,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
 
         if 'cancel' in post_data:
             if came_from == 'preview_record':
-                return h.redirect_to('recombinant.preview_table',
+                return h.redirect_to('recombinant.preview_record',
                                      resource_name=resource_name,
                                      owner_org=rcomb['owner_org'],
                                      pk=pk)

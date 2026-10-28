@@ -41,7 +41,8 @@ record          - The DataStore record dict
 {% endblock %}
 
 {% block primary_content_inner %}
-  <div class="mrgn-tp-lg mrgn-bttm-lg col-md-12">
-    TODO: output record...
-  </div>
+  {%- set form_snippet = chromo.get('preview_snippet', 'recombinant/snippets/record_preview_output.html') -%}
+  {% snippet form_snippet, rcomb=rcomb, geno=geno, chromo=chromo, pk_fields=pk_fields,
+                           choice_fields=choice_fields, dataset=dataset, resource=resource,
+                           organization=organization, pk=pk, record=record %}
 {% endblock %}

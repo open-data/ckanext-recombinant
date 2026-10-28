@@ -28,6 +28,8 @@ this.ckan.module('pd-datatables', function($){
       chromo_fields: null,
       editor_enabled: false,
       is_editable: false,
+      show_preview_button: false,
+      record_preview_uri: null,
     },
     initialize: function (){
       const module = this;
@@ -75,6 +77,8 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
   const chromoFields = CKAN_MODULE.options.chromo_fields;
   const enableEditor = CKAN_MODULE.options.editor_enabled;
   const isEditable = CKAN_MODULE.options.is_editable;
+  const showPreviewButton = CKAN_MODULE.options.show_preview_button;
+  const recordPreviewURI = CKAN_MODULE.options.record_preview_uri;
   const tableStyles = CKAN_MODULE.options.table_styles;
 
   const EDITOR = enableEditor ? pd_datatables__EDITOR : false;
@@ -97,6 +101,7 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
   const exitEditTableLabel = _('Exit Edit Mode');
   const fullTableLabel = _('Full Table');
   const compactTableLabel = _('Compact Table');
+  const previewRecordButtonLabel = _('Preview Record');
   const editSingleButtonLabel = _('Edit Online');
   const addInTableButtonLabel = _('Add new record in Table');
   const editInTableButtonLabel = _('Edit<span class="pd-datatables-btn-count"></span> in Table');
@@ -788,8 +793,13 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
     }
     let selectCount = table.rows({ selected: true })[0].length;
     let singleSelectButtons = $('#dtprv_wrapper').find('.pd-datatable-btn-single');
+    let recordPreviewButtons = $('#dtprv_wrapper').find('.pd-datatable-btn-preview');
     if( selectCount > 1 ){
       $(singleSelectButtons).each(function(_index, _button){
+        $(_button).addClass('disabled');
+        $(_button).attr('disabled', 'disabled');
+      });
+      $(recordPreviewButtons).each(function(_index, _button){
         $(_button).addClass('disabled');
         $(_button).attr('disabled', 'disabled');
       });
@@ -1369,6 +1379,30 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         initialize_datatable();
       }
     });
+
+    if( showPreviewButton ){
+      availableButtons.push({
+        extend: "selected",
+        name: "previewRecordButton",
+        text: '<i aria-hidden="true" class="fas fa-eye"></i>&nbsp;' + previewRecordButtonLabel,
+        className: 'pd-datatable-btn pd-datatable-btn-preview btn-primary',
+        enabled: false,
+        action: function(e, dt, node, config){
+          let pk_cols = primaryKeys.map(function(value){
+            return value + colOffset;
+          });
+          let rows = dt.rows({ selected: true });
+          if( rows[0].length > 1 ){
+            return;
+          }
+          rows.eq(0).each(function(index){
+            let keyString = dt.cells(index, pk_cols).data().toArray();
+            let encodedKeyString = encodeURIComponent(keyString.join(','));
+            window.location = recordPreviewURI + encodedKeyString;
+          });
+        }
+      });
+    }
 
     if( EDITOR ){
       availableButtons.push({

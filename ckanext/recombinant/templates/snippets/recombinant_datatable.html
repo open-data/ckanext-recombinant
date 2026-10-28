@@ -247,5 +247,7 @@
      data-module-foreign_links='{{ fk_links|tojson }}'
      data-module-chromo_fields='{{ chromo.fields|tojson }}'
      data-module-editor_enabled='{{ editor_enabled|tojson }}'
-     data-module-is_editable='{{ (chromo.edit_form and can_edit)|tojson }}'>
+     data-module-is_editable='{{ (chromo.edit_form and can_edit)|tojson }}'
+     data-module-show_preview_button='{{ g.userobj.sysadmin|tojson }}'
+     data-module-record_preview_uri="{{- h.url_for('recombinant.preview_record', resource_name=resource_name, owner_org=owner_org, pk='') -}}">
 </div>
