@@ -1,0 +1,189 @@
+#api-access-accordion{
+  figure{
+    display: none;
+    margin-bottom: 12px !important;
+    &.python, &.powershell{
+      display: none;
+    }
+    &.curl{
+      /* Default cURL display */
+      display: block;
+    }
+    figcaption{
+      padding: 4px 8px;
+      background-color: #335075;
+      color: white;
+      font-weight: 700 !important;
+      font-size: 14px;
+      line-height: 1.5 !important;
+      border-bottom-left-radius: 4px !important;
+      border-bottom-right-radius: 4px !important;
+      text-align: right !important;
+    }
+  }
+  pre{
+    margin-bottom: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+  }
+}
+
+#api-access-example-code-control{
+  cursor: pointer !important;
+  label::after{
+    content: none !important;
+  }
+  input[type="radio"]{
+    cursor: pointer !important;
+  }
+}
+
+body{
+  .recombinant-margin-bottom-10{
+    margin-bottom: 10px;
+  }
+  .recombinant-form-button-wrapper{
+    padding-top: 3px;
+  }
+  .recombinant-height-auto{
+    height: auto;
+  }
+  .recombinant-cursor-help{
+    cursor: help;
+  }
+
+  tbody{
+    &.recombinant-data-dictionary-suffix-ref{
+      display: table-header-group !important;
+      th, td{
+        background-color: #d9edf7 !important;
+      }
+    }
+  }
+
+  .recombinant-dictionary[data-published-resource="True"]{
+    > .panel{
+      margin-bottom: -6px !important;
+      border-radius: 0 !important;
+      border-color: rgba(51, 51, 51, 0.125) !important;
+      &:first-of-type{
+        border-top-left-radius: 0.25rem !important;
+        border-top-right-radius: 0.25rem !important;
+      }
+      &:last-of-type{
+        border-bottom-right-radius: 0.25rem !important;
+        border-bottom-left-radius: 0.25rem !important;
+      }
+    }
+    .panel-heading{
+      background-color: transparent !important;
+      border-color: rgba(51, 51, 51, 0.125) !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      border-radius: 0 !important;
+      > .panel-title{
+        padding: 1rem 0.5rem !important;
+        margin: 0 !important;
+        transition-duration: 0.325s;
+        align-items: center !important;
+        position: relative !important;
+        &:hover, &:active, &:focus{
+          background-color: rgba(51, 51, 51, 0.125);
+        }
+        &:not(.collapsed){
+          background-color: #e9f0f3 !important;
+          *{
+            color: #1d6075 !important;
+          }
+          .recombinant-dictionary-item-expand{
+            transform: translateX(-200%) translateY(-50%) rotate(-90deg);
+          }
+        }
+      }
+      *{
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        font-family: Lato,sans-serif !important;
+        color: #333333 !important;
+      }
+      .recombinant-dictionary-item-expand{
+        font-size: 24px !important;
+        line-height: 1 !important;
+        width: 12px;
+        height: 12px;
+        display: block;
+        transition-duration: 0.125s;
+        transform-origin: center;
+        transform: translateX(-50%) translateY(-50%) rotate(90deg);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+      }
+    }
+    .panel-body{
+      border-top-color: rgba(51, 51, 51, 0.125) !important;
+    }
+  }
+
+  article.recombinant-preview-card{
+    header.panel-heading{
+      display: flex;
+      flex-wrap: nowrap;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      a:first-of-type{
+        display: inline;
+        flex: 1
+      }
+      a:not(:first-of-type){
+        margin-left: 10px;
+      }
+    }
+    .panel-footer{
+      padding: 6px 15px !important;
+      font-size: 14px !important;
+      background-color: #d9edf7 !important;
+      text-align: right !important;
+    }
+  }
+}
+
+#records input#record_query{
+  min-width: 45%;
+}
+
+.recombinant-action-panels-container{
+  .recombinant-delete-button-wrapper{
+    overflow: visible !important;
+  }
+}
+
+.recombinant-record-state-nav{
+  ul.nav{
+    align-items: center;
+  }
+  a{
+    background-color: #ebf2fc;
+    border: 1px solid #cccccc;
+    color: black !important;
+    transition-duration: 0.325s;
+    &:not(.acitve):hover,
+    &:not(.acitve):active,
+    &:not(.acitve):focus{
+      background-color: rgba(204, 204, 204, .9);
+    }
+    &.active{
+      background-color: white;
+      border-top: 4px solid #666666;
+      padding-bottom: 9px;
+      padding-top: 8px;
+      pointer-events: none;
+      cursor: default;
+    }
+  }
+  li:not(:last-of-type):not(:first-of-type) a{
+    border-right: none !important;
+    border-left: none !important;
+  }
+}

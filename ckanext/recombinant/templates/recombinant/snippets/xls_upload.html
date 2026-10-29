@@ -1,48 +1,98 @@
+{#
+Adds the Excel Upload form.
+
+rcomb          The Recombinant dict
+resource      - The resource dict
+errors        - List of error strings
+chromo        - The Recombinant Chromo dict
+geno          - The Recombinant Geno dict
+#}
 {% extends 'recombinant/snippets/xls_base.html' %}
 
-{% block title %}{{_('Create and update records')}}{% endblock %}
+{% block title %}
+  {{_('Create and update records')}}
+{% endblock %}
 
 {% block form %}
-<form enctype="multipart/form-data" id="dataset-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action="{{ h.url_for('recombinant.upload', id=pkg.id) }}">
-{{ h.csrf_input() }}
+  {% if chromo.create_form %}
+    <a class="btn btn-default" href="{{ h.url_for('recombinant.create_record', owner_org=rcomb.owner_org, resource_name=resource.name) }}">
+      <i class="glyphicon glyphicon-plus-sign"></i>&nbsp;{{ _("Create Single Record") }}
+    </a>
+    {% if not chromo.get('webform_only') %}
+      <h4>{{ _("Create and update multiple records") }}</h4>
+      {% if 'template_warning' in geno %}
+        <div class="col-md-12">
+          <div class="alert alert-warning">
+            <p>{{ h.recombinant_language_text(geno.template_warning) | safe }}</p>
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+  {% if not chromo.get('webform_only') %}
+    <form enctype="multipart/form-data"
+          id="dataset-form"
+          class="dataset-form dataset-resource-form form-horizontal"
+          method="post"
+          action="{{ h.url_for('recombinant.upload', owner_org=rcomb.owner_org, resource_name=resource.name) }}">
+    {{ h.csrf_input() }}
+  {% endif %}
 {% endblock %}
 
 {% block upload_submit %}
-<div class="col-md-6">
-  <div class="col-md-12">
-    <div class="form-group control-medium {% if errors %}has-error{% endif %}">
-      <label for="xls_update" class="required" aria-required="true">{{ _('Upload') }}:
-        <strong aria-required="true" class="required">{{ _('(required)') }}</strong>
-      </label>
-      {% block file_input %}
-      <input required
-        class="form-control recombinant-height-auto recombinant-upload-field"
-        type="file"
-        name="xls_update"
-        id="xls_update"
-        data-invalid-text="{{- _('You must provide a valid file') -}}"
-        accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-      {% endblock %}
-      {% if errors %}
-        {% block errors %}
-          <div class="span-3 text-danger">
-            {% for error in errors %}
-              {{ error }}
-            {% endfor %}
-          </div>
-        {% endblock %}
-      {% endif %}
+  {% if not chromo.get('webform_only') %}
+    <div class="col-md-6">
+      <div class="col-md-12">
+        <div class="form-group control-medium {% if errors %}has-error{% endif %}">
+          <label for="xls_update" class="required" aria-required="true">{{ _('Upload') }}:
+            <strong aria-required="true" class="required">{{ _('(required)') }}</strong>
+          </label>
+          {% block file_input %}
+          <input required
+            class="form-control recombinant-height-auto recombinant-upload-field"
+            type="file"
+            name="xls_update"
+            id="xls_update"
+            data-invalid-text="{{- _('You must provide a valid file') -}}"
+            accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+          {% endblock %}
+          {% if errors %}
+            {% block errors %}
+              <div class="span-3 text-danger">
+                {% for error in errors %}
+                  {{ error }}
+                {% endfor %}
+              </div>
+            {% endblock %}
+          {% endif %}
+        </div>
+        <input type="hidden" name="resource_name" value="{{ resource.get('name') }}"/>
+        <div class="clearfix"></div>
+        <div class="form-actions form-group recombinant-form-button-wrapper">
+          <button type="submit" class="btn btn-primary" name="upload">{{_('Submit')}}</button>
+          <button type="submit" class="btn btn-default" name="validate">{{_('Check for Errors')}}</button>
+        </div>
+      </div>
     </div>
-    <input type="hidden" name="resource_name" value="{{ resource.get('name') }}"/>
-    <div class="clearfix"></div>
-    <div class="form-actions form-group recombinant-form-button-wrapper">
-      <button type="submit" class="btn btn-primary" name="upload">{{_('Submit')}}</button>
-      <button type="submit" class="btn btn-default" name="validate">{{_('Check for Errors')}}</button>
-    </div>
-  </div>
-</div>
+  {% endif %}
 {% endblock %}
 
 {% block messages %}
-  <p id="paste-special" class="wb-dismissable">{% trans %}To ensure the validation rules within the template are maintained, please paste your data using the “Paste Values” function. This can be done by right-clicking, selecting <kbd>Paste Special</kbd> and then clicking <kbd>Unicode Text</kbd>.{% endtrans %}</p>
+  {% if not chromo.get('webform_only') %}
+    <p id="paste-special" class="wb-dismissable">{% trans %}To ensure the validation rules within the template are maintained, please paste your data using the “Paste Values” function. This can be done by right-clicking, selecting <kbd>Paste Special</kbd> and then clicking <kbd>Unicode Text</kbd>.{% endtrans %}</p>
+  {% endif %}
+  {% if 'upload_warn' in geno %}
+    <div class="col-md-12">
+      <div class="alert alert-warning font-weight-bold fw-bold">
+        <p>{{ h.recombinant_language_text(geno.upload_warn).format(support=h.support_email_address()) | safe }}</p>
+      </div>
+    </div>
+  {% endif %}
+  {% if 'upload_info' in geno %}
+    <div class="col-md-12">
+      <div class="alert alert-info" role="alert">
+        <p>{{ h.recombinant_language_text(geno.upload_info) | safe }}</p>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}

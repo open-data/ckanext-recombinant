@@ -1,11 +1,15 @@
+from sys import maxsize as MAX_INT
 from flask import Blueprint, Response as FlaskResponse
 from flask_babel import force_locale
 import re
+import codecs
+import decimal
+import traceback
 from uuid import UUID
 import simplejson as json
 
-from typing import Union, Dict, Tuple, Any, List, Optional
-from ckan.types import Response
+from typing import Union, Dict, Tuple, Any, List, Optional, cast
+from ckan.types import Response, Context
 
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
 from cgi import FieldStorage
@@ -25,13 +29,14 @@ from ckan.plugins.toolkit import (
     render
 )
 
-from ckan.logic import ValidationError, NotAuthorized
-from ckan.model.group import Group
+from ckan.config.middleware.flask_app import csrf
+from ckan import model
+from ckan.logic import ValidationError, NotAuthorized, parse_params
 from ckan.model.resource import Resource
 from ckan.authz import has_user_permission_for_group_or_org, is_sysadmin
 
-from ckan.views.dataset import _get_package_type
 from ckan.views import nocache_store
+from ckan.views.api import _finish, _finish_ok
 
 from ckanext.recombinant.errors import (
     RecombinantException,
@@ -39,6 +44,7 @@ from ckanext.recombinant.errors import (
     BadExcelData,
     format_trigger_error
 )
+from ckanext.recombinant.datatypes import canonicalize
 from ckanext.recombinant.read_excel import read_excel, get_records
 from ckanext.recombinant.write_excel import (
     excel_template,
@@ -59,11 +65,113 @@ from ckanext.datastore.backend.postgres import (
 
 from ckanapi import NotFound, LocalCKAN
 
+# TODO: DEPRECATED: REMOVE AFTER FULL PD DATATABLES QA
+import datetime
+from pytz import timezone, utc
+this_tz = timezone('America/Montreal')
+
 
 KEY_ERROR_MATCH = re.compile('"([^"]*)"')
 
 log = getLogger(__name__)
 recombinant = Blueprint('recombinant', __name__)
+
+
+def _get_recombinant_view_context_vars(
+        lc: LocalCKAN,
+        resource_name: str,
+        owner_org: str) -> Tuple[Optional[Dict[str, Any]],
+                                 Optional[Dict[str, Any]],
+                                 Optional[Dict[str, Any]],
+                                 List[str],
+                                 Dict[str, Any],
+                                 Optional[Dict[str, Any]],
+                                 Optional[Dict[str, Any]],
+                                 Optional[Dict[str, Any]]]:
+    """
+    Gets all of the common/required schemas and metadata
+    for Recombinant views.
+
+    NOTE: returns None for elements which may raise NotFound
+          or RecombinantException exceptions as users would need
+          to initialize the dataset and resources.
+
+    NOTE: each view method is still responsible for raising NotFound
+          exceptions / returning abort(404) for None type variables
+          returned from this function.
+    """
+    # get the chromo
+    chromo: Optional[Dict[str, Any]] = None
+    try:
+        chromo = get_chromo(resource_name)
+    except RecombinantException:
+        # Recombinant resource %s not found
+        pass
+    if not chromo:
+        # can't do anything without a defined schema in Recombinant,
+        # just do an early return of all None for speed.
+        return None, None, None, [], {}, None, None, None
+
+    # get the recombinant dict
+    rcomb: Optional[Dict[str, Any]] = None
+    try:
+        rcomb = lc.action.recombinant_show(
+            owner_org=owner_org,
+            dataset_type=chromo['dataset_type'])
+    except (RecombinantException, NotFound):
+        # Recombinant resource %s not found
+        # Recombinant dataset %s not found
+        pass
+
+    # get the resource dict
+    resource: Optional[Dict[str, Any]] = None
+    if rcomb:
+        for r in rcomb['resources']:
+            if r['name'] == resource_name:
+                resource = r
+                break
+
+    # get the organization dict
+    organization: Optional[Dict[str, Any]] = None
+    try:
+        organization = lc.action.organization_show(id=owner_org)
+        if organization and organization['state'] != 'active':
+            organization = None
+    except NotFound:
+        # Organization not found
+        pass
+
+    # get the dataset dict
+    dataset: Optional[Dict[str, Any]] = None
+    if rcomb:
+        try:
+            dataset = lc.action.package_show(id=rcomb['id'])
+        except NotFound:
+            # Dataset not found
+            pass
+
+    # get the geno
+    geno: Optional[Dict[str, Any]] = None
+    if rcomb:
+        try:
+            geno = get_geno(rcomb['dataset_type'])
+        except RecombinantException:
+            # Recombinant type %s not found
+            pass
+
+    # get the primary key field IDs as a list
+    pk_fields: List[str] = []
+    if chromo:
+        pk_fields = aslist(chromo['datastore_primary_key'])
+
+    # get the choice fields
+    choice_fields: Dict[str, Any] = {}
+    if chromo:
+        choice_fields = _get_choice_fields(resource_name, org_name=owner_org)
+
+    # return everything
+    return rcomb, geno, chromo, pk_fields, choice_fields, \
+        dataset, resource, organization
 
 
 @recombinant.route('/resource/<id>', methods=['GET'])
@@ -92,93 +200,113 @@ def resource_alias(id: str) -> Union[Response, str]:
                          resource_id=res.id)
 
 
-@recombinant.route('/recombinant/upload/<id>', methods=['GET', 'POST'])
-def upload(id: str) -> Union[Response, str]:
-    package_type = _get_package_type(id)
-    geno = get_geno(package_type)
+@recombinant.route(
+    '/recombinant/upload/<resource_name>/<owner_org>',
+    methods=['GET', 'POST'])
+def upload(resource_name: str, owner_org: str) -> Union[Response, str]:
+    if not g.user:
+        return h.redirect_to('user.login')
+
     lc = LocalCKAN(username=g.user)
-    dataset = lc.action.package_show(id=id)
-    org = lc.action.organization_show(id=dataset['owner_org'])
+    rcomb, geno, chromo, _pk_fields, _choice_fields, \
+        dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
+
+    if not rcomb or not dataset or not resource:
+        return abort(404, _('Resource not found'))
+
+    if not organization:
+        return abort(404, _('Organization not found'))
+
+    if chromo.get('webform_only'):
+        return abort(404, _('Excel Templating is not supported for %s') %
+                     geno['dataset_type'])
+
     if request.method != 'POST':
         # handle page refreshes
         h.flash_notice(_('Form not submitted, please try again.'))
         return h.redirect_to('recombinant.preview_table',
-                             resource_name=package_type,
-                             owner_org=org['name'])
+                             resource_name=resource_name,
+                             owner_org=owner_org)
     dry_run = 'validate' in request.form
-    # resource_name is only required for redirect,
-    # so do not need to heavily validate that it exists in the geno.
-    resource_name = request.form['resource_name']
 
     try:
         if not request.files['xls_update']:
             raise BadExcelData('You must provide a valid file')
 
-        _process_upload_file(
-            lc,
-            dataset,
-            request.files['xls_update'],
-            geno,
-            dry_run)
+        _process_upload_file(lc, dataset, request.files['xls_update'], geno, dry_run)
 
         if dry_run:
-            h.flash_success(_(
-                "No errors found."
-                ))
+            h.flash_success(_("No errors found."))
         else:
-            h.flash_success(_(
-                "Your file was successfully uploaded into the central system."
-                ))
+            h.flash_success(_("Your file was successfully "
+                              "uploaded into the central system."))
 
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
-                             owner_org=org['name'])
+                             owner_org=owner_org)
     except RecombinantFieldError as e:
         h.flash_error(render('recombinant/snippets/outdated_error.html',
                              extra_vars={'key_errors': str(e).replace("'", ''),
                                          'dataset_id': dataset['id'],
                                          'res_name': resource_name,
-                                         'owner_org': dataset['owner_org']}))
+                                         'owner_org': owner_org}))
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
-                             owner_org=org['name'])
+                             owner_org=owner_org)
     except BadExcelData as e:
         h.flash_error(_(e.message))
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
-                             owner_org=org['name'])
+                             owner_org=owner_org)
 
 
-@recombinant.route('/recombinant/delete/<id>/<resource_id>', methods=['GET', 'POST'])
-def delete_records(id: str, resource_id: str) -> Union[str, Response]:
+@recombinant.route(
+    '/recombinant/manage/<resource_name>/<owner_org>/bulk-delete',
+    methods=['GET', 'POST'])
+def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
+    """
+    Bulk delete records via Delete tab UI.
+    Separated by newlines in a textare form field.
+    """
+    if not g.user:
+        return h.redirect_to('user.login')
+
     lc = LocalCKAN(username=g.user)
-    filters = {}
+    rcomb, geno, chromo, pk_fields, _choice_fields, \
+        dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
 
-    if not h.check_access('datastore_delete',
-                          {'resource_id': resource_id,
-                           'filters': filters}):
-        return abort(403, _('User {0} not authorized to update resource {1}'.format(
-            str(g.user), resource_id)))
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
 
-    pkg = lc.action.package_show(id=id)
-    res = lc.action.resource_show(id=resource_id)
-    org = lc.action.organization_show(id=pkg['owner_org'])
+    if not rcomb or not dataset or not resource:
+        return abort(404, _('Resource not found'))
+
+    if not organization:
+        return abort(404, _('Organization not found'))
+
+    if not h.check_access('datastore_records_delete',
+                          {'resource_id': resource['id'], 'filters': {}}):
+        return abort(403, _('User {0} not authorized '
+                            'to update resource {1}').format(str(g.user),
+                                                             resource['id']))
 
     if request.method != 'POST':
         # handle page refreshes
         h.flash_notice(_('Form not submitted, please try again.'))
         return h.redirect_to('recombinant.preview_table',
-                             resource_name=res['name'],
-                             owner_org=org['name'])
-
-    dataset = lc.action.recombinant_show(
-        dataset_type=pkg['type'], owner_org=org['name'])
+                             resource_name=resource_name,
+                             owner_org=owner_org)
 
     # type_ignore_reason: [] default is allowed
     def delete_error(err: str, _records: List[str] = []) -> str:  # type: ignore
         return render('recombinant/confirm_delete.html',
-                      extra_vars={'dataset': dataset,
-                                  'resource': res,
+                      extra_vars={'recomb': rcomb,
+                                  'resource': resource,
                                   'errors': [err],
                                   'num': len(_records),
                                   'bulk_delete': '\n'.join(
@@ -190,13 +318,11 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     form_text = request.form.get('bulk-delete', '')
     if not form_text:
         # we can just silently refresh
-        return h.redirect_to(
-                'recombinant.preview_table',
-                resource_name=res['name'],
-                owner_org=org['name'])
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=owner_org)
 
-    pk_fields = recombinant_primary_key_fields(res['name'])
-
+    filters = {}
     ok_records = []
     ok_filters = []
     records = iter(form_text.split('\n'))
@@ -217,10 +343,10 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
 
         filters.clear()
         for f, pkf in zip(fields, pk_fields):
-            filters[pkf['datastore_id']] = f
+            filters[pkf] = f
         try:
             result = lc.action.datastore_search(
-                resource_id=resource_id,
+                resource_id=resource['id'],
                 filters=filters,
                 limit=2)
         except ValidationError:
@@ -237,15 +363,14 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
             ok_filters.append(dict(filters))
 
     if 'cancel' in request.form:
-        return h.redirect_to(
-            'recombinant.preview_table',
-            resource_name=res['name'],
-            owner_org=org['name'])
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=owner_org)
     # type_ignore_reason: incomplete typing
     if 'confirm' not in request.form or request.method == 'GET':  # type: ignore
         return render('recombinant/confirm_delete.html',
-                      extra_vars={'dataset': dataset,
-                                  'resource': res,
+                      extra_vars={'rcomb': dataset,
+                                  'resource': resource,
                                   'num': len(ok_records),
                                   'bulk_delete': '\n'.join(
                                       ok_records
@@ -255,14 +380,12 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
     if request.method == 'POST':
         for f in ok_filters:
             try:
-                lc.action.datastore_delete(
-                    resource_id=resource_id,
-                    filters=f,
-                    )
+                lc.action.datastore_delete(resource_id=resource['id'],
+                                           filters=f)
             except ValidationError as e:
                 if 'constraint_info' in e.error_dict:
                     error_message = _render_recombinant_constraint_errors(
-                        lc, e, get_chromo(res['name']), 'delete')
+                        lc, e, chromo, 'delete')
                     h.flash_error(error_message)
                     # type_ignore_reason: incomplete typing
                     return record_fail(error_message)  # type: ignore
@@ -270,43 +393,215 @@ def delete_records(id: str, resource_id: str) -> Union[str, Response]:
 
         h.flash_success(_("{num} deleted.").format(num=len(ok_filters)))
 
-    return h.redirect_to(
-        'recombinant.preview_table',
-        resource_name=res['name'],
-        owner_org=org['name'],
-        )
+    return h.redirect_to('recombinant.preview_table',
+                         resource_name=resource_name,
+                         owner_org=owner_org)
 
 
-@recombinant.route('/recombinant/delete_dataset/<id>/<resource_id>',
-                   methods=['GET', 'POST'])
-def delete_dataset(id: str, resource_id: str) -> Union[str, Response]:
+@recombinant.route(
+    '/recombinant/manage/<resource_name>/<owner_org>/delete-single-record/<pk>',
+    methods=['GET', 'POST'])
+def delete_single_record(resource_name: str, owner_org: str,
+                         pk: str) -> Union[str, Response]:
+    """
+    Delete a single record for a Recombinant resource.
+    """
+    if not g.user:
+        return h.redirect_to('user.login')
+
+    lc = LocalCKAN(username=g.user)
+    rcomb, geno, chromo, pk_fields, _choice_fields, \
+        dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
+
+    if not rcomb or not dataset or not resource:
+        return abort(404, _('Resource not found'))
+
+    if not organization:
+        return abort(404, _('Organization not found'))
+
+    if not h.check_access('datastore_records_delete',
+                          {'resource_id': resource['id'], 'filters': {}}):
+        return abort(403, _('User {0} not authorized '
+                            'to update resource {1}').format(str(g.user),
+                                                             resource['id']))
+
+    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
+    came_from = request.form.get('came_from') if request.method == 'POST' \
+        else request.args.get('came_from')
+    if came_from not in ['preview_record', 'preview_table']:
+        came_from = 'preview_table'  # default to preview_table view
+
+    if 'cancel' in request.form:
+        if came_from == 'preview_record':
+            return h.redirect_to('recombinant.preview_record',
+                                 resource_name=resource_name,
+                                 owner_org=owner_org,
+                                 pk=pk)
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=owner_org)
+    if request.method != 'POST' or 'confirm' not in request.form:
+        return render('recombinant/confirm_single_delete.html',
+                      extra_vars={
+                          'rcomb': rcomb,
+                          'resource': resource,
+                          'num': 1,
+                          'pk': pk,
+                          'pk_list': primary_key_vals,
+                          'came_from': came_from})
+
+    filters = {}
+    try:
+        for i, k in enumerate(pk_fields):
+            filters[k] = primary_key_vals[i]
+    except IndexError:
+        abort(404, _('Record %s not found for Organization %s') %
+              (pk, owner_org))
+
+    try:
+        lc.action.datastore_records_delete(
+            resource_id=resource['id'], filters=filters)
+    except NotFound:
+        h.flash_error(_('Not found') + ' ' + str(filters))
+    except ValidationError as e:
+        if 'constraint_info' in e.error_dict:
+            error_message = _render_recombinant_constraint_errors(
+                lc, e, chromo, 'delete')
+            h.flash_error(error_message)
+            if came_from == 'preview_record':
+                return h.redirect_to('recombinant.preview_record',
+                                     resource_name=resource_name,
+                                     owner_org=owner_org,
+                                     pk=pk)
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=owner_org)
+        raise
+
+    h.flash_success(_("Deleted record {key}.").format(
+        key=','.join(primary_key_vals)))
+
+    return h.redirect_to('recombinant.preview_table',
+                         resource_name=resource_name,
+                         owner_org=owner_org)
+
+
+@recombinant.route(
+    '/recombinant/manage/<resource_name>/<owner_org>/delete-selected-records',
+    methods=['GET', 'POST'])
+def delete_selected_records(resource_name: str,
+                            owner_org: str) -> Union[str, Response]:
+    """
+    Delete selected records for a Recombinant resource,
+    selectable from the DataTables UI.
+    """
+    if not g.user:
+        return h.redirect_to('user.login')
+
+    lc = LocalCKAN(username=g.user)
+    rcomb, geno, chromo, pk_fields, _choice_fields, \
+        dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
+
+    if not rcomb or not dataset or not resource:
+        return abort(404, _('Resource not found'))
+
+    if not organization:
+        return abort(404, _('Organization not found'))
+
+    if not h.check_access('datastore_records_delete',
+                          {'resource_id': resource['id'], 'filters': {}}):
+        return abort(403, _('User {0} not authorized '
+                            'to update resource {1}').format(str(g.user),
+                                                             resource['id']))
+
+    records = request.form.getlist('select-delete')
+
+    if 'cancel' in request.form:
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=owner_org)
+    if request.method != 'POST' or 'confirm' not in request.form:
+        return render('recombinant/confirm_select_delete.html',
+                      extra_vars={
+                          'rcomb': rcomb,
+                          'resource': resource,
+                          'num': len(records),
+                          'select_delete': ';'.join(records)})
+
+    records = ''.join(records).split(';')
+
+    records_deleted = 0
+    for r in records:
+        filter = dict(zip(pk_fields, r.split(',')))
+        if filter:
+            try:
+                lc.action.datastore_records_delete(
+                    resource_id=resource['id'],
+                    filters=filter)
+                records_deleted += 1
+            except NotFound:
+                h.flash_error(_('Not found') + ' ' + str(filter))
+            except ValidationError as e:
+                if 'constraint_info' in e.error_dict:
+                    error_message = _render_recombinant_constraint_errors(
+                        lc, e, chromo, 'delete')
+                    h.flash_error(error_message)
+                    return h.redirect_to('recombinant.preview_table',
+                                         resource_name=resource_name,
+                                         owner_org=owner_org)
+                raise
+
+    h.flash_success(_("{num} deleted.").format(num=records_deleted))
+
+    return h.redirect_to('recombinant.preview_table',
+                         resource_name=resource_name,
+                         owner_org=owner_org)
+
+
+@recombinant.route(
+    '/recombinant/manage/<resource_name>/<owner_org>/delete_dataset',
+    methods=['GET', 'POST'])
+def delete_dataset(resource_name: str, owner_org: str) -> Union[str, Response]:
     """
     UI for sysadmins to delete an entire Recombinant dataset. This will
     delete the datastore table, the resources, and the dataset.
 
     Cannot delete the dataset if any of the resources have datastore data.
     """
-    lc = LocalCKAN(username=g.user)
-
     if not is_sysadmin(g.user):
         # only sysadmins can delete via UI
         return abort(403)
 
-    pkg = lc.action.package_show(id=id)
-    res = lc.action.resource_show(id=resource_id)
-    org = lc.action.organization_show(id=pkg['owner_org'])
+    lc = LocalCKAN(username=g.user)
+    rcomb, geno, chromo, _pk_fields, _choice_fields, \
+        dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
+
+    if not rcomb or not dataset or not resource:
+        return abort(404, _('Dataset not found'))
+
+    if not organization:
+        return abort(404, _('Organization not found'))
 
     if request.method != 'POST':
         # handle page refreshes
         h.flash_notice(_('Form not submitted, please try again.'))
         return h.redirect_to('recombinant.preview_table',
-                             resource_name=res['name'],
-                             owner_org=org['name'])
+                             resource_name=resource_name,
+                             owner_org=owner_org)
 
-    dataset = lc.action.recombinant_show(
-        dataset_type=pkg['type'], owner_org=org['name'])
-
-    for r in dataset.get('resources', []):
+    for r in rcomb.get('resources', []):
         _l = r['shortname']
         try:
             result = lc.action.datastore_search(resource_id=r['id'], limit=0)
@@ -316,23 +611,22 @@ def delete_dataset(id: str, resource_id: str) -> Union[str, Response]:
             h.flash_error(_('Cannot delete dataset because \"%s\" contains records.') %
                           _(_l))
             return h.redirect_to('recombinant.preview_table',
-                                 resource_name=res['name'],
-                                 owner_org=org['name'])
+                                 resource_name=resource_name,
+                                 owner_org=owner_org)
 
     if 'cancel' in request.form:
-        return h.redirect_to(
-            'recombinant.preview_table',
-            resource_name=res['name'],
-            owner_org=org['name'])
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=owner_org)
     # type_ignore_reason: incomplete typing
     if 'confirm' not in request.form or request.method == 'GET':  # type: ignore
         return render('recombinant/confirm_dataset_delete.html',
-                      extra_vars={'dataset': dataset,
-                                  'resource': res,
-                                  'org_title': h.get_translated(org, 'title')})
+                      extra_vars={'rcomb': rcomb,
+                                  'resource': resource,
+                                  'organization': organization})
     if request.method == 'POST':
         # delete datastore tables
-        for r in dataset.get('resources', []):
+        for r in rcomb.get('resources', []):
             _l = r['shortname']
             try:
                 lc.action.datastore_delete(resource_id=r['id'])
@@ -345,15 +639,14 @@ def delete_dataset(id: str, resource_id: str) -> Union[str, Response]:
             except NotFound:
                 pass
         try:
-            lc.action.package_delete(id=pkg['id'])
+            lc.action.package_delete(id=dataset['id'])
             h.flash_success(_('Deleted dataset'))
         except NotFound:
             pass
 
-    return h.redirect_to(
-        'recombinant.preview_table',
-        resource_name=res['name'],
-        owner_org=org['name'])
+    return h.redirect_to('recombinant.preview_table',
+                         resource_name=resource_name,
+                         owner_org=owner_org)
 
 
 def _xlsx_response_headers() -> Tuple[str, str]:
@@ -378,7 +671,7 @@ def _xlsx_response_headers() -> Tuple[str, str]:
     return content_type, disposition_type
 
 
-@recombinant.route('/recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx',
+@recombinant.route('/recombinant/template/<dataset_type>_<lang>_<owner_org>.xlsx',
                    methods=['GET', 'POST'])
 @nocache_store
 def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, str]:
@@ -406,6 +699,12 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
             include_datasets=False)
     except NotFound:
         return abort(404, _('Not found'))
+
+    for r in dataset.get('resources'):
+        chromo = get_chromo(r['name'])
+        if chromo.get('webform_only'):
+            return abort(404, _('Excel Templating is not supported for %s') %
+                         dataset_type)
 
     if request.method == 'GET':
         try:
@@ -556,19 +855,19 @@ def _data_dictionary(dataset_type: str,
     return response
 
 
-@recombinant.route('/recombinant-dictionary/<org_name>_<dataset_type>')
+@recombinant.route('/recombinant/dictionary/<org_name>_<dataset_type>')
 @nocache_store
 def org_based_data_dictionary(org_name: str, dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False, org_name=org_name)
 
 
-@recombinant.route('/recombinant-dictionary/<dataset_type>')
+@recombinant.route('/recombinant/dictionary/<dataset_type>')
 @nocache_store
 def data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False)
 
 
-@recombinant.route('/recombinant-published-dictionary/<dataset_type>')
+@recombinant.route('/recombinant/published-dictionary/<dataset_type>')
 @nocache_store
 def published_data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=True)
@@ -683,26 +982,29 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
     return response
 
 
-@recombinant.route('/recombinant-schema/<org_name>_<dataset_type>.json')
+@recombinant.route('/recombinant/schema/<org_name>_<dataset_type>.json')
 @nocache_store
 def org_based_schema_json(org_name: str, dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False, org_name=org_name)
 
 
-@recombinant.route('/recombinant-schema/<dataset_type>.json')
+@recombinant.route('/recombinant/schema/<dataset_type>.json')
 @nocache_store
 def schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False)
 
 
-@recombinant.route('/recombinant-published-schema/<dataset_type>.json')
+@recombinant.route('/recombinant/published-schema/<dataset_type>.json')
 @nocache_store
 def published_schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=True)
 
 
 @recombinant.route('/recombinant/<resource_name>')
-def type_redirect(resource_name: str) -> Response:
+def type_redirect(resource_name: str, dataset_id: Optional[str] = None) -> Response:
+    """
+    Redirects Recombinant routes without an organization name in the URI.
+    """
     orgs = h.organizations_available('read')
 
     if not orgs:
@@ -710,23 +1012,40 @@ def type_redirect(resource_name: str) -> Response:
     try:
         get_chromo(resource_name)
     except RecombinantException:
-        return abort(404, _('Recombinant resource_name not found'))
+        return abort(404, _('Recombinant resource %s not found') % resource_name)
 
-    return h.redirect_to(
-        'recombinant.preview_table',
-        resource_name=resource_name,
-        owner_org=orgs[0]['name'],
-    )
+    # go to first org in user's available list
+    owner_org_name = orgs[0]['name']
+    if is_sysadmin(g.user):
+        # if sysadmin, always go to configured org, default tbs-sct
+        owner_org_name = config['ckanext.recombinant.sysadmin_org_redirect']
+
+    if dataset_id:
+        # support for dataset ID redirects
+        try:
+            dataset = get_action('package_show')(
+                {'user': g.user}, {'id': dataset_id})
+        except NotAuthorized:
+            return abort(403)
+        except NotFound:
+            return abort(404)
+
+        if dataset.get('owner_org'):
+            org_obj = model.Group.get(dataset.get('owner_org'))
+            if org_obj:
+                owner_org_name = org_obj.name
+
+    return h.redirect_to('recombinant.preview_table',
+                         resource_name=resource_name,
+                         owner_org=owner_org_name)
 
 
 def dataset_redirect(package_type: str, id: str) -> Response:
     lc = LocalCKAN(username=g.user)
     dataset = lc.action.package_show(id=id)
-    return h.redirect_to(
-        'recombinant.preview_table',
-        resource_name=package_type,
-        owner_org=dataset['organization']['name'],
-    )
+    return h.redirect_to('recombinant.preview_table',
+                         resource_name=package_type,
+                         owner_org=dataset['organization']['name'])
 
 
 def resource_redirect(package_type: str, id: str, resource_id: str) -> Response:
@@ -736,24 +1055,51 @@ def resource_redirect(package_type: str, id: str, resource_id: str) -> Response:
 @recombinant.route('/recombinant/<resource_name>/<owner_org>', methods=['GET', 'POST'])
 def preview_table(resource_name: str,
                   owner_org: str) -> Union[str, Response]:
+    """
+    Main view for Recombinant resource and dataset edit/create functionalities.
+    """
     if not g.user:
         return h.redirect_to('user.login')
 
-    org_object = Group.get(owner_org)
-    if not org_object or getattr(org_object, 'state') != 'active':
-        return abort(404, _('Organization not found'))
-    if org_object.name != owner_org:
-        return h.redirect_to(
-            'recombinant.preview_table',
-            resource_name=resource_name,
-            owner_org=org_object.name,
-        )
-
     lc = LocalCKAN(username=g.user, context={'ignore_auth': True})
-    try:
-        chromo = get_chromo(resource_name)
-    except RecombinantException:
-        return abort(404, _('Recombinant resource_name not found'))
+    rcomb, geno, chromo, pk_fields, choice_fields, \
+        dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
+
+    if not organization:
+        return abort(404, _('Organization not found'))
+
+    if organization['name'] != owner_org:
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=organization['name'])
+
+    if resource and not h.check_access('datastore_upsert',
+                                       {'resource_id': resource['id']}):
+        return abort(403, _('Not authorized to manage Recombinant resource.'))
+
+    template_vars = {
+        'rcomb': rcomb,
+        'geno': geno,
+        'chromo': chromo,
+        'pk_fields': pk_fields,
+        'choice_fields': choice_fields,
+        'dataset': dataset,
+        'resource': resource,
+        'organization': organization,
+    }
+
+    # check that the resource has errors
+    has_errors = False
+    if resource and (
+        'error' in resource or
+        not resource['datastore_correct'] or
+        not resource['schema_correct']
+    ):
+        has_errors = True
 
     if (
       'create' in request.form or
@@ -763,22 +1109,12 @@ def preview_table(resource_name: str,
     ):
         # check if the user can update datasets for organization
         # admin and editors should be able to init recombinant records
-        if not has_user_permission_for_group_or_org(org_object.id,
+        if not has_user_permission_for_group_or_org(organization['id'],
                                                     g.user,
                                                     'update_dataset'):
             return abort(403, _('User %s not authorized to create packages') %
                          (str(g.user)))
-        try:
-            # check if the dataset exists
-            dataset = lc.action.recombinant_show(
-                dataset_type=chromo['dataset_type'], owner_org=owner_org)
-            # check that the resource has errors
-            for _r in dataset['resources']:
-                if _r['name'] == resource_name and ('error' in _r or
-                                                    not _r['datastore_correct'] or
-                                                    not _r['schema_correct']):
-                    raise NotFound
-        except NotFound:
+        if not dataset or has_errors:
             try:
                 if 'create' in request.form:
                     # brand new dataset
@@ -805,44 +1141,553 @@ def preview_table(resource_name: str,
                     h.flash_success(_('Resources successfully refreshed.'))
             except NotAuthorized as e:
                 return abort(403, e.message or '')
-        return h.redirect_to(
-            'recombinant.preview_table',
-            resource_name=resource_name,
-            owner_org=owner_org,
-            )
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=owner_org)
+
+    record_state = request.form.get('record_state') \
+        if 'record_state' in request.form else request.args.get(
+            'record_state', '')
+    records = None
+    record_query = None
+    record_query_error = None
+    pk_labels = []
+    pk_field_dicts = recombinant_primary_key_fields(resource_name)
+    for f in pk_field_dicts:
+        pk_labels.append(h.recombinant_language_text(f['label']))
+    if chromo.get('display_card') and resource:
+        record_query = request.form.get('record_query') \
+            if 'record_query' in request.form else request.args.get(
+                'record_query', '')
+        filters = {}
+        if record_query:
+            string_query = record_query.split(',')
+            log.info(string_query)
+            try:
+                for i, k in enumerate(pk_fields):
+                    filters[k] = string_query[i]
+            except IndexError:
+                record_query_error = _('Invalid search parameter "%s". Expected: %s') \
+                    % (record_query, ','.join(pk_labels))
+                pass
+        if record_state and chromo['stately_records']:
+            filters['record_state'] = record_state
+        try:
+            result = lc.action.datastore_search(resource_id=resource['id'],
+                                                filters=filters,
+                                                limit=MAX_INT)
+            if result and 'records' in result:
+                records = result['records']
+        except ValidationError:
+            record_query_error = _('Invalid search parameter "%s". Expected: %s') \
+                % (record_query, ','.join(pk_labels))
+        except NotFound:
+            pass  # resource/dataset not initialized yet
+        except NotAuthorized:
+            return abort(403, _('Unauthorized to read resource %s') % resource['id'])
+
+    return render('recombinant/resource_edit.html',
+                  extra_vars=dict(template_vars,
+                                  # NOTE: magic key, assigned during definition
+                                  #       loading in main plugin class.
+                                  dataset_type=chromo['dataset_type'],
+                                  records=records,
+                                  record_query=record_query,
+                                  record_query_error=record_query_error,
+                                  record_state=record_state,
+                                  pk_labels=pk_labels,
+                                  errors=None,
+                                  delete_errors=None,
+                                  filters=None))
+
+
+@recombinant.route('/recombinant/<resource_name>/<owner_org>/<pk>',
+                   methods=['GET'])
+def preview_record(resource_name: str,
+                   owner_org: str,
+                   pk: str) -> Union[str, Response]:
+    """
+    Preview a single record.
+    """
+    if not g.user:
+        return h.redirect_to('user.login')
+
+    lc = LocalCKAN(username=g.user, context={'ignore_auth': True})
+    rcomb, geno, chromo, pk_fields, choice_fields, \
+        dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
+
+    if not rcomb or not dataset or not resource:
+        return abort(404, _('Resource not found'))
+
+    if not organization:
+        return abort(404, _('Organization not found'))
+
+    if organization['name'] != owner_org:
+        return h.redirect_to('recombinant.preview_record',
+                             resource_name=resource_name,
+                             owner_org=organization['name'],
+                             pk=pk)
+
+    if not h.check_access('datastore_search', {'resource_id': resource['id']}):
+        return abort(403, _('Not authorized to view resource.'))
+
+    template_vars = {
+        'rcomb': rcomb,
+        'geno': geno,
+        'chromo': chromo,
+        'pk_fields': pk_fields,
+        'choice_fields': choice_fields,
+        'dataset': dataset,
+        'resource': resource,
+        'organization': organization,
+    }
+
+    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
+
+    record = None
+    filters = {}
+    try:
+        for i, k in enumerate(pk_fields):
+            filters[k] = primary_key_vals[i]
+    except IndexError:
+        abort(404, _('Record %s not found for Organization %s') %
+              (pk, owner_org))
 
     try:
-        dataset = lc.action.recombinant_show(
-            dataset_type=chromo['dataset_type'], owner_org=owner_org)
-    except NotFound:
-        dataset = None
-    org = lc.action.organization_show(id=owner_org)
+        result = lc.action.datastore_search(
+            resource_id=resource['id'], filters=filters, limit=1)
+        if len(result['records']) == 0:
+            return abort(404, _('Record %s not found for Organization %s') %
+                         (pk, owner_org))
+        record = result['records'][0]
+    except NotAuthorized:
+        return abort(403, _('Unauthorized to read resource %s') % resource['id'])
 
-    if dataset:
-        for r in dataset['resources']:
-            if r['name'] == resource_name:
-                break
-        else:
-            r = None
-    else:
-        r = None
-
-    return render('recombinant/resource_edit.html', extra_vars={
-        'dataset': dataset,
-        'dataset_type': chromo['dataset_type'],
-        'resource_description': chromo['title'],
-        'resource_name': chromo['resource_name'],
-        'resource': r,
-        'organization': org,
-        'errors': None,
-        'delete_errors': None,
-        'filters': None
-        })
+    return render('recombinant/record_preview.html',
+                  extra_vars=dict(template_vars,
+                                  pk=pk,
+                                  record=record))
 
 
-@recombinant.route('/recombinant/refresh/<resource_name>/<owner_org>',
+@recombinant.route('/recombinant/manage/<resource_name>/<owner_org>/create-record',
                    methods=['GET', 'POST'])
-def refresh_dataset(resource_name: str, owner_org: str):
+def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
+    """
+    Create a single record via a webform.
+    """
+    if not g.user:
+        return h.redirect_to('user.login')
+
+    lc = LocalCKAN(username=g.user)
+    rcomb, geno, chromo, pk_fields, choice_fields, \
+        dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
+
+    if not rcomb or not dataset or not resource:
+        return abort(404, _('Resource not found'))
+
+    if not organization:
+        return abort(404, _('Organization not found'))
+
+    if not chromo.get('create_form'):
+        return abort(404, _('Create Record form not supported for type %s') %
+                     geno['dataset_type'])
+
+    if not h.check_access('datastore_upsert', {'resource_id': resource['id']}):
+        return abort(403, _('Unauthorized to create a record for this resource'))
+
+    template_vars = {
+        'rcomb': rcomb,
+        'geno': geno,
+        'chromo': chromo,
+        'pk_fields': pk_fields,
+        'choice_fields': choice_fields,
+        'dataset': dataset,
+        'resource': resource,
+        'organization': organization,
+    }
+
+    if request.method == 'POST':
+        post_data = parse_params(request.form, ignore_keys=['save'])
+
+        if 'cancel' in post_data:
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=rcomb['owner_org'])
+
+        save_draft = 'save-later' in post_data and chromo['stately_records']
+
+        data, err = _clean_check_type_errors(
+            post_data,
+            chromo['fields'],
+            pk_fields,
+            choice_fields)
+        error_summary = None
+        # normalize newlines to \n
+        data = _normalize_record_newlines(data)
+        if save_draft:
+            # set record to draft if save-later button was pressed,
+            # and the schema supports stately records.
+            data['record_state'] = 'draft'
+        try:
+            lc.action.datastore_upsert(
+                resource_id=resource['id'],
+                method='insert',
+                records=[{k: None if k in err else v for (k, v) in data.items()}],
+                dry_run=bool(err))
+        except ValidationError as ve:
+            if 'records' in ve.error_dict:
+                try:
+                    # type_ignore_reason: incomplete typing
+                    err = dict({
+                        k: list(format_trigger_error(v))
+                        for (k, v) in
+                        ve.error_dict['records'][0].items()  # type: ignore
+                    }, **err)
+                except AttributeError:
+                    # type_ignore_reason: incomplete typing
+                    if (
+                      'duplicate key value violates unique constraint' in
+                      ve.error_dict['records'][0]):  # type: ignore
+                        err = dict({
+                            k: [_("This record already exists")]
+                            for k in pk_fields
+                        }, **err)
+                    elif (
+                      'constraint_info' in ve.error_dict):
+                        error_summary = _render_recombinant_constraint_errors(
+                            lc, ve, chromo, 'upsert')
+                    else:
+                        log.warning('Failed to create %s record for org %s:\n%s',
+                                    resource_name, owner_org, traceback.format_exc())
+                        error_summary = _('Something went wrong, your record '
+                                          'was not created. Please contact support.')
+            # type_ignore_reason: incomplete typing
+            elif ve.error_dict.get(
+                    'info', {}).get('pgcode', '') == '23505':  # type: ignore
+                err = dict({
+                    k: [_("This record already exists")]
+                    for k in pk_fields
+                }, **err)
+            else:
+                log.warning('Failed to create %s record for org %s:\n%s',
+                            resource_name, owner_org, traceback.format_exc())
+                error_summary = _('Something went wrong, your record '
+                                  'was not created. Please contact support.')
+
+        if err or error_summary:
+            return render('recombinant/create_record.html',
+                          extra_vars=dict(template_vars,
+                                          data=data,
+                                          # prevent rendering error on parent template
+                                          pkg_dict={},
+                                          errors=err,
+                                          error_summary=error_summary))
+
+        if save_draft:
+            h.flash_notice(_('Draft record created'))
+        else:
+            h.flash_notice(_('Record created'))
+
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=rcomb['owner_org'])
+
+    return render('recombinant/create_record.html',
+                  extra_vars=dict(template_vars,
+                                  data={},
+                                  # prevent rendering error on parent template
+                                  pkg_dict={},
+                                  errors={}))
+
+
+@recombinant.route(
+    '/recombinant/manage/<resource_name>/<owner_org>/update-record/<pk>',
+    methods=['GET', 'POST'])
+def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Response]:
+    """
+    Update a single record via a webform.
+    """
+    if not g.user:
+        return h.redirect_to('user.login')
+
+    lc = LocalCKAN(username=g.user)
+    rcomb, geno, chromo, pk_fields, choice_fields, \
+        dataset, resource, organization = \
+        _get_recombinant_view_context_vars(lc, resource_name, owner_org)
+
+    if not geno or not chromo:
+        return abort(404, _('Recombinant type %s not found') % resource_name)
+
+    if not rcomb or not dataset or not resource:
+        return abort(404, _('Resource not found'))
+
+    if not organization:
+        return abort(404, _('Organization not found'))
+
+    if not chromo.get('edit_form'):
+        return abort(404, _('Edit Record form not supported for type %s') %
+                     geno['dataset_type'])
+
+    if not h.check_access('datastore_upsert', {'resource_id': resource['id']}):
+        return abort(403, _('Unauthorized to update a record for this resource'))
+
+    template_vars = {
+        'rcomb': rcomb,
+        'geno': geno,
+        'chromo': chromo,
+        'pk_fields': pk_fields,
+        'choice_fields': choice_fields,
+        'dataset': dataset,
+        'resource': resource,
+        'organization': organization,
+    }
+
+    pk_list = [_url_part_unescape(p) for p in pk.split(',')]
+    came_from = request.form.get('came_from') if request.method == 'POST' \
+        else request.args.get('came_from')
+    if came_from not in ['preview_record', 'preview_table']:
+        came_from = 'preview_table'  # default to preview_table view
+
+    pk_filter = dict(zip(pk_fields, pk_list))
+
+    records = lc.action.datastore_search(
+        resource_id=resource['id'],
+        filters=pk_filter)['records']
+    if len(records) == 0:
+        abort(404, _('Not found'))
+    if len(records) > 1:
+        abort(400, _('Multiple records found'))
+    record = records[0]
+
+    data = {}
+    for f in chromo['fields']:
+        if (
+          not f.get('import_template_include', True) or
+          f.get('published_resource_computed_field', False)
+        ):
+            continue
+        val = record[f['datastore_id']]
+        if val and f.get('datastore_type') == 'money':
+            if isinstance(val, str) and '$' in val:
+                data[f['datastore_id']] = val
+            else:
+                data[f['datastore_id']] = '${:,.2f}'.format(val)
+        else:
+            data[f['datastore_id']] = val
+
+    if request.method == 'POST':
+        post_data = parse_params(request.form, ignore_keys=['save'] + pk_fields)
+
+        if 'cancel' in post_data:
+            if came_from == 'preview_record':
+                return h.redirect_to('recombinant.preview_record',
+                                     resource_name=resource_name,
+                                     owner_org=rcomb['owner_org'],
+                                     pk=pk)
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=rcomb['owner_org'])
+
+        data, err = _clean_check_type_errors(
+            post_data,
+            chromo['fields'],
+            pk_fields,
+            choice_fields)
+        error_summary = None
+        # can't change pk fields
+        for f_id in data:
+            if f_id in pk_fields:
+                data[f_id] = record[f_id]
+
+        # normalize newlines to \n
+        data = _normalize_record_newlines(data)
+
+        try:
+            lc.action.datastore_upsert(
+                resource_id=resource['id'],
+                # method='update',    FIXME not raising ValidationErrors
+                records=[{k: None if k in err else v for (k, v) in data.items()}],
+                dry_run=bool(err))
+        except ValidationError as ve:
+            try:
+                # type_ignore_reason: incomplete typing
+                err = dict({
+                    k: list(format_trigger_error(v))
+                    for (k, v) in ve.error_dict['records'][0].items()  # type: ignore
+                }, **err)
+            except AttributeError:
+                log.warning('Failed to update %s record for org %s:\n%s',
+                            resource_name, owner_org, traceback.format_exc())
+                error_summary = _('Something went wrong, your record '
+                                  'was not updated. Please contact support.')
+
+        if err or error_summary:
+            return render('recombinant/update_record.html',
+                          extra_vars=dict(template_vars,
+                                          data=data,
+                                          pk=pk,
+                                          # prevent rendering error on parent template
+                                          pkg_dict={},
+                                          errors=err,
+                                          error_summary=error_summary,
+                                          came_from=came_from))
+
+        h.flash_notice(_('Record %s updated') % ','.join(pk_list))
+
+        if came_from == 'preview_record':
+            return h.redirect_to('recombinant.preview_record',
+                                 resource_name=resource_name,
+                                 owner_org=rcomb['owner_org'],
+                                 pk=pk)
+
+        return h.redirect_to('recombinant.preview_table',
+                             resource_name=resource_name,
+                             owner_org=rcomb['owner_org'])
+
+    return render('recombinant/update_record.html',
+                  extra_vars=dict(template_vars,
+                                  data=data,
+                                  pk=pk,
+                                  # prevent rendering error on parent template
+                                  pkg_dict={},
+                                  errors={},
+                                  came_from=came_from))
+
+
+@recombinant.route('/recombinant/manage/<resource_name>/<owner_org>/upsert-data',
+                   methods=['POST'])
+def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
+    """
+    Wrapper to datastore_upsert with specific logic for custom DataTables.
+
+    Allows for encoded POSTed form data as a JSON string in the records field.
+    This allows for easy CSRF Token validation in AJAX requests.
+
+    Adds custom message handling for DataTables.
+    """
+    if not h.is_registry_domain():
+        return abort(404)
+
+    context = cast(Context, {'user': g.user, 'model': model})
+
+    data_dict = parse_params(request.form, ignore_keys=[g.csrf_field_name])
+    if 'records' in data_dict:
+        try:
+            # type_ignore_reason: incomplete typing
+            data_dict['records'] = json.loads(data_dict['records'])  # type: ignore
+        except (KeyError, ValueError):
+            pass
+
+    return_dict = {}
+    lc = LocalCKAN()
+    chromo = get_chromo(resource_name)
+    pk_fields = aslist(chromo['datastore_primary_key'])
+    offset = 0
+    records = data_dict.get('records', [])
+    resource_id = data_dict.get('resource_id')
+    dry_run = data_dict.get('dry_run')
+    method = data_dict.get('method')
+    # NOTE: upserting each record one-by-one is crazy slower,
+    #       but it is the only way to get all of the errors back in one object.
+    while offset < len(records):
+        # type_ignore_reason: incomplete typing
+        record = _normalize_record_newlines(records[offset])  # type: ignore
+        try:
+            data = get_action('datastore_upsert')(
+                context, {
+                    'method': method,
+                    'resource_id': resource_id,
+                    'dry_run': dry_run,
+                    'records': [record]
+                })
+            if 'result' not in return_dict:
+                return_dict['result'] = {}
+            return_dict['result']['row_{}'.format(offset)] = data
+            return_dict['success'] = True
+            offset += 1
+        except NotAuthorized:
+            return_dict['error'] = {'__type': 'Authorization Error',
+                                    'message': _('Access denied')}
+            return_dict['success'] = False
+            return _finish(403, return_dict, content_type='json')
+        except NotFound:
+            return_dict['error'] = {'__type': 'Not Found Error',
+                                    'message': _('Not found')}
+            return_dict['success'] = False
+            return _finish(404, return_dict, content_type='json')
+        except ValidationError as ve:
+            err = {}
+            error_summary = None
+            if 'records' in ve.error_dict:
+                try:
+                    # type_ignore_reason: incomplete typing
+                    err = dict({
+                        k: list(format_trigger_error(v))
+                        for (k, v) in
+                        ve.error_dict['records'][0].items()  # type: ignore
+                    }, **err)
+                except AttributeError:
+                    # type_ignore_reason: incomplete typing
+                    if (
+                      'duplicate key value violates unique constraint' in
+                      ve.error_dict['records'][0]):  # type: ignore
+                        err = dict({
+                            k: [_("This record already exists")]
+                            for k in pk_fields
+                        }, **err)
+                    elif (
+                      'constraint_info' in ve.error_dict):
+                        error_summary = _render_recombinant_constraint_errors(
+                            lc, ve, chromo, 'upsert')
+                    else:
+                        log.warning('Failed to create %s record for org %s:\n%s',
+                                    resource_name, owner_org, traceback.format_exc())
+                        error_summary = _('Something went wrong, your record '
+                                          'was not created. Please contact support.')
+            # type_ignore_reason: incomplete typing
+            elif ve.error_dict.get(
+                    'info', {}).get('pgcode', '') == '23505':  # type: ignore
+                err = dict({
+                    k: [_("This record already exists")]
+                    for k in pk_fields
+                }, **err)
+            else:
+                log.warning('Failed to create %s record for org %s:\n%s',
+                            resource_name, owner_org, traceback.format_exc())
+                error_summary = _('Something went wrong, your record '
+                                  'was not created. Please contact support.')
+            if 'error' not in return_dict:
+                return_dict['error'] = {}
+            return_dict['error']['row_{}'.format(offset)] = {
+                '__type': 'Validation Error',
+                'message': error_summary,
+                'data': err}
+            return_dict['success'] = False
+            offset += 1
+        except Exception as e:
+            return_dict['error'] = {'__type': 'Internal Server Error',
+                                    'message': _('Internal Server Error')}
+            return_dict['success'] = False
+            log.warning(e)
+            return _finish(500, return_dict, content_type='json')
+
+    if 'error' in return_dict:
+        return _finish(409, return_dict, content_type='json')
+
+    return _finish_ok(return_dict)
+
+
+@recombinant.route('/recombinant-refresh/<resource_name>/<owner_org>',
+                   methods=['GET', 'POST'])
+def refresh_dataset(resource_name: str, owner_org: str) -> Union[str, Response]:
     if not is_sysadmin(g.user):
         return abort(403)
     if request.method != 'POST':
@@ -952,9 +1797,9 @@ def _process_upload_file(lc: LocalCKAN,
 
             if not h.check_access('datastore_upsert',
                                   {'resource_id': expected_sheet_names[sheet_name]}):
-                return abort(403, _('User {0} not authorized to update resource {1}'
-                                    .format(str(g.user),
-                                            expected_sheet_names[sheet_name])))
+                return abort(403, _('User {0} not authorized to '
+                                    'update resource {1}').format(
+                                        str(g.user), expected_sheet_names[sheet_name]))
 
             if org_name != owner_org:
                 raise BadExcelData(_(
@@ -1129,3 +1974,416 @@ def _render_recombinant_constraint_errors(lc: LocalCKAN,
     else:
         error_message = orig_errmsg
     return error_message
+
+
+def _get_choice_fields(resource_name: str,
+                       data: Optional[Dict[str, Any]] = None,
+                       org_name: Optional[str] = None) -> Dict[str, Any]:
+    separator = ' : ' if h.lang() == 'fr' else ': '
+    choice_fields = {}
+    for datastore_id, choices in h.recombinant_choice_fields(
+      resource_name, org_name=org_name).items():
+        available_keys = []
+        f = h.recombinant_get_field(resource_name, datastore_id)
+        form_choices_prefix_code = f.get('form_choices_prefix_code', False)
+        form_choice_keys_only = f.get('form_choice_keys_only', False)
+        if datastore_id not in choice_fields:
+            choice_fields[datastore_id] = []
+        # allow for suffixes to labels. If the value has the suffix, add
+        # the suffix labels.
+        suffix = None
+        suffix_label = ''
+        for _suffix, _labels in f.get('choices_suffix_filter', {}).items():
+            suffix = _suffix
+            suffix_label = _labels[h.lang()]
+        for (k, v) in choices:
+            available_keys.append(k)
+            if suffix and k.endswith(suffix):
+                v += ' %s' % suffix_label
+            if form_choice_keys_only:
+                choice_fields[datastore_id].append({'value': k,
+                                                    'label': k})
+                continue
+            elif form_choices_prefix_code:
+                choice_fields[datastore_id].append({'value': k,
+                                                    'label': k + separator + v})
+                continue
+            choice_fields[datastore_id].append({'value': k,
+                                                'label': v})
+        # support current data that may not be in the choices anymore
+        if data and data.get(datastore_id):
+            _current_val = data[datastore_id]
+            if isinstance(_current_val, str):
+                # support multi choice
+                _current_val = [_current_val]
+            for _v in _current_val:
+                if _v in available_keys:
+                    continue
+                _l = _v
+                if suffix and _l.endswith(suffix):
+                    # we don't have any other labels at this point,
+                    # so can only use the suffix label
+                    _l = suffix_label
+                if form_choice_keys_only:
+                    choice_fields[datastore_id].append({'value': _v,
+                                                        'label': _v})
+                    continue
+                elif form_choices_prefix_code:
+                    choice_fields[datastore_id].append({'value': _v,
+                                                        'label': _v + separator + _l})
+                    continue
+                choice_fields[datastore_id].append({'value': _v,
+                                                    'label': _l})
+    return choice_fields
+
+
+def _url_part_unescape(urlpart: str) -> str:
+    """
+    reverse url_part_escape
+    """
+    return ''.join(
+        codecs.decode(s, 'hex').decode('utf-8') if i % 2 else s
+        for i, s in enumerate(urlpart.split('_'))
+    )
+
+
+def _clean_check_type_errors(post_data: Dict[str, Any],
+                             fields: List[Dict[str, Any]],
+                             pk_fields: List[str],
+                             choice_fields: Dict[str, Any]) -> \
+                                Tuple[Dict[str, Any], Dict[str, Any]]:
+    """
+    clean posted data and check type errors, add type error messages
+    to errors dict returned. This is required because type errors on any
+    field prevent triggers from running so we don't get any other errors
+    from the datastore_upsert call.
+    :param post_data: form data
+    :param fields: recombinant fields
+    :param pk_fields: list of primary key field ids
+    :param choice_fields: {field id: choices, ...}
+    :return: cleaned data, errors
+    """
+    data = {}
+    err = {}
+
+    for f in fields:
+        f_id = f['datastore_id']
+        if (
+          not f.get('import_template_include', True) or
+          f.get('published_resource_computed_field', False)):
+            continue
+        else:
+            val = post_data.get(f['datastore_id'], '')
+            if isinstance(val, list):
+                val = ','.join(val)
+            val = canonicalize(
+                val,
+                f['datastore_type'],
+                primary_key=f['datastore_id'] in pk_fields,
+                choice_field=f_id in choice_fields)
+            if val:
+                if f['datastore_type'] in ('money', 'numeric'):
+                    try:
+                        decimal.Decimal(val)
+                    except decimal.InvalidOperation:
+                        err[f['datastore_id']] = [_('Number required')]
+                elif f['datastore_type'] == 'int':
+                    try:
+                        int(val)
+                    except ValueError:
+                        err[f['datastore_id']] = [_('Integer required')]
+            data[f['datastore_id']] = val
+
+    return data, err
+
+
+def _normalize_record_newlines(record: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalizes newline characters to \\n
+    """
+    return dict((k, v.replace('\r\n', '\n').replace('\r', '\n')
+                 if isinstance(v, str) else v)
+                for k, v in record.items())
+
+
+@recombinant.route('/datatable/<resource_name>/<resource_id>',
+                   methods=['GET', 'POST'])
+@csrf.exempt
+def datatable(resource_name: str, resource_id: str) -> Union[str, Response]:
+    params = parse_params(request.form)
+    # type_ignore_reason: datatable param draw is int
+    draw = int(params['draw'])  # type: ignore
+    search_text = str(params['search[value]'])
+    # type_ignore_reason: datatable param start is int
+    offset = int(params['start'])  # type: ignore
+    # type_ignore_reason: datatable param length is int
+    limit = int(params['length']) if params['length'] else 15  # type: ignore
+    is_edit_mode = asbool(params['is_edit_mode'])
+
+    chromo = get_chromo(resource_name)
+    lc = LocalCKAN(username=g.user)
+    try:
+        unfiltered_response = lc.action.datastore_search(
+            resource_id=resource_id,
+            limit=1,
+        )
+    except NotAuthorized:
+        # datatables js can't handle any sort of error response
+        # return no records instead
+        return json.dumps({
+            'draw': draw,
+            'iTotalRecords': -1,  # with a hint that something is wrong
+            'iTotalDisplayRecords': -1,
+            'aaData': [],
+        })
+
+    can_edit = h.check_access('resource_update', {'id': resource_id})
+    cols = []
+    fids = []
+    for f in chromo['fields']:
+        if f.get('published_resource_computed_field', False):
+            continue
+        cols.append(f['datastore_id'])
+        fids.append(f['datastore_id'])
+    # Select | (Edit) | ...
+    prefix_cols = 2 if chromo.get('edit_form', False) and can_edit else 1
+
+    sort_list = []
+    i = 0
+    while True:
+        if 'order[%d][column]' % i not in params:
+            break
+        # type_ignore_reason: datatable param 'order[%d][column] is int
+        sort_by_num = int(params['order[%d][column]' % i])  # type: ignore
+        sort_order = (
+            'desc' if params['order[%d][dir]' % i] == 'desc'
+            else 'asc')
+        sort_list.append(
+            cols[sort_by_num - prefix_cols] + ' ' + sort_order + ' nulls last')
+        i += 1
+
+    col_filters = {}
+    i = 0
+    while True:
+        if 'columns[%d][search][value]' % i not in request.form:
+            break
+        try:
+            v = json.loads(request.form['columns[%d][search][value]' % i])
+        except (ValueError, KeyError):
+            v = str(request.form['columns[%d][search][value]' % i])
+        if v:
+            k = str(request.form['columns[%d][name]' % i])
+            col_filters[k] = v
+        i += 1
+
+    if is_edit_mode:
+        offset = 0
+        limit = MAX_INT
+
+    if is_edit_mode and not col_filters:
+        response = {}
+    else:
+        response = lc.action.datastore_search(
+            q=search_text,
+            resource_id=resource_id,
+            offset=offset,
+            limit=limit,
+            sort=', '.join(sort_list),
+            filters=col_filters)
+
+    if is_edit_mode and not col_filters:
+        default_fill = chromo.get('datatables_default_fill', 10)
+        aadata = [
+            [''] +  # Expand column
+            ['<input type="checkbox">'] +  # Select column
+            ['' for _col in cols] for _row in range(default_fill)]
+    else:
+        aadata = [
+            [''] +  # Expand column
+            ['<input type="checkbox">'] +  # Select column
+            [row.get(col, '') for col in cols] for row in response['records']]
+
+    return json.dumps({
+        'draw': draw,
+        'iTotalRecords': unfiltered_response.get('total', 0),
+        'iTotalDisplayRecords': response.get('total', 0),
+        'aaData': aadata,
+    })
+
+
+# TODO: DEPRECATED: REMOVE AFTER FULL PD DATATABLES QA
+@recombinant.route('/datatable_depr/<resource_name>/<resource_id>',
+                   methods=['GET', 'POST'])
+@csrf.exempt
+def datatable_depr(resource_name: str, resource_id: str) -> Union[str, Response]:
+    params = parse_params(request.form)
+    # type_ignore_reason: datatable param draw is int
+    draw = int(params['draw'])  # type: ignore
+    search_text = str(params['search[value]'])
+    dt_query = str(params['dt_query'])
+    if dt_query and not search_text:
+        search_text = dt_query
+    # type_ignore_reason: datatable param start is int
+    offset = int(params['start'])  # type: ignore
+    # type_ignore_reason: datatable param length is int
+    limit = int(params['length'])  # type: ignore
+
+    chromo = get_chromo(resource_name)
+    lc = LocalCKAN(username=g.user)
+    try:
+        unfiltered_response = lc.action.datastore_search(
+            resource_id=resource_id,
+            limit=1,
+        )
+    except NotAuthorized:
+        # datatables js can't handle any sort of error response
+        # return no records instead
+        return json.dumps({
+            'draw': draw,
+            'iTotalRecords': -1,  # with a hint that something is wrong
+            'iTotalDisplayRecords': -1,
+            'aaData': [],
+        })
+
+    can_edit = h.check_access('resource_update', {'id': resource_id})
+    cols = []
+    fids = []
+    for f in chromo['fields']:
+        if f.get('published_resource_computed_field', False):
+            continue
+        cols.append(f['datastore_id'])
+        fids.append(f['datastore_id'])
+    # Select | (Edit) | ...
+    prefix_cols = 2 if chromo.get('edit_form', False) and can_edit else 1
+
+    sort_list = []
+    i = 0
+    while True:
+        if 'order[%d][column]' % i not in params:
+            break
+        # type_ignore_reason: datatable param 'order[%d][column] is int
+        sort_by_num = int(params['order[%d][column]' % i])  # type: ignore
+        sort_order = (
+            'desc' if params['order[%d][dir]' % i] == 'desc'
+            else 'asc')
+        sort_list.append(
+            cols[sort_by_num - prefix_cols] + ' ' + sort_order + ' nulls last')
+        i += 1
+
+    response = lc.action.datastore_search(
+        q=search_text,
+        resource_id=resource_id,
+        offset=offset,
+        limit=limit,
+        sort=', '.join(sort_list),
+    )
+
+    aadata = [
+        ['<input type="checkbox">'] +
+        [datatablify(row.get(colname, ''), colname, chromo) for colname in cols]
+        for row in response['records']]
+
+    if chromo.get('edit_form', False) and can_edit:
+        res = lc.action.resource_show(id=resource_id)
+        pkg = lc.action.package_show(id=res['package_id'])
+        pkids = [fids.index(k) for k in aslist(chromo['datastore_primary_key'])]
+        for row in aadata:
+            row.insert(1, (
+                    '<a href="{0}" aria-label="' + _("Edit") + '">'
+                    '<i class="fa fa-lg fa-edit" aria-hidden="true"></i></a>').format(
+                    h.url_for(
+                        'recombinant.update_record',
+                        owner_org=pkg['organization']['name'],
+                        resource_name=resource_name,
+                        pk=','.join(_url_part_escape(row[i+1]) for i in pkids)
+                    )
+                )
+            )
+
+    return json.dumps({
+        'draw': draw,
+        'iTotalRecords': unfiltered_response.get('total', 0),
+        'iTotalDisplayRecords': response.get('total', 0),
+        'aaData': aadata,
+    })
+
+
+# TODO: DEPRECATED: REMOVE AFTER FULL PD DATATABLES QA
+def _url_part_escape(orig: str) -> str:
+    """
+    simple encoding for url-parts where all non-alphanumerics are
+    wrapped in e.g. _xxyyzz_ blocks w/hex UTF-8 xx, yy, zz values
+
+    used for safely including arbitrary unicode as part of a url path
+    all returned characters will be in [a-zA-Z0-9_-]
+    """
+    return '_'.join(
+        codecs.encode(s.encode('utf-8'), 'hex').decode('ascii') if i % 2 else s
+        for i, s in enumerate(
+            re.split(r'([^-a-zA-Z0-9]+)', orig)
+        )
+    )
+
+
+# TODO: DEPRECATED: REMOVE AFTER FULL PD DATATABLES QA
+def datatablify(v: Any, colname: str, chromo: Dict[str, Any]) -> str:
+    '''
+    format value from datastore v for display in a datatable preview
+    '''
+    chromo_field = None
+    for f in chromo['fields']:
+        if f['datastore_id'] == colname:
+            chromo_field = f
+            break
+    if v is None:
+        return ''
+    if v is True:
+        return 'TRUE'
+    if v is False:
+        return 'FALSE'
+    if isinstance(v, list):
+        return ', '.join(str(e) for e in v)
+    if colname in ('record_created', 'record_modified') and v:
+        return _date_str_to_datetime(v).replace(tzinfo=utc).astimezone(
+            this_tz).strftime('%Y-%m-%d %H:%M:%S %Z')
+    if chromo_field and chromo_field.get('datastore_type') == 'money':
+        if isinstance(v, str) and '$' in v:
+            return v
+        return '${:,.2f}'.format(v)
+    return str(v)
+
+
+# copied from ckan 2.6 branch
+# https://github.com/open-data/ckan
+# /blob/ee0a94c97f8988e78c9b1f92f92adb5c26884841/ckan/lib/helpers.py#L1245
+def _date_str_to_datetime(date_str: str) -> 'datetime.datetime':
+    '''
+    Convert ISO-like formatted datestring to datetime object.
+
+    This function converts ISO format date- and datetime-strings into
+    datetime objects.  Times may be specified down to the microsecond.  UTC
+    offset or timezone information may **not** be included in the string.
+    Note - Although originally documented as parsing ISO date(-times), this
+           function doesn't fully adhere to the format.  This function will
+           throw a ValueError if the string contains UTC offset information.
+           So in that sense, it is less liberal than ISO format.  On the
+           other hand, it is more liberal of the accepted delimiters between
+           the values in the string.  Also, it allows microsecond precision,
+           despite that not being part of the ISO format.
+    '''
+
+    time_tuple = re.split(r'[^\d]+', date_str, maxsplit=5)
+
+    # Extract seconds and microseconds
+    if len(time_tuple) >= 6:
+        m = re.match(r'(?P<seconds>\d{2})(\.(?P<microseconds>\d+))?$',
+                     time_tuple[5])
+        if not m:
+            raise ValueError('Unable to parse %s as seconds.microseconds' %
+                             time_tuple[5])
+        seconds = int(m.groupdict()['seconds'])
+        microseconds = int((str(m.groupdict(0).get('microseconds')) + '00000')[0:6])
+        time_tuple = time_tuple[:5] + [seconds, microseconds]
+
+    # type_ignore_reason: typchecker can't guess number of arguments
+    return datetime.datetime(*map(int, time_tuple))  # type: ignore

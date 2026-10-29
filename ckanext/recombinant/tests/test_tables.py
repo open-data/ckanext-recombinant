@@ -23,6 +23,7 @@ class TestRecombinantTables(RecombinantTestBase):
     expected_chromo = {
         'title': 'Sample Resource',
         'resource_name': 'sample',
+        'stately_records': False,
         'published_resource_id': '1495491e-338c-43ec-9995-ecb48c67d17e',
         'create_form': True,
         'edit_form': True,

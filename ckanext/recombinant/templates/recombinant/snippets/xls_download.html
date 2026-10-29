@@ -1,12 +1,31 @@
+{#
+Adds the Excel Template Download form.
+
+rcomb       - The Recombinant dict
+errors      - List of error strings
+chromo      - The Recombinant Chromo dict
+geno        - The Recombinant Geno dict
+#}
 {% extends 'recombinant/snippets/xls_base.html' %}
 
-{% block title %}{{_('Download template Excel spreadsheet')}}{% endblock %}
+{% block title %}
+  {{_('Download template Excel spreadsheet')}}
+{% endblock %}
 
 {% block form %}
-<form enctype="multipart/form-data" id="dataset-form" class="dataset-form dataset-resource-form form-horizontal" method="post" action=''>
-{{ h.csrf_input() }}
+  {% if not chromo.get('webform_only') %}
+    <form enctype="multipart/form-data"
+          id="dataset-form"
+          class="dataset-form dataset-resource-form form-horizontal"
+          method="post"
+          action=''>
+    {{ h.csrf_input() }}
+  {% endif %}
 {% endblock %}
+
 {% block upload_submit %}
-  <div class="clear"></div>
+  {% if not chromo.get('webform_only') %}
+    <div class="clear"></div>
+  {% endif %}
 {% endblock %}
 

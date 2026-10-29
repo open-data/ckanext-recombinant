@@ -1,14 +1,47 @@
 code_block_buttons:
   contents:
-    - js/code_block_buttons.js
+    - build/code_block_buttons.min.js
   output: recombinant/%(version)s_code_block_buttons.js
 
 js_callbacks:
   contents:
-    - js/recombinant_callbacks.js
+    - build/recombinant_callbacks.min.js
   output: recombinant/%(version)s_recombinant_callbacks.js
 
 main_css:
   contents:
-    - css/recombinant.css
+    - build/recombinant.min.css
   output: recombinant/%(version)s_recombinant.css
+
+cascading_select:
+  contents:
+    - build/cascading_select.min.js
+  output: recombinant/%(version)s_cascading_select.js
+
+recombinant_webforms:
+  contents:
+    - build/recombinant_webform.min.js
+  output: recombinant/%(version)s_recombinant_webform.js
+
+recombinant_datatables_css_depr:
+  contents:
+    - build/recombinant_datatables_depr.min.css
+  output: recombinant/%(version)s_recombinant_datatables_depr.css
+
+recombinant_datatables_css:
+  contents:
+    - build/recombinant_datatable.min.css
+  output: recombinant/%(version)s_recombinant_datatable.css
+
+recombinant_datatables_js_depr:
+  contents:
+    - build/recombinant_datatables_depr.min.js
+  output: recombinant/%(version)s_recombinant_datatables_depr.js
+
+recombinant_datatables_js:
+  contents:
+    - build/recombinant_datatables.min.js
+  extra:
+    preload:
+      - base/main  # need ckan JS and jQuery
+  output: recombinant/%(version)s_recombinant_datatables.js
