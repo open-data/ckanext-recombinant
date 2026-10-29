@@ -153,6 +153,12 @@ body{
   min-width: 45%;
 }
 
+.recombinant-action-panels-container{
+  .recombinant-delete-button-wrapper{
+    overflow: visible !important;
+  }
+}
+
 .recombinant-record-state-nav{
   ul.nav{
     align-items: center;
