@@ -68,7 +68,9 @@ choice_fields   - Dict of choice fields
   {%- if chromo.stately_records -%}
     {%- set state_field = h.recombinant_get_field(resource.name, 'record_state') -%}
     <div class="panel-footer">
-      <div><strong><i class="fa {{ state_field.choices[record['record_state']].preview_icon }}" aria-hidden="true"></i>&nbsp;{{- h.recombinant_language_text(state_field.choices[record['record_state']]) -}}</strong></div>
+      {% block display_card_footer %}
+        <div><strong><i class="fa {{ state_field.choices[record['record_state']].preview_icon }}" aria-hidden="true"></i>&nbsp;{{- h.recombinant_language_text(state_field.choices[record['record_state']]) -}}</strong></div>
+      {% endblock %}
     </div>
   {%- endif -%}
 </article>

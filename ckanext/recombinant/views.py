@@ -1322,6 +1322,8 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
                                  resource_name=resource_name,
                                  owner_org=rcomb['owner_org'])
 
+        save_draft = 'save-later' in post_data and chromo['stately_records']
+
         data, err = _clean_check_type_errors(
             post_data,
             chromo['fields'],
@@ -1330,6 +1332,10 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
         error_summary = None
         # normalize newlines to \n
         data = _normalize_record_newlines(data)
+        if save_draft:
+            # set record to draft if save-later button was pressed,
+            # and the schema supports stately records.
+            data['record_state'] = 'draft'
         try:
             lc.action.datastore_upsert(
                 resource_id=resource['id'],
@@ -1385,7 +1391,10 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
                                           errors=err,
                                           error_summary=error_summary))
 
-        h.flash_notice(_('Record Created'))
+        if save_draft:
+            h.flash_notice(_('Draft record created'))
+        else:
+            h.flash_notice(_('Record created'))
 
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
@@ -1531,7 +1540,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
                                           error_summary=error_summary,
                                           came_from=came_from))
 
-        h.flash_notice(_('Record %s Updated') % ','.join(pk_list))
+        h.flash_notice(_('Record %s updated') % ','.join(pk_list))
 
         if came_from == 'preview_record':
             return h.redirect_to('recombinant.preview_record',
