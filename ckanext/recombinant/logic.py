@@ -29,8 +29,6 @@ from ckanext.recombinant.errors import (
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import _read_choices_file
 
-from ckanext.datastore.backend.postgres import literal_string
-
 
 def recombinant_create(context: Context, data_dict: DataDict):
     '''
@@ -155,8 +153,8 @@ def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
                     results = connection.execute(sa_text("""
                         SELECT {statements} FROM {res_id};
                     """.format(statements=', '.join(filter_statements),
-                               res_id=identifier(resource['id'])
-                    ))).mappings().fetchall()
+                               res_id=identifier(resource['id'])))
+                               ).mappings().fetchall()
                     out['datastore_record_state_stats'] = results[0]
         except NotFound:
             out['error'] = 'datastore table missing'
