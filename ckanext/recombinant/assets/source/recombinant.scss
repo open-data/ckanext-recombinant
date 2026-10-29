@@ -140,9 +140,44 @@ body{
         margin-left: 10px;
       }
     }
+    .panel-footer{
+      padding: 6px 15px !important;
+      font-size: 14px !important;
+      background-color: #d9edf7 !important;
+      text-align: right !important;
+    }
   }
 }
 
 #records input#record_query{
   min-width: 45%;
+}
+
+.recombinant-record-state-nav{
+  ul.nav{
+    align-items: center;
+  }
+  a{
+    background-color: #ebf2fc;
+    border: 1px solid #cccccc;
+    color: black !important;
+    transition-duration: 0.325s;
+    &:not(.acitve):hover,
+    &:not(.acitve):active,
+    &:not(.acitve):focus{
+      background-color: rgba(204, 204, 204, .9);
+    }
+    &.active{
+      background-color: white;
+      border-top: 4px solid #666666;
+      padding-bottom: 9px;
+      padding-top: 8px;
+      pointer-events: none;
+      cursor: default;
+    }
+  }
+  li:not(:last-of-type):not(:first-of-type) a{
+    border-right: none !important;
+    border-left: none !important;
+  }
 }

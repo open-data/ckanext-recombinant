@@ -69,6 +69,27 @@ resources:
     form_attrs:
       size: 20
 
+  # Dev: req state field
+  - datastore_id: record_state
+    label: Record State
+    description:
+      en: Record State Field
+      fr: Record State Field FR
+    obligation: Mandatory
+    visible_to_public: false
+    datastore_type: text
+    preview_class: bg-info
+    form_required: true
+    choices:
+      active:
+        en: Published
+        fr: Publié
+        preview_icon: fa-eye
+      draft:
+        en: Draft
+        fr: Ébauche
+        preview_icon: fa-eye-slash
+
   datastore_primary_key: ["reference_number", "year"]
   datastore_indexes: ""
 
@@ -80,9 +101,15 @@ resources:
         errors text[][] := '{{}}';
         crval RECORD;
       BEGIN
+        -- NOTE: always require primary keys and record state
         errors := errors || required_error(NEW.reference_number, 'reference_number');
         errors := errors || required_error(NEW.year, 'year');
-        errors := errors || required_error(NEW.description, 'description');
+        errors := errors || required_error(NEW.record_state, 'record_state');
+
+        -- NOTE: skip all other required validation if draft
+        IF NEW.record_state = 'active' THEN
+          errors := errors || required_error(NEW.description, 'description');
+        END IF;
 
         IF errors = '{{}}' THEN
           RETURN NEW;

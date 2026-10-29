@@ -1145,6 +1145,9 @@ def preview_table(resource_name: str,
                              resource_name=resource_name,
                              owner_org=owner_org)
 
+    record_state = request.form.get('record_state') \
+        if 'record_state' in request.form else request.args.get(
+            'record_state', '')
     records = None
     record_query = None
     record_query_error = None
@@ -1167,6 +1170,8 @@ def preview_table(resource_name: str,
                 record_query_error = _('Invalid search parameter "%s". Expected: %s') \
                     % (record_query, ','.join(pk_labels))
                 pass
+        if record_state and chromo['stately_records']:
+            filters['record_state'] = record_state
         try:
             result = lc.action.datastore_search(resource_id=resource['id'],
                                                 filters=filters,
@@ -1189,6 +1194,7 @@ def preview_table(resource_name: str,
                                   records=records,
                                   record_query=record_query,
                                   record_query_error=record_query_error,
+                                  record_state=record_state,
                                   pk_labels=pk_labels,
                                   errors=None,
                                   delete_errors=None,

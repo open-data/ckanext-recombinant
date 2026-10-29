@@ -13,6 +13,7 @@ dataset_type        - The dataset type (req. for package/base_form_page.html)
 records             - The DataStore records (if chromo['display_card'])
 record_query        - The string query for record queries (if chromo['display_card'])
 record_query_error  - The string error for a record query (if chromo['display_card'])
+record_state        - The current record state for previewing (if chromo['display_card'] and chromo['stately_records'])
 pk_labels           - List of primary key labels
 errors              - Error on page (req. for package/base_form_page.html)
 delete_errors       - Error on page (req. for package/base_form_page.html)
@@ -170,9 +171,40 @@ filters             - Filters on page (req. for package/base_form_page.html)
     {% if resource and chromo.get('display_card') %}
       <div id="records">
         <h3>{{ _('Records') }}</h3>
+        {% if chromo.stately_records %}
+          {% set state_field = h.recombinant_get_field(resource.name, 'record_state') %}
+          {% set ns = namespace(stats={}) %}
+          {% for r in rcomb.resources %}
+            {% if r.name == resource.name %}
+              {% do ns.stats.update({'all': r.get('datastore_rows', 0)}) %}
+              {% do ns.stats.update(r.get('datastore_record_state_stats')) %}
+            {% endif %}
+          {% endfor %}
+          <div class="recombinant-record-state-nav">
+            <ul class="nav">
+              <li class="nav-item">
+                <a href="{{- h.url_for('recombinant.preview_table', resource_name=resource.name, owner_org=organization.name) -}}#records" class="nav-link {{ 'active' if not record_state or record_state == '' else '' }}">
+                  <i class="fa fa-bars" aria-hidden="true"></i>&nbsp;&nbsp;{{- _('All') -}}&nbsp;<small>({{- ns.stats.all -}})</small>
+                </a>
+              </li>
+              {% for k, c in state_field.choices.items() %}
+                <li class="nav-item">
+                  <a href="{{- h.url_for('recombinant.preview_table', resource_name=resource.name, owner_org=organization.name, record_state=k) -}}#records" class="nav-link {{ 'active' if record_state and record_state == k else '' }}">
+                    {% if c.get('preview_icon') %}
+                      <i class="fa {{ c.preview_icon }}" aria-hidden="true"></i>&nbsp;&nbsp;
+                    {% endif %}
+                    {{- h.recombinant_language_text(c) -}}&nbsp;<small>({{- ns.stats[k] -}})</small>
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
         <div class="canada-resource-search-wrapper">
-          <form id="dataset-resource-search" class="dataset-resource-search mrgn-bttm-md mrgn-tp-md" method="get" action="#records" data-module="select-switch" role="search">
+          {% set record_state_query = '?record_state=' ~ record_state if record_state else '' %}
+          <form id="dataset-resource-search" class="dataset-resource-search mrgn-bttm-md mrgn-tp-md" method="get" action="{{- record_state_query -}}#records" data-module="select-switch" role="search">
             <input type="text" class="field form-control" id="record_query" autocomplete="off" name="record_query" value="{{ record_query }}" placeholder="{{ ','.join(pk_labels) }}">
+            <input type="hidden" id="record_state" autocomplete="off" name="record_state" value="{{ record_state }}">
             <span class="input-group-btn">
               <button class="btn btn-primary btn-small" type="submit">
                 <i class="fa fa-search" aria-hidden="true"></i><span class="wb-inv">{{ _('Search') }}</span>
@@ -196,15 +228,19 @@ filters             - Filters on page (req. for package/base_form_page.html)
           {% set start = (page - 1) * PAGER %}
           {% set end = start + PAGER %}
           {% set paginated_records = records[start:end] %}
-          {% set record_query = '&q=' ~ record_query if record_query else '' %}
+          {% set record_search_query = '&record_query=' ~ record_query if record_query else '' %}
+          {% set record_state_query = '&record_state=' ~ record_state if record_state else '' %}
+          {% if record_query %}
+            <p><em>{{ _('Found <strong>{count}</strong> record(s) matching "{pk_vals}"').format(count=paginated_records|length, pk_vals=record_query) }}</em></p>
+          {% endif %}
           {% for r in paginated_records %}
-            {% snippet "recombinant/snippets/display_card.html", rcomb=rcomb, record=r, chromo=chromo, organization=organization, resource=resource %}
+            {% snippet "recombinant/snippets/display_card.html", rcomb=rcomb, record=r, chromo=chromo, organization=organization, resource=resource, choice_fields=choice_fields %}
           {% endfor %}
           {% if total_pages > 1 %}
             <nav aria-label="Records pagination" class="dataset-resource-pager">
               <ul class="pagination">
                 {% if page > 1 %}
-                  <li><a href="?res_page={{ page - 1 }}{{- record_query -}}#records" rel="prev">{{ _('Previous') }}</a></li>
+                  <li><a href="?res_page={{ page - 1 }}{{- record_search_query -}}{{- record_state_query -}}#records" rel="prev">{{ _('Previous') }}</a></li>
                 {% endif %}
 
                 {% for p in range(1, total_pages + 1) %}
@@ -214,12 +250,12 @@ filters             - Filters on page (req. for package/base_form_page.html)
                     </li>
                   {% else %}
                     <li>
-                      <a href="{{ h.url_for('recombinant.preview_table', resource_name=resource.name, owner_org=organization.name, page=p) }}{{- record_query -}}#records">{{ p }}</a>
+                      <a href="{{ h.url_for('recombinant.preview_table', resource_name=resource.name, owner_org=organization.name, page=p) }}{{- record_search_query -}}{{- record_state_query -}}#records">{{ p }}</a>
                     </li>
                   {% endif %}
                 {% endfor %}
                 {% if page < total_pages %}
-                  <li><a href="?page={{ page + 1 }}{{- record_query -}}#records" rel="next">{{ _('Next') }}</a></li>
+                  <li><a href="?page={{ page + 1 }}{{- record_search_query -}}{{- record_state_query -}}#records" rel="next">{{ _('Next') }}</a></li>
                 {% endif %}
               </ul>
             </nav>

@@ -1,34 +1,74 @@
 {#
 Base template snippet for Recombinant forms.
 
-rcomb       - The Recombinant dict
-resource    - The resource dict
-errors      - List of error strings
-chromo      - The Recombinant Chromo dict
-geno        - The Recombinant Geno dict
+rcomb           - The Recombinant dict
+resource        - The resource dict
+errors          - List of error strings
+chromo          - The Recombinant Chromo dict
+geno            - The Recombinant Geno dict
+record          - The record dict
+choice_fields   - Dict of choice fields
 #}
 <article class="panel panel-default mrgn-bttm-sm relative recombinant-preview-card">
   <header class="panel-heading">
-    {% set primary_key = chromo['datastore_primary_key'] %}
-    {% if primary_key.__class__.__name__ == 'list' %}
-      {% set ns = namespace(pk_vals=[]) %}
-      {% for f in primary_key %}
-        {% do ns.pk_vals.append(record[f]) %}
-      {% endfor %}
-      {% set pk_vals = ns.pk_vals|join(',') %}
-    {% else %}
-      {% set pk_vals = record[chromo['datastore_primary_key']] %}
-    {% endif %}
+    {%- set primary_key = chromo['datastore_primary_key'] -%}
+    {%- if primary_key.__class__.__name__ == 'list' -%}
+      {%- set ns = namespace(pk_vals=[]) -%}
+      {%- for f in primary_key -%}
+        {%- do ns.pk_vals.append(record[f]) -%}
+      {%- endfor -%}
+      {%- set pk_vals = ns.pk_vals|join(',') -%}
+    {%- else -%}
+      {%- set pk_vals = record[chromo['datastore_primary_key']] -%}
+    {%- endif -%}
     <a href="{{ h.url_for('recombinant.preview_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk_vals) }}">
-      <h4 class="panel-title"><span class="record-heading-text" data-ds-id="{{- chromo['display_card']['title_field'] -}}">{{ record[chromo['display_card']['title_field']] }}</span></h4>
+      {%- set title_display = record[chromo['display_card']['title_field']] -%}
+      {%- if chromo['display_card']['title_field'] in choice_fields -%}
+        {# most likely will not have a _text field as a card title, so can just support single choices #}
+        {%- for choice in choice_fields[chromo['display_card']['title_field']] -%}
+          {%- if choice.value == title_display -%}
+            {%- set title_display = choice.label -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+      <h4 class="panel-title"><span class="record-heading-text" data-ds-id="{{- chromo['display_card']['title_field'] -}}">{{- title_display -}}</span></h4>
     </a>
     <a href="{{ h.url_for('recombinant.update_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk_vals, came_from='preview_table') }}" class="btn btn-default btn-small btn-sm"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
     <a href="{{ h.url_for('recombinant.delete_single_record', resource_name=resource.name, owner_org=rcomb.owner_org, pk=pk_vals, came_from='preview_table') }}" class="btn btn-danger btn-small btn-sm"><i class="fa fa-trash" aria-hidden="true"></i>&nbsp;{{ _('Delete') }}</a>
   </header>
   <div class="panel-body">
-    {% for f in chromo['display_card']['display_fields'] %}
-      {% set field = h.recombinant_get_field(chromo['resource_name'], f) %}
-      <div><strong>{{ h.recombinant_language_text(field.label or f) }}{{ _(':') }}</strong>&nbsp;&nbsp;<span data-ds-id="{{- f -}}">{{ record[f] }}</span></div>
-    {% endfor %}
+    {%- for f in chromo['display_card']['display_fields'] -%}
+      {%- if f in record and record[f] -%}
+        {%- set field = h.recombinant_get_field(chromo['resource_name'], f) -%}
+        <div>
+          <strong>{{ h.recombinant_language_text(field.label or f) }}{{ _(':') }}</strong>&nbsp;
+          {%- if f in choice_fields -%}
+            {%- if field.get('datastore_type') == '_text' -%}
+              <ul>
+                {%- for choice in choice_fields[f] -%}
+                  {%- if choice.value in record[f] -%}
+                    <li><span data-ds-id="{{- f -}}">{{- choice.label -}}</span></li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ul>
+            {%- else -%}
+              {%- for choice in choice_fields[f] -%}
+                {%- if choice.value == record[f] -%}
+                  <span data-ds-id="{{- f -}}">{{- choice.label -}}</span>
+                {%- endif -%}
+              {%- endfor -%}
+            {%- endif -%}
+          {%- else -%}
+            <span data-ds-id="{{- f -}}">{{ record[f] }}</span>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    {%- endfor -%}
   </div>
+  {%- if chromo.stately_records -%}
+    {%- set state_field = h.recombinant_get_field(resource.name, 'record_state') -%}
+    <div class="panel-footer">
+      <div><strong><i class="fa {{ state_field.choices[record['record_state']].preview_icon }}" aria-hidden="true"></i>&nbsp;{{- h.recombinant_language_text(state_field.choices[record['record_state']]) -}}</strong></div>
+    </div>
+  {%- endif -%}
 </article>

@@ -5,13 +5,20 @@ from ckan.plugins.toolkit import _, chained_action, h, side_effect_free
 from typing import Dict, Any, List, Tuple
 from ckan.types import Context, DataDict, Action, ChainedAction
 
-from sqlalchemy import and_
+from sqlalchemy import and_, text as sa_text
 
 from ckanapi import LocalCKAN, NotFound, ValidationError, NotAuthorized
 from ckan.logic import get_or_bust
 from ckan.model.resource import Resource
 from ckan.model.group import Group
 from ckan.common import asbool
+
+from ckanext.datastore.backend import DatastoreBackend
+from ckanext.datastore.backend.postgres import (
+    DatastorePostgresqlBackend,
+    identifier,
+    literal_string
+)
 
 from ckanext.recombinant.tables import get_geno, get_chromo
 from ckanext.recombinant.errors import (
@@ -131,6 +138,26 @@ def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
             resources_correct = resources_correct and datastore_correct
             out['datastore_rows'] = ds.get('total', 0)
             out['datastore_active'] = True
+            # compile counts for record states
+            if r['stately_records']:
+                state_field = h.recombinant_get_field(resource['name'], 'record_state')
+                filter_statements = []
+                for k in state_field['choices'].keys():
+                    filter_statements.append(
+                        "COUNT(record_state) FILTER (WHERE "
+                        "record_state = {state_lit}) AS {state}".format(
+                            state_lit=literal_string(k),
+                            state=k))
+                # type_ignore_reason: incomplete typing
+                backend: DatastorePostgresqlBackend = DatastoreBackend.\
+                    get_active_backend()  # type: ignore
+                with backend._get_read_engine().begin() as connection:
+                    results = connection.execute(sa_text("""
+                        SELECT {statements} FROM {res_id};
+                    """.format(statements=', '.join(filter_statements),
+                               res_id=identifier(resource['id'])
+                    ))).mappings().fetchall()
+                    out['datastore_record_state_stats'] = results[0]
         except NotFound:
             out['error'] = 'datastore table missing'
             resources_correct = False
@@ -338,13 +365,21 @@ def _update_datastore(lc: LocalCKAN,
                 else:
                     foreign_keys[f_table] = field_map
 
+        indices = chromo.get('datastore_indexes', [])
+        if isinstance(indices, str):
+            if not indices:
+                indices = []
+            else:
+                indices = [indices]
+        if chromo['stately_records']:
+            indices.append('record_state')
         lc.action.datastore_create(
             resource_id=resource_id,
             fields=fields,
             delete_fields=do_delete_fields,
             primary_key=chromo.get('datastore_primary_key', []),
             foreign_keys=foreign_keys,
-            indexes=chromo.get('datastore_indexes', []),
+            indexes=indices,
             triggers=[{'function': str(f)} for f in trigger_names],
             force=True)
 
