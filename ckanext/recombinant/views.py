@@ -1079,7 +1079,7 @@ def preview_table(resource_name: str,
 
     if resource and not h.check_access('datastore_upsert',
                                        {'resource_id': resource['id']}):
-        return abort(403, _('Not authoirzed to manage Recombinant resource.'))
+        return abort(403, _('Not authorized to manage Recombinant resource.'))
 
     template_vars = {
         'rcomb': rcomb,
