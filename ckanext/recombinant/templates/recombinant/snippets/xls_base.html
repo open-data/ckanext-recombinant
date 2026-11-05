@@ -12,7 +12,7 @@ geno        - The Recombinant Geno dict
   <form>
   {{ h.csrf_input() }}
 {% endblock %}
-  {% if not chromo.get('webform_only') %}
+  {% if chromo['excel_template'] %}
     <div class="col-md-6">
       <div class="col-md-12">
         <div class="form-group control-medium">

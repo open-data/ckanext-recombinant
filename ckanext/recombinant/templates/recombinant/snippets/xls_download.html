@@ -13,7 +13,7 @@ geno        - The Recombinant Geno dict
 {% endblock %}
 
 {% block form %}
-  {% if not chromo.get('webform_only') %}
+  {% if chromo['excel_template'] %}
     <form enctype="multipart/form-data"
           id="dataset-form"
           class="dataset-form dataset-resource-form form-horizontal"
@@ -24,7 +24,7 @@ geno        - The Recombinant Geno dict
 {% endblock %}
 
 {% block upload_submit %}
-  {% if not chromo.get('webform_only') %}
+  {% if chromo['excel_template'] %}
     <div class="clear"></div>
   {% endif %}
 {% endblock %}

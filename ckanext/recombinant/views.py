@@ -221,7 +221,7 @@ def upload(resource_name: str, owner_org: str) -> Union[Response, str]:
     if not organization:
         return abort(404, _('Organization not found'))
 
-    if chromo.get('webform_only'):
+    if not chromo['excel_template']:
         return abort(404, _('Excel Templating is not supported for %s') %
                      geno['dataset_type'])
 
@@ -702,7 +702,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
 
     for r in dataset.get('resources'):
         chromo = get_chromo(r['name'])
-        if chromo.get('webform_only'):
+        if not chromo['excel_template']:
             return abort(404, _('Excel Templating is not supported for %s') %
                          dataset_type)
 

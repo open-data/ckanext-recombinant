@@ -26,7 +26,7 @@ resources:
 
   create_form: true
   edit_form: true
-  webform_only: true
+  excel_template: false
   fields:
   - datastore_id: reference_number
     label:

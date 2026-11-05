@@ -18,7 +18,7 @@ geno          - The Recombinant Geno dict
     <a class="btn btn-default" href="{{ h.url_for('recombinant.create_record', owner_org=rcomb.owner_org, resource_name=resource.name) }}">
       <i class="glyphicon glyphicon-plus-sign"></i>&nbsp;{{ _("Create Single Record") }}
     </a>
-    {% if not chromo.get('webform_only') %}
+    {% if chromo['excel_template'] %}
       <h4>{{ _("Create and update multiple records") }}</h4>
       {% if 'template_warning' in geno %}
         <div class="col-md-12">
@@ -29,7 +29,7 @@ geno          - The Recombinant Geno dict
       {% endif %}
     {% endif %}
   {% endif %}
-  {% if not chromo.get('webform_only') %}
+  {% if chromo['excel_template'] %}
     <form enctype="multipart/form-data"
           id="dataset-form"
           class="dataset-form dataset-resource-form form-horizontal"
@@ -40,7 +40,7 @@ geno          - The Recombinant Geno dict
 {% endblock %}
 
 {% block upload_submit %}
-  {% if not chromo.get('webform_only') %}
+  {% if chromo['excel_template'] %}
     <div class="col-md-6">
       <div class="col-md-12">
         <div class="form-group control-medium {% if errors %}has-error{% endif %}">
@@ -78,7 +78,7 @@ geno          - The Recombinant Geno dict
 {% endblock %}
 
 {% block messages %}
-  {% if not chromo.get('webform_only') %}
+  {% if chromo['excel_template'] %}
     <p id="paste-special" class="wb-dismissable">{% trans %}To ensure the validation rules within the template are maintained, please paste your data using the “Paste Values” function. This can be done by right-clicking, selecting <kbd>Paste Special</kbd> and then clicking <kbd>Unicode Text</kbd>.{% endtrans %}</p>
   {% endif %}
   {% if 'upload_warn' in geno %}

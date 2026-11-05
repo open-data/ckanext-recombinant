@@ -82,7 +82,7 @@ filters             - Filters on page (req. for package/base_form_page.html)
             {% block update_panel %}
               <details id="update" {% if errors %}open="open"{% endif %}>
                 <summary><span class="glyphicon glyphicon-import"></span>
-                  {{ _("Records") if chromo.get('webform_only') else _("Import") }}
+                  {{ _('Import') if chromo['excel_template'] else _('Records') }}
                 </summary>
                 {% if h.check_access('package_update', {'id': rcomb.id }) %}
                   {% snippet "recombinant/snippets/xls_upload.html",

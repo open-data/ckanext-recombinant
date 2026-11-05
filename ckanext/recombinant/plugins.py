@@ -244,6 +244,7 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
                 chromo['_url_path'] = url.rsplit('/', 1)[0]
             else:  # used for choices_file paths
                 chromo['_path'] = os.path.split(p)[0]
+            chromo['excel_template'] = chromo.get('excel_template', True)
             chromo['stately_records'] = False
             for f in chromo['fields']:
                 if f['datastore_id'] != 'record_state':
