@@ -100,30 +100,20 @@ def _get_recombinant_view_context_vars(
           exceptions / returning abort(404) for None type variables
           returned from this function.
     """
-    # get the chromo
     chromo: Optional[Dict[str, Any]] = None
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
-        # Recombinant resource %s not found
-        pass
-    if not chromo:
-        # can't do anything without a defined schema in Recombinant,
-        # just do an early return of all None for speed.
         return None, None, None, [], {}, None, None, None
 
-    # get the recombinant dict
     rcomb: Optional[Dict[str, Any]] = None
     try:
         rcomb = lc.action.recombinant_show(
             owner_org=owner_org,
             dataset_type=chromo['dataset_type'])
     except (RecombinantException, NotFound):
-        # Recombinant resource %s not found
-        # Recombinant dataset %s not found
         pass
 
-    # get the resource dict
     resource: Optional[Dict[str, Any]] = None
     if rcomb:
         for r in rcomb['resources']:
@@ -131,45 +121,36 @@ def _get_recombinant_view_context_vars(
                 resource = r
                 break
 
-    # get the organization dict
     organization: Optional[Dict[str, Any]] = None
     try:
         organization = lc.action.organization_show(id=owner_org)
         if organization and organization['state'] != 'active':
             organization = None
     except NotFound:
-        # Organization not found
         pass
 
-    # get the dataset dict
     dataset: Optional[Dict[str, Any]] = None
     if rcomb:
         try:
             dataset = lc.action.package_show(id=rcomb['id'])
         except NotFound:
-            # Dataset not found
             pass
 
-    # get the geno
     geno: Optional[Dict[str, Any]] = None
     if rcomb:
         try:
             geno = get_geno(rcomb['dataset_type'])
         except RecombinantException:
-            # Recombinant type %s not found
             pass
 
-    # get the primary key field IDs as a list
     pk_fields: List[str] = []
     if chromo:
         pk_fields = aslist(chromo['datastore_primary_key'])
 
-    # get the choice fields
     choice_fields: Dict[str, Any] = {}
     if chromo:
         choice_fields = _get_choice_fields(resource_name, org_name=owner_org)
 
-    # return everything
     return rcomb, geno, chromo, pk_fields, choice_fields, \
         dataset, resource, organization
 
@@ -1979,7 +1960,7 @@ def _render_recombinant_constraint_errors(lc: LocalCKAN,
 def _get_choice_fields(resource_name: str,
                        data: Optional[Dict[str, Any]] = None,
                        org_name: Optional[str] = None) -> Dict[str, Any]:
-    separator = ' : ' if h.lang() == 'fr' else ': '
+    separator = _(':') + ' '
     choice_fields = {}
     for datastore_id, choices in h.recombinant_choice_fields(
       resource_name, org_name=org_name).items():
@@ -2353,6 +2334,7 @@ def datatablify(v: Any, colname: str, chromo: Dict[str, Any]) -> str:
     return str(v)
 
 
+# TODO: DEPRECATED: REMOVE AFTER FULL PD DATATABLES QA
 # copied from ckan 2.6 branch
 # https://github.com/open-data/ckan
 # /blob/ee0a94c97f8988e78c9b1f92f92adb5c26884841/ckan/lib/helpers.py#L1245

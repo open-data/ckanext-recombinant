@@ -42,11 +42,10 @@ filters             - Filters on page (req. for package/base_form_page.html)
   {% block resource_menu %}
     {% if rcomb %}
       <ul class="{% block resource_menu_classes %}nav nav-pills mrgn-bttm-sm{% endblock %}">
-        {% set separator = ' : ' if h.lang() == 'fr' else ': ' %}
         {% for r in rcomb.resources %}
-          {% set num_label = separator ~ ungettext('{num} row', '{num} rows', r.get('datastore_rows', 0)).format(num=r.get('datastore_rows', 0)) %}
+          {% set num_label = _(':') ~ ' ' ~ ungettext('{num} row', '{num} rows', r.get('datastore_rows', 0)).format(num=r.get('datastore_rows', 0)) %}
           {% if 'error' in r %}
-            {% set num_label = separator ~ (_('Get started…') if r.error == 'not found' else _('Error')) %}
+            {% set num_label = _(':') ~ ' ' ~ (_('Get started…') if r.error == 'not found' else _('Error')) %}
           {% endif %}
           <li {% if r.id == resource.id %}class="active"{% endif %}>{%
             link_for _(r.shortname) ~ num_label,
