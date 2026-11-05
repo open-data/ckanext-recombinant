@@ -234,7 +234,7 @@ filters             - Filters on page (req. for package/base_form_page.html)
             <p><em>{{ _('Found <strong>{count}</strong> record(s) matching "{pk_vals}"').format(count=paginated_records|length, pk_vals=record_query) }}</em></p>
           {% endif %}
           {% for r in paginated_records %}
-            {% snippet "recombinant/snippets/display_card.html", rcomb=rcomb, record=r, chromo=chromo, organization=organization, resource=resource, choice_fields=choice_fields %}
+            {% snippet "recombinant/snippets/display_card.html", rcomb=rcomb, record=r, chromo=chromo, organization=organization, resource=resource, choice_fields=choice_fields, pk_fields=pk_fields %}
           {% endfor %}
           {% if total_pages > 1 %}
             <nav aria-label="Records pagination" class="dataset-resource-pager">

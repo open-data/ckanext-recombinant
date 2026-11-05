@@ -8,19 +8,15 @@ chromo          - The Recombinant Chromo dict
 geno            - The Recombinant Geno dict
 record          - The record dict
 choice_fields   - Dict of choice fields
+pk_fields       - List of strings of primary keys
 #}
 <article class="panel panel-default mrgn-bttm-sm relative recombinant-preview-card">
   <header class="panel-heading">
-    {%- set primary_key = chromo['datastore_primary_key'] -%}
-    {%- if primary_key.__class__.__name__ == 'list' -%}
-      {%- set ns = namespace(pk_vals=[]) -%}
-      {%- for f in primary_key -%}
-        {%- do ns.pk_vals.append(record[f]) -%}
-      {%- endfor -%}
-      {%- set pk_vals = ns.pk_vals|join(',') -%}
-    {%- else -%}
-      {%- set pk_vals = record[chromo['datastore_primary_key']] -%}
-    {%- endif -%}
+    {%- set ns = namespace(pk_vals=[]) -%}
+    {%- for f in pk_fields -%}
+      {%- do ns.pk_vals.append(record[f]) -%}
+    {%- endfor -%}
+    {%- set pk_vals = ns.pk_vals|join(',') -%}
     <a href="{{ h.url_for('recombinant.preview_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk_vals) }}">
       {%- set title_display = record[chromo['display_card']['title_field']] -%}
       {%- if chromo['display_card']['title_field'] in choice_fields -%}
