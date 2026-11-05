@@ -12,6 +12,7 @@ import sqlalchemy as sa
 
 from typing import Dict, List, Any, Optional, TextIO
 from ckan.types import ErrorDict
+from ckanext.recombinant.types import RecombinantChromoDict
 
 from ckan.logic import ValidationError
 from ckanapi import LocalCKAN, NotFound
@@ -1007,7 +1008,7 @@ def _combine_csv(target_dir: Optional[str],
 
 def _write_one_csv(lc: LocalCKAN,
                    pkgs: List[Dict[str, Any]],
-                   chromo: Dict[str, Any],
+                   chromo: RecombinantChromoDict,
                    outfile: TextIO):
     out = csv.writer(outfile)
     column_ids = \

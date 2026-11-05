@@ -244,7 +244,11 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
                 chromo['_url_path'] = url.rsplit('/', 1)[0]
             else:  # used for choices_file paths
                 chromo['_path'] = os.path.split(p)[0]
+            if isinstance(chromo['datastore_primary_key'], str):
+                chromo['datastore_primary_key'] = [chromo['datastore_primary_key']]
             chromo['excel_template'] = chromo.get('excel_template', True)
+            chromo['create_form'] = chromo.get('create_form', False)
+            chromo['edit_form'] = chromo.get('edit_form', False)
             chromo['stately_records'] = False
             for f in chromo['fields']:
                 if f['datastore_id'] != 'record_state':

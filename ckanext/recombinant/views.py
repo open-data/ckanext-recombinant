@@ -10,6 +10,18 @@ import simplejson as json
 
 from typing import Union, Dict, Tuple, Any, List, Optional, cast
 from ckan.types import Response, Context
+from ckan.types.logic.action_result import (
+    PackageShowDict,
+    OrganizationShowDict
+)
+from ckanext.recombinant.types import (
+    RecombinantDict,
+    RecombinantGenoDict,
+    RecombinantChromoDict,
+    RecombinantChoiceFieldsDict,
+    RecombinantFieldDict,
+    RecombinantResourceDict
+)
 
 from werkzeug.datastructures import FileStorage as FlaskFileStorage
 from cgi import FieldStorage
@@ -80,14 +92,14 @@ recombinant = Blueprint('recombinant', __name__)
 def _get_recombinant_view_context_vars(
         lc: LocalCKAN,
         resource_name: str,
-        owner_org: str) -> Tuple[Optional[Dict[str, Any]],
-                                 Optional[Dict[str, Any]],
-                                 Optional[Dict[str, Any]],
+        owner_org: str) -> Tuple[Optional[RecombinantDict],
+                                 Optional[RecombinantGenoDict],
+                                 Optional[RecombinantChromoDict],
                                  List[str],
-                                 Dict[str, Any],
-                                 Optional[Dict[str, Any]],
-                                 Optional[Dict[str, Any]],
-                                 Optional[Dict[str, Any]]]:
+                                 RecombinantChoiceFieldsDict,
+                                 Optional[PackageShowDict],
+                                 Optional[RecombinantResourceDict],
+                                 Optional[OrganizationShowDict]]:
     """
     Gets all of the common/required schemas and metadata
     for Recombinant views.
@@ -100,13 +112,13 @@ def _get_recombinant_view_context_vars(
           exceptions / returning abort(404) for None type variables
           returned from this function.
     """
-    chromo: Optional[Dict[str, Any]] = None
+    chromo: Optional[RecombinantChromoDict] = None
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
         return None, None, None, [], {}, None, None, None
 
-    rcomb: Optional[Dict[str, Any]] = None
+    rcomb: Optional[RecombinantDict] = None
     try:
         rcomb = lc.action.recombinant_show(
             owner_org=owner_org,
@@ -114,14 +126,14 @@ def _get_recombinant_view_context_vars(
     except (RecombinantException, NotFound):
         pass
 
-    resource: Optional[Dict[str, Any]] = None
+    resource: Optional[RecombinantResourceDict] = None
     if rcomb:
         for r in rcomb['resources']:
             if r['name'] == resource_name:
                 resource = r
                 break
 
-    organization: Optional[Dict[str, Any]] = None
+    organization: Optional[OrganizationShowDict] = None
     try:
         organization = lc.action.organization_show(id=owner_org)
         if organization and organization['state'] != 'active':
@@ -129,14 +141,14 @@ def _get_recombinant_view_context_vars(
     except NotFound:
         pass
 
-    dataset: Optional[Dict[str, Any]] = None
+    dataset: Optional[PackageShowDict] = None
     if rcomb:
         try:
             dataset = lc.action.package_show(id=rcomb['id'])
         except NotFound:
             pass
 
-    geno: Optional[Dict[str, Any]] = None
+    geno: Optional[RecombinantGenoDict] = None
     if rcomb:
         try:
             geno = get_geno(rcomb['dataset_type'])
@@ -147,7 +159,7 @@ def _get_recombinant_view_context_vars(
     if chromo:
         pk_fields = aslist(chromo['datastore_primary_key'])
 
-    choice_fields: Dict[str, Any] = {}
+    choice_fields: RecombinantChoiceFieldsDict = {}
     if chromo:
         choice_fields = _get_choice_fields(resource_name, org_name=owner_org)
 
@@ -1073,7 +1085,7 @@ def preview_table(resource_name: str,
         'organization': organization,
     }
 
-    # check that the resource has errors
+    # check that the recombinant resource has errors
     has_errors = False
     if resource and (
         'error' in resource or
@@ -1712,9 +1724,9 @@ def refresh_dataset(resource_name: str, owner_org: str) -> Union[str, Response]:
 
 
 def _process_upload_file(lc: LocalCKAN,
-                         dataset: Dict[str, Any],
+                         dataset: PackageShowDict,
                          upload_file: Union[str, FlaskFileStorage, FieldStorage],
-                         geno: Dict[str, Any],
+                         geno: RecombinantGenoDict,
                          dry_run: bool):
     """
     Use lc.action.datastore_upsert to load data from upload_file
@@ -1915,7 +1927,7 @@ def _process_upload_file(lc: LocalCKAN,
 
 def _render_recombinant_constraint_errors(lc: LocalCKAN,
                                           exception: Exception,
-                                          chromo: Dict[str, Any],
+                                          chromo: RecombinantChromoDict,
                                           action: str) -> str:
     # type_ignore_reason: incomplete typing
     orig_errmsg = exception.error_dict['errors'][  # type: ignore
@@ -2029,9 +2041,9 @@ def _url_part_unescape(urlpart: str) -> str:
 
 
 def _clean_check_type_errors(post_data: Dict[str, Any],
-                             fields: List[Dict[str, Any]],
+                             fields: List[RecombinantFieldDict],
                              pk_fields: List[str],
-                             choice_fields: Dict[str, Any]) -> \
+                             choice_fields: RecombinantChoiceFieldsDict) -> \
                                 Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     clean posted data and check type errors, add type error messages
@@ -2307,7 +2319,7 @@ def _url_part_escape(orig: str) -> str:
 
 
 # TODO: DEPRECATED: REMOVE AFTER FULL PD DATATABLES QA
-def datatablify(v: Any, colname: str, chromo: Dict[str, Any]) -> str:
+def datatablify(v: Any, colname: str, chromo: RecombinantChromoDict) -> str:
     '''
     format value from datastore v for display in a datatable preview
     '''

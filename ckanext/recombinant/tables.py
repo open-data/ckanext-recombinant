@@ -7,7 +7,11 @@ This module provides access to those definitions.
 import importlib
 import os
 
-from typing import List, Dict, Optional, Any
+from typing import List, Optional
+from ckanext.recombinant.types import (
+    RecombinantGenoDict,
+    RecombinantChromoDict
+)
 
 import ckan.plugins as p
 
@@ -33,7 +37,7 @@ def _get_plugin():
         'Recombinant plugin not found. Have you enabled the plugin?')
 
 
-def get_chromo(resource_name: str) -> Dict[str, Any]:
+def get_chromo(resource_name: str) -> RecombinantChromoDict:
     """
     Get the resource definition (chromo) for the given resource name
     """
@@ -49,7 +53,7 @@ def get_chromo(resource_name: str) -> Dict[str, Any]:
         raise RecombinantException('resource_name "%s" not found' % resource_name)
 
 
-def get_geno(dataset_type: str) -> Dict[str, Any]:
+def get_geno(dataset_type: str) -> RecombinantGenoDict:
     """
     Get the dataset definition (geno) for the given dataset type
     """

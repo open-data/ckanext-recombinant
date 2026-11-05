@@ -4,6 +4,12 @@ from ckan.plugins.toolkit import _, chained_action, h, side_effect_free
 
 from typing import Dict, Any, List, Tuple
 from ckan.types import Context, DataDict, Action, ChainedAction
+from ckanext.recombinant.types import (
+    RecombinantGenoDict,
+    RecombinantChromoDict,
+    RecombinantDict,
+    RecombinantFieldDict
+)
 
 from sqlalchemy import and_, text as sa_text
 
@@ -84,7 +90,7 @@ def recombinant_update(context: Context, data_dict: DataDict):
         delete_fields=asbool(data_dict.get('delete_fields', False)))
 
 
-def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
+def recombinant_show(context: Context, data_dict: DataDict) -> RecombinantDict:
     '''
     Return the status of a recombinant dataset including all its tables
     and checking that its metadata is up to date.
@@ -193,7 +199,7 @@ def recombinant_show(context: Context, data_dict: DataDict) -> Dict[str, Any]:
 
 
 def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
-        LocalCKAN, Dict[str, Any], List[Dict[str, Any]]]:
+        LocalCKAN, RecombinantGenoDict, List[Dict[str, Any]]]:
     '''
     common code for actions that need to check for a dataset based on
     the dataset type and organization name or id
@@ -230,7 +236,7 @@ def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
 
 
 def _action_get_dataset(context: Context, data_dict: DataDict) -> Tuple[
-        LocalCKAN, Dict[str, Any], Dict[str, Any]]:
+        LocalCKAN, RecombinantGenoDict, Dict[str, Any]]:
     '''
     common code for actions that need to retrieve a dataset based on
     the dataset type and organization name or id
@@ -248,7 +254,7 @@ def _action_get_dataset(context: Context, data_dict: DataDict) -> Tuple[
 
 
 def _update_dataset(lc: LocalCKAN,
-                    geno: Dict[str, Any],
+                    geno: RecombinantGenoDict,
                     dataset: Dict[str, Any],
                     delete_resources: bool = False) -> Dict[str, Any]:
     """
@@ -302,7 +308,7 @@ def _update_dataset(lc: LocalCKAN,
 
 
 def _update_datastore(lc: LocalCKAN,
-                      geno: Dict[str, Any],
+                      geno: RecombinantGenoDict,
                       dataset: Dict[str, Any],
                       force_update: bool = False,
                       delete_fields: bool = False):
@@ -312,7 +318,7 @@ def _update_datastore(lc: LocalCKAN,
     geno for existing dataset.
     """
     resource_ids = dict((r['name'], r['id']) for r in dataset['resources'])
-    datastore_text_types = geno.get('datastore_text_types', False)
+    datastore_text_types = geno.get('datastore_text_types', [])
 
     for chromo in geno['resources']:
         assert chromo['resource_name'] in resource_ids, (
@@ -382,8 +388,8 @@ def _update_datastore(lc: LocalCKAN,
             force=True)
 
 
-def _update_triggers(lc: LocalCKAN, chromo: Dict[str, Any]) -> List[str]:
-    definitions = dict(chromo.get('trigger_strings', {}))
+def _update_triggers(lc: LocalCKAN, chromo: RecombinantChromoDict) -> List[str]:
+    definitions: Dict[str, Any] = dict(chromo.get('trigger_strings', {}))
     trigger_names = []
 
     for f in chromo['fields']:
@@ -431,21 +437,21 @@ def _pg_value(value: Any) -> str:
     return 'ARRAY[' + ','.join(literal_string(str(c)) for c in value) + ']'
 
 
-def _dataset_fields(geno: Dict[str, Any]) -> Dict[str, Any]:
+def _dataset_fields(geno: RecombinantGenoDict) -> Dict[str, Any]:
     """
     return the dataset metadata fields created for dataset definition geno
     """
     return {'title': geno['title'], 'notes': geno.get('notes', '')}
 
 
-def _dataset_match(geno: Dict[str, Any], dataset: Dict[str, Any]) -> bool:
+def _dataset_match(geno: RecombinantGenoDict, dataset: Dict[str, Any]) -> bool:
     """
     return True if dataset metadata matches expected fields for dataset type dt
     """
     return all(dataset[k] == v for (k, v) in _dataset_fields(geno).items())
 
 
-def _resource_fields(chromo: Dict[str, Any]) -> Dict[str, Any]:
+def _resource_fields(chromo: RecombinantChromoDict) -> Dict[str, Any]:
     """
     return the resource metadata fields created for resource definition chromo
     """
@@ -454,7 +460,7 @@ def _resource_fields(chromo: Dict[str, Any]) -> Dict[str, Any]:
             'url_type': 'datastore'}
 
 
-def _resource_match(chromo: Dict[str, Any], resource: Dict[str, Any]) -> bool:
+def _resource_match(chromo: RecombinantChromoDict, resource: Dict[str, Any]) -> bool:
     """
     return True if resource metadatas matches expected fields for sheet r
     """
@@ -474,7 +480,7 @@ def datastore_column_type(t: str, text_types: List[str]) -> str:
     return 'int' if t in ('year', 'month') else t
 
 
-def datastore_fields(fs: List[Dict[str, Any]], text_types: List[str]) -> List[
+def datastore_fields(fs: List[RecombinantFieldDict], text_types: List[str]) -> List[
         Dict[str, Any]]:
     """
     return the datastore field definitions for fields fs
@@ -486,25 +492,27 @@ def datastore_fields(fs: List[Dict[str, Any]], text_types: List[str]) -> List[
             if not f.get('published_resource_computed_field', False)]
 
 
-def _datastore_match(fs: List[Dict[str, Any]], fields: List[Dict[str, Any]]) -> bool:
+def _datastore_match(fs: List[RecombinantFieldDict],
+                     ds_fields: List[Dict[str, Any]]) -> bool:
     """
     return True if existing datastore column fields include fields
     defined in fs.
     """
     # XXX: does not check types or extra columns at this time
-    existing = set(c['id'] for c in fields)
+    existing = set(c['id'] for c in ds_fields)
     return all(f['datastore_id'] in existing for f in fs
                if not f.get('published_resource_computed_field', False))
 
 
-def _schema_match(fs: List[Dict[str, Any]], fields: List[Dict[str, Any]]) -> bool:
+def _schema_match(fs: List[RecombinantFieldDict],
+                  ds_fields: List[Dict[str, Any]]) -> bool:
     """
     return True if datastore column fields are all fields defined in fs.
     """
     # XXX: does not check types or extra columns at this time
     existing = set(f['datastore_id'] for f in fs
                    if not f.get('published_resource_computed_field', False))
-    return all(c['id'] in existing for c in fields
+    return all(c['id'] in existing for c in ds_fields
                if c['id'] != '_id')
 
 
