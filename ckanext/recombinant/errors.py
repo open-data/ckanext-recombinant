@@ -7,6 +7,10 @@ class RecombinantException(Exception):
     pass
 
 
+class RecombinantViewNotFound(Exception):
+    pass
+
+
 class RecombinantFieldError(Exception):
     pass
 

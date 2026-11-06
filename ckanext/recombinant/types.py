@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, NamedTuple
+from ckan.types import (
+    PackageShowDict,
+    OrganizationShowDict
+)
 
 from typing_extensions import TypedDict, Required, Union
 
@@ -133,3 +137,35 @@ class RecombinantGenoDict(TypedDict, total=False):
     template_updated: str
     guide_link: str
     datastore_text_types: List[str]
+
+
+class RecombinantViewContext(NamedTuple):
+    '''
+    Immutable class for the shared context for Recombinant views.
+
+    Defines context for instantiated Recombinant Datasets.
+    '''
+    rcomb: RecombinantDict
+    geno: RecombinantGenoDict
+    chromo: RecombinantChromoDict
+    dataset: PackageShowDict
+    resource: RecombinantResourceDict
+    organization: OrganizationShowDict
+    pk_fields: List[str]
+    choice_fields: RecombinantChoiceFieldsDict
+
+
+class RecombinantUninitializedContext(NamedTuple):
+    '''
+    Immutable class for the shared context for Recombinant views.
+
+    Defines context for uninitialized Recombinant Datasets.
+    '''
+    geno: RecombinantGenoDict
+    chromo: RecombinantChromoDict
+    organization: OrganizationShowDict
+    pk_fields: List[str]
+    choice_fields: RecombinantChoiceFieldsDict
+    rcomb: Optional[RecombinantDict] = None
+    dataset: Optional[PackageShowDict] = None
+    resource: Optional[RecombinantResourceDict] = None
