@@ -172,7 +172,7 @@ def legacy_org_based_schema_json(org_name: str, dataset_type: str) -> Response:
     """
     return cast(Response, redirect(
         h.url_for('recombinant.org_based_schema_json',
-                  org_name= org_name,
+                  org_name=org_name,
                   dataset_type=dataset_type,
                   qualified=True), code=301))
 
