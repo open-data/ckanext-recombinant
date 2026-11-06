@@ -1674,7 +1674,7 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
     return _finish_ok(return_dict)
 
 
-@recombinant.route('/recombinant-refresh/<resource_name>/<owner_org>',
+@recombinant.route('/recombinant/manage/<resource_name>/<owner_org>/refresh',
                    methods=['GET', 'POST'])
 def refresh_dataset(resource_name: str, owner_org: str) -> Union[str, Response]:
     if not is_sysadmin(g.user):
@@ -2096,7 +2096,7 @@ def _normalize_record_newlines(record: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @recombinant.route('/datatable/<resource_name>/<resource_id>',
-                   methods=['GET', 'POST'])
+                   methods=['POST'])
 @csrf.exempt
 def datatable(resource_name: str, resource_id: str) -> Union[str, Response]:
     params = parse_params(request.form)
@@ -2202,7 +2202,7 @@ def datatable(resource_name: str, resource_id: str) -> Union[str, Response]:
 
 # TODO: DEPRECATED: REMOVE AFTER FULL PD DATATABLES QA
 @recombinant.route('/datatable_depr/<resource_name>/<resource_id>',
-                   methods=['GET', 'POST'])
+                   methods=['POST'])
 @csrf.exempt
 def datatable_depr(resource_name: str, resource_id: str) -> Union[str, Response]:
     params = parse_params(request.form)

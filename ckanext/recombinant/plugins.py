@@ -33,6 +33,7 @@ from ckanext.recombinant import (
     helpers,
     load,
     views,
+    views_legacy,
     auth,
     cli,
     validators
@@ -86,7 +87,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
         return schema
 
     def get_blueprint(self) -> List[Blueprint]:
-        return [views.recombinant]
+        return [views_legacy.recombinant_legacy, views.recombinant]
 
     def prepare_dataset_blueprint(self, package_type: str, bp: Blueprint):
         bp.add_url_rule('/<id>',
