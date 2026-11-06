@@ -661,12 +661,13 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         _data = 'FALSE';
       }
       if( _chromo_field.datastore_type == 'numeric' || _chromo_field.datastore_type == 'int' || _chromo_field.datastore_type == 'bigint' ){
+        const precisionPoint = String(_data).startsWith('0') && String(_data).length > 1 ? 4 : null;  // 4 decimal precision if 0 decimal, e.g. 0.45
         if( locale == 'en' ){
-          _data = DataTable.render.number(',', '.', null, null).display(_data, _type, _row);
+          _data = DataTable.render.number(',', '.', precisionPoint, null).display(_data, _type, _row);
         }else if( locale == 'fr' ){
-          _data = DataTable.render.number(' ', ',', null, null).display(_data, _type, _row);
+          _data = DataTable.render.number(' ', ',', precisionPoint, null).display(_data, _type, _row);
         }else{
-          _data = DataTable.render.number(null, null, null, null).display(_data, _type, _row);
+          _data = DataTable.render.number(null, null, precisionPoint, null).display(_data, _type, _row);
         }
       }
       if( _chromo_field.datastore_type == 'timestamp' ){

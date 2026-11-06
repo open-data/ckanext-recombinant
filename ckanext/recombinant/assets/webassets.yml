@@ -23,20 +23,10 @@ recombinant_webforms:
     - build/recombinant_webform.min.js
   output: recombinant/%(version)s_recombinant_webform.js
 
-recombinant_datatables_css_depr:
-  contents:
-    - build/recombinant_datatables_depr.min.css
-  output: recombinant/%(version)s_recombinant_datatables_depr.css
-
 recombinant_datatables_css:
   contents:
     - build/recombinant_datatable.min.css
   output: recombinant/%(version)s_recombinant_datatable.css
-
-recombinant_datatables_js_depr:
-  contents:
-    - build/recombinant_datatables_depr.min.js
-  output: recombinant/%(version)s_recombinant_datatables_depr.js
 
 recombinant_datatables_js:
   contents:
