@@ -661,7 +661,8 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         _data = 'FALSE';
       }
       if( _chromo_field.datastore_type == 'numeric' || _chromo_field.datastore_type == 'int' || _chromo_field.datastore_type == 'bigint' ){
-        const precisionPoint = String(_data).startsWith('0') && String(_data).length > 1 ? 4 : null;  // 4 decimal precision if 0 decimal, e.g. 0.45
+        const decimalMatch = String(_data).match(/\.(\d+)/);
+        const precisionPoint = decimalMatch ? decimalMatch[1].length : null;
         if( locale == 'en' ){
           _data = DataTable.render.number(',', '.', precisionPoint, null).display(_data, _type, _row);
         }else if( locale == 'fr' ){
