@@ -269,6 +269,24 @@ filters             - Filters on page (req. for package/base_form_page.html)
   {{ super() }}
   {% block record_table %}
     {% if not chromo.get('display_card') and resource and 'error' not in resource %}
+      {# TODO: finish rendering the snippet... #}
+      {#
+
+      return h.snippet('snippets/%s' % snippet,
+                     resource_name=resource_name,
+                     resource_id=resource_id,
+                     owner_org=owner_org,
+                     primary_keys=pkids,
+                     foreign_keys=fkids,
+                     dataset_type=dataset_type,
+                     ds_fields=fields)
+
+      #}
+
+      {% snippet "recombinant/snippets/org_select.html",
+          selected=organization, resource_name=resource_name,
+          organization_display_name=organization_display_name %}
+
       {{ h.get_datatable_snippet(resource.name, resource.id, organization.name, rcomb.dataset_type) }}
     {% endif %}
   {% endblock record_table %}

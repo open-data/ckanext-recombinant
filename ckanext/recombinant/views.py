@@ -1199,9 +1199,15 @@ def preview_table(resource_name: str,
     record_query_error = None
     pk_labels = []
     pk_field_dicts = recombinant_primary_key_fields(resource_name)
+    dt_pkids = []
+    dt_fields = []
+    dt_fkids = {}
+    # TODO: DEPRECATED: REMOVE AFTER FULL RECOMBINANT DATATABLES QA
+    dt_template = 'recombinant_datatable_depr.html'
     for f in pk_field_dicts:
         pk_labels.append(h.recombinant_language_text(f['label']))
     if view_context.chromo.get('display_card') and view_context.resource:
+        # get the DataStore records for the display_card rendering
         record_query = request.form.get('record_query') \
             if 'record_query' in request.form else request.args.get(
                 'record_query', '')
@@ -1232,6 +1238,69 @@ def preview_table(resource_name: str,
         except NotAuthorized:
             return abort(403, _('Unauthorized to read resource %s') %
                          view_context.resource['id'])
+    elif view_context.resource and view_context.rcomb:
+        # displaying the custom DataTable
+        priority = len(view_context.chromo['datastore_primary_key'])
+        pk_priority = 0
+        activity_priority = 1
+        fids = []
+        for f in view_context.chromo['fields']:
+            if f.get('published_resource_computed_field'):
+                continue
+            out = {
+                'type': f['datastore_type'],
+                'id': f['datastore_id'],
+                'label': h.recombinant_language_text(f['label'])}
+            if out['id'] in view_context.chromo['datastore_primary_key']:
+                out['priority'] = pk_priority
+                pk_priority += 1
+            elif out['id'] in ('record_modified', 'user_modified'):
+                out['priority'] = activity_priority
+                pk_priority += 1
+            else:
+                out['priority'] = priority
+                priority += 1
+            dt_fields.append(out)
+            fids.append(f['datastore_id'])
+        dt_pkids = [fids.index(k) for k in aslist(
+            view_context.chromo['datastore_primary_key'])]
+        try:
+            ds_info = get_action('datastore_info')(
+                cast(Context, {'ignore_auth': True}),
+                {'id': view_context.resource['id']})
+        except (NotFound):
+            return abort(404, _('Resource not found'))
+        if 'foreignkeys' in ds_info['meta']:
+            resource_names = dict((r['id'], r['name'])
+                                  for r in view_context.rcomb['resources'])
+            for fk in ds_info['meta']['foreignkeys']:
+                if view_context.resource['id'] == fk['child_table']:
+                    if fk['parent_table'] not in resource_names:
+                        # do not include refs from resources not in this dataset
+                        continue
+                    if resource_names[fk['parent_table']] not in dt_fkids:
+                        dt_fkids[resource_names[fk['parent_table']]] = dict(
+                            (fk['child_columns'][fk_pi], fk_pc)
+                            for fk_pi, fk_pc in enumerate(fk['parent_columns']))
+                elif view_context.resource['id'] == fk['parent_table']:
+                    if fk['child_table'] not in resource_names:
+                        # do not include records from resources not in this dataset
+                        continue
+                    if resource_names[fk['child_table']] not in dt_fkids:
+                        dt_fkids[resource_names[fk['child_table']]] = dict(
+                            (fk['parent_columns'][fk_ci], fk_cc)
+                            for fk_ci, fk_cc in enumerate(fk['child_columns']))
+        # TODO: DEPRECATED: REMOVE AFTER FULL RECOMBINANT DATATABLES QA
+        try:
+            user_dict = get_action('user_show')({'ignore_auth': True}, {'id': g.user})
+        except (NotFound, RuntimeError):
+            user_dict = {}
+        enable_new_template = config['ckanext.recombinant.enable_datatable_enhanced']
+        if not enable_new_template:
+            enable_new_template = user_dict.get('opt_in_features__pd_datatables',
+                                                enable_new_template)
+        dt_template = 'recombinant_datatable.html' if enable_new_template \
+            else 'recombinant_datatable_depr.html'
 
     return render('recombinant/resource_edit.html',
                   extra_vars=dict(template_vars,
@@ -1245,7 +1314,13 @@ def preview_table(resource_name: str,
                                   pk_labels=pk_labels,
                                   errors=None,
                                   delete_errors=None,
-                                  filters=None))
+                                  filters=None,
+                                  dt_settings={
+                                      'primary_keys': dt_pkids,
+                                      'foreign_keys': dt_fkids,
+                                      'ds_fields': dt_fields,
+                                      'dt_snippet':  dt_template,
+                                  }))
 
 
 @recombinant.route('/recombinant/<resource_name>/<owner_org>/<pk>',

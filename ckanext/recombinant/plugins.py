@@ -126,8 +126,6 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
                 helpers.recombinant_published_resource_chromo,
             'support_email_address':
                 helpers.support_email_address,
-            'get_datatable_snippet':
-                helpers.get_datatable_snippet,
             'enable_datatable_editor':
                 helpers.enable_datatable_editor,
             }
