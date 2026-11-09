@@ -196,6 +196,11 @@ def resource_alias(id: str) -> Union[Response, str]:
     '/recombinant/upload/<resource_name>/<owner_org>',
     methods=['GET', 'POST'])
 def upload(resource_name: str, owner_org: str) -> Union[Response, str]:
+    """
+    Processes uploaded Excel templates into the DataStore.
+
+    Old route: /recombinant/upload/<id>
+    """
     if not g.user:
         return h.redirect_to('user.login')
 
@@ -257,6 +262,8 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
     """
     Bulk delete records via Delete tab UI.
     Separated by newlines in a textare form field.
+
+    Old route: /recombinant/delete/<id>/<resource_id>
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -470,6 +477,8 @@ def delete_selected_records(resource_name: str,
     """
     Delete selected records for a Recombinant resource,
     selectable from the DataTables UI.
+
+    Old route: /recombinant/delete-selected-records/<resource_id>
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -540,6 +549,8 @@ def delete_dataset(resource_name: str, owner_org: str) -> Union[str, Response]:
     delete the datastore table, the resources, and the dataset.
 
     Cannot delete the dataset if any of the resources have datastore data.
+
+    Old route: /recombinant/delete_dataset/<id>/<resource_id>
     """
     if not is_sysadmin(g.user):
         # only sysadmins can delete via UI
@@ -642,6 +653,8 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
         contains primary keys separated by commas
 
         resource_name -> the name of the resource containing the records
+
+    Old route: /recombinant-template/<dataset_type>_<lang>_<owner_org>.xlsx
     """
 
     if lang != h.lang():
@@ -816,18 +829,36 @@ def _data_dictionary(dataset_type: str,
 @recombinant.route('/recombinant/dictionary/<org_name>_<dataset_type>')
 @nocache_store
 def org_based_data_dictionary(org_name: str, dataset_type: str) -> Response:
+    """
+    Excel Data Dictionary, organization specific, excluding calculated/dynamic
+    fields via published_resource_computed_field.
+
+    Old route: /recombinant-dictionary/<org_name>_<dataset_type>
+    """
     return _data_dictionary(dataset_type, published_resource=False, org_name=org_name)
 
 
 @recombinant.route('/recombinant/dictionary/<dataset_type>')
 @nocache_store
 def data_dictionary(dataset_type: str) -> Response:
+    """
+    Excel Data Dictionary, excluding calculated/dynamic fields via
+    published_resource_computed_field.
+
+    Old route: /recombinant-dictionary/<dataset_type>
+    """
     return _data_dictionary(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant/published-dictionary/<dataset_type>')
 @nocache_store
 def published_data_dictionary(dataset_type: str) -> Response:
+    """
+    Excel Data Dictionary, including calculated/dynamic fields via
+    published_resource_computed_field.
+
+    Old route: /recombinant-published-dictionary/<dataset_type>
+    """
     return _data_dictionary(dataset_type, published_resource=True)
 
 
@@ -943,18 +974,36 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
 @recombinant.route('/recombinant/schema/<org_name>_<dataset_type>.json')
 @nocache_store
 def org_based_schema_json(org_name: str, dataset_type: str) -> Response:
+    """
+    JSON Schema, organization specific, excluding calculated/dynamic fields via
+    published_resource_computed_field.
+
+    Old route: /recombinant-schema/<org_name>_<dataset_type>.json
+    """
     return _schema_json(dataset_type, published_resource=False, org_name=org_name)
 
 
 @recombinant.route('/recombinant/schema/<dataset_type>.json')
 @nocache_store
 def schema_json(dataset_type: str) -> Response:
+    """
+    JSON Schema, excluding calculated/dynamic fields via
+    published_resource_computed_field.
+
+    Old route: /recombinant-schema/<dataset_type>.json
+    """
     return _schema_json(dataset_type, published_resource=False)
 
 
 @recombinant.route('/recombinant/published-schema/<dataset_type>.json')
 @nocache_store
 def published_schema_json(dataset_type: str) -> Response:
+    """
+    JSON Schema, including calculated/dynamic fields via
+    published_resource_computed_field.
+
+    Old route: /recombinant-published-schema/<dataset_type>.json
+    """
     return _schema_json(dataset_type, published_resource=True)
 
 
@@ -1273,6 +1322,8 @@ def preview_record(resource_name: str,
 def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
     """
     Create a single record via a webform.
+
+    Old route: /create-pd-record/<owner_org>/<resource_name>
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -1406,6 +1457,8 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
 def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Response]:
     """
     Update a single record via a webform.
+
+    Old route: /update-pd-record/<owner_org>/<resource_name>/<pk>
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -1561,6 +1614,8 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
     This allows for easy CSRF Token validation in AJAX requests.
 
     Adds custom message handling for DataTables.
+
+    Old route: /upsert_pd_data/<owner_org>/<resource_name>
     """
     if not h.is_registry_domain():
         return abort(404)
@@ -1677,6 +1732,11 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
 @recombinant.route('/recombinant/manage/<resource_name>/<owner_org>/refresh',
                    methods=['GET', 'POST'])
 def refresh_dataset(resource_name: str, owner_org: str) -> Union[str, Response]:
+    """
+    Allows sysadmins to attempt to reset a Recombinant dataset/resource via the UI.
+
+    Old route: /recombinant/refresh/<resource_name>/<owner_org>
+    """
     if not is_sysadmin(g.user):
         return abort(403)
     if request.method != 'POST':
