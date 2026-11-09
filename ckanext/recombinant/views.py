@@ -11,8 +11,8 @@ import simplejson as json
 from typing import Union, Dict, Tuple, Any, List, Optional, cast
 from ckan.types import Response, Context
 from ckan.types import (
-    PackageShowDict,
-    OrganizationShowDict
+    PackageDict,
+    OrganizationDict
 )
 from ckanext.recombinant.types import (
     RecombinantDict,
@@ -130,7 +130,7 @@ def _get_recombinant_view_context_vars(
     resource = cast(RecombinantResourceDict, resource)
 
     try:
-        organization: OrganizationShowDict = lc.action.organization_show(
+        organization: OrganizationDict = lc.action.organization_show(
             id=owner_org)
         if organization and organization['state'] != 'active':
             raise NotFound()
@@ -138,7 +138,7 @@ def _get_recombinant_view_context_vars(
         raise RecombinantViewNotFound(_('Organization not found'))
 
     try:
-        dataset: PackageShowDict = lc.action.package_show(
+        dataset: PackageDict = lc.action.package_show(
             id=rcomb['id'])
     except NotFound:
         raise RecombinantViewNotFound(_('Resource not found'))
@@ -1720,7 +1720,7 @@ def refresh_dataset(resource_name: str, owner_org: str) -> Union[str, Response]:
 
 
 def _process_upload_file(lc: LocalCKAN,
-                         dataset: PackageShowDict,
+                         dataset: PackageDict,
                          upload_file: Union[str, FlaskFileStorage, FieldStorage],
                          geno: RecombinantGenoDict,
                          dry_run: bool):

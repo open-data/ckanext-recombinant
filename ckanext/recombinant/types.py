@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, NamedTuple
 from ckan.types import (
-    PackageShowDict,
-    OrganizationShowDict
+    PackageDict,
+    OrganizationDict
 )
 
 from typing_extensions import TypedDict, Required, Union
@@ -148,9 +148,9 @@ class RecombinantViewContext(NamedTuple):
     rcomb: RecombinantDict
     geno: RecombinantGenoDict
     chromo: RecombinantChromoDict
-    dataset: PackageShowDict
+    dataset: PackageDict
     resource: RecombinantResourceDict
-    organization: OrganizationShowDict
+    organization: OrganizationDict
     pk_fields: List[str]
     choice_fields: RecombinantChoiceFieldsDict
 
@@ -163,9 +163,9 @@ class RecombinantUninitializedContext(NamedTuple):
     '''
     geno: RecombinantGenoDict
     chromo: RecombinantChromoDict
-    organization: OrganizationShowDict
+    organization: OrganizationDict
     pk_fields: List[str]
     choice_fields: RecombinantChoiceFieldsDict
     rcomb: Optional[RecombinantDict] = None
-    dataset: Optional[PackageShowDict] = None
+    dataset: Optional[PackageDict] = None
     resource: Optional[RecombinantResourceDict] = None
