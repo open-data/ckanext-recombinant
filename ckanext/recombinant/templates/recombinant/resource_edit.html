@@ -34,7 +34,7 @@ filters             - Filters on page (req. for package/base_form_page.html)
 
 {% block breadcrumb_content %}
   <li>{% link_for _(chromo['title']), named_route='recombinant.type_redirect',
-    resource_name=resource_name %}</li>
+    resource_name=resource.name %}</li>
   <li class="active"><a href="javascript:void(0);" title="{{ organization_display_name(organization) }}">{{ organization_display_name(organization, 60) }}</a></li>
 {% endblock %}
 
@@ -58,7 +58,7 @@ filters             - Filters on page (req. for package/base_form_page.html)
 
   {% block org_select %}
     {% snippet "recombinant/snippets/org_select.html",
-      selected=organization, resource_name=resource_name,
+      selected=organization, resource_name=resource.name,
       organization_display_name=organization_display_name %}
   {% endblock org_select %}
 
@@ -269,25 +269,14 @@ filters             - Filters on page (req. for package/base_form_page.html)
   {{ super() }}
   {% block record_table %}
     {% if not chromo.get('display_card') and resource and 'error' not in resource %}
-      {# TODO: finish rendering the snippet... #}
-      {#
-
-      return h.snippet('snippets/%s' % snippet,
-                     resource_name=resource_name,
-                     resource_id=resource_id,
-                     owner_org=owner_org,
-                     primary_keys=pkids,
-                     foreign_keys=fkids,
-                     dataset_type=dataset_type,
-                     ds_fields=fields)
-
-      #}
-
-      {% snippet "recombinant/snippets/org_select.html",
-          selected=organization, resource_name=resource_name,
-          organization_display_name=organization_display_name %}
-
-      {{ h.get_datatable_snippet(resource.name, resource.id, organization.name, rcomb.dataset_type) }}
+      {% snippet 'snippets/' ~ dt_settings.dt_snippet,
+                 resource_name=resource.name,
+                 resource_id=resource.id,
+                 owner_org=rcomb.owner_org,
+                 primary_keys=dt_settings.primary_keys,
+                 foreign_keys=dt_settings.foreign_keys,
+                 dataset_type=ds_fields,
+                 ds_fields=dt_settings.ds_fields %}
     {% endif %}
   {% endblock record_table %}
 {% endblock %}
