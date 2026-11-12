@@ -6,7 +6,7 @@ permissions:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v6
