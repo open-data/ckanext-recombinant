@@ -2,13 +2,16 @@ from unicodecsv import DictReader
 import codecs
 
 from typing import Any, Dict, Generator, Tuple, List, Optional
+from ckanext.recombinant.types import (
+    RecombinantChromoDict
+)
 
 
 BATCH_SIZE = 15000
 
 
 def csv_data_batch(csv_path: str,
-                   chromo: Dict[str, Any],
+                   chromo: RecombinantChromoDict,
                    ignore_fields: Optional[List[str]] = None,
                    strict: bool = True) -> Generator[
                        Tuple[Optional[str], List[Dict[str, Any]]], None, None]:

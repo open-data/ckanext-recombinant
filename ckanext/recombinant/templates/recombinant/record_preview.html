@@ -1,0 +1,48 @@
+{#
+Preview a single Recombinant DataStore record
+
+rcomb           - The Recombinant dict
+geno            - The Recombinant Geno dict
+chromo          - The Recombinant Chromo dict
+pk_fields       - List of strings of primary keys
+choice_fields   - Dict of choice fields
+dataset         - The dataset dict
+resource        - The resource dict
+organization    - The organization dict
+pk              - URL string of primary keys (e.g. 2026 or 001,2026)
+record          - The DataStore record dict
+#}
+{% extends "page.html" %}
+
+{%- macro organization_display_name(org, trunc) -%}
+  {%- block organization_display scoped -%}
+    {%- set org_title = h.get_translated(org, 'title') or org.name -%}
+    {{- org_title|truncate(trunc) if trun else org_title -}}
+  {%- endblock -%}
+{%- endmacro -%}
+
+{% block breadcrumb_content %}
+  <li>{% link_for _(chromo['title']), named_route='recombinant.type_redirect',
+    resource_name=resource_name %}</li>
+  <li>{% link_for organization_display_name(organization, 60), named_route='recombinant.preview_table',
+    resource_name=resource_name, owner_org=organization.name %}</li>
+  <li class="active"><a href="javascript:void(0);" title="{{ pk }}">{{ pk }}</a></li>
+{% endblock %}
+
+{% block subtitle %}{{ _(chromo['title']) }} - {{ organization_display_name(organization) }} - {{ pk }}{% endblock %}
+
+{% block content_action %}
+  <a href="{{ h.url_for('recombinant.update_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk, came_from='preview_record') }}" class="btn btn-default"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
+  <a href="{{ h.url_for('recombinant.delete_single_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk, came_from='preview_record') }}" class="btn btn-danger"><i class="fa fa-trash" aria-hidden="true"></i>&nbsp;{{ _('Delete') }}</a>
+{% endblock %}
+
+{% block content_primary_nav %}
+  <li><a href="{{ h.url_for('recombinant.preview_table', resource_name=chromo.resource_name, owner_org=organization.name) }}"><i class="fa fa-arrow-left" aria-hidden="true"></i>&nbsp;{{ _('All Records') }}</a></li>
+{% endblock %}
+
+{% block primary_content_inner %}
+  {%- set form_snippet = chromo.get('preview_snippet', 'recombinant/snippets/record_preview_output.html') -%}
+  {% snippet form_snippet, rcomb=rcomb, geno=geno, chromo=chromo, pk_fields=pk_fields,
+                           choice_fields=choice_fields, dataset=dataset, resource=resource,
+                           organization=organization, pk=pk, record=record %}
+{% endblock %}

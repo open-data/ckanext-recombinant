@@ -5,6 +5,12 @@ import sqlalchemy as sa
 from datetime import datetime
 
 from typing import Dict, Any, Optional, List, Union
+from ckanext.recombinant.types import (
+    RecombinantChromoDict,
+    RecombinantGenoDict,
+    RecombinantFieldDict,
+    RecombinantDict
+)
 
 from ckan.plugins.toolkit import c, config
 from ckan.plugins.toolkit import _ as gettext
@@ -64,7 +70,7 @@ def recombinant_language_text(text: Any,
     return t
 
 
-def recombinant_get_chromo(resource_name: str) -> Optional[Dict[str, Any]]:
+def recombinant_get_chromo(resource_name: str) -> Optional[RecombinantChromoDict]:
     """
     Get the resource definition (chromo) for the given resource name
     """
@@ -74,7 +80,7 @@ def recombinant_get_chromo(resource_name: str) -> Optional[Dict[str, Any]]:
         return
 
 
-def recombinant_get_geno(dataset_type: str) -> Optional[Dict[str, Any]]:
+def recombinant_get_geno(dataset_type: str) -> Optional[RecombinantGenoDict]:
     """
     Get the dataset definition (geno) for thr given dataset type
     """
@@ -88,7 +94,7 @@ def recombinant_get_types() -> List[str]:
     return get_dataset_types()
 
 
-def recombinant_primary_key_fields(resource_name: str) -> List[Dict[str, Any]]:
+def recombinant_primary_key_fields(resource_name: str) -> List[RecombinantFieldDict]:
     try:
         chromo = get_chromo(resource_name)
     except RecombinantException:
@@ -170,7 +176,7 @@ def recombinant_choice_fields(
     if not chromo:
         return {}
 
-    def build_choices(f: Dict[str, Any], choices: Dict[str, Any]):
+    def build_choices(f: RecombinantFieldDict, choices: Dict[str, Any]):
         order_expr = f.get('choice_order_expression')
         if order_expr:
             code = compile(order_expr, resource_name, 'eval')
@@ -192,7 +198,7 @@ def recombinant_choice_fields(
             if v not in exclude_choices
         ]
 
-    def build_choices_psql(f: Dict[str, Any]):
+    def build_choices_psql(f: RecombinantFieldDict):
         # type_ignore_reason: incomplete typing
         backend: DatastorePostgresqlBackend = DatastoreBackend.\
             get_active_backend()  # type: ignore
@@ -232,12 +238,13 @@ def recombinant_choice_fields(
     return out
 
 
-def _read_choices_file(chromo: Dict[str, Any], f: Dict[str, Any]) -> Dict[str, Any]:
+def _read_choices_file(chromo: RecombinantChromoDict,
+                       f: RecombinantFieldDict) -> Dict[str, Any]:
     with open(os.path.join(chromo['_path'], f['choices_file'])) as cf:
         return load.load(cf)
 
 
-def recombinant_show_package(pkg: Dict[str, Any]) -> Dict[str, Any]:
+def recombinant_show_package(pkg: Dict[str, Any]) -> RecombinantDict:
     """
     return recombinant_show results for pkg
     """
@@ -248,7 +255,7 @@ def recombinant_show_package(pkg: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def recombinant_get_field(resource_name: str,
-                          datastore_id: str) -> Optional[Dict[str, Any]]:
+                          datastore_id: str) -> Optional[RecombinantFieldDict]:
     """
     Return field info from resource name and datastore column id
     """
@@ -260,12 +267,13 @@ def recombinant_get_field(resource_name: str,
             return f
 
 
-def recombinant_published_resource_chromo(res_id: str) -> Optional[Dict[str, Any]]:
+def recombinant_published_resource_chromo(
+        res_id: str) -> Optional[RecombinantChromoDict]:
     try:
         resource_name = get_published_resource_resource_name(res_id)
         return recombinant_get_chromo(resource_name)
     except RecombinantException:
-        return {}
+        return None
 
 
 def obfuscate_to_code_points(string: str,
@@ -284,3 +292,10 @@ def support_email_address(xml_encode: bool = True) -> Union[Markup, str]:
     return config.get('ckanext.canada.support_email_address', '') if not xml_encode \
         else obfuscate_to_code_points(
             config.get('ckanext.canada.support_email_address', ''))
+
+
+def enable_datatable_editor() -> bool:
+    """
+    Return if the Recombinant DataTable Editor should be used or not.
+    """
+    return config['ckanext.recombinant.enable_datatable_editor']
