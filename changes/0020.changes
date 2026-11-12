@@ -1,1 +1,1 @@
-Updated `checkout` and `setup-python` github actions to newer versions.
+Updated `checkout`, `setup-python`, and `setup-node` github actions to newer versions. Now runs on `ubuntu-24.04` instead of `ubuntu-latest`
