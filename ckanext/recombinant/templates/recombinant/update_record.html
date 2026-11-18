@@ -65,8 +65,10 @@ came_from       - URI parameter of view to redirect back to
       {%- for f in chromo.fields %}
         {%- if f.get('import_template_include', True) and not f.get('published_resource_computed_field', false) %}
           {%- set required = f.get('form_required', False) %}
-          {%- set description = h.recombinant_language_text(h.recombinant_description_to_markup(f.get('description', ''))) %}
-          {%- set description = description + ' ' + h.recombinant_language_text(h.recombinant_description_to_markup(f.get('form_help', ''))) -%}
+          {%- set description = h.render_markdown(h.recombinant_language_text(f.get('description', ''))) -%}
+          {%- if f.get('form_help') -%}
+            {%- set description = description + ' ' + h.render_markdown(h.recombinant_language_text(f.get('form_help', ''))) -%}
+          {%- endif -%}
           {%- set form_placeholder = f.get('form_placeholder', '') %}
           {%- set form_attrs = f.get('form_attrs', {}) %}
           {%- set form_select_attrs = f.get('form_select_attrs', {}) %}
