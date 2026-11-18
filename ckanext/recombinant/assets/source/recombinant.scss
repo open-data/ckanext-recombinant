@@ -188,9 +188,16 @@ body{
   }
 }
 
-.recombinant-webform-container div.info-block i.fa-info-circle{
-  display: inline;
-  float: left;
-  margin-right: 5px;
-  margin-top: 2.5px;
+.recombinant-webform-container{
+  div.info-block i.fa-info-circle{
+    display: inline;
+    float: left;
+    margin-right: 5px;
+    margin-top: 2.5px;
+  }
+  li{
+    p{
+      margin: 0;
+    }
+  }
 }

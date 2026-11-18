@@ -67,9 +67,9 @@ error_summary   - Error string in webform
       {%- for f in chromo.fields %}
         {%- if f.get('import_template_include', True) and not f.get('published_resource_computed_field', false) %}
           {%- set required = f.get('form_required', False) %}
-          {%- set description = h.render_markdown(h.recombinant_language_text(f.get('description', ''))|replace('\n','<br><br>'), allow_html=True) -%}
+          {%- set description = h.render_markdown(h.recombinant_language_text(f.get('description', ''))|escape, allow_html=false) -%}
           {%- if f.get('form_help') -%}
-            {%- set description = description + ' ' + h.render_markdown(h.recombinant_language_text(f.get('form_help', ''))|replace('\n','<br><br>'), allow_html=True) -%}
+            {%- set description = description + ' ' + h.render_markdown(h.recombinant_language_text(f.get('form_help', ''))|escape, allow_html=false) -%}
           {%- endif -%}
           {%- set form_placeholder = f.get('form_placeholder', '') %}
           {%- set form_attrs = f.get('form_attrs', {}) %}
@@ -79,7 +79,7 @@ error_summary   - Error string in webform
             {%- if f.get('datastore_type') == '_text' and form_snippet == 'scheming/form_snippets/text.html' %}
               {%- set form_snippet = 'scheming/form_snippets/multiple_select.html' %}
               {%- set description = _('You may select or deselect multiple entries (Ctrl+Click).') +
-                ' ' + description %}
+                '\n' + description %}
             {%- elif form_snippet == 'scheming/form_snippets/text.html' %}
               {%- set form_snippet = 'scheming/form_snippets/select.html' %}
             {%- endif %}

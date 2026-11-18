@@ -17,6 +17,8 @@ from openpyxl.styles import (
     PatternFill,
     Font
 )
+import re
+from bs4 import BeautifulSoup, NavigableString, Tag
 
 from typing import Any, Dict, List, Tuple, Optional, Union, cast
 from ckanext.recombinant.types import (
@@ -322,6 +324,13 @@ def wrap_text_to_width(text: str,
     return '\n'.join(
         '\n'.join(textwrap.wrap(line, int(cwidth)))
         for line in str(text).split('\n'))
+
+
+def calculate_row_height(text: str, width: Union[int, float], line_height: int) -> int:
+    lines = 0
+    for paragraph in str(text).split('\n'):
+        lines += max(1, len(textwrap.wrap(paragraph, width)))
+    return lines * line_height
 
 
 def _build_styles(book: Workbook,
@@ -673,7 +682,8 @@ def _append_field_ref_rows(refs: List[Tuple[Optional[str], List[Any]]],
     if field.get('description'):
         refs.append(('attr', [
             _('Description'),
-            recombinant_language_text(field['description'])]))
+            _markdown_to_excel(recombinant_language_text(field['description']))
+        ]))
     if field.get('obligation'):
         refs.append(('attr', [
             _('Obligation'),
@@ -786,7 +796,8 @@ def _populate_reference_sheet(sheet: Worksheet,
             link = None
             value = None
             if len(ref_line) == 2:
-                value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH).strip()
+                # value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH).strip()
+                value = ref_line[1].strip()
                 ref_line = [ref_line[0], value]
             elif len(ref_line) == 1 and isinstance(ref_line[0], tuple):
                 link, value = ref_line[0]
@@ -798,8 +809,23 @@ def _populate_reference_sheet(sheet: Worksheet,
                     cval.strip().replace('\n', '\r\n'))
 
             if len(ref_line) == 2 and value:
-                sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
-                    value.count('\n') * LINE_HEIGHT)
+                ref_height = calculate_row_height(
+                    value,
+                    sheet.column_dimensions[REF_KEY_COL].width,
+                    LINE_HEIGHT
+                )
+                val_height = calculate_row_height(
+                    value,
+                    sheet.column_dimensions[REF_VALUE_COL].width,
+                    LINE_HEIGHT
+                )
+                org_height = calculate_row_height(
+                    value,
+                    sheet.column_dimensions[REF_VALUE_ORG_COL].width,
+                    LINE_HEIGHT
+                )
+                sheet.row_dimensions[row_number].height = max(
+                    ref_height, val_height, org_height)
 
             key_cell: Cell = cast(Cell, sheet.cell(
                 row=row_number, column=REF_KEY_COL_NUM))
@@ -807,6 +833,11 @@ def _populate_reference_sheet(sheet: Worksheet,
                 row=row_number, column=REF_VALUE_COL_NUM))
             org_cell: Cell = cast(Cell, sheet.cell(
                 row=row_number, column=REF_VALUE_ORG_COL_NUM))
+
+            # always wrap text
+            key_cell.alignment = Alignment(wrap_text=True, vertical='top')
+            value_cell.alignment = Alignment(wrap_text=True, vertical='top')
+            org_cell.alignment = Alignment(wrap_text=True, vertical='top')
 
             if style == 'title':
                 sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))
@@ -1223,3 +1254,47 @@ def _add_conditional_formatting(sheet: Worksheet,
                 stopIfTrue=True,
                 fill=required_fill,
                 font=required_font))
+
+
+def _markdown_to_excel(value: Optional[str] = None) -> str:
+    """
+    Converts string to markdown, and then to Excel friendly text.
+    """
+    if not value:
+        return ''
+    html_parser = BeautifulSoup(h.render_markdown(value), 'html.parser')
+    def extract(_element):
+        result = []
+        for child in _element.children:
+            if isinstance(child, NavigableString):
+                result.append(re.sub(r'\s+', ' ', str(child)))
+            elif isinstance(child, Tag):
+                if child.name == 'br':
+                    result.append(' ')
+                elif child.name in ('ul', 'ol'):
+                    items = []
+                    for _i, _li in enumerate(child.find_all('li', recursive=False), 1):
+                        prefix = f'{_i}. ' if child.name == 'ol' else '• '
+                        items.append(prefix + _li.get_text(' ', strip=True))
+                    result.append('\n'.join(items) + '\n\n')
+                elif child.name == 'li':
+                    result.append(extract(child))
+                elif child.name in ('p', 'div'):
+                    result.append(child.get_text(' ', strip=True) + '\n\n')
+                elif child.name == 'blockquote':
+                    result.append(f'> {extract(child)}\n')
+                elif child.name in ('strong', 'b', 'em', 'i', 'code'):
+                    result.append(extract(child))
+                elif child.name == 'a':
+                    text = extract(child)
+                    href = child.get('href')
+                    result.append(f'{text} ({href})' if href and
+                                  text != href else text)
+                else:
+                    result.append(extract(child))
+        return ''.join(result)
+    result = extract(html_parser)
+    result = re.sub(r'[ \t]+', ' ', result)
+    result = re.sub(r' *\n *', '\n', result)
+    result = re.sub(r'\n{3,}', '\n\n', result)
+    return result.strip()
