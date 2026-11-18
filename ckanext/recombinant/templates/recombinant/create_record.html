@@ -23,6 +23,11 @@ error_summary   - Error string in webform
 {% endblock %}
 {% block subtitle %}{{ _("Create Record") }}{% endblock %}
 
+{% block links %}
+  {{ super() }}
+  {% asset 'recombinant/main_css' %}
+{% endblock %}
+
 {% block breadcrumb_content %}
   <li>{{ h.nav_link(h.recombinant_language_text(chromo['title']),
                     named_route='recombinant.preview_table',
@@ -58,13 +63,13 @@ error_summary   - Error string in webform
 
     {% block basic_fields %}{% endblock %}
 
-    <div class='container-fluid mrgn-bttm-lg'>
+    <div class='container-fluid mrgn-bttm-lg recombinant-webform-container'>
       {%- for f in chromo.fields %}
         {%- if f.get('import_template_include', True) and not f.get('published_resource_computed_field', false) %}
           {%- set required = f.get('form_required', False) %}
-          {%- set description = h.render_markdown(h.recombinant_language_text(f.get('description', ''))) -%}
+          {%- set description = h.render_markdown(h.recombinant_language_text(f.get('description', ''))|replace('\n','<br><br>'), allow_html=True) -%}
           {%- if f.get('form_help') -%}
-            {%- set description = description + ' ' + h.render_markdown(h.recombinant_language_text(f.get('form_help', ''))) -%}
+            {%- set description = description + ' ' + h.render_markdown(h.recombinant_language_text(f.get('form_help', ''))|replace('\n','<br><br>'), allow_html=True) -%}
           {%- endif -%}
           {%- set form_placeholder = f.get('form_placeholder', '') %}
           {%- set form_attrs = f.get('form_attrs', {}) %}
@@ -106,7 +111,11 @@ error_summary   - Error string in webform
         {%- endif %}
       {%- endfor %}
       <input class='btn btn-default' name='cancel' type='submit' value='{{ _("Cancel") }}' />
-      <input class='btn btn-secondary' name='save-later' type='submit' value='{{ _("Save draft for later") }}' />
+      {%- if chromo.stately_records -%}
+        <input class='btn btn-secondary' name='save-later' type='submit' value='{{ _("Save draft for later") }}' />
+      {%- else -%}
+        &nbsp;
+      {%- endif -%}
       <input class='btn btn-primary' name='save' type='submit' value='{{ _("Save") }}' />
     </div>
 
