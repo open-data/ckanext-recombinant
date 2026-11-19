@@ -71,6 +71,7 @@ REF_FIELD_NUM_MERGE = 'A{row}:B{row}'
 REF_FIELD_TITLE_HEIGHT = 24
 REF_FIELD_TITLE_MERGE = 'C{row}:E{row}'
 REF_FIELD_ATTR_MERGE = 'D{row}:E{row}'
+REF_SEC_BREAK_MERGE = 'A{row}:E{row}'
 REF_KEY_COL, REF_KEY_COL_NUM = 'C', 3
 REF_KEY_WIDTH = 18
 REF_VALUE_COL, REF_VALUE_COL_NUM = 'D', 4
@@ -112,6 +113,10 @@ REF_ATTR_STYLE = {
 REF_SUBATTR_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FF8C8351'},
     'Font': {'color': 'FFF8F8F8', 'bold': True},
+    'Alignment': {'vertical': 'top'}}
+REF_SEC_BREAK_STYLE = {
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFEBEBEB'},
+    'Font': {'color': 'FFEBEBEB', 'bold': False},
     'Alignment': {'vertical': 'top'}}
 REF_VALUE_STYLE = {
     'Alignment': {'wrapText': True, 'vertical': 'top'}}
@@ -316,20 +321,13 @@ def estimate_width(text: str) -> float:
     return max(estimate_width_from_length(len(s)) for s in str(text).split('\n'))
 
 
-def wrap_text_to_width(text: str,
-                       width: int) -> str:
-    # assuming width > ESTIMATE_WIDTH_MULTIPLE_1_CHARS
+def calculate_row_height(text: str, width: float, line_height: float) -> float:
     calc_width = width - (ESTIMATE_WIDTH_MULTIPLE_1_CHARS * ESTIMATE_WIDTH_MULTIPLE_1)
-    cwidth = calc_width // ESTIMATE_WIDTH_MULTIPLE_2 + ESTIMATE_WIDTH_MULTIPLE_1_CHARS
-    return '\n'.join(
-        '\n'.join(textwrap.wrap(line, int(cwidth)))
-        for line in str(text).split('\n'))
-
-
-def calculate_row_height(text: str, width: Union[int, float], line_height: int) -> int:
+    cwidth = max(1, int(
+        calc_width // ESTIMATE_WIDTH_MULTIPLE_2 + ESTIMATE_WIDTH_MULTIPLE_1_CHARS))
     lines = 0
     for paragraph in str(text).split('\n'):
-        lines += max(1, len(textwrap.wrap(paragraph, width)))
+        lines += max(1, len(textwrap.wrap(paragraph, width=cwidth)))
     return lines * line_height
 
 
@@ -355,6 +353,7 @@ def _build_styles(book: Workbook,
     build_named_style(book, 'reco_ref_attr', REF_ATTR_STYLE)
     build_named_style(book, 'reco_ref_subattr', REF_SUBATTR_STYLE)
     build_named_style(book, 'reco_ref_value', REF_VALUE_STYLE)
+    build_named_style(book, 'reco_sec_break', REF_SEC_BREAK_STYLE)
 
 
 def _populate_excel_sheet(book: Workbook,
@@ -665,7 +664,7 @@ def _append_resource_ref_header(geno: RecombinantGenoDict,
     """
     if rnum == 1 and geno['resources'][rnum-1]['title'] == geno['title']:
         return
-    refs.append((None, []))
+    refs.append(('sec_break', []))
     resource_title = recombinant_language_text(geno['resources'][rnum-1]['title'])
     refs.append(('resource_title', [resource_title]))
 
@@ -673,7 +672,7 @@ def _append_resource_ref_header(geno: RecombinantGenoDict,
 def _append_field_ref_rows(refs: List[Tuple[Optional[str], List[Any]]],
                            field: RecombinantFieldDict,
                            link: Optional[str]):
-    refs.append((None, []))
+    refs.append(('sec_break', []))
     label = recombinant_language_text(field['label'])
     refs.append(('title', [(link, label) if link else label]))
     refs.append(('attr', [
@@ -796,7 +795,6 @@ def _populate_reference_sheet(sheet: Worksheet,
             link = None
             value = None
             if len(ref_line) == 2:
-                # value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH).strip()
                 value = ref_line[1].strip()
                 ref_line = [ref_line[0], value]
             elif len(ref_line) == 1 and isinstance(ref_line[0], tuple):
@@ -807,25 +805,6 @@ def _populate_reference_sheet(sheet: Worksheet,
             for cnum, cval in enumerate(ref_line, REF_KEY_COL_NUM):
                 cast(Cell, sheet.cell(row=row_number, column=cnum)).value = (
                     cval.strip().replace('\n', '\r\n'))
-
-            if len(ref_line) == 2 and value:
-                ref_height = calculate_row_height(
-                    value,
-                    sheet.column_dimensions[REF_KEY_COL].width,
-                    LINE_HEIGHT
-                )
-                val_height = calculate_row_height(
-                    value,
-                    sheet.column_dimensions[REF_VALUE_COL].width,
-                    LINE_HEIGHT
-                )
-                org_height = calculate_row_height(
-                    value,
-                    sheet.column_dimensions[REF_VALUE_ORG_COL].width,
-                    LINE_HEIGHT
-                )
-                sheet.row_dimensions[row_number].height = max(
-                    ref_height, val_height, org_height)
 
             key_cell: Cell = cast(Cell, sheet.cell(
                 row=row_number, column=REF_KEY_COL_NUM))
@@ -839,6 +818,24 @@ def _populate_reference_sheet(sheet: Worksheet,
             value_cell.alignment = Alignment(wrap_text=True, vertical='top')
             org_cell.alignment = Alignment(wrap_text=True, vertical='top')
 
+            if len(ref_line) == 2 and value:
+                ref_height = calculate_row_height(
+                    key_cell.value, REF_KEY_WIDTH, LINE_HEIGHT) \
+                        if key_cell.value else 0
+                val_height = calculate_row_height(
+                    value_cell.value, REF_VALUE_WIDTH, LINE_HEIGHT) \
+                        if value_cell.value else 0
+                org_height = calculate_row_height(
+                    org_cell.value, REF_ORG_WIDTH, LINE_HEIGHT) \
+                        if org_cell.value else 0
+                sheet.row_dimensions[row_number].height = max(
+                    ref_height, val_height, org_height)
+
+            if style == 'sec_break':
+                sheet.merge_cells(REF_SEC_BREAK_MERGE.format(row=row_number))
+                section_break_cell: Cell = cast(Cell, sheet.cell(
+                    row=row_number, column=REF_FIELD_NUM_COL_NUM))
+                section_break_cell.style = 'reco_sec_break'
             if style == 'title':
                 sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))
                 sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
