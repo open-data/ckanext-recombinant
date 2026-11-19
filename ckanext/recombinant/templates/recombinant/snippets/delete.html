@@ -1,14 +1,23 @@
+{#
+Adds the Bulk Delete form.
+
+rcomb       - The Recombinant dict
+resource    - The resource dict
+errors      - List of error strings
+chromo      - The Recombinant Chromo dict
+filters     - The filter dict used for deleting by primary keys
+#}
 <div class="row">
   <div class="col-md-7">
     <h3>{{_('Delete existing records')}}</h3>
     <div class="mrgn-lft-md mrgn-rght-md">
       <form id="delete-form"
         class="dataset-form dataset-resource-form form-horizontal" method="post"
-        action="{{ h.url_for('recombinant.delete_records', id=pkg.id, resource_id=res.id) }}">
+        action="{{ h.url_for('recombinant.delete_records', resource_name=resource.name, owner_org=rcomb.owner_org) }}">
         {{ h.csrf_input() }}
         <div class="form-group control-medium {% if errors %}has-error{% endif %}">
           <label for="bulk-delete-field" class="required" aria-required="true">
-            {%- for f in h.recombinant_primary_key_fields(res.name) -%}
+            {%- for f in h.recombinant_primary_key_fields(resource.name) -%}
               {{- h.recombinant_language_text(f.label) -}}
               {%- if not loop.last -%},{% endif -%}
             {%- endfor -%}
@@ -31,7 +40,7 @@
             {% endif %}
             <small class="text-info">{{ _('Enter one record per line, e.g:') }}<br/><br/>
               {%- for n in range(1, 4) -%}
-                {%- for f in h.recombinant_primary_key_fields(res.name) -%}
+                {%- for f in h.recombinant_primary_key_fields(resource.name) -%}
                   {{- h.recombinant_language_text(f.label) }} {{ n -}}
                   {%- if not loop.last -%},{% endif -%}
                 {%- endfor -%}
@@ -53,7 +62,7 @@
     <h3>{{ _('Delete Dataset') }}{% snippet 'snippets/sysadmin_only.html' %}</h3>
     <form id="delete-dataset-form"
           method="post"
-          action="{{ h.url_for('recombinant.delete_dataset', id=pkg.id, resource_id=res.id) }}">
+          action="{{ h.url_for('recombinant.delete_dataset', resource_name=resource.name, owner_org=rcomb.owner_org) }}">
       {{ h.csrf_input() }}
       <div class="clearfix"></div>
       <div class="form-actions form-group recombinant-delete-button-wrapper">

@@ -42,8 +42,7 @@
           {{ h.recombinant_language_text(field.label) }}
         {% endcall %}
         {% call dictionary_field(_('Description')) %}
-          {{ h.render_markdown(h.recombinant_language_text(field.description)) |
-            replace('\n', '<br>' | safe) }}
+          {{ h.render_markdown(h.recombinant_language_text(field.description)|escape, allow_html=false) }}
         {% endcall %}
         {% call dictionary_field(_('Obligation')) %}
           {{ _('Primary key') if field.datastore_id in chromo.datastore_primary_key
@@ -158,8 +157,7 @@
                 {% block resource_data_dictionary_field scoped %}
                   {% call dictionary_field(_('ID')) %}{{ field.datastore_id }}{% endcall %}
                   {% call dictionary_field(_('Format')) %}
-                    {{ h.render_markdown(h.recombinant_language_text(field.format_type)) |
-                      replace('\n', '<br>' | safe) }}
+                    {{ h.render_markdown(h.recombinant_language_text(field.format_type)|escape, allow_html=false) }}
                   {% endcall %}
                   {{ extra_info }}
                 {% endblock %}

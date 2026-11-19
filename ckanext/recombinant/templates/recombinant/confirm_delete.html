@@ -1,3 +1,12 @@
+{#
+Confirm deletion of a Recombinant dataset.
+
+rcomb         - The Recombinant dict
+resource      - The resource dict
+errors        - The list of errors
+num           - The number of records to delete
+bulk_delete   - The string value of primary keys to delete
+#}
 {% extends "page.html" %}
 
 {% block subtitle %}{{ _("Confirm Delete") }}{% endblock %}
@@ -16,7 +25,7 @@
         <thead>
           <th scope="col" class="col-sm-1 border-0"></th>
           {% for c in primary_keys %}
-            <th scope="col">{{ c['label'][h.lang()] }}</th>
+            <th scope="col">{{ c['label'][h.lang()] or c['label'] }}</th>
           {% endfor %}
         </thead>
         <tbody>
@@ -35,7 +44,7 @@
     <div class="clearfix"></div>
 
     <p class="form-actions">
-      <form id="recombinant-confirm-delete-form" action="{{ h.url_for('recombinant.delete_records',id=dataset.id, resource_id=resource.id) }}" method="post">
+      <form id="recombinant-confirm-delete-form" action="{{ h.url_for('recombinant.delete_records', resource_name=resource.name, owner_org=rcomb.owner_org) }}" method="post">
         {{ h.csrf_input() }}
         <input type="hidden" name="bulk-delete" value="{{ bulk_delete }}" />
         <button class="btn" type="submit" name="cancel" >{{ _('Cancel') }}</button>

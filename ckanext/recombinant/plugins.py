@@ -33,6 +33,7 @@ from ckanext.recombinant import (
     helpers,
     load,
     views,
+    views_legacy,
     auth,
     cli,
     validators
@@ -42,6 +43,7 @@ from ckanext.recombinant.errors import RecombinantException
 from ckanext.datastore.interfaces import IDataDictionaryForm
 
 
+@p.toolkit.blanket.config_declarations
 class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslation):
     p.implements(tables.IRecombinant)
     p.implements(p.IConfigurer)
@@ -85,7 +87,7 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
         return schema
 
     def get_blueprint(self) -> List[Blueprint]:
-        return [views.recombinant]
+        return [views_legacy.recombinant_legacy, views.recombinant]
 
     def prepare_dataset_blueprint(self, package_type: str, bp: Blueprint):
         bp.add_url_rule('/<id>',
@@ -124,6 +126,8 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
                 helpers.recombinant_published_resource_chromo,
             'support_email_address':
                 helpers.support_email_address,
+            'enable_datatable_editor':
+                helpers.enable_datatable_editor,
             }
 
     def get_actions(self) -> Dict[str, Union[Action, ChainedAction]]:
@@ -239,6 +243,23 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
                 chromo['_url_path'] = url.rsplit('/', 1)[0]
             else:  # used for choices_file paths
                 chromo['_path'] = os.path.split(p)[0]
+            if isinstance(chromo['datastore_primary_key'], str):
+                chromo['datastore_primary_key'] = [chromo['datastore_primary_key']]
+            chromo['excel_template'] = chromo.get('excel_template', True)
+            chromo['create_form'] = chromo.get('create_form', False)
+            chromo['edit_form'] = chromo.get('edit_form', False)
+            chromo['stately_records'] = False
+            for f in chromo['fields']:
+                if f['datastore_id'] != 'record_state':
+                    continue
+                if (
+                    'choices' not in f or
+                    'active' not in f['choices'] or
+                    'draft' not in f['choices']
+                ):
+                    raise RecombinantException(
+                        'record_state field must have "active" and "draft" choices')
+                chromo['stately_records'] = True
             chromos[chromo['resource_name']] = chromo
             resource_definitions[chromo['resource_name']] = url
             if 'published_resource_id' in chromo:

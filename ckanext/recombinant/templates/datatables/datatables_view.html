@@ -19,7 +19,7 @@
 
         {% if field.id in chromo_keyed %}
         {# the DS field is a Recombinant field, use chromo #}
-          {% set description = h.recombinant_language_text(chromo_keyed[field.id].description) | replace('\n', '<br>' | safe) %}
+          {% set description = h.recombinant_language_text(chromo_keyed[field.id].description) | replace('\n', '&#10;') | replace('"', "'") | safe %}
           {% set label = h.recombinant_language_text(chromo_keyed[field.id].label) | trim %}
           <th scope="col">
             {{ label }}&nbsp;
