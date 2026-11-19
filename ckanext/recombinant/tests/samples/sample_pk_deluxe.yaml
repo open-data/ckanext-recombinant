@@ -60,8 +60,7 @@ resources:
       DECLARE
         errors text[][] := '{{}}';
         crval RECORD;
-        importing boolean NOT NULL := (SELECT importing
-            FROM datastore_user LIMIT 1);
+        importing boolean NOT NULL := (SELECT EXISTS (SELECT 1 FROM datastore_app_context WHERE 'recombinant_import' = ANY(flags)));
       BEGIN
         errors := errors || required_error(NEW.year, 'year');
         errors := errors || required_error(NEW.value, 'value');

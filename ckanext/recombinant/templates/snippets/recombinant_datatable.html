@@ -118,6 +118,17 @@
 <script type="text/javascript" nonce="{{- h.get_inline_script_nonce() -}}">
   {% if can_edit %}
     const pd_datatables__EDITOR = {
+      {% if chromo.edit_using__id %}
+        {{- '_id' -}}: {
+          type: '{{- _id_field['type'] -}}',
+          label: '{{- _id_field['label'] -}}',
+          form_attrs: null,
+          select_choices: null,
+          choices_suffix_filter: null,
+          is_required: function(VALUE, ROW_INDEX){return true;},
+          is_invalid: function(VALUE, ROW_INDEX){return false},
+        },
+      {% endif %}
       {% for field in chromo.fields %}
         {{- field.datastore_id -}}: {
           type: '{{- field.datastore_type -}}',
@@ -243,11 +254,13 @@
      data-module-ajax_uri="{{- h.url_for('recombinant.datatable', resource_name=resource_name, resource_id=resource_id) -}}"
      data-module-table_styles='{{ tableStyles|tojson }}'
      data-module-primary_keys='{{ primary_keys|tojson }}'
+     data-module-edit_keys='{{ edit_keys|tojson }}'
      data-module-foreign_keys='{{ foreign_keys|tojson }}'
      data-module-foreign_links='{{ fk_links|tojson }}'
      data-module-chromo_fields='{{ chromo.fields|tojson }}'
      data-module-editor_enabled='{{ editor_enabled|tojson }}'
      data-module-is_editable='{{ (chromo.edit_form and can_edit)|tojson }}'
+     data-module-edit_using__id='{{ chromo.edit_using__id|tojson }}'
      data-module-show_preview_button='{{ g.userobj.sysadmin|tojson }}'
      data-module-record_preview_uri="{{- h.url_for('recombinant.preview_record', resource_name=resource_name, owner_org=owner_org, pk='') -}}">
 </div>

@@ -104,6 +104,7 @@ class RecombinantChromoDict(TypedDict, total=False):
     excel_template: Required[bool]
     create_form: Required[bool]
     edit_form: Required[bool]
+    edit_using__id: Required[bool]
     stately_records: Required[bool]
     fields: Required[List[RecombinantFieldDict]]
     datastore_primary_key: Required[List[str]]

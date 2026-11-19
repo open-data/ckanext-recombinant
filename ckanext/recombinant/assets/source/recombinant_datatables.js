@@ -23,10 +23,12 @@ this.ckan.module('pd-datatables', function($){
       ajax_uri: null,
       table_styles: null,
       primary_keys: null,
+      edit_keys: null,
       foreign_keys: null,
       foreign_links: null,
       chromo_fields: null,
       editor_enabled: false,
+      edit_using__id: false,
       is_editable: false,
       show_preview_button: false,
       record_preview_uri: null,
@@ -52,6 +54,8 @@ this.ckan.module('pd-datatables', function($){
 });
 
 function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
+  // TODO: figure out all of the primaryKeys vs editKeys, namely for edit table mode...
+
   const _ = CKAN_MODULE._;
   const searchParams = new URLSearchParams(document.location.search);
   const currentDate = new Date().toISOString().split('T')[0];
@@ -72,10 +76,12 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
   const deleteRecordsURI = CKAN_MODULE.options.delete_records_uri;
   const ajaxURI = CKAN_MODULE.options.ajax_uri;
   const primaryKeys = CKAN_MODULE.options.primary_keys;
+  const editKeys = CKAN_MODULE.options.edit_keys;
   const foreignKeys = CKAN_MODULE.options.foreign_keys;
   const foreignLinks = CKAN_MODULE.options.foreign_links;
   const chromoFields = CKAN_MODULE.options.chromo_fields;
   const enableEditor = CKAN_MODULE.options.editor_enabled;
+  const editUsingID = CKAN_MODULE.options.edit_using__id;
   const isEditable = CKAN_MODULE.options.is_editable;
   const showPreviewButton = CKAN_MODULE.options.show_preview_button;
   const recordPreviewURI = CKAN_MODULE.options.record_preview_uri;
@@ -516,8 +522,13 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
     let readOnly = '';
     let readOnlyClass = '';
     let tabIndex = 0;
-    let isPrimaryKey = primaryKeys.includes(_colIndex);
-    if( editingRows.length > 0 && primaryKeys.includes(_colIndex) ){
+    let isPrimaryKey = false;
+    if( editUsingID && editKeys.includes(_colIndex) ){
+      isPrimaryKey = true;
+    }else{
+      isPrimaryKey = primaryKeys.includes(_colIndex);
+    }
+    if( editingRows.length > 0 && isPrimaryKey ){
       readOnly = 'readonly';
       readOnlyClass = 'editor-input-readonly';
       tabIndex = -1;
@@ -717,6 +728,16 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
 
   // Compile available columns
   let _sortOrderIndex = 1;
+  if( editUsingID ){
+    availableColumns.push({
+      "name": '_id',
+      "className": ' pd-datatables-primary-key-fixed pd-datatables-non-editable-col ',
+      "searchable": true,
+      "render": function(_data, _type, _row, _meta){
+        return _data;
+      }
+    });
+  }
   for( let i = 0; i < chromoFields.length; i++ ){
     if( typeof chromoFields[i].published_resource_computed_field == 'undefined' || ! chromoFields[i].published_resource_computed_field ){
       let previewClass = '';
@@ -1390,7 +1411,7 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         className: 'pd-datatable-btn pd-datatable-btn-preview btn-primary',
         enabled: false,
         action: function(e, dt, node, config){
-          let pk_cols = primaryKeys.map(function(value){
+          let pk_cols = editKeys.map(function(value){
             return value + colOffset;
           });
           let rows = dt.rows({ selected: true });
@@ -1414,7 +1435,7 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         action: function(e, dt, button, config){
           editingRows = [];
           if( isEditable ){
-            let pk_cols = primaryKeys.map(function(val){
+            let pk_cols = editKeys.map(function(val){
               return val + colOffset;
             });
             let _rows = table.rows({selected: true});
@@ -1442,14 +1463,14 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         enabled: ! isExportingExcel,
         className: "pd-datatable-btn pd-datatable-excel-btn btn-primary",
         action: function(e, dt, button, config){
-          let pk_cols = primaryKeys.map(function(value){
+          let pk_cols = editKeys.map(function(value){
             return value + colOffset;
           });
           let rows = dt.rows({ selected: true });
           let params = new Object();
           params['resource_name'] = resourceName;
           params[csrfTokenName] = csrfTokenValue;
-          params['key_indices'] = primaryKeys;
+          params['key_indices'] = editKeys;
           params['bulk-template'] = [];
           rows.eq(0).each(function(index){
             params['bulk-template'].push(dt.cells(index, pk_cols).data().toArray());
@@ -1494,7 +1515,7 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         text: '<i aria-hidden="true" class="fas fa-edit"></i>&nbsp;' + editSingleButtonLabel,
         className: "pd-datatable-btn pd-datatable-btn-single btn-success",
         action: function(e, dt, button, config){
-          let pk_cols = primaryKeys.map(function(value){
+          let pk_cols = editKeys.map(function(value){
             return value + colOffset;
           });
           let rows = dt.rows({ selected: true });
@@ -1529,10 +1550,10 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
           name: csrfTokenName
         })).append($('<input>').attr({
           type: 'hidden',
-          value: primaryKeys,
+          value: editKeys,
           name: 'key_indices'
         }));
-        let pk_cols = primaryKeys.map(function(value){
+        let pk_cols = editKeys.map(function(value){
           return value + colOffset;
         });
         let rows = dt.rows({ selected: true});
@@ -1637,8 +1658,8 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
             let records = _data.responseJSON.result;
             for(let [_index, _record] of Object.entries(records)){
               let pks = [];
-              for( let _i = 0; _i < primaryKeys.length; _i++ ){
-                pks.push(Object.values(_record.records[0])[primaryKeys[_i]]);
+              for( let _i = 0; _i < editKeys.length; _i++ ){
+                pks.push(Object.values(_record.records[0])[editKeys[_i]]);
               }
               if( editingRows.length > 0 ){
                 updatedRecords.push(pks);

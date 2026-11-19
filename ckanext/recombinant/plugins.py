@@ -248,6 +248,7 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
             chromo['excel_template'] = chromo.get('excel_template', True)
             chromo['create_form'] = chromo.get('create_form', False)
             chromo['edit_form'] = chromo.get('edit_form', False)
+            chromo['edit_using__id'] = chromo.get('edit_using__id', False)
             chromo['stately_records'] = False
             for f in chromo['fields']:
                 if f['datastore_id'] != 'record_state':

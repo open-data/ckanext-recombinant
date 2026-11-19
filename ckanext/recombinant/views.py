@@ -1201,7 +1201,22 @@ def preview_table(resource_name: str,
     pk_field_dicts = recombinant_primary_key_fields(resource_name)
     dt_pkids = []
     dt_fields = []
+    dt_edit_keys = []
     dt_fkids = {}
+    _id_label = config['ckanext.recombinant._id.label']
+    _id_description = config['ckanext.recombinant._id.description']
+    # need various frameworked keys: recombinant field,
+    # datastore info, and datatables JS column.
+    _id_field = {
+        'datastore_id': '_id',
+        'id': '_id',
+        'name': '_id',
+        'type': 'int',
+        'datastore_type': 'int',
+        'label': _(_id_label),
+        'description': _(_id_description),
+        'priority': 0,
+    }
     # TODO: DEPRECATED: REMOVE AFTER FULL RECOMBINANT DATATABLES QA
     dt_template = 'recombinant_datatable_depr.html'
     for f in pk_field_dicts:
@@ -1244,6 +1259,9 @@ def preview_table(resource_name: str,
         pk_priority = 0
         activity_priority = 1
         fids = []
+        if view_context.chromo['edit_using__id']:
+            dt_fields.append(_id_field)
+            fids.append('_id')
         for f in view_context.chromo['fields']:
             if f.get('published_resource_computed_field'):
                 continue
@@ -1264,6 +1282,9 @@ def preview_table(resource_name: str,
             fids.append(f['datastore_id'])
         dt_pkids = [fids.index(k) for k in aslist(
             view_context.chromo['datastore_primary_key'])]
+        dt_edit_keys = dt_pkids
+        if view_context.chromo['edit_using__id']:
+            dt_edit_keys = [0]
         try:
             ds_info = get_action('datastore_info')(
                 cast(Context, {'ignore_auth': True}),
@@ -1318,8 +1339,10 @@ def preview_table(resource_name: str,
                                   dt_settings={
                                       'primary_keys': dt_pkids,
                                       'foreign_keys': dt_fkids,
+                                      'edit_keys': dt_edit_keys,
                                       'ds_fields': dt_fields,
                                       'dt_snippet':  dt_template,
+                                      '_id_field': _id_field,
                                   }))
 
 
@@ -1555,11 +1578,13 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
     ):
         return abort(403, _('Unauthorized to update a record for this resource'))
 
+    pk_fields = ['_id'] if view_context.chromo['edit_using__id'] \
+        else view_context.pk_fields
     template_vars = {
         'rcomb': view_context.rcomb,
         'geno': view_context.geno,
         'chromo': view_context.chromo,
-        'pk_fields': view_context.pk_fields,
+        'pk_fields': pk_fields,
         'choice_fields': view_context.choice_fields,
         'dataset': view_context.dataset,
         'resource': view_context.resource,
@@ -1572,7 +1597,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
     if came_from not in ['preview_record', 'preview_table']:
         came_from = 'preview_table'  # default to preview_table view
 
-    pk_filter = dict(zip(view_context.pk_fields, pk_list))
+    pk_filter = dict(zip(pk_fields, pk_list))
 
     records = lc.action.datastore_search(
         resource_id=view_context.resource['id'],
@@ -1583,7 +1608,17 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
         abort(400, _('Multiple records found'))
     record = records[0]
 
+    _id_label = config['ckanext.recombinant._id.label']
+    _id_description = config['ckanext.recombinant._id.description']
+    _id_field = {
+        'datastore_id': '_id',
+        'type': 'int',
+        'label': _(_id_label),
+        'description': _(_id_description),
+    }
     data = {}
+    if view_context.chromo.get('edit_using__id'):
+        data['_id'] = record['_id']
     for f in view_context.chromo['fields']:
         if (
           not f.get('import_template_include', True) or
@@ -1601,7 +1636,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
 
     if request.method == 'POST':
         post_data = parse_params(request.form,
-                                 ignore_keys=['save'] + view_context.pk_fields)
+                                 ignore_keys=['save'] + pk_fields)
 
         if 'cancel' in post_data:
             if came_from == 'preview_record':
@@ -1616,12 +1651,12 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
         data, err = _clean_check_type_errors(
             post_data,
             view_context.chromo['fields'],
-            view_context.pk_fields,
+            pk_fields,
             view_context.choice_fields)
         error_summary = None
         # can't change pk fields
         for f_id in data:
-            if f_id in view_context.pk_fields:
+            if f_id in pk_fields:
                 data[f_id] = record[f_id]
 
         # normalize newlines to \n
@@ -1651,6 +1686,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
                           extra_vars=dict(template_vars,
                                           data=data,
                                           pk=pk,
+                                          _id_field=_id_field,
                                           # prevent rendering error on parent template
                                           pkg_dict={},
                                           errors=err,
@@ -1673,6 +1709,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
                   extra_vars=dict(template_vars,
                                   data=data,
                                   pk=pk,
+                                  _id_field=_id_field,
                                   # prevent rendering error on parent template
                                   pkg_dict={},
                                   errors={},
@@ -2264,6 +2301,9 @@ def datatable(resource_name: str, resource_id: str) -> Union[str, Response]:
     can_edit = h.check_access('resource_update', {'id': resource_id})
     cols = []
     fids = []
+    if chromo.get('edit_using__id'):
+        cols.append('_id')
+        fids.append('_id')
     for f in chromo['fields']:
         if f.get('published_resource_computed_field', False):
             continue
@@ -2372,6 +2412,9 @@ def datatable_depr(resource_name: str, resource_id: str) -> Union[str, Response]
     can_edit = h.check_access('resource_update', {'id': resource_id})
     cols = []
     fids = []
+    if chromo.get('edit_using__id'):
+        cols.append('_id')
+        fids.append('_id')
     for f in chromo['fields']:
         if f.get('published_resource_computed_field', False):
             continue
@@ -2419,7 +2462,9 @@ def datatable_depr(resource_name: str, resource_id: str) -> Union[str, Response]
                         'recombinant.update_record',
                         owner_org=pkg['organization']['name'],
                         resource_name=resource_name,
-                        pk=','.join(_url_part_escape(row[i+1]) for i in pkids)
+                        pk=_url_part_escape(row[1]) if
+                        chromo.get('edit_using__id') else
+                        ','.join(_url_part_escape(row[i+1]) for i in pkids)
                     )
                 )
             )
