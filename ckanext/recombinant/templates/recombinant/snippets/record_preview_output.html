@@ -1,0 +1,43 @@
+{#
+Preview a single Recombinant DataStore record
+
+rcomb           - The Recombinant dict
+geno            - The Recombinant Geno dict
+chromo          - The Recombinant Chromo dict
+pk_fields       - List of strings of primary keys
+choice_fields   - Dict of choice fields
+dataset         - The dataset dict
+resource        - The resource dict
+organization    - The organization dict
+pk              - URL string of primary keys (e.g. 2026 or 001,2026)
+record          - The DataStore record dict
+#}
+
+{% block record_preview %}
+  {%- for f in chromo.fields -%}
+    {%- if f.datastore_id in record and record[f.datastore_id] -%}
+      <div class="mrgn-bttm-md">
+        <strong class="{{- f.get('preview_class', '') -}}">{{- h.recombinant_language_text(f.label) -}}</strong><br/>
+        {%- if f.datastore_id in choice_fields -%}
+          {%- if f.get('datastore_type') == '_text' -%}
+            <ul>
+              {%- for choice in choice_fields[f.datastore_id] -%}
+                {%- if choice.value in record[f.datastore_id] -%}
+                  <li><span data-ds-id="{{- f.datastore_id -}}">{{- choice.label -}}</span></li>
+                {%- endif -%}
+              {%- endfor -%}
+            </ul>
+          {%- else -%}
+            {%- for choice in choice_fields[f.datastore_id] -%}
+              {%- if choice.value == record[f.datastore_id] -%}
+                <span data-ds-id="{{- f.datastore_id -}}">{{- choice.label -}}</span>
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+        {%- else -%}
+          <span data-ds-id="{{- f.datastore_id -}}">{{- record[f.datastore_id] if not f.get('markdown') else h.render_markdown(record[f.datastore_id]) -}}</span>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  {%- endfor -%}
+{% endblock %}
