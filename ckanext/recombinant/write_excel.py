@@ -31,7 +31,8 @@ from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException, RecombinantFieldError
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import (
-    recombinant_choice_fields, recombinant_language_text)
+    recombinant_choice_fields, recombinant_language_text,
+    _get_id_field_dict)
 
 from ckan.plugins.toolkit import _, h, config, request
 from flask_babel import force_locale
@@ -118,6 +119,10 @@ REF_SEC_BREAK_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFEBEBEB'},
     'Font': {'color': 'FFEBEBEB', 'bold': False},
     'Alignment': {'vertical': 'top'}}
+RECO__ID_STYLE = {
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFEBEBEB'},
+    'Font': {'color': 'FF030303', 'bold': False},
+    'Alignment': {'vertical': 'top'}}
 REF_VALUE_STYLE = {
     'Alignment': {'wrapText': True, 'vertical': 'top'}}
 REF_PAPER_STYLE = {
@@ -129,7 +134,8 @@ TYPE_HERE_STYLE = {
 def excel_template(dataset_type: str,
                    org: Dict[str, Any],
                    edit_using__id: bool = False,
-                   edit_rows: Optional[int] = None) -> Workbook:
+                   edit_rows: Optional[int] = None,
+                   resource_name: Optional[str] = None) -> Workbook:
     """
     return an openpyxl.Workbook object containing the sheet and header fields
     for passed dataset_type and org. Supports version 3 templates.
@@ -152,6 +158,13 @@ def excel_template(dataset_type: str,
     if version == 3:
         _build_styles(book, geno)
     for rnum, chromo in enumerate(geno['resources'], 1):
+        if (
+          edit_using__id and edit_rows and
+          resource_name and chromo['resource_name'] != resource_name
+        ):
+            # needs empty value for zip enumeration below
+            choice_ranges.append(None)
+            continue
         if version == 3:
             _append_resource_ref_header(geno, refs, rnum)
             choice_ranges.append(_populate_excel_sheet(
@@ -173,6 +186,11 @@ def excel_template(dataset_type: str,
 
     for i, (chromo, cranges) in enumerate(
             zip(geno['resources'], choice_ranges), 1):
+        if (
+            edit_using__id and edit_rows and
+            resource_name and chromo['resource_name'] != resource_name
+        ):
+            continue
         # type_ignore_reason: incomplete typing
         sheet: Worksheet = book.create_sheet()
         _populate_excel_e_sheet(sheet, chromo, cranges)
@@ -206,8 +224,11 @@ def append_data(book: Workbook,
     current_row = DATA_FIRST_ROW
     for record in record_data:
         if edit_using__id:
-            cast(Cell, sheet.cell(
-                row=current_row, column=RPAD_COL_NUM)).value = record['_id']
+            _id_cell = cast(Cell, sheet.cell(
+                row=current_row, column=RPAD_COL_NUM))
+            _id_cell.value = record['_id']
+            _id_cell.style = 'reco__id'
+            _id_cell.alignment = Alignment(wrap_text=True, vertical='bottom')
         for col_num, field in template_cols_fields(chromo):
             if field['datastore_id'] not in record:
                 raise RecombinantFieldError(field['datastore_id'])
@@ -271,6 +292,8 @@ def excel_data_dictionary(geno: RecombinantGenoDict,
             refs = []
             for rnum, chromo in enumerate(geno['resources'], 1):
                 _append_resource_ref_header(geno, refs, rnum)
+                if chromo['edit_using__id']:
+                    _append_field_ref_rows(refs, _get_id_field_dict(), link=None)
 
                 org_specifc_fields = chromo.get('org_specific_fields', [])
 
@@ -354,6 +377,7 @@ def _build_styles(book: Workbook,
     build_named_style(book, 'reco_ref_subattr', REF_SUBATTR_STYLE)
     build_named_style(book, 'reco_ref_value', REF_VALUE_STYLE)
     build_named_style(book, 'reco_sec_break', REF_SEC_BREAK_STYLE)
+    build_named_style(book, 'reco__id', RECO__ID_STYLE)
 
 
 def _populate_excel_sheet(book: Workbook,
@@ -402,13 +426,23 @@ def _populate_excel_sheet(book: Workbook,
         cast(Cell, sheet.cell(row=i, column=1)).value = None
 
     if edit_using__id:
+        _edit_field = _get_id_field_dict()
         sheet.row_dimensions[EXAMPLE_ROW].hidden = True
+        _id_label = _edit_field['label']
         fill_cell(
             sheet,
             CHEADINGS_ROW,
             RPAD_COL_NUM,
-            _('Record ID'),
+            _(_id_label),
             'reco_cheading')
+        _id_cell = cast(Cell, sheet.cell(row=CHEADINGS_ROW, column=RPAD_COL_NUM))
+        _id_cell.hyperlink = '#reference!{colA}{row1}:{colZ}{rowN}'.format(
+            colA=REF_FIELD_NUM_COL,
+            row1=REF_FIRST_ROW + 2,
+            colZ=REF_VALUE_COL,
+            rowN=REF_FIRST_ROW + 4)
+        _append_field_ref_rows(refs, _edit_field, link="#'{sheet}'!{col}{row}".format(
+            sheet=sheet.title, col=RPAD_COL, row=CHEADINGS_ROW))
     else:
         sheet.merge_cells(EXAMPLE_MERGE)
         fill_cell(sheet, EXAMPLE_ROW, 1, _('e.g.'), 'reco_example')
@@ -425,7 +459,7 @@ def _populate_excel_sheet(book: Workbook,
 
     restriction = ''
     sig = 'v3'
-    if chromo.get('edit_using__id'):
+    if chromo['edit_using__id']:
         # template is update-only or insert-only
         restriction = ' \N{em dash} ' + (
             _('Edit existing records') if edit_using__id
@@ -795,7 +829,7 @@ def _populate_reference_sheet(sheet: Worksheet,
             link = None
             value = None
             if len(ref_line) == 2:
-                value = ref_line[1].strip()
+                value = str(ref_line[1]).strip()
                 ref_line = [ref_line[0], value]
             elif len(ref_line) == 1 and isinstance(ref_line[0], tuple):
                 link, value = ref_line[0]

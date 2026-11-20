@@ -1550,10 +1550,10 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
           name: csrfTokenName
         })).append($('<input>').attr({
           type: 'hidden',
-          value: editKeys,
+          value: primaryKeys,
           name: 'key_indices'
         }));
-        let pk_cols = editKeys.map(function(value){
+        let pk_cols = primaryKeys.map(function(value){
           return value + colOffset;
         });
         let rows = dt.rows({ selected: true});

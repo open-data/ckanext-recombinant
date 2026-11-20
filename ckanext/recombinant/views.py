@@ -67,8 +67,7 @@ from ckanext.recombinant.write_excel import (
     append_data
 )
 from ckanext.recombinant.tables import get_chromo, get_geno
-from ckanext.recombinant.helpers import (
-    recombinant_primary_key_fields, recombinant_choice_fields)
+from ckanext.recombinant.helpers import recombinant_choice_fields, _get_id_field_dict
 
 from io import BytesIO
 
@@ -263,6 +262,9 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
     Bulk delete records via Delete tab UI.
     Separated by newlines in a textare form field.
 
+    NOTE: user input is done by primary keys (e.g. Year,Month)
+          the confirm delete POSTs the _id values of the matched records (e.g. 25)
+
     Old route: /recombinant/delete/<id>/<resource_id>
     """
     if not g.user:
@@ -288,47 +290,64 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
                              resource_name=resource_name,
                              owner_org=owner_org)
 
+    pk_field_dicts = [
+        f for f in view_context.chromo['fields']
+        if f['datastore_id'] in view_context.chromo['datastore_primary_key']
+    ]
+
     # type_ignore_reason: [] default is allowed
-    def delete_error(err: str, _records: List[str] = []) -> str:  # type: ignore
+    def delete_error(err: str, _ok_records: List[str] = [],
+                     _records: List[str] = []) -> str:  # type: ignore
         return render('recombinant/confirm_delete.html',
-                      extra_vars={'recomb': view_context.rcomb,
+                      extra_vars={'rcomb': view_context.rcomb,
+                                  'chromo': view_context.chromo,
                                   'resource': view_context.resource,
+                                  '_id_field': _get_id_field_dict(),
+                                  'pk_field_dicts': pk_field_dicts,
                                   'errors': [err],
                                   'num': len(_records),
-                                  'bulk_delete': '\n'.join(
+                                  'to_delete': _ok_records,
+                                  'bulk_delete_ids': '\n'.join(
                                       _records
                                       # extra blank is needed to prevent field
                                       # from being completely empty
                                       + ([''] if '' in _records else []))})
 
+    delete_by__id = False
     form_text = request.form.get('bulk-delete', '')
     if not form_text:
-        # we can just silently refresh
-        return h.redirect_to('recombinant.preview_table',
-                             resource_name=resource_name,
-                             owner_org=owner_org)
+        form_text = request.form.get('bulk-delete-ids', '')
+        if form_text:
+            delete_by__id = True
+        else:
+            # we can just silently refresh
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=owner_org)
 
+    pk_fields = ['_id'] if delete_by__id else view_context.pk_fields
     filters = {}
     ok_records = []
+    _ids_to_delete = []
     ok_filters = []
-    records = iter(form_text.split('\n'))
-    for r in records:
-        r = r.rstrip('\r')
+    pk_text = iter(form_text.split('\n'))
+    for pk_string in pk_text:
+        pk_string = pk_string.rstrip('\r')
 
         def record_fail(err: str) -> str:
             # move bad record to the top of the pile
             filters['bulk-delete'] = '\n'.join(
-                [r] + list(records) + ok_records)
-            return delete_error(err, ok_records)
+                [pk_string] + list(pk_text) + ok_records)
+            return delete_error(err, ok_records, _ids_to_delete)
 
-        split_on = '\t' if '\t' in r else ','
-        fields = [f for f in r.split(split_on)]
-        if len(fields) != len(view_context.pk_fields):
+        split_on = '\t' if '\t' in pk_string else ','
+        fields = [f for f in pk_string.split(split_on)]
+        if len(fields) != len(pk_fields):
             return record_fail(_('Wrong number of fields, expected {num}').format(
-                num=len(view_context.pk_fields)))
+                num=len(pk_fields)))
 
         filters.clear()
-        for f, pkf in zip(fields, view_context.pk_fields):
+        for f, pkf in zip(fields, pk_fields):
             filters[pkf] = f
         try:
             result = lc.action.datastore_search(
@@ -344,9 +363,10 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
         if len(found) > 1:
             return record_fail(_('Multiple matching records found'))
 
-        if r not in ok_records:
-            ok_records.append(r)
+        if pk_string not in ok_records:
+            ok_records.append(pk_string)
             ok_filters.append(dict(filters))
+            _ids_to_delete.append(str(found[0]['_id']))
 
     if 'cancel' in request.form:
         return h.redirect_to('recombinant.preview_table',
@@ -356,13 +376,17 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
     if 'confirm' not in request.form or request.method == 'GET':  # type: ignore
         return render('recombinant/confirm_delete.html',
                       extra_vars={'rcomb': view_context.rcomb,
+                                  'chromo': view_context.chromo,
                                   'resource': view_context.resource,
+                                  '_id_field': _get_id_field_dict(),
+                                  'pk_field_dicts': pk_field_dicts,
                                   'num': len(ok_records),
-                                  'bulk_delete': '\n'.join(
-                                      ok_records
+                                  'to_delete': ok_records,
+                                  'bulk_delete_ids': '\n'.join(
+                                      _ids_to_delete
                                       # extra blank is needed to prevent field
                                       # from being completely empty
-                                      + ([''] if '' in ok_records else []))})
+                                      + ([''] if '' in _ids_to_delete else []))})
     if request.method == 'POST':
         for f in ok_filters:
             try:
@@ -391,6 +415,9 @@ def delete_single_record(resource_name: str, owner_org: str,
                          pk: str) -> Union[str, Response]:
     """
     Delete a single record for a Recombinant resource.
+
+    NOTE: user input is done by primary keys (e.g. Year,Month)
+          the confirm delete POSTs the _id values of the matched records (e.g. 25)
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -415,31 +442,60 @@ def delete_single_record(resource_name: str, owner_org: str,
         came_from = 'preview_table'  # default to preview_table view
 
     if 'cancel' in request.form:
+        og_pk = request.form.get('original-pk', pk)
         if came_from == 'preview_record':
             return h.redirect_to('recombinant.preview_record',
                                  resource_name=resource_name,
                                  owner_org=owner_org,
-                                 pk=pk)
+                                 pk=og_pk)
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=owner_org)
-    if request.method != 'POST' or 'confirm' not in request.form:
-        return render('recombinant/confirm_single_delete.html',
-                      extra_vars={
-                          'rcomb': view_context.rcomb,
-                          'resource': view_context.resource,
-                          'num': 1,
-                          'pk': pk,
-                          'pk_list': primary_key_vals,
-                          'came_from': came_from})
+
+    pk_field_dicts = [
+        f for f in view_context.chromo['fields']
+        if f['datastore_id'] in view_context.chromo['datastore_primary_key']
+    ]
+    pk_fields = ['_id'] if view_context.chromo['edit_using__id'] \
+        else view_context.pk_fields
 
     filters = {}
     try:
-        for i, k in enumerate(view_context.pk_fields):
+        for i, k in enumerate(pk_fields):
             filters[k] = primary_key_vals[i]
     except IndexError:
         abort(404, _('Record %s not found for Organization %s') %
               (pk, owner_org))
+
+    if request.method != 'POST' or 'confirm' not in request.form:
+        # need primary keys to delete for the record
+        result = lc.action.datastore_search(
+            resource_id=view_context.resource['id'],
+            filters=filters,
+            limit=2)
+        if not result or not result['records']:
+            return abort(404, _('No matching records found "%s"') %
+                         '", "'.join(primary_key_vals))
+        found = result['records']
+        if len(found) > 1:
+            return abort(404, _('Multiple matching records found for "%s"') %
+                         '", "'.join(primary_key_vals))
+        _id_to_delete = found[0]['_id']
+        primary_key_vals = [
+            v for k, v in found[0].items() if k in view_context.pk_fields
+        ]
+        return render('recombinant/confirm_single_delete.html',
+                      extra_vars={
+                          'rcomb': view_context.rcomb,
+                          'chromo': view_context.chromo,
+                          'resource': view_context.resource,
+                          '_id_field': _get_id_field_dict(),
+                          'pk_field_dicts': pk_field_dicts,
+                          'num': 1,
+                          'pk': pk,
+                          '_id_to_delete': _id_to_delete,
+                          'pk_list': primary_key_vals,
+                          'came_from': came_from})
 
     try:
         lc.action.datastore_records_delete(
@@ -478,6 +534,9 @@ def delete_selected_records(resource_name: str,
     Delete selected records for a Recombinant resource,
     selectable from the DataTables UI.
 
+    NOTE: user input is done by primary keys (e.g. Year,Month)
+          the confirm delete POSTs the _id values of the matched records (e.g. 25)
+
     Old route: /recombinant/delete-selected-records/<resource_id>
     """
     if not g.user:
@@ -496,25 +555,76 @@ def delete_selected_records(resource_name: str,
                             'to update resource {1}').format(
                                 str(g.user), view_context.resource['id']))
 
-    records = request.form.getlist('select-delete')
-
     if 'cancel' in request.form:
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=owner_org)
+
+    delete_by__id = False
+    pk_text = request.form.getlist('select-delete')
+    if not pk_text:
+        pk_text = request.form.getlist('select-delete-ids')
+        if pk_text:
+            delete_by__id = True
+        else:
+            # we can just silently refresh
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=owner_org)
+
+    pk_field_dicts = [
+        f for f in view_context.chromo['fields']
+        if f['datastore_id'] in view_context.chromo['datastore_primary_key']
+    ]
+    pk_fields = ['_id'] if delete_by__id else view_context.pk_fields
+    if delete_by__id:
+        pk_text = ''.join(pk_text).split(';')
+
     if request.method != 'POST' or 'confirm' not in request.form:
+        _ids_to_delete = []
+        pks_to_delete = []
+        has_errors = False
+        for pk_string in pk_text:
+            filter = dict(zip(pk_fields, pk_string.split(',')))
+            if filter:
+                try:
+                    result = lc.action.datastore_search(
+                        resource_id=view_context.resource['id'],
+                        filters=filter,
+                        limit=2)
+                except NotFound:
+                    h.flash_error(_('Not found') + ' ' + str(filter))
+                    has_errors = True
+                found = result['records']
+                if not found:
+                    h.flash_error(_('No matching records found "%s"') %
+                                  '", "'.join(pk_string))
+                    has_errors = True
+                if len(found) > 1:
+                    h.flash_error(_('Multiple matching records found for "%s"') %
+                                  '", "'.join(pk_string))
+                    has_errors = True
+                if found and pk_string not in pks_to_delete:
+                    pks_to_delete.append(pk_string)
+                    _ids_to_delete.append(str(found[0]['_id']))
+        if has_errors:
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=owner_org)
         return render('recombinant/confirm_select_delete.html',
                       extra_vars={
                           'rcomb': view_context.rcomb,
+                          'chromo': view_context.chromo,
                           'resource': view_context.resource,
-                          'num': len(records),
-                          'select_delete': ';'.join(records)})
-
-    records = ''.join(records).split(';')
+                          '_id_field': _get_id_field_dict(),
+                          'pk_field_dicts': pk_field_dicts,
+                          'num': len(pk_text),
+                          'to_delete': pks_to_delete,
+                          'select_delete_ids': ';'.join(_ids_to_delete)})
 
     records_deleted = 0
-    for r in records:
-        filter = dict(zip(view_context.pk_fields, r.split(',')))
+    for pk_string in pk_text:
+        filter = dict(zip(pk_fields, pk_string.split(',')))
         if filter:
             try:
                 lc.action.datastore_records_delete(
@@ -693,18 +803,22 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
         else:
             return abort(404, _("Resource not found"))
 
-        pk_fields = recombinant_primary_key_fields(resource['name'])
-        primary_keys = request.form.getlist('bulk-template')
         chromo = get_chromo(resource['name'])
+        primary_keys = request.form.getlist('bulk-template')
         record_data = []
-
-        edit_using__id = bool(chromo.get('edit_using__id'))
+        pk_field_dicts = []
+        edit_using__id = chromo['edit_using__id']
         if edit_using__id:
-            pk_fields = [{'datastore_id': '_id'}]
+            pk_field_dicts = [_get_id_field_dict()]
+        else:
+            pk_field_dicts = [
+                f for f in chromo['fields']
+                if f['datastore_id'] in chromo['datastore_primary_key']
+            ]
 
         for keys in primary_keys:
             temp = keys.split(",")
-            for f, pkf in zip(temp, pk_fields):
+            for f, pkf in zip(temp, pk_field_dicts):
                 filters[pkf['datastore_id']] = f
             try:
                 result = lc.action.datastore_search(resource_id=resource['id'],
@@ -716,7 +830,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
 
         try:
             book = excel_template(
-                dataset_type, org, edit_using__id, len(record_data))
+                dataset_type, org, edit_using__id, len(record_data), resource_name)
         except RecombinantException as e:
             return abort(400, _('Unable to download template.\n%s') % e)
 
@@ -1198,25 +1312,14 @@ def preview_table(resource_name: str,
     record_query = None
     record_query_error = None
     pk_labels = []
-    pk_field_dicts = recombinant_primary_key_fields(resource_name)
+    pk_field_dicts = [
+        f for f in view_context.chromo['fields']
+        if f['datastore_id'] in view_context.chromo['datastore_primary_key']
+    ] if view_context.chromo else []
     dt_pkids = []
     dt_fields = []
     dt_edit_keys = []
     dt_fkids = {}
-    _id_label = config['ckanext.recombinant._id.label']
-    _id_description = config['ckanext.recombinant._id.description']
-    # need various frameworked keys: recombinant field,
-    # datastore info, and datatables JS column.
-    _id_field = {
-        'datastore_id': '_id',
-        'id': '_id',
-        'name': '_id',
-        'type': 'int',
-        'datastore_type': 'int',
-        'label': _(_id_label),
-        'description': _(_id_description),
-        'priority': 0,
-    }
     # TODO: DEPRECATED: REMOVE AFTER FULL RECOMBINANT DATATABLES QA
     dt_template = 'recombinant_datatable_depr.html'
     for f in pk_field_dicts:
@@ -1260,7 +1363,7 @@ def preview_table(resource_name: str,
         activity_priority = 1
         fids = []
         if view_context.chromo['edit_using__id']:
-            dt_fields.append(_id_field)
+            dt_fields.append(_get_id_field_dict())
             fids.append('_id')
         for f in view_context.chromo['fields']:
             if f.get('published_resource_computed_field'):
@@ -1333,6 +1436,8 @@ def preview_table(resource_name: str,
                                   record_query_error=record_query_error,
                                   record_state=record_state,
                                   pk_labels=pk_labels,
+                                  pk_field_dicts=pk_field_dicts,
+                                  _id_field=_get_id_field_dict(),
                                   errors=None,
                                   delete_errors=None,
                                   filters=None,
@@ -1342,7 +1447,7 @@ def preview_table(resource_name: str,
                                       'edit_keys': dt_edit_keys,
                                       'ds_fields': dt_fields,
                                       'dt_snippet':  dt_template,
-                                      '_id_field': _id_field,
+                                      '_id_field': _get_id_field_dict(),
                                   }))
 
 
@@ -1376,11 +1481,14 @@ def preview_record(resource_name: str,
     ):
         return abort(403, _('Not authorized to view resource.'))
 
+    pk_fields = ['_id'] if view_context.chromo['edit_using__id'] \
+        else view_context.pk_fields
+
     template_vars = {
         'rcomb': view_context.rcomb,
         'geno': view_context.geno,
         'chromo': view_context.chromo,
-        'pk_fields': view_context.pk_fields,
+        'pk_fields': pk_fields,
         'choice_fields': view_context.choice_fields,
         'dataset': view_context.dataset,
         'resource': view_context.resource,
@@ -1392,7 +1500,7 @@ def preview_record(resource_name: str,
     record = None
     filters = {}
     try:
-        for i, k in enumerate(view_context.pk_fields):
+        for i, k in enumerate(pk_fields):
             filters[k] = primary_key_vals[i]
     except IndexError:
         abort(404, _('Record %s not found for Organization %s') %
@@ -1412,6 +1520,7 @@ def preview_record(resource_name: str,
     return render('recombinant/record_preview.html',
                   extra_vars=dict(template_vars,
                                   pk=pk,
+                                  _id_field=_get_id_field_dict(),
                                   record=record))
 
 
@@ -1608,14 +1717,6 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
         abort(400, _('Multiple records found'))
     record = records[0]
 
-    _id_label = config['ckanext.recombinant._id.label']
-    _id_description = config['ckanext.recombinant._id.description']
-    _id_field = {
-        'datastore_id': '_id',
-        'type': 'int',
-        'label': _(_id_label),
-        'description': _(_id_description),
-    }
     data = {}
     if view_context.chromo.get('edit_using__id'):
         data['_id'] = record['_id']
@@ -1686,7 +1787,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
                           extra_vars=dict(template_vars,
                                           data=data,
                                           pk=pk,
-                                          _id_field=_id_field,
+                                          _id_field=_get_id_field_dict(),
                                           # prevent rendering error on parent template
                                           pkg_dict={},
                                           errors=err,
@@ -1709,7 +1810,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
                   extra_vars=dict(template_vars,
                                   data=data,
                                   pk=pk,
-                                  _id_field=_id_field,
+                                  _id_field=_get_id_field_dict(),
                                   # prevent rendering error on parent template
                                   pkg_dict={},
                                   errors={},

@@ -10,10 +10,18 @@ dataset         - The dataset dict
 resource        - The resource dict
 organization    - The organization dict
 pk              - URL string of primary keys (e.g. 2026 or 001,2026)
+_id_field       - Dict of the _id field
 record          - The DataStore record dict
 #}
 
 {% block record_preview %}
+  {%- if chromo.edit_using__id -%}
+    <div class="mrgn-bttm-md">
+      {%- set _id_label = _id_field['label'] -%}
+      <strong>{{- _(_id_label) -}}</strong><br/>
+      <span data-ds-id="_id">{{- record['_id'] -}}</span>
+    </div>
+  {%- endif -%}
   {%- for f in chromo.fields -%}
     {%- if f.datastore_id in record and record[f.datastore_id] -%}
       <div class="mrgn-bttm-md">

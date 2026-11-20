@@ -234,10 +234,10 @@
             }));
             form.append($('<input>').attr({
               type: 'hidden',
-              value: {{edit_keys | tojson}},
+              value: {{primary_keys | tojson}},
               name: 'key_indices'
             }));
-            var pk_cols = {{edit_keys}}.map(function(value){
+            var pk_cols = {{primary_keys}}.map(function(value){
               return value + {{offset}};
             });
             let rows = dt.rows( { selected: true } );

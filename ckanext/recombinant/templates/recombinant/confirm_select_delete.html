@@ -1,10 +1,14 @@
 {#
 Confirm deletion of a Recombinant dataset.
 
-rcomb         - The Recombinant dict
-resource      - The resource dict
-num           - The number of records to delete
-select_delete - The primary keys to delete
+rcomb               - The Recombinant dict
+chromo              - The Recombinant Chromo dict
+resource            - The resource dict
+_id_field           - Dict of the _id field
+pk_field_dicts      - List of primary key field Dicts
+num                 - The number of records to delete
+to_delete           - List of primary key strings to delete
+select_delete_ids   - The string value of _ids to delete
 #}
 {% extends "page.html" %}
 
@@ -12,8 +16,6 @@ select_delete - The primary keys to delete
 
 {% block primary_content_inner %}
   {% block form %}
-    {% set to_delete = select_delete.split(';') %}
-    {% set primary_keys = h.recombinant_primary_key_fields(resource.name) %}
     <p>{{ ungettext(
       'Are you sure you want to delete {num} record? This action cannot be undone.',
       'Are you sure you want to delete {num} records? This action cannot be undone.',
@@ -22,7 +24,7 @@ select_delete - The primary keys to delete
       <table class="table table-responsive">
         <thead>
           <th scope="col" class="col-sm-1 border-0"></th>
-          {% for c in primary_keys %}
+          {% for c in pk_field_dicts %}
             <th scope="col">{{ c['label'][h.lang()] or c['label'] }}</th>
           {% endfor %}
         </thead>
@@ -44,7 +46,7 @@ select_delete - The primary keys to delete
     <p class="form-actions">
       <form id="recombinant-confirm-select-delete-form" action="{{ h.url_for('recombinant.delete_selected_records', resource_name=resource.name, owner_org=rcomb.owner_org) }}" method="post">
         {{ h.csrf_input() }}
-        <input type="hidden" name="select-delete" value="{{ select_delete }}" />
+        <input type="hidden" name="select-delete-ids" value="{{ select_delete_ids }}" />
         <button class="btn" type="submit" name="cancel" >{{ _('Cancel') }}</button>
         <button class="btn btn-danger" type="submit" name="confirm" >{{ _('Confirm Delete') }}</button>
       </form>

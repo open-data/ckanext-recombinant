@@ -119,9 +119,10 @@
   {% if can_edit %}
     const pd_datatables__EDITOR = {
       {% if chromo.edit_using__id %}
+        {%- set _id_label = _id_field['label'] -%}
         {{- '_id' -}}: {
           type: '{{- _id_field['type'] -}}',
-          label: '{{- _id_field['label'] -}}',
+          label: '{{- _(_id_label) -}}',
           form_attrs: null,
           select_choices: null,
           choices_suffix_filter: null,

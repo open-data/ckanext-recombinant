@@ -68,13 +68,15 @@ came_from       - URI parameter of view to redirect back to
 
     <div class='container-fluid mrgn-bttm-lg recombinant-webform-container'>
       {%- if chromo.edit_using__id -%}
+        {%- set _id_label = _id_field['label'] -%}
+        {%- set _id_description = _id_field['description'] -%}
         {% snippet 'scheming/form_snippets/text.html',
           field={
             'field_name': _id_field['datastore_id'],
-            'label': _id_field['label'],
+            'label': _(_id_label),
             'form_attrs': {'readonly': ''},
             'required': true,
-            'help_text': _id_field['description'],
+            'help_text': _(_id_description),
           }, data=data, errors={} %}
       {%- endif -%}
       {%- for f in chromo.fields %}

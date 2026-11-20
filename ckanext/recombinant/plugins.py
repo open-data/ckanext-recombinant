@@ -113,8 +113,6 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
     def get_helpers(self) -> Dict[str, Callable[..., Any]]:
         return {
             'recombinant_language_text': helpers.recombinant_language_text,
-            'recombinant_primary_key_fields':
-                helpers.recombinant_primary_key_fields,
             'recombinant_get_chromo': helpers.recombinant_get_chromo,
             'recombinant_get_geno': helpers.recombinant_get_geno,
             'recombinant_get_types': helpers.recombinant_get_types,
