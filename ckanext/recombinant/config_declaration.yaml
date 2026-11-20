@@ -1,0 +1,30 @@
+version: 1
+groups:
+  - annotation: ckanext-recombinant settings
+    options:
+      - key: ckanext.recombinant.sysadmin_org_redirect
+        default: tbs-sct
+        description: |
+          Set the organization name for sysadmin to redirect to
+          when navigating to a Recombinant route without an
+          org name in the URI.
+      - key: ckanext.recombinant.enable_datatable_enhanced
+        default: false
+        description: |
+          Enables the improved DataTables for Recombinant type resources.
+        validators: boolean_validator
+      - key: ckanext.recombinant.enable_datatable_editor
+        default: false
+        description: |
+          Enables the custom DataTables editor for Recombinant type resources.
+        validators: boolean_validator
+      - key: ckanext.recombinant._id.label
+        default: _id
+        description: |
+          The field label for the DataStore _id column.
+          Used when a Schema is using edit_using__id
+      - key: ckanext.recombinant._id.description
+        default: Unique record identifier
+        description: |
+          The field description for the DataStore _id column.
+          Used when a Schema is using edit_using__id

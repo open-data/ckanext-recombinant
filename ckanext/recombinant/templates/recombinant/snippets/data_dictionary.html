@@ -1,3 +1,13 @@
+{#
+Output Data Dictionary from a Recombinant Schema.
+
+chromo                      - The Recombinant Chromo dict
+all_expanded                - Boolean if all accordions should start expanded
+is_published_resource       - Boolean if it is a recombinant combined resource
+organization                - The organization dict
+organization_display_name   - Macro function
+_id_field                   - Dict of the _id field
+#}
 {% set org_specifc_fields = chromo.get('org_specific_fields', []) %}
 {% set choice_fields=h.recombinant_choice_fields(chromo.resource_name, all_languages=(is_published_resource and org_specifc_fields), org_name=organization.name if organization else none) %}
 
@@ -30,6 +40,31 @@
 {% endmacro %}
 
 <div class="panel-group recombinant-dictionary" data-published-resource="{{- is_published_resource -}}">
+  {%- if not is_published_resource and chromo.edit_using__id and _id_field -%}
+    {%- set _id_label = _id_field['label'] -%}
+    {%- set _id_description = _id_field['description'] -%}
+    <div class="panel">
+      <div class="panel-heading">
+        <div class="row panel-title">
+          <div class="col-md-1">0.</div>
+          <div class="col-md-6">{{- _(_id_label) -}}</div>
+          <div class="col-md-4"><code>{{ _id_field['type'] }}</code>
+          </div>
+          <div class="col-md-1"></div>
+        </div>
+      </div>
+      <div role="tabpanel" class="panel-collapse">
+        <div class="panel-body">
+          <dl class="row">
+            {% call dictionary_field(_('ID')) %}{{ _id_field['datastore_id'] }}{% endcall %}
+            {% call dictionary_field(_('Description')) %}
+              {{ h.render_markdown(_id_description|escape, allow_html=false) }}
+            {% endcall %}
+          </dl>
+        </div>
+      </div>
+    </div>
+  {%- endif -%}
   {% for field in chromo.fields %}
     {% if (field.get('visible_to_public', true) and not field.get('published_resource_computed_field', false)) or (is_published_resource and field.get('published_resource_computed_field', false)) %}
 
@@ -42,8 +77,7 @@
           {{ h.recombinant_language_text(field.label) }}
         {% endcall %}
         {% call dictionary_field(_('Description')) %}
-          {{ h.render_markdown(h.recombinant_language_text(field.description)) |
-            replace('\n', '<br>' | safe) }}
+          {{ h.render_markdown(h.recombinant_language_text(field.description)|escape, allow_html=false) }}
         {% endcall %}
         {% call dictionary_field(_('Obligation')) %}
           {{ _('Primary key') if field.datastore_id in chromo.datastore_primary_key
@@ -158,8 +192,7 @@
                 {% block resource_data_dictionary_field scoped %}
                   {% call dictionary_field(_('ID')) %}{{ field.datastore_id }}{% endcall %}
                   {% call dictionary_field(_('Format')) %}
-                    {{ h.render_markdown(h.recombinant_language_text(field.format_type)) |
-                      replace('\n', '<br>' | safe) }}
+                    {{ h.render_markdown(h.recombinant_language_text(field.format_type)|escape, allow_html=false) }}
                   {% endcall %}
                   {{ extra_info }}
                 {% endblock %}

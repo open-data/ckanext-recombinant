@@ -17,14 +17,22 @@ from openpyxl.styles import (
     PatternFill,
     Font
 )
+import re
+from bs4 import BeautifulSoup, NavigableString, Tag
 
-from typing import Any, Dict, List, Tuple, Optional, Union
+from typing import Any, Dict, List, Tuple, Optional, Union, cast
+from ckanext.recombinant.types import (
+    RecombinantGenoDict,
+    RecombinantChromoDict,
+    RecombinantFieldDict
+)
 
 from ckanext.recombinant.tables import get_geno
 from ckanext.recombinant.errors import RecombinantException, RecombinantFieldError
 from ckanext.recombinant.datatypes import datastore_type
 from ckanext.recombinant.helpers import (
-    recombinant_choice_fields, recombinant_language_text)
+    recombinant_choice_fields, recombinant_language_text,
+    _get_id_field_dict)
 
 from ckan.plugins.toolkit import _, h, config, request
 from flask_babel import force_locale
@@ -64,6 +72,7 @@ REF_FIELD_NUM_MERGE = 'A{row}:B{row}'
 REF_FIELD_TITLE_HEIGHT = 24
 REF_FIELD_TITLE_MERGE = 'C{row}:E{row}'
 REF_FIELD_ATTR_MERGE = 'D{row}:E{row}'
+REF_SEC_BREAK_MERGE = 'A{row}:E{row}'
 REF_KEY_COL, REF_KEY_COL_NUM = 'C', 3
 REF_KEY_WIDTH = 18
 REF_VALUE_COL, REF_VALUE_COL_NUM = 'D', 4
@@ -106,6 +115,14 @@ REF_SUBATTR_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FF8C8351'},
     'Font': {'color': 'FFF8F8F8', 'bold': True},
     'Alignment': {'vertical': 'top'}}
+REF_SEC_BREAK_STYLE = {
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFEBEBEB'},
+    'Font': {'color': 'FFEBEBEB', 'bold': False},
+    'Alignment': {'vertical': 'top'}}
+RECO__ID_STYLE = {
+    'PatternFill': {'patternType': 'solid', 'fgColor': 'FFEBEBEB'},
+    'Font': {'color': 'FF030303', 'bold': False},
+    'Alignment': {'vertical': 'top'}}
 REF_VALUE_STYLE = {
     'Alignment': {'wrapText': True, 'vertical': 'top'}}
 REF_PAPER_STYLE = {
@@ -117,7 +134,8 @@ TYPE_HERE_STYLE = {
 def excel_template(dataset_type: str,
                    org: Dict[str, Any],
                    edit_using__id: bool = False,
-                   edit_rows: Optional[int] = None) -> Workbook:
+                   edit_rows: Optional[int] = None,
+                   resource_name: Optional[str] = None) -> Workbook:
     """
     return an openpyxl.Workbook object containing the sheet and header fields
     for passed dataset_type and org. Supports version 3 templates.
@@ -140,6 +158,13 @@ def excel_template(dataset_type: str,
     if version == 3:
         _build_styles(book, geno)
     for rnum, chromo in enumerate(geno['resources'], 1):
+        if (
+          edit_using__id and edit_rows and
+          resource_name and chromo['resource_name'] != resource_name
+        ):
+            # needs empty value for zip enumeration below
+            choice_ranges.append(None)
+            continue
         if version == 3:
             _append_resource_ref_header(geno, refs, rnum)
             choice_ranges.append(_populate_excel_sheet(
@@ -161,6 +186,11 @@ def excel_template(dataset_type: str,
 
     for i, (chromo, cranges) in enumerate(
             zip(geno['resources'], choice_ranges), 1):
+        if (
+            edit_using__id and edit_rows and
+            resource_name and chromo['resource_name'] != resource_name
+        ):
+            continue
         # type_ignore_reason: incomplete typing
         sheet: Worksheet = book.create_sheet()
         _populate_excel_e_sheet(sheet, chromo, cranges)
@@ -178,7 +208,7 @@ def excel_template(dataset_type: str,
 
 def append_data(book: Workbook,
                 record_data: List[Dict[str, Any]],
-                chromo: Dict[str, Any],
+                chromo: RecombinantChromoDict,
                 edit_using__id: bool = False):
 
     """
@@ -194,13 +224,17 @@ def append_data(book: Workbook,
     current_row = DATA_FIRST_ROW
     for record in record_data:
         if edit_using__id:
-            sheet.cell(row=current_row, column=RPAD_COL_NUM).value = record['_id']
+            _id_cell = cast(Cell, sheet.cell(
+                row=current_row, column=RPAD_COL_NUM))
+            _id_cell.value = record['_id']
+            _id_cell.style = 'reco__id'
+            _id_cell.alignment = Alignment(wrap_text=True, vertical='bottom')
         for col_num, field in template_cols_fields(chromo):
             if field['datastore_id'] not in record:
                 raise RecombinantFieldError(field['datastore_id'])
             item = datastore_type_format(
                 record[field['datastore_id']], field['datastore_type'])
-            sheet.cell(row=current_row, column=col_num).value = item
+            cast(Cell, sheet.cell(row=current_row, column=col_num)).value = item
         current_row += 1
 
     return book
@@ -230,7 +264,7 @@ def datastore_type_format(value: Any,
     return item
 
 
-def excel_data_dictionary(geno: Dict[str, Any],
+def excel_data_dictionary(geno: RecombinantGenoDict,
                           published_resource: bool = False,
                           org: Optional[Dict[str, Any]] = None):
     """
@@ -258,12 +292,14 @@ def excel_data_dictionary(geno: Dict[str, Any],
             refs = []
             for rnum, chromo in enumerate(geno['resources'], 1):
                 _append_resource_ref_header(geno, refs, rnum)
+                if chromo['edit_using__id']:
+                    _append_field_ref_rows(refs, _get_id_field_dict(), link=None)
 
                 org_specifc_fields = chromo.get('org_specific_fields', [])
 
                 choice_fields = recombinant_choice_fields(
                     chromo['resource_name'],
-                    all_languages=(published_resource and org_specifc_fields),
+                    all_languages=bool(published_resource and org_specifc_fields),
                     org_name=org.get('name', None) if org else None)
 
                 for field in chromo['fields']:
@@ -308,18 +344,18 @@ def estimate_width(text: str) -> float:
     return max(estimate_width_from_length(len(s)) for s in str(text).split('\n'))
 
 
-def wrap_text_to_width(text: str,
-                       width: int) -> str:
-    # assuming width > ESTIMATE_WIDTH_MULTIPLE_1_CHARS
+def calculate_row_height(text: str, width: float, line_height: float) -> float:
     calc_width = width - (ESTIMATE_WIDTH_MULTIPLE_1_CHARS * ESTIMATE_WIDTH_MULTIPLE_1)
-    cwidth = calc_width // ESTIMATE_WIDTH_MULTIPLE_2 + ESTIMATE_WIDTH_MULTIPLE_1_CHARS
-    return '\n'.join(
-        '\n'.join(textwrap.wrap(line, int(cwidth)))
-        for line in str(text).split('\n'))
+    cwidth = max(1, int(
+        calc_width // ESTIMATE_WIDTH_MULTIPLE_2 + ESTIMATE_WIDTH_MULTIPLE_1_CHARS))
+    lines = 0
+    for paragraph in str(text).split('\n'):
+        lines += max(1, len(textwrap.wrap(paragraph, width=cwidth)))
+    return lines * line_height
 
 
 def _build_styles(book: Workbook,
-                  geno: Dict[str, Any]):
+                  geno: RecombinantGenoDict):
     """
     Add styles to workbook
     """
@@ -340,12 +376,14 @@ def _build_styles(book: Workbook,
     build_named_style(book, 'reco_ref_attr', REF_ATTR_STYLE)
     build_named_style(book, 'reco_ref_subattr', REF_SUBATTR_STYLE)
     build_named_style(book, 'reco_ref_value', REF_VALUE_STYLE)
+    build_named_style(book, 'reco_sec_break', REF_SEC_BREAK_STYLE)
+    build_named_style(book, 'reco__id', RECO__ID_STYLE)
 
 
 def _populate_excel_sheet(book: Workbook,
                           sheet: Worksheet,
-                          geno: Dict[str, Any],
-                          chromo: Dict[str, Any],
+                          geno: RecombinantGenoDict,
+                          chromo: RecombinantChromoDict,
                           org: Dict[str, Any],
                           refs: List[Tuple[Optional[str], List[Any]]],
                           resource_num: int,
@@ -385,16 +423,26 @@ def _populate_excel_sheet(book: Workbook,
 
     # create rows so we can set all heights
     for i in range(1, DATA_FIRST_ROW + data_num_rows):
-        sheet.cell(row=i, column=1).value = None
+        cast(Cell, sheet.cell(row=i, column=1)).value = None
 
     if edit_using__id:
+        _edit_field = _get_id_field_dict()
         sheet.row_dimensions[EXAMPLE_ROW].hidden = True
+        _id_label = _edit_field['label']
         fill_cell(
             sheet,
             CHEADINGS_ROW,
             RPAD_COL_NUM,
-            _('Record ID'),
+            _(_id_label),
             'reco_cheading')
+        _id_cell = cast(Cell, sheet.cell(row=CHEADINGS_ROW, column=RPAD_COL_NUM))
+        _id_cell.hyperlink = '#reference!{colA}{row1}:{colZ}{rowN}'.format(
+            colA=REF_FIELD_NUM_COL,
+            row1=REF_FIRST_ROW + 2,
+            colZ=REF_VALUE_COL,
+            rowN=REF_FIRST_ROW + 4)
+        _append_field_ref_rows(refs, _edit_field, link="#'{sheet}'!{col}{row}".format(
+            sheet=sheet.title, col=RPAD_COL, row=CHEADINGS_ROW))
     else:
         sheet.merge_cells(EXAMPLE_MERGE)
         fill_cell(sheet, EXAMPLE_ROW, 1, _('e.g.'), 'reco_example')
@@ -411,7 +459,7 @@ def _populate_excel_sheet(book: Workbook,
 
     restriction = ''
     sig = 'v3'
-    if chromo.get('edit_using__id'):
+    if chromo['edit_using__id']:
         # template is update-only or insert-only
         restriction = ' \N{em dash} ' + (
             _('Edit existing records') if edit_using__id
@@ -428,9 +476,9 @@ def _populate_excel_sheet(book: Workbook,
         'reco_header')
 
     # template version
-    sheet.cell(row=CODE_ROW, column=1).value = sig
+    cast(Cell, sheet.cell(row=CODE_ROW, column=1)).value = sig
     # allow only upload to this org
-    sheet.cell(row=CODE_ROW, column=2).value = org['name']
+    cast(Cell, sheet.cell(row=CODE_ROW, column=2)).value = org['name']
 
     cheadings_dimensions = sheet.row_dimensions[CHEADINGS_ROW]
     cheadings_default_height = cheadings_dimensions.height if \
@@ -458,10 +506,10 @@ def _populate_excel_sheet(book: Workbook,
                     DEFAULT_CHEADING_STYLE,
                     **geno.get('excel_column_heading_style', {})),
                 **field['excel_column_heading_style'])
-            apply_style(sheet.cell(
-                row=HEADER_ROW, column=col_num), col_heading_style)
-            apply_style(sheet.cell(
-                row=CSTATUS_ROW, column=col_num), col_heading_style)
+            apply_style(cast(Cell, sheet.cell(
+                row=HEADER_ROW, column=col_num)), col_heading_style)
+            apply_style(cast(Cell, sheet.cell(
+                row=CSTATUS_ROW, column=col_num)), col_heading_style)
 
         fill_cell(
             sheet,
@@ -473,7 +521,8 @@ def _populate_excel_sheet(book: Workbook,
         reference_row1 = len(refs) + REF_FIRST_ROW
 
         # match against db columns
-        sheet.cell(row=CODE_ROW, column=col_num).value = field['datastore_id']
+        cast(Cell, sheet.cell(
+            row=CODE_ROW, column=col_num)).value = field['datastore_id']
 
         example = chromo['examples']['record'].get(field['datastore_id'], '')
         fill_cell(
@@ -516,7 +565,7 @@ def _populate_excel_sheet(book: Workbook,
         book.add_named_style(col_style)
         for (c,) in sheet[validation_range]:
             c.style = col_style.name
-        ex_cell = sheet.cell(row=EXAMPLE_ROW, column=col_num)
+        ex_cell: Cell = cast(Cell, sheet.cell(row=EXAMPLE_ROW, column=col_num))
         ex_cell.number_format = xl_format
         ex_cell.alignment = alignment
 
@@ -586,7 +635,7 @@ def _populate_excel_sheet(book: Workbook,
                 sheet.add_data_validation(v)
                 v.add(validation_range)
 
-        sheet.cell(row=CHEADINGS_ROW, column=col_num).hyperlink = (
+        cast(Cell, sheet.cell(row=CHEADINGS_ROW, column=col_num)).hyperlink = (
             '#reference!{colA}{row1}:{colZ}{rowN}'.format(
                 colA=REF_FIELD_NUM_COL,
                 row1=reference_row1,
@@ -611,7 +660,7 @@ def _populate_excel_sheet(book: Workbook,
             'excel_data_height', DEFAULT_DATA_HEIGHT)
 
         # jump to first error/required cell in row
-        sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
+        cast(Cell, sheet.cell(row=i, column=RSTATUS_COL_NUM)).value = (
             '=IF(e{rnum}!{col}{row}>0,'
             'HYPERLINK("#"&ADDRESS({row},e{rnum}!{col}{row}),""),'
             'IF(r{rnum}!{col}{row}>0,'
@@ -640,7 +689,7 @@ def _populate_excel_sheet(book: Workbook,
     return cranges
 
 
-def _append_resource_ref_header(geno: Dict[str, Any],
+def _append_resource_ref_header(geno: RecombinantGenoDict,
                                 refs: List[Tuple[Optional[str], List[Any]]],
                                 rnum: int):
     """
@@ -649,15 +698,15 @@ def _append_resource_ref_header(geno: Dict[str, Any],
     """
     if rnum == 1 and geno['resources'][rnum-1]['title'] == geno['title']:
         return
-    refs.append((None, []))
+    refs.append(('sec_break', []))
     resource_title = recombinant_language_text(geno['resources'][rnum-1]['title'])
     refs.append(('resource_title', [resource_title]))
 
 
 def _append_field_ref_rows(refs: List[Tuple[Optional[str], List[Any]]],
-                           field: Dict[str, Any],
+                           field: RecombinantFieldDict,
                            link: Optional[str]):
-    refs.append((None, []))
+    refs.append(('sec_break', []))
     label = recombinant_language_text(field['label'])
     refs.append(('title', [(link, label) if link else label]))
     refs.append(('attr', [
@@ -666,7 +715,8 @@ def _append_field_ref_rows(refs: List[Tuple[Optional[str], List[Any]]],
     if field.get('description'):
         refs.append(('attr', [
             _('Description'),
-            recombinant_language_text(field['description'])]))
+            _markdown_to_excel(recombinant_language_text(field['description']))
+        ]))
     if field.get('obligation'):
         refs.append(('attr', [
             _('Obligation'),
@@ -729,7 +779,7 @@ def _append_field_choices_rows(refs: List[Tuple[Optional[str], List[Any]]],
 
 
 def _populate_reference_sheet(sheet: Worksheet,
-                              geno: Dict[str, Any],
+                              geno: RecombinantGenoDict,
                               refs: List[Tuple[Optional[str], List[Any]]]):
     field_count = 1
 
@@ -779,7 +829,7 @@ def _populate_reference_sheet(sheet: Worksheet,
             link = None
             value = None
             if len(ref_line) == 2:
-                value = wrap_text_to_width(ref_line[1], REF_VALUE_WIDTH).strip()
+                value = str(ref_line[1]).strip()
                 ref_line = [ref_line[0], value]
             elif len(ref_line) == 1 and isinstance(ref_line[0], tuple):
                 link, value = ref_line[0]
@@ -787,17 +837,39 @@ def _populate_reference_sheet(sheet: Worksheet,
                 ref_line = [value]
 
             for cnum, cval in enumerate(ref_line, REF_KEY_COL_NUM):
-                sheet.cell(row=row_number, column=cnum).value = (
+                cast(Cell, sheet.cell(row=row_number, column=cnum)).value = (
                     cval.strip().replace('\n', '\r\n'))
 
+            key_cell: Cell = cast(Cell, sheet.cell(
+                row=row_number, column=REF_KEY_COL_NUM))
+            value_cell: Cell = cast(Cell, sheet.cell(
+                row=row_number, column=REF_VALUE_COL_NUM))
+            org_cell: Cell = cast(Cell, sheet.cell(
+                row=row_number, column=REF_VALUE_ORG_COL_NUM))
+
+            # always wrap text
+            key_cell.alignment = Alignment(wrap_text=True, vertical='top')
+            value_cell.alignment = Alignment(wrap_text=True, vertical='top')
+            org_cell.alignment = Alignment(wrap_text=True, vertical='top')
+
             if len(ref_line) == 2 and value:
-                sheet.row_dimensions[row_number].height = LINE_HEIGHT + (
-                    value.count('\n') * LINE_HEIGHT)
+                ref_height = calculate_row_height(
+                    key_cell.value, REF_KEY_WIDTH, LINE_HEIGHT) \
+                        if key_cell.value else 0
+                val_height = calculate_row_height(
+                    value_cell.value, REF_VALUE_WIDTH, LINE_HEIGHT) \
+                        if value_cell.value else 0
+                org_height = calculate_row_height(
+                    org_cell.value, REF_ORG_WIDTH, LINE_HEIGHT) \
+                        if org_cell.value else 0
+                sheet.row_dimensions[row_number].height = max(
+                    ref_height, val_height, org_height)
 
-            key_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
-            value_cell: Cell = sheet.cell(row=row_number, column=REF_VALUE_COL_NUM)
-            org_cell: Cell = sheet.cell(row=row_number, column=REF_VALUE_ORG_COL_NUM)
-
+            if style == 'sec_break':
+                sheet.merge_cells(REF_SEC_BREAK_MERGE.format(row=row_number))
+                section_break_cell: Cell = cast(Cell, sheet.cell(
+                    row=row_number, column=REF_FIELD_NUM_COL_NUM))
+                section_break_cell.style = 'reco_sec_break'
             if style == 'title':
                 sheet.merge_cells(REF_FIELD_NUM_MERGE.format(row=row_number))
                 sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
@@ -807,21 +879,24 @@ def _populate_reference_sheet(sheet: Worksheet,
                     REF_FIELD_NUM_COL_NUM,
                     field_count,
                     'reco_ref_number')
-                title_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM)
+                title_cell: Cell = cast(Cell, sheet.cell(
+                    row=row_number, column=REF_KEY_COL_NUM))
                 if link:
                     title_cell.hyperlink = link
                 title_cell.style = 'reco_ref_title'
                 sheet.row_dimensions[row_number].height = REF_FIELD_TITLE_HEIGHT
                 field_count += 1
             elif style == 'choice':
-                pad_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
+                pad_cell: Cell = cast(Cell, sheet.cell(
+                    row=row_number, column=REF_KEY_COL_NUM - 1))
                 pad_cell.style = 'reco_example'
                 key_cell.style = 'reco_example'
                 value_cell.style = 'reco_example'
                 org_cell.style = 'reco_example'
             elif style == 'choice_full_text':
                 sheet.merge_cells(REF_FIELD_TITLE_MERGE.format(row=row_number))
-                pad_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
+                pad_cell: Cell = cast(Cell, sheet.cell(
+                    row=row_number, column=REF_KEY_COL_NUM - 1))
                 pad_cell.style = 'reco_example'
                 key_cell.style = 'reco_example'
                 value_cell.style = 'reco_example'
@@ -838,7 +913,8 @@ def _populate_reference_sheet(sheet: Worksheet,
                 org_cell.style = 'reco_ref_value'
                 sheet.row_dimensions[row_number].height = REF_CHOICE_HEADING_HEIGHT
             elif style == 'choice subheading':
-                pad_cell: Cell = sheet.cell(row=row_number, column=REF_KEY_COL_NUM - 1)
+                pad_cell: Cell = cast(Cell, sheet.cell(
+                    row=row_number, column=REF_KEY_COL_NUM - 1))
                 pad_cell.style = 'reco_ref_subattr'
                 key_cell.style = 'reco_ref_subattr'
                 value_cell.style = 'reco_ref_subattr'
@@ -848,7 +924,8 @@ def _populate_reference_sheet(sheet: Worksheet,
                         REF_PAPER_STYLE)
 
     sheet.column_dimensions[RSTATUS_COL].width = RSTATUS_WIDTH
-    sheet.cell(row=1, column=RPAD_COL_NUM).value = None  # make sure rpad col exists
+    cast(Cell, sheet.cell(
+        row=1, column=RPAD_COL_NUM)).value = None  # make sure rpad col exists
     sheet.column_dimensions[RPAD_COL].width = RPAD_WIDTH
     sheet.column_dimensions[REF_KEY_COL].width = REF_KEY_WIDTH
     sheet.column_dimensions[REF_VALUE_COL].width = REF_VALUE_WIDTH
@@ -856,7 +933,7 @@ def _populate_reference_sheet(sheet: Worksheet,
 
 
 def _populate_excel_e_sheet(sheet: Worksheet,
-                            chromo: Dict[str, Any],
+                            chromo: RecombinantChromoDict,
                             cranges: Dict[str, Any]):
     """
     Populate the "error" calculation excel worksheet
@@ -924,7 +1001,7 @@ def _populate_excel_e_sheet(sheet: Worksheet,
 
         if field.get('excel_error_cell_filter_formula') and fmla:
             fmla = fmla.replace(
-                '{cell}', '(' + field.get('excel_error_cell_filter_formula') + ')')
+                '{cell}', '(' + field['excel_error_cell_filter_formula'] + ')')
 
         if pk_field:
             # repeated primary (composite) keys are errors
@@ -961,14 +1038,14 @@ def _populate_excel_e_sheet(sheet: Worksheet,
         fmla = '=NOT({cell}="")*(' + fmla + ')'
         for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
             try:
-                sheet.cell(row=i, column=col_num).value = fmla.format(
+                cast(Cell, sheet.cell(row=i, column=col_num)).value = fmla.format(
                     cell=cell,
                     num='{num}',
                     **fmla_values).format(num=i)
             except KeyError:
                 assert 0, (fmla, fmla_values)
 
-        sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
+        cast(Cell, sheet.cell(row=CSTATUS_ROW, column=col_num)).value = (
             '=IFERROR(MATCH(TRUE,INDEX({col}{row1}:{col}{rowN}<>0,),)+{row0},0)'
             .format(
                 col=col,
@@ -980,7 +1057,7 @@ def _populate_excel_e_sheet(sheet: Worksheet,
         return  # no errors to report on!
 
     for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
-        sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
+        cast(Cell, sheet.cell(row=i, column=RSTATUS_COL_NUM)).value = (
             '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'.format(
                 colA=DATA_FIRST_COL,
                 col0=DATA_FIRST_COL_NUM - 1,
@@ -989,7 +1066,7 @@ def _populate_excel_e_sheet(sheet: Worksheet,
 
 
 def _populate_excel_r_sheet(sheet: Worksheet,
-                            chromo: Dict[str, Any]):
+                            chromo: RecombinantChromoDict):
     """
     Populate the "required" calculation excel worksheet
 
@@ -1034,12 +1111,12 @@ def _populate_excel_r_sheet(sheet: Worksheet,
                 if f['datastore_id'] in fmla_keys}
 
         for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
-            sheet.cell(row=i, column=col_num).value = fmla.format(
+            cast(Cell, sheet.cell(row=i, column=col_num)).value = fmla.format(
                 cell=cell,
                 has_data='{col}{{num}}'.format(col=RPAD_COL),
                 **fmla_values).format(num=i)
 
-        sheet.cell(row=CSTATUS_ROW, column=col_num).value = (
+        cast(Cell, sheet.cell(row=CSTATUS_ROW, column=col_num)).value = (
             '=IFERROR(MATCH(TRUE,INDEX({col}{row1}:{col}{rowN}<>0,),)+{row0},0)'
             .format(
                 col=col,
@@ -1051,7 +1128,7 @@ def _populate_excel_r_sheet(sheet: Worksheet,
         return  # no required columns
 
     for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
-        sheet.cell(row=i, column=RPAD_COL_NUM).value = (
+        cast(Cell, sheet.cell(row=i, column=RPAD_COL_NUM)).value = (
             "=SUMPRODUCT(LEN('{sheet}'!{colA}{row}:{colZ}{row}))>0".format(
                 sheet=chromo['resource_name'],
                 colA=DATA_FIRST_COL,
@@ -1059,7 +1136,7 @@ def _populate_excel_r_sheet(sheet: Worksheet,
                 row=i))
 
     for i in range(DATA_FIRST_ROW, DATA_FIRST_ROW + data_num_rows):
-        sheet.cell(row=i, column=RSTATUS_COL_NUM).value = (
+        cast(Cell, sheet.cell(row=i, column=RSTATUS_COL_NUM)).value = (
             '=IFERROR(MATCH(TRUE,INDEX({colA}{row}:{colZ}{row}<>0,),)+{col0},0)'
             .format(
                 colA=DATA_FIRST_COL,
@@ -1081,7 +1158,7 @@ def fill_cell(sheet: Worksheet,
     :param style: style name as string or dict for apply_style
     :return: None
     """
-    c: Cell = sheet.cell(row=row, column=column)
+    c: Cell = cast(Cell, sheet.cell(row=row, column=column))
     if isinstance(value, str):
         value = value.replace('\n', '\r\n')
     c.value = value
@@ -1139,7 +1216,7 @@ def org_title_lang_hack(title: str):
     return title.split(' | ')[0]
 
 
-def template_cols_fields(chromo: Dict[str, Any]):
+def template_cols_fields(chromo: RecombinantChromoDict):
     ''' (col_num, field) ... for fields in template'''
     return enumerate(
         (f for f in chromo['fields'] if f.get(
@@ -1208,3 +1285,47 @@ def _add_conditional_formatting(sheet: Worksheet,
                 stopIfTrue=True,
                 fill=required_fill,
                 font=required_font))
+
+
+def _markdown_to_excel(value: Optional[str] = None) -> str:
+    """
+    Converts string to markdown, and then to Excel friendly text.
+    """
+    if not value:
+        return ''
+    html_parser = BeautifulSoup(h.render_markdown(value), 'html.parser')
+    def extract(_element):
+        result = []
+        for child in _element.children:
+            if isinstance(child, NavigableString):
+                result.append(re.sub(r'\s+', ' ', str(child)))
+            elif isinstance(child, Tag):
+                if child.name == 'br':
+                    result.append(' ')
+                elif child.name in ('ul', 'ol'):
+                    items = []
+                    for _i, _li in enumerate(child.find_all('li', recursive=False), 1):
+                        prefix = f'{_i}. ' if child.name == 'ol' else '• '
+                        items.append(prefix + _li.get_text(' ', strip=True))
+                    result.append('\n'.join(items) + '\n\n')
+                elif child.name == 'li':
+                    result.append(extract(child))
+                elif child.name in ('p', 'div'):
+                    result.append(child.get_text(' ', strip=True) + '\n\n')
+                elif child.name == 'blockquote':
+                    result.append(f'> {extract(child)}\n')
+                elif child.name in ('strong', 'b', 'em', 'i', 'code'):
+                    result.append(extract(child))
+                elif child.name == 'a':
+                    text = extract(child)
+                    href = child.get('href')
+                    result.append(f'{text} ({href})' if href and
+                                  text != href else text)
+                else:
+                    result.append(extract(child))
+        return ''.join(result)
+    result = extract(html_parser)
+    result = re.sub(r'[ \t]+', ' ', result)
+    result = re.sub(r' *\n *', '\n', result)
+    result = re.sub(r'\n{3,}', '\n\n', result)
+    return result.strip()
