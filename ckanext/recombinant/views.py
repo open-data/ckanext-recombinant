@@ -296,7 +296,7 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
     ]
 
     # type_ignore_reason: [] default is allowed
-    def delete_error(err: str, _ok_records: List[str] = [],
+    def delete_error(err: str, _ok_records: List[str] = [],  # type: ignore
                      _records: List[str] = []) -> str:  # type: ignore
         return render('recombinant/confirm_delete.html',
                       extra_vars={'rcomb': view_context.rcomb,
@@ -587,6 +587,7 @@ def delete_selected_records(resource_name: str,
         for pk_string in pk_text:
             filter = dict(zip(pk_fields, pk_string.split(',')))
             if filter:
+                result = None
                 try:
                     result = lc.action.datastore_search(
                         resource_id=view_context.resource['id'],
@@ -595,12 +596,12 @@ def delete_selected_records(resource_name: str,
                 except NotFound:
                     h.flash_error(_('Not found') + ' ' + str(filter))
                     has_errors = True
-                found = result['records']
+                found = result['records'] if result else None
                 if not found:
                     h.flash_error(_('No matching records found "%s"') %
                                   '", "'.join(pk_string))
                     has_errors = True
-                if len(found) > 1:
+                if found and len(found) > 1:
                     h.flash_error(_('Multiple matching records found for "%s"') %
                                   '", "'.join(pk_string))
                     has_errors = True
@@ -1850,7 +1851,7 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
     offset = 0
     records = data_dict.get('records', [])
     resource_id = data_dict.get('resource_id')
-    dry_run = data_dict.get('dry_run')
+    dry_run = asbool(data_dict.get('dry_run', True))
     method = data_dict.get('method')
     # NOTE: upserting each record one-by-one is crazy slower,
     #       but it is the only way to get all of the errors back in one object.
@@ -1863,10 +1864,18 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
                     'method': method,
                     'resource_id': resource_id,
                     'dry_run': dry_run,
-                    'records': [record]
-                })
+                    'records': [record]})
             if 'result' not in return_dict:
                 return_dict['result'] = {}
+            if (
+              not dry_run and '_id' not in data['records'][0]
+              and chromo['edit_using__id']
+            ):
+                # _id not in result dict for new records
+                data = get_action('datastore_search')(
+                    context, {
+                        'filters': dict((k, data['records'][0][k]) for k in pk_fields),
+                        'resource_id': resource_id})
             return_dict['result']['row_{}'.format(offset)] = data
             return_dict['success'] = True
             offset += 1
@@ -1904,6 +1913,21 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
                       'constraint_info' in ve.error_dict):
                         error_summary = _render_recombinant_constraint_errors(
                             lc, ve, chromo, 'upsert')
+                    elif (
+                      'invalid input syntax for type integer' in
+                      # type_ignore_reason: incomplete typing
+                      ve.error_dict['records'][0]  # type: ignore
+                    ):
+                        # type_ignore_reason: incomplete typing
+                        if ':' in ve.error_dict['records'][0]:  # type: ignore
+                            error_summary = _('Invalid input syntax '
+                                              'for type integer: {}')\
+                                .format(
+                                    # type_ignore_reason: incomplete typing
+                                    ve.error_dict['records'][0].split(  # type: ignore
+                                        ':')[1].strip())
+                        else:
+                            error_summary = _('Invalid input syntax for type integer')
                     else:
                         log.warning('Failed to create %s record for org %s:\n%s',
                                     resource_name, owner_org, traceback.format_exc())

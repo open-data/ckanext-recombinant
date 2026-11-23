@@ -479,6 +479,13 @@ body #dtprv_wrapper{
       visibility: hidden !important;
     }
   }
+  td.expanders.expanders-hidden,
+  td.expanders.expanders-hidden::before,
+  td.expanders.expanders-hidden::after{
+    pointer-events: none !important;
+    color: #E1E4E7 !important;
+    opacity: 0.5 !important;
+  }
   .dt-scroll-head{
     th{
       &.expanders{
@@ -735,6 +742,10 @@ body #dtprv_wrapper{
           font-size: 14px;
           font-weight: 600;
         }
+        &.pd-datatables-_id-col{
+          padding: 4px 8px !important;
+          background-color: #E1E4E7 !important;
+        }
       }
     }
     #dtprv_failure_message{
@@ -905,6 +916,12 @@ body #dtprv_wrapper{
       min-width: 300px !important;
       max-width: 300px !important;
     }
+    td:not(.child).checkboxes,
+    th.checkboxes{
+      width: 75px !important;
+      min-width: 75px !important;
+      max-width: 75px !important;
+    }
   }
   #dtprv-foot-main{
     font-size: 13px !important;
@@ -934,6 +951,8 @@ body #dtprv_wrapper{
       input{
         min-height: 37px !important;
         max-height: 37px !important;
+        display: block !important;
+        width: 100% !important;
         &[type="text"]{
           padding-left: 6px !important;
           padding-right: 6px !important;
@@ -993,6 +1012,12 @@ body #dtprv_wrapper{
     width: 135px !important;
     min-width: 135px !important;
     max-width: 135px !important;
+  }
+  td:not(.child).pd-datatables-_id-col,
+  th.pd-datatables-_id-col{
+    width: 165px !important;
+    min-width: 165px !important;
+    max-width: 165px !important;
   }
   td:not(.child).pd-datatables-col-md,
   th.pd-datatables-col-md{

@@ -854,14 +854,14 @@ def _populate_reference_sheet(sheet: Worksheet,
 
             if len(ref_line) == 2 and value:
                 ref_height = calculate_row_height(
-                    key_cell.value, REF_KEY_WIDTH, LINE_HEIGHT) \
-                        if key_cell.value else 0
+                    str(key_cell.value), REF_KEY_WIDTH, LINE_HEIGHT) \
+                    if key_cell.value else 0
                 val_height = calculate_row_height(
-                    value_cell.value, REF_VALUE_WIDTH, LINE_HEIGHT) \
-                        if value_cell.value else 0
+                    str(value_cell.value), REF_VALUE_WIDTH, LINE_HEIGHT) \
+                    if value_cell.value else 0
                 org_height = calculate_row_height(
-                    org_cell.value, REF_ORG_WIDTH, LINE_HEIGHT) \
-                        if org_cell.value else 0
+                    str(org_cell.value), REF_ORG_WIDTH, LINE_HEIGHT) \
+                    if org_cell.value else 0
                 sheet.row_dimensions[row_number].height = max(
                     ref_height, val_height, org_height)
 
@@ -1294,7 +1294,8 @@ def _markdown_to_excel(value: Optional[str] = None) -> str:
     if not value:
         return ''
     html_parser = BeautifulSoup(h.render_markdown(value), 'html.parser')
-    def extract(_element):
+
+    def extract(_element: Union[BeautifulSoup, Tag]):
         result = []
         for child in _element.children:
             if isinstance(child, NavigableString):

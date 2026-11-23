@@ -11,7 +11,7 @@ from flask import Blueprint, redirect
 from typing import cast
 from ckan.types import Response
 
-from ckan.plugins.toolkit import h, _
+from ckan.plugins.toolkit import h
 from ckan.views import nocache_store
 
 recombinant_legacy = Blueprint('recombinant_legacy', __name__)

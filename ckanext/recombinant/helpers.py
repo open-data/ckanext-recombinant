@@ -4,7 +4,7 @@ from markupsafe import Markup
 import sqlalchemy as sa
 from datetime import datetime
 
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List, Union, cast
 from ckanext.recombinant.types import (
     RecombinantChromoDict,
     RecombinantGenoDict,
@@ -290,7 +290,8 @@ def enable_datatable_editor() -> bool:
     return config['ckanext.recombinant.enable_datatable_editor']
 
 
-def _get_id_field_dict() -> Dict[str, Any]:
+# type_ignore_reason: underscored func
+def _get_id_field_dict() -> RecombinantFieldDict:  # type: ignore
     """
     Get a field dictionary for the _id datastore field.
 
@@ -301,7 +302,7 @@ def _get_id_field_dict() -> Dict[str, Any]:
     """
     _id_label = config['ckanext.recombinant._id.label']
     _id_description = config['ckanext.recombinant._id.description']
-    return {
+    return cast(RecombinantFieldDict, {
         'datastore_id': '_id',
         'id': '_id',
         'name': '_id',
@@ -310,4 +311,4 @@ def _get_id_field_dict() -> Dict[str, Any]:
         'label': _id_label,
         'description': _id_description,
         'priority': 0,
-    }
+    })
