@@ -129,6 +129,7 @@ REF_PAPER_STYLE = {
     'PatternFill': {'patternType': 'solid', 'fgColor': 'FFFFFFFF'}}
 TYPE_HERE_STYLE = {
     'Font': {'bold': True, 'size': 16}}
+DEFAULT_HYPERLINK_COLOR = 'FF0563C1'
 
 
 def excel_template(dataset_type: str,
@@ -378,6 +379,27 @@ def _build_styles(book: Workbook,
     build_named_style(book, 'reco_ref_value', REF_VALUE_STYLE)
     build_named_style(book, 'reco_sec_break', REF_SEC_BREAK_STYLE)
     build_named_style(book, 'reco__id', RECO__ID_STYLE)
+    return
+    # FIXME: fix hyperlinks in excel_column_heading_style / DEFAULT_CHEADING_STYLE
+    _apply_hyperlink_color(
+        book, 'Hyperlink',
+        geno.get('excel_hyperlink_style', DEFAULT_HYPERLINK_COLOR))
+    _apply_hyperlink_color(
+        book, 'Followed Hyperlink',
+        geno.get('excel_hyperlink_style', DEFAULT_HYPERLINK_COLOR))
+
+
+def _apply_hyperlink_color(book: Workbook, style_name: str, color: str):
+    if style_name in book.named_styles:
+        style_obj: NamedStyle = book._named_styles[style_name]
+    else:
+        style_obj: NamedStyle = NamedStyle(name=style_name)
+    font: Font = style_obj.font
+    font.color = color
+    font.underline = "single"
+    style_obj.font = font
+    if style_name not in book.named_styles:
+        book.add_named_style(style_obj)
 
 
 def _populate_excel_sheet(book: Workbook,
@@ -635,7 +657,8 @@ def _populate_excel_sheet(book: Workbook,
                 sheet.add_data_validation(v)
                 v.add(validation_range)
 
-        cast(Cell, sheet.cell(row=CHEADINGS_ROW, column=col_num)).hyperlink = (
+        _cell = cast(Cell, sheet.cell(row=CHEADINGS_ROW, column=col_num))
+        _cell.hyperlink = (
             '#reference!{colA}{row1}:{colZ}{rowN}'.format(
                 colA=REF_FIELD_NUM_COL,
                 row1=reference_row1,

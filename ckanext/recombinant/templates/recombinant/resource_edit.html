@@ -218,6 +218,8 @@ filters             - Filters on page (req. for package/base_form_page.html)
             <p><i class="fa fa-warning" aria-hidden="true"></i>&nbsp;&nbsp;<em>{{ record_query_error }}</em></p>
           {% elif record_query %}
             <p><em>{{ _('Did not find any records with {pks} matching "{pk_vals}"').format(pks=','.join(pk_labels), pk_vals=record_query) }}</em></p>
+          {% elif record_state %}
+            <p><em>{{ _('Did not find any "{state}" records').format(state=record_state) }}</em></p>
           {% else %}
             <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
           {% endif %}
@@ -270,7 +272,13 @@ filters             - Filters on page (req. for package/base_form_page.html)
 {% block primary %}
   {{ super() }}
   {% block record_table %}
-    {% if not chromo.get('display_card') and resource and 'error' not in resource %}
+    {% set ns = namespace(record_count={'total': 0}) %}
+    {% for r in rcomb.resources %}
+      {% if r.name == resource.name %}
+        {% do ns.record_count.update({'total': r.get('datastore_rows', 0)}) %}
+      {% endif %}
+    {% endfor %}
+    {% if not chromo.get('display_card') and resource and 'error' not in resource and ns.record_count.total > 0 %}
       {% snippet 'snippets/' ~ dt_settings.dt_snippet,
                  resource_name=resource.name,
                  resource_id=resource.id,

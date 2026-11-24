@@ -17,7 +17,7 @@ pk_fields       - List of strings of primary keys
       {%- do ns.pk_vals.append(record[f]) -%}
     {%- endfor -%}
     {%- set pk_vals = ns.pk_vals|join(',') -%}
-    <a href="{{ h.url_for('recombinant.preview_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk_vals) }}">
+    <a href="{{ h.url_for('recombinant.preview_record', resource_name=chromo.resource_name, owner_org=organization.name, _id=record['_id']) }}">
       {%- set title_display = record[chromo['display_card']['title_field']] -%}
       {%- if chromo['display_card']['title_field'] in choice_fields -%}
         {# most likely will not have a _text field as a card title, so can just support single choices #}

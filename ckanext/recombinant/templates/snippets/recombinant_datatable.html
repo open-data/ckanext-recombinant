@@ -79,9 +79,11 @@
         <th scope="col" data-editable-col="false" data-priority="3">{{ _('Select') }}</th>
         <th scope="col" data-editable-col="false" data-priority="3" data-datastore-id="_id" data-schema-label="{{- _(_id_label) -}}" data-datastore-type="int">{{ _(_id_label) }}</th>
         {% for field in ds_fields %}
-          <th scope="col" data-editable-col="{{- (field.id not in nonEditableCols)|tojson -}}" data-schema-label="{{- h.scheming_language_text(field.label) -}}" data-datastore-id="{{- field.id -}}" data-datastore-type="{{- field.type -}}" data-priority="{{- field.priority + magic_priority_no_field_should_be_below -}}">
-            {{- field.label -}}<span class="sorting-cnt"><span class="sorting-icons"></span></span>
-          </th>
+          {%- if field.id != '_id' -%}
+            <th scope="col" data-editable-col="{{- (field.id not in nonEditableCols)|tojson -}}" data-schema-label="{{- h.scheming_language_text(field.label) -}}" data-datastore-id="{{- field.id -}}" data-datastore-type="{{- field.type -}}" data-priority="{{- field.priority + magic_priority_no_field_should_be_below -}}">
+              {{- field.label -}}<span class="sorting-cnt"><span class="sorting-icons"></span></span>
+            </th>
+          {%- endif -%}
         {% endfor %}
       </tr>
     </thead>
@@ -91,9 +93,11 @@
       <th scope="col" data-priority="3">{{ _('Select') }}</th>
       <th scope="col" data-priority="3" data-datastore-id="_id">{{ _(_id_label) }}</th>
       {% for field in ds_fields %}
-        <th scope="col" data-datastore-id="{{- field.id -}}" data-priority="{{- field.priority + magic_priority_no_field_should_be_below -}}">
-          {{- field.label -}}
-        </th>
+        {%- if field.id != '_id' -%}
+          <th scope="col" data-datastore-id="{{- field.id -}}" data-priority="{{- field.priority + magic_priority_no_field_should_be_below -}}">
+            {{- field.label -}}
+          </th>
+        {%- endif -%}
       {% endfor %}
     </tfoot>
   </table>

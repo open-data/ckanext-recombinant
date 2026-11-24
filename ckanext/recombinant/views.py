@@ -2419,7 +2419,6 @@ def datatable(resource_name: str, resource_id: str) -> Union[str, Response]:
     cols = []
     fids = []
     if chromo.get('edit_using__id'):
-        cols.append('_id')
         fids.append('_id')
     for f in chromo['fields']:
         if f.get('published_resource_computed_field', False):
