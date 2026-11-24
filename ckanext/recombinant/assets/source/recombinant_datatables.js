@@ -67,7 +67,6 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
   const csrfTokenValue = CKAN_MODULE.options.csrf_value;
   const resourceID = CKAN_MODULE.options.resource_id;
   const resourceName = CKAN_MODULE.options.resource_name;
-  const colOffset = 2;  // expand col + select col
   const defaultRows = 10;
   const ellipsesLength = 100;  // default 100 ellipses length from ckanext-datatablesview
   const editSingleRecordURI = CKAN_MODULE.options.edit_single_uri;
@@ -86,6 +85,9 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
   const showPreviewButton = CKAN_MODULE.options.show_preview_button;
   const recordPreviewURI = CKAN_MODULE.options.record_preview_uri;
   const tableStyles = CKAN_MODULE.options.table_styles;
+  const colOffset = editUsingID ? 2 : 3;  // expand col + select col (possibly + _id col)
+  const _idColIndex = 2;
+  const _idColIndexOffset = editUsingID ? 0 : 1;
 
   const EDITOR = enableEditor ? pd_datatables__EDITOR : false;
   const JS_CHROMO = pd_datatables__EDITOR;
@@ -461,6 +463,7 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         let _fVal = $(searchFilterInput).val();
         let commaReplace = locale == 'fr' ? '.' : '';
         if( _event.keyCode == 13 && _column.search() !== _fVal ){
+          table.rows().deselect();
           if( numberType == 'int' && _fVal ){
             _fVal = Math.round(_fVal.replace(' ', '').replace(',', commaReplace));
           }else if( numberType == 'float' && _fVal ){
@@ -727,38 +730,37 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
   }
 
   // Compile available columns
-  let _sortOrderIndex = 1;
-  if( editUsingID ){
-    availableColumns.push({
-      "name": '_id',
-      "className": ' pd-datatables-primary-key-fixed pd-datatables-_id-col ' +
-                   (editingRows.length > 0 ? '' : ' pd-datatables-non-editable-col '),
-      "searchable": true,
-      "render": function(_data, _type, _row, _meta){
-        if( _type == 'display' && editUsingID ){
-          let pkValue = [];
-          for( let _i = 0; _i < editKeys.length; _i++ ){
-            pkValue.push(String(_row[(editKeys[_i] + colOffset)]));
-          }
-          if( newRecords.length > 0 ){
-            for( let _i = 0; _i < newRecords.length; _i++ ){
-              if( newRecords[_i].every(function(_val, _idx){ return _val == pkValue[_idx] }) ){
-                _data += '<sup><span class="badge pd-datatable-badge pd-datatable-badge-new"><i aria-hidden="true" class="fas fa-star"></i>&nbsp;' + newBadgeLabel + '</span></sup>';
-              }
-            }
-          }
-          if( updatedRecords.length > 0 ){
-            for( let _i = 0; _i < updatedRecords.length; _i++ ){
-              if( updatedRecords[_i].every(function(_val, _idx){ return _val == pkValue[_idx] }) ){
-                _data += '<sup><span class="badge pd-datatable-badge pd-datatable-badge-update"><i aria-hidden="true" class="fas fa-star"></i>&nbsp;' + updatedBadgeLabel + '</span></sup>';
-              }
+  let _sortOrderIndex = 2;
+  availableColumns.push({
+    "name": '_id',
+    "className": ' pd-datatables-primary-key-fixed pd-datatables-_id-col ' +
+                  (editingRows.length > 0 ? '' : ' pd-datatables-non-editable-col '),
+    "searchable": editUsingID,
+    "visible": editUsingID,
+    "render": function(_data, _type, _row, _meta){
+      if( _type == 'display' && editUsingID ){
+        let pkValue = [];
+        for( let _i = 0; _i < editKeys.length; _i++ ){
+          pkValue.push(String(_row[(editKeys[_i] + colOffset)]));
+        }
+        if( newRecords.length > 0 ){
+          for( let _i = 0; _i < newRecords.length; _i++ ){
+            if( newRecords[_i].every(function(_val, _idx){ return _val == pkValue[_idx] }) ){
+              _data += '<sup><span class="badge pd-datatable-badge pd-datatable-badge-new"><i aria-hidden="true" class="fas fa-star"></i>&nbsp;' + newBadgeLabel + '</span></sup>';
             }
           }
         }
-        return _data;
+        if( updatedRecords.length > 0 ){
+          for( let _i = 0; _i < updatedRecords.length; _i++ ){
+            if( updatedRecords[_i].every(function(_val, _idx){ return _val == pkValue[_idx] }) ){
+              _data += '<sup><span class="badge pd-datatable-badge pd-datatable-badge-update"><i aria-hidden="true" class="fas fa-star"></i>&nbsp;' + updatedBadgeLabel + '</span></sup>';
+            }
+          }
+        }
       }
-    });
-  }
+      return _data;
+    }
+  });
   for( let i = 0; i < chromoFields.length; i++ ){
     if( typeof chromoFields[i].published_resource_computed_field == 'undefined' || ! chromoFields[i].published_resource_computed_field ){
       let previewClass = '';
@@ -998,7 +1000,6 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
   function render_expand_buttons(){
     let expanderButtons = $('#dtprv').find('td.expanders');
     if( expanderButtons.length > 0){
-      const hasHidden = table.responsive.hasHidden();
       $(expanderButtons).each(function(_index, _expanderButton){
         $(_expanderButton).attr('role', 'button');
         $(_expanderButton).attr('aria-controls', 'dtprv-child-data-row-' + _index);
@@ -1019,12 +1020,15 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
           }, 250);  // there is some transition duration for childRows
         });
         if( ! isEditMode ){
-          // disable expand buttons if all columns are visible in table
-          if( ! hasHidden ){
-            $(_expanderButton).addClass('expanders-hidden');
-          }else{
-            $(_expanderButton).removeClass('expanders-hidden');
-          }
+          setTimeout(function(){
+            // disable expand buttons if all columns are visible in table
+            const hasHidden = table.responsive.hasHidden();
+            if( ! hasHidden ){
+              $(_expanderButton).addClass('expanders-hidden');
+            }else{
+              $(_expanderButton).removeClass('expanders-hidden');
+            }
+          }, 250);
         }
       });
       table.off('childRow.Accessible');
@@ -1184,8 +1188,18 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
     if( table.page.len() != defaultRows ){
       tableModified = true;
     }
-    let possibleNamedSortIndex = $('#dtprv').find('thead').find('th[data-datastore-id="' + tableState.order[0][0] + '"]').index();
-    if( tableState.order.length != defaultSortOrder.length || tableState.order[0][1] != 'desc' || ((tableState.order[0][0] != defaultSortOrder[0][0] && possibleNamedSortIndex != defaultSortOrder[0][0]) || tableState.order[0][1] != defaultSortOrder[0][1]) ){
+    let possibleNamedSortIndex = $('#dtprv').find('thead').find('th[data-datastore-id="' + tableState.order[0][0] + '"]').index() + _idColIndexOffset;
+    if(
+      tableState.order.length != defaultSortOrder.length ||
+      tableState.order[0][1] != 'desc' ||
+      (
+        (
+          tableState.order[0][0] != defaultSortOrder[0][0] &&
+          possibleNamedSortIndex != defaultSortOrder[0][0]
+        ) ||
+        tableState.order[0][1] != defaultSortOrder[0][1]
+      )
+    ){
       tableModified = true;
     }
     if( table.page.info().page > 0 ){
@@ -1441,17 +1455,19 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         className: 'pd-datatable-btn pd-datatable-btn-preview btn-primary',
         enabled: false,
         action: function(e, dt, node, config){
-          let pk_cols = editKeys.map(function(value){
-            return value + colOffset;
-          });
+          // NOTE: always edit single by _id
           let rows = dt.rows({ selected: true });
           if( rows[0].length > 1 ){
             return;
           }
           rows.eq(0).each(function(index){
-            let keyString = dt.cells(index, pk_cols).data().toArray();
-            let encodedKeyString = encodeURIComponent(keyString.join(','));
-            window.location = recordPreviewURI + encodedKeyString;
+            let row = dt.row(index).node();
+            let id = $(row).attr('data-id');
+            if( typeof id == 'undefined' || id.length == 0 ){
+              return;
+            }
+            let encodedIdString = encodeURIComponent(id);
+            window.location = recordPreviewURI + encodedIdString;
           });
         }
       });
@@ -1547,17 +1563,19 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
         text: '<i aria-hidden="true" class="fas fa-edit"></i>&nbsp;' + editSingleButtonLabel,
         className: "pd-datatable-btn pd-datatable-btn-single btn-success",
         action: function(e, dt, button, config){
-          let pk_cols = editKeys.map(function(value){
-            return value + colOffset;
-          });
+          // NOTE: always edit single by _id
           let rows = dt.rows({ selected: true });
           if( rows[0].length > 1 ){
             return;
           }
           rows.eq(0).each(function(index){
-            let keyString = dt.cells(index, pk_cols).data().toArray();
-            let encodedKeyString = encodeURIComponent(keyString.join(','));
-            window.location = editSingleRecordURI + encodedKeyString;
+            let row = dt.row(index).node();
+            let id = $(row).attr('data-id');
+            if( typeof id == 'undefined' || id.length == 0 ){
+              return;
+            }
+            let encodedIdString = encodeURIComponent(id);
+            window.location = editSingleRecordURI + encodedIdString;
           });
         }
       });
@@ -2257,6 +2275,9 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
       },
       initComplete: init_callback,
       drawCallback: draw_callback,
+      createdRow: function(_row, _data, _dataIndex){
+        $(_row).attr('data-id', _data[_idColIndex]);
+      },
       stateSaveParams: function(_settings, _data){
         _data.selected = this.api().rows({selected: true})[0];
         _data.compact_view = isCompactView;

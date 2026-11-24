@@ -231,7 +231,8 @@ def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
             dataset_type, owner_org.name,
             'AND id:{0}'.format(dataset_id) if dataset_id else ''),
         include_private=True,
-        rows=2)
+        rows=2,
+        extras={'__RECOMBINANT_CONTEXT__': True})
     return lc, geno, result['results']
 
 

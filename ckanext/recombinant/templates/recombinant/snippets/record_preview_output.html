@@ -15,15 +15,13 @@ record          - The DataStore record dict
 #}
 
 {% block record_preview %}
-  {%- if chromo.edit_using__id -%}
-    <div class="mrgn-bttm-md">
-      {%- set _id_label = _id_field['label'] -%}
-      <strong>{{- _(_id_label) -}}</strong><br/>
-      <span data-ds-id="_id">{{- record['_id'] -}}</span>
-    </div>
-  {%- endif -%}
+  <div class="mrgn-bttm-md">
+    {%- set _id_label = _id_field['label'] -%}
+    <strong class="bg-info">{{- _(_id_label) -}}</strong><br/>
+    <span data-ds-id="_id">{{- record['_id'] -}}</span>
+  </div>
   {%- for f in chromo.fields -%}
-    {%- if f.datastore_id in record and record[f.datastore_id] -%}
+    {%- if f.datastore_id in record and record[f.datastore_id] and f.datastore_id != '_id' -%}
       <div class="mrgn-bttm-md">
         <strong class="{{- f.get('preview_class', '') -}}">{{- h.recombinant_language_text(f.label) -}}</strong><br/>
         {%- if f.datastore_id in choice_fields -%}

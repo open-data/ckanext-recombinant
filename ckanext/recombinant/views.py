@@ -409,15 +409,14 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
 
 
 @recombinant.route(
-    '/recombinant/manage/<resource_name>/<owner_org>/delete-single-record/<pk>',
+    '/recombinant/manage/<resource_name>/<owner_org>/delete-single-record/<_id>',
     methods=['GET', 'POST'])
 def delete_single_record(resource_name: str, owner_org: str,
-                         pk: str) -> Union[str, Response]:
+                         _id: str) -> Union[str, Response]:
     """
     Delete a single record for a Recombinant resource.
 
-    NOTE: user input is done by primary keys (e.g. Year,Month)
-          the confirm delete POSTs the _id values of the matched records (e.g. 25)
+    NOTE: delete by record _id
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -435,19 +434,18 @@ def delete_single_record(resource_name: str, owner_org: str,
                             'to update resource {1}').format(
                                 str(g.user), view_context.resource['id']))
 
-    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
+    _id_val = _url_part_unescape(_id)
     came_from = request.form.get('came_from') if request.method == 'POST' \
         else request.args.get('came_from')
     if came_from not in ['preview_record', 'preview_table']:
         came_from = 'preview_table'  # default to preview_table view
 
     if 'cancel' in request.form:
-        og_pk = request.form.get('original-pk', pk)
         if came_from == 'preview_record':
             return h.redirect_to('recombinant.preview_record',
                                  resource_name=resource_name,
                                  owner_org=owner_org,
-                                 pk=og_pk)
+                                 _id=_id)
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=owner_org)
@@ -456,16 +454,8 @@ def delete_single_record(resource_name: str, owner_org: str,
         f for f in view_context.chromo['fields']
         if f['datastore_id'] in view_context.chromo['datastore_primary_key']
     ]
-    pk_fields = ['_id'] if view_context.chromo['edit_using__id'] \
-        else view_context.pk_fields
 
-    filters = {}
-    try:
-        for i, k in enumerate(pk_fields):
-            filters[k] = primary_key_vals[i]
-    except IndexError:
-        abort(404, _('Record %s not found for Organization %s') %
-              (pk, owner_org))
+    filters = {'_id': _id_val}
 
     if request.method != 'POST' or 'confirm' not in request.form:
         # need primary keys to delete for the record
@@ -475,11 +465,11 @@ def delete_single_record(resource_name: str, owner_org: str,
             limit=2)
         if not result or not result['records']:
             return abort(404, _('No matching records found "%s"') %
-                         '", "'.join(primary_key_vals))
+                         _id_val)
         found = result['records']
         if len(found) > 1:
             return abort(404, _('Multiple matching records found for "%s"') %
-                         '", "'.join(primary_key_vals))
+                         _id_val)
         _id_to_delete = found[0]['_id']
         primary_key_vals = [
             v for k, v in found[0].items() if k in view_context.pk_fields
@@ -492,11 +482,13 @@ def delete_single_record(resource_name: str, owner_org: str,
                           '_id_field': _get_id_field_dict(),
                           'pk_field_dicts': pk_field_dicts,
                           'num': 1,
-                          'pk': pk,
+                          '_id': _id,
                           '_id_to_delete': _id_to_delete,
                           'pk_list': primary_key_vals,
                           'came_from': came_from})
 
+    og_pk = request.form.get('original-pk', _id)
+    og_key_vals = [_url_part_unescape(p) for p in og_pk.split(',')]
     try:
         lc.action.datastore_records_delete(
             resource_id=view_context.resource['id'], filters=filters)
@@ -511,14 +503,15 @@ def delete_single_record(resource_name: str, owner_org: str,
                 return h.redirect_to('recombinant.preview_record',
                                      resource_name=resource_name,
                                      owner_org=owner_org,
-                                     pk=pk)
+                                     _id=_id)
             return h.redirect_to('recombinant.preview_table',
                                  resource_name=resource_name,
                                  owner_org=owner_org)
         raise
 
     h.flash_success(_("Deleted record {key}.").format(
-        key=','.join(primary_key_vals)))
+        key=(_id_val if view_context.chromo['edit_using__id']
+        else ','.join(og_key_vals))))
 
     return h.redirect_to('recombinant.preview_table',
                          resource_name=resource_name,
@@ -1452,13 +1445,15 @@ def preview_table(resource_name: str,
                                   }))
 
 
-@recombinant.route('/recombinant/<resource_name>/<owner_org>/<pk>',
+@recombinant.route('/recombinant/<resource_name>/<owner_org>/<_id>',
                    methods=['GET'])
 def preview_record(resource_name: str,
                    owner_org: str,
-                   pk: str) -> Union[str, Response]:
+                   _id: str) -> Union[str, Response]:
     """
     Preview a single record.
+
+    NOTE: always preview by record _id
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -1474,7 +1469,7 @@ def preview_record(resource_name: str,
         return h.redirect_to('recombinant.preview_record',
                              resource_name=resource_name,
                              owner_org=view_context.organization['name'],
-                             pk=pk)
+                             _id=_id)
 
     if (
       not h.check_access('datastore_search',
@@ -1482,37 +1477,27 @@ def preview_record(resource_name: str,
     ):
         return abort(403, _('Not authorized to view resource.'))
 
-    pk_fields = ['_id'] if view_context.chromo['edit_using__id'] \
-        else view_context.pk_fields
-
     template_vars = {
         'rcomb': view_context.rcomb,
         'geno': view_context.geno,
         'chromo': view_context.chromo,
-        'pk_fields': pk_fields,
+        'pk_fields': view_context.pk_fields,
         'choice_fields': view_context.choice_fields,
         'dataset': view_context.dataset,
         'resource': view_context.resource,
         'organization': view_context.organization,
     }
 
-    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
-
+    _id_val = _url_part_unescape(_id)
+    filters = {'_id': _id_val}
     record = None
-    filters = {}
-    try:
-        for i, k in enumerate(pk_fields):
-            filters[k] = primary_key_vals[i]
-    except IndexError:
-        abort(404, _('Record %s not found for Organization %s') %
-              (pk, owner_org))
 
     try:
         result = lc.action.datastore_search(
             resource_id=view_context.resource['id'], filters=filters, limit=1)
         if len(result['records']) == 0:
             return abort(404, _('Record %s not found for Organization %s') %
-                         (pk, owner_org))
+                         (_id_val))
         record = result['records'][0]
     except NotAuthorized:
         return abort(403, _('Unauthorized to read resource %s') %
@@ -1520,7 +1505,7 @@ def preview_record(resource_name: str,
 
     return render('recombinant/record_preview.html',
                   extra_vars=dict(template_vars,
-                                  pk=pk,
+                                  _id=_id,
                                   _id_field=_get_id_field_dict(),
                                   record=record))
 
@@ -1660,13 +1645,15 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
 
 
 @recombinant.route(
-    '/recombinant/manage/<resource_name>/<owner_org>/update-record/<pk>',
+    '/recombinant/manage/<resource_name>/<owner_org>/update-record/<_id>',
     methods=['GET', 'POST'])
-def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Response]:
+def update_record(resource_name: str, owner_org: str, _id: str) -> Union[str, Response]:
     """
     Update a single record via a webform.
 
     Old route: /update-pd-record/<owner_org>/<resource_name>/<pk>
+
+    NOTE: always edit by the record _id
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -1688,30 +1675,28 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
     ):
         return abort(403, _('Unauthorized to update a record for this resource'))
 
-    pk_fields = ['_id'] if view_context.chromo['edit_using__id'] \
-        else view_context.pk_fields
     template_vars = {
         'rcomb': view_context.rcomb,
         'geno': view_context.geno,
         'chromo': view_context.chromo,
-        'pk_fields': pk_fields,
+        'pk_fields': view_context.pk_fields,
         'choice_fields': view_context.choice_fields,
         'dataset': view_context.dataset,
         'resource': view_context.resource,
         'organization': view_context.organization,
     }
 
-    pk_list = [_url_part_unescape(p) for p in pk.split(',')]
     came_from = request.form.get('came_from') if request.method == 'POST' \
         else request.args.get('came_from')
     if came_from not in ['preview_record', 'preview_table']:
         came_from = 'preview_table'  # default to preview_table view
 
-    pk_filter = dict(zip(pk_fields, pk_list))
+    _id_val = _url_part_unescape(_id)
+    filters = {'_id': _id_val}
 
     records = lc.action.datastore_search(
         resource_id=view_context.resource['id'],
-        filters=pk_filter)['records']
+        filters=filters)['records']
     if len(records) == 0:
         abort(404, _('Not found'))
     if len(records) > 1:
@@ -1720,7 +1705,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
 
     data = {}
     if view_context.chromo.get('edit_using__id'):
-        data['_id'] = record['_id']
+        data['_id'] = record['_id']  # cannot change _id value
     for f in view_context.chromo['fields']:
         if (
           not f.get('import_template_include', True) or
@@ -1737,6 +1722,8 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
             data[f['datastore_id']] = val
 
     if request.method == 'POST':
+        pk_fields = ['_id'] if view_context.chromo['edit_using__id'] \
+            else view_context.pk_fields
         post_data = parse_params(request.form,
                                  ignore_keys=['save'] + pk_fields)
 
@@ -1745,11 +1732,12 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
                 return h.redirect_to('recombinant.preview_record',
                                      resource_name=resource_name,
                                      owner_org=view_context.rcomb['owner_org'],
-                                     pk=pk)
+                                     _id=_id)
             return h.redirect_to('recombinant.preview_table',
                                  resource_name=resource_name,
                                  owner_org=view_context.rcomb['owner_org'])
 
+        post_data['_id'] = record['_id']  # cannot change _id value
         data, err = _clean_check_type_errors(
             post_data,
             view_context.chromo['fields'],
@@ -1763,6 +1751,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
 
         # normalize newlines to \n
         data = _normalize_record_newlines(data)
+        data['_id'] = record['_id']  # cannot change _id value
 
         try:
             lc.action.datastore_upsert(
@@ -1787,7 +1776,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
             return render('recombinant/update_record.html',
                           extra_vars=dict(template_vars,
                                           data=data,
-                                          pk=pk,
+                                          _id=_id,
                                           _id_field=_get_id_field_dict(),
                                           # prevent rendering error on parent template
                                           pkg_dict={},
@@ -1795,13 +1784,16 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
                                           error_summary=error_summary,
                                           came_from=came_from))
 
-        h.flash_notice(_('Record %s updated') % ','.join(pk_list))
+        pk_list = [data[k] for k in view_context.pk_fields]
+        h.flash_notice(_('Record %s updated') % (_id_val
+                       if view_context.chromo['edit_using__id']
+                       else ','.join(pk_list)))
 
         if came_from == 'preview_record':
             return h.redirect_to('recombinant.preview_record',
                                  resource_name=resource_name,
                                  owner_org=view_context.rcomb['owner_org'],
-                                 pk=pk)
+                                 _id=_id)
 
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
@@ -1810,7 +1802,7 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
     return render('recombinant/update_record.html',
                   extra_vars=dict(template_vars,
                                   data=data,
-                                  pk=pk,
+                                  _id=_id,
                                   _id_field=_get_id_field_dict(),
                                   # prevent rendering error on parent template
                                   pkg_dict={},
@@ -2485,11 +2477,13 @@ def datatable(resource_name: str, resource_id: str) -> Union[str, Response]:
         aadata = [
             [''] +  # Expand column
             ['<input type="checkbox">'] +  # Select column
+            [''] +  # special _id col
             ['' for _col in cols] for _row in range(default_fill)]
     else:
         aadata = [
             [''] +  # Expand column
             ['<input type="checkbox">'] +  # Select column
+            [row.get('_id', '')] +  # special _id col
             [row.get(col, '') for col in cols] for row in response['records']]
 
     return json.dumps({

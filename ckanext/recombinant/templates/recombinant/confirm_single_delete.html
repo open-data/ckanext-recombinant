@@ -7,7 +7,7 @@ resource          - The resource dict
 _id_field         - Dict of the _id field
 pk_field_dicts    - List of primary key field Dicts
 num               - The number of records to delete
-pk                - The string value of primary keys to delete
+_id               - The string value of _id primary key to delete
 _id_to_delete     - The _id to delete
 pk_list           - The list values of primary keys to delete
 came_from         - URI parameter of view to redirect back to
@@ -44,10 +44,10 @@ came_from         - URI parameter of view to redirect back to
     <div class="clearfix"></div>
 
     <p class="form-actions">
-      <form id="recombinant-confirm-select-delete-form" action="{{ h.url_for('recombinant.delete_single_record', resource_name=resource.name, owner_org=rcomb.owner_org, pk=_id_to_delete, came_from=came_from) }}" method="post">
+      <form id="recombinant-confirm-select-delete-form" action="{{ h.url_for('recombinant.delete_single_record', resource_name=resource.name, owner_org=rcomb.owner_org, _id=_id_to_delete, came_from=came_from) }}" method="post">
         {{ h.csrf_input() }}
         <input type="hidden" name="select-delete-id" value="{{ _id_to_delete }}" />
-        <input type="hidden" name="original-pk" value="{{ pk }}" />
+        <input type="hidden" name="original-pk" value="{{ pk_list|join(',') }}" />
         <input type="hidden" name="came_from" value="{{ came_from }}" />
         <button class="btn" type="submit" name="cancel" >{{ _('Cancel') }}</button>
         <button class="btn btn-danger" type="submit" name="confirm" >{{ _('Confirm Delete') }}</button>

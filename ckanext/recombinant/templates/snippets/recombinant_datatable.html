@@ -9,6 +9,7 @@
 {% set chromo = h.recombinant_get_chromo(resource_name) %}
 {% set can_edit = h.check_access('resource_update', {'id': resource_id}) %}
 {% set editor_enabled = h.enable_datatable_editor() %}
+{%- set _id_label = _id_field['label'] -%}
 {% set fk_links = {} %}
 {% for _res_name, _fkeys in foreign_keys.items() %}
   {% do fk_links.update({_res_name: h.url_for('recombinant.preview_table', resource_name=_res_name, owner_org=owner_org)}) %}
@@ -76,6 +77,7 @@
       <tr class="font-small">
         <th scope="col" data-editable-col="false" data-priority="3"></th>
         <th scope="col" data-editable-col="false" data-priority="3">{{ _('Select') }}</th>
+        <th scope="col" data-editable-col="false" data-priority="3" data-datastore-id="_id" data-schema-label="{{- _(_id_label) -}}" data-datastore-type="int">{{ _(_id_label) }}</th>
         {% for field in ds_fields %}
           <th scope="col" data-editable-col="{{- (field.id not in nonEditableCols)|tojson -}}" data-schema-label="{{- h.scheming_language_text(field.label) -}}" data-datastore-id="{{- field.id -}}" data-datastore-type="{{- field.type -}}" data-priority="{{- field.priority + magic_priority_no_field_should_be_below -}}">
             {{- field.label -}}<span class="sorting-cnt"><span class="sorting-icons"></span></span>
@@ -87,6 +89,7 @@
     <tfoot id="dtprv-foot-main">
       <th scope="col" data-priority="3"></th>
       <th scope="col" data-priority="3">{{ _('Select') }}</th>
+      <th scope="col" data-priority="3" data-datastore-id="_id">{{ _(_id_label) }}</th>
       {% for field in ds_fields %}
         <th scope="col" data-datastore-id="{{- field.id -}}" data-priority="{{- field.priority + magic_priority_no_field_should_be_below -}}">
           {{- field.label -}}
@@ -118,18 +121,15 @@
 <script type="text/javascript" nonce="{{- h.get_inline_script_nonce() -}}">
   {% if can_edit %}
     const pd_datatables__EDITOR = {
-      {% if chromo.edit_using__id %}
-        {%- set _id_label = _id_field['label'] -%}
-        {{- '_id' -}}: {
-          type: '{{- _id_field['type'] -}}',
-          label: '{{- _(_id_label) -}}',
-          form_attrs: null,
-          select_choices: null,
-          choices_suffix_filter: null,
-          is_required: function(VALUE, ROW_INDEX){return true;},
-          is_invalid: function(VALUE, ROW_INDEX){return false},
-        },
-      {% endif %}
+      {{- '_id' -}}: {
+        type: '{{- _id_field['type'] -}}',
+        label: '{{- _(_id_label) -}}',
+        form_attrs: null,
+        select_choices: null,
+        choices_suffix_filter: null,
+        is_required: function(VALUE, ROW_INDEX){return true;},
+        is_invalid: function(VALUE, ROW_INDEX){return false},
+      },
       {% for field in chromo.fields %}
         {{- field.datastore_id -}}: {
           type: '{{- field.datastore_type -}}',
@@ -248,7 +248,7 @@
      data-module-csrf_value="{{- csrf_token() -}}"
      data-module-resource_id="{{- resource_id -}}"
      data-module-resource_name="{{- resource_name -}}"
-     data-module-edit_single_uri="{{- h.url_for('recombinant.update_record', resource_name=resource_name, owner_org=owner_org, pk='') -}}"
+     data-module-edit_single_uri="{{- h.url_for('recombinant.update_record', resource_name=resource_name, owner_org=owner_org, _id='') -}}"
      data-module-edit_records_uri="{{- h.url_for('recombinant.template', dataset_type=dataset_type, lang=lang, owner_org=owner_org) -}}"
      data-module-upsert_records_uri="{{- h.url_for('recombinant.upsert_data', resource_name=resource_name, owner_org=owner_org) -}}"
      data-module-delete_records_uri="{{- h.url_for('recombinant.delete_selected_records', resource_name=resource_name, owner_org=owner_org) -}}"
@@ -263,5 +263,5 @@
      data-module-is_editable='{{ (chromo.edit_form and can_edit)|tojson }}'
      data-module-edit_using__id='{{ chromo.edit_using__id|tojson }}'
      data-module-show_preview_button='{{ g.userobj.sysadmin|tojson }}'
-     data-module-record_preview_uri="{{- h.url_for('recombinant.preview_record', resource_name=resource_name, owner_org=owner_org, pk='') -}}">
+     data-module-record_preview_uri="{{- h.url_for('recombinant.preview_record', resource_name=resource_name, owner_org=owner_org, _id='') -}}">
 </div>
