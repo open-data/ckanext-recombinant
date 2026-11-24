@@ -934,7 +934,7 @@ def _data_dictionary(dataset_type: str,
     return response
 
 
-@recombinant.route('/recombinant/dictionary/<org_name>_<dataset_type>')
+@recombinant.route('/recombinant/org-dictionary/<string:org_name>_<string:dataset_type>')
 @nocache_store
 def org_based_data_dictionary(org_name: str, dataset_type: str) -> Response:
     """
@@ -946,7 +946,7 @@ def org_based_data_dictionary(org_name: str, dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False, org_name=org_name)
 
 
-@recombinant.route('/recombinant/dictionary/<dataset_type>')
+@recombinant.route('/recombinant/dictionary/<string:dataset_type>')
 @nocache_store
 def data_dictionary(dataset_type: str) -> Response:
     """
@@ -958,7 +958,7 @@ def data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False)
 
 
-@recombinant.route('/recombinant/published-dictionary/<dataset_type>')
+@recombinant.route('/recombinant/published-dictionary/<string:dataset_type>')
 @nocache_store
 def published_data_dictionary(dataset_type: str) -> Response:
     """
@@ -974,7 +974,7 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
                  org_name: Optional[str] = None) -> Response:
     try:
         geno = get_geno(dataset_type)
-    except RecombinantException:
+    except RecombinantException as e:
         return abort(404, _('Recombinant dataset_type not found'))
 
     schema = {}
@@ -1079,7 +1079,7 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
     return response
 
 
-@recombinant.route('/recombinant/schema/<org_name>_<dataset_type>.json')
+@recombinant.route('/recombinant/org-schema/<string:org_name>_<string:dataset_type>.json')
 @nocache_store
 def org_based_schema_json(org_name: str, dataset_type: str) -> Response:
     """
@@ -1091,7 +1091,7 @@ def org_based_schema_json(org_name: str, dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False, org_name=org_name)
 
 
-@recombinant.route('/recombinant/schema/<dataset_type>.json')
+@recombinant.route('/recombinant/schema/<string:dataset_type>.json')
 @nocache_store
 def schema_json(dataset_type: str) -> Response:
     """
@@ -1103,7 +1103,7 @@ def schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False)
 
 
-@recombinant.route('/recombinant/published-schema/<dataset_type>.json')
+@recombinant.route('/recombinant/published-schema/<string:dataset_type>.json')
 @nocache_store
 def published_schema_json(dataset_type: str) -> Response:
     """
@@ -1612,6 +1612,9 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
                     k: [_("This record already exists")]
                     for k in view_context.pk_fields
                 }, **err)
+            elif 'constraint_info' in ve.error_dict:
+                error_summary = _render_recombinant_constraint_errors(
+                    lc, ve, view_context.chromo, 'upsert')
             else:
                 log.warning('Failed to create %s record for org %s:\n%s',
                             resource_name, owner_org, traceback.format_exc())
@@ -1760,13 +1763,42 @@ def update_record(resource_name: str, owner_org: str, _id: str) -> Union[str, Re
                 records=[{k: None if k in err else v for (k, v) in data.items()}],
                 dry_run=bool(err))
         except ValidationError as ve:
-            try:
-                # type_ignore_reason: incomplete typing
+            if 'records' in ve.error_dict:
+                try:
+                    # type_ignore_reason: incomplete typing
+                    err = dict({
+                        k: list(format_trigger_error(v))
+                        for (k, v) in ve.error_dict['records'][0].items()  # type: ignore
+                    }, **err)
+                except AttributeError:
+                    # type_ignore_reason: incomplete typing
+                    if (
+                        'duplicate key value violates unique constraint' in
+                        ve.error_dict['records'][0]):  # type: ignore
+                        err = dict({
+                            k: [_("This record already exists")]
+                            for k in view_context.pk_fields
+                        }, **err)
+                    elif (
+                        'constraint_info' in ve.error_dict):
+                        error_summary = _render_recombinant_constraint_errors(
+                            lc, ve, view_context.chromo, 'upsert')
+                    else:
+                        log.warning('Failed to update %s record for org %s:\n%s',
+                                    resource_name, owner_org, traceback.format_exc())
+                        error_summary = _('Something went wrong, your record '
+                                          'was not updated. Please contact support.')
+            # type_ignore_reason: incomplete typing
+            elif ve.error_dict.get(
+                    'info', {}).get('pgcode', '') == '23505':  # type: ignore
                 err = dict({
-                    k: list(format_trigger_error(v))
-                    for (k, v) in ve.error_dict['records'][0].items()  # type: ignore
+                    k: [_("This record already exists")]
+                    for k in view_context.pk_fields
                 }, **err)
-            except AttributeError:
+            elif 'constraint_info' in ve.error_dict:
+                error_summary = _render_recombinant_constraint_errors(
+                    lc, ve, view_context.chromo, 'upsert')
+            else:
                 log.warning('Failed to update %s record for org %s:\n%s',
                             resource_name, owner_org, traceback.format_exc())
                 error_summary = _('Something went wrong, your record '
@@ -1932,6 +1964,9 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
                     k: [_("This record already exists")]
                     for k in pk_fields
                 }, **err)
+            elif 'constraint_info' in ve.error_dict:
+                error_summary = _render_recombinant_constraint_errors(
+                    lc, ve, chromo, 'upsert')
             else:
                 log.warning('Failed to create %s record for org %s:\n%s',
                             resource_name, owner_org, traceback.format_exc())
