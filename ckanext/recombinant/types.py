@@ -109,6 +109,7 @@ class RecombinantChromoDict(TypedDict, total=False):
     fields: Required[List[RecombinantFieldDict]]
     datastore_primary_key: Required[List[str]]
     datastore_indexes: Required[Union[str, List[str]]]
+    sequence_modulo_offset: int
     org_specific_fields: List[str]
     datastore_constraint_error_templates: Dict[str, str]
     datastore_constraint_errors: Dict[str, str]
@@ -128,6 +129,8 @@ class RecombinantGenoDict(TypedDict, total=False):
     shortname: str
     notes: Required[str]
     template_version: int
+    datastore_create_sequence: str
+    sequence_modulo_offset: int
     portal_type: Required[str]
     collection: Required[str]
     resources: Required[List[RecombinantChromoDict]]

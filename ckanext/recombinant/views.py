@@ -494,11 +494,12 @@ def delete_single_record(resource_name: str, owner_org: str,
             resource_id=view_context.resource['id'], filters=filters)
     except NotFound:
         h.flash_error(_('Not found') + ' ' + str(filters))
-    except ValidationError as e:
-        if 'constraint_info' in e.error_dict:
-            error_message = _render_recombinant_constraint_errors(
-                lc, e, view_context.chromo, 'delete')
-            h.flash_error(error_message)
+    except ValidationError as ve:
+        _err, error_summary = _handle_single_record_validation_errors(
+            lc, ve, 'delete', resource_name, owner_org,
+            view_context.chromo, view_context.pk_fields)
+        if error_summary:
+            h.flash_error(error_summary)
             if came_from == 'preview_record':
                 return h.redirect_to('recombinant.preview_record',
                                      resource_name=resource_name,
@@ -1510,6 +1511,89 @@ def preview_record(resource_name: str,
                                   record=record))
 
 
+def _handle_single_record_validation_errors(
+        lc: LocalCKAN,
+        ve: ValidationError, action_type: str,
+        resource_name: str, owner_org: str,
+        chromo: RecombinantChromoDict,
+        pk_fields: List[str]) -> Tuple[Dict[str, Any], str]:
+    """
+    Handles raised ValidationErrors from single record view routes:
+        - create_record
+        - update_record
+        - delete_single_record
+        - upsert_data (executes record-by-record)
+    """
+    err = {}
+    error_summary = ''
+    semantic = 'updated'
+    constraint_type = 'upsert'
+    if action_type == 'create':
+        semantic = 'created'
+    if action_type == 'delete':
+        semantic = 'deleted'
+        constraint_type = 'delete'
+    if 'records' in ve.error_dict:
+        try:
+            # type_ignore_reason: incomplete typing
+            err = dict({
+                k: list(format_trigger_error(v))
+                for (k, v) in
+                ve.error_dict['records'][0].items()  # type: ignore
+            }, **err)
+        except AttributeError:
+            # type_ignore_reason: incomplete typing
+            if (
+              'duplicate key value violates unique constraint' in
+              ve.error_dict['records'][0]):  # type: ignore
+                err = dict({
+                    k: [_("This record already exists")]
+                    for k in pk_fields
+                }, **err)
+            elif (
+              'constraint_info' in ve.error_dict):
+              error_summary = _render_recombinant_constraint_errors(
+                    lc, ve, chromo, constraint_type)
+            elif (
+              'invalid input syntax for type integer' in
+              # type_ignore_reason: incomplete typing
+              ve.error_dict['records'][0]  # type: ignore
+            ):
+                # type_ignore_reason: incomplete typing
+                if ':' in ve.error_dict['records'][0]:  # type: ignore
+                    error_summary = _('Invalid input syntax '
+                                      'for type integer: {}')\
+                        .format(
+                            # type_ignore_reason: incomplete typing
+                            ve.error_dict['records'][0].split(  # type: ignore
+                                ':')[1].strip())
+                else:
+                    error_summary = _('Invalid input syntax for type integer')
+            else:
+                log.warning('Failed to %s %s record for org %s:\n%s',
+                            action_type, resource_name, owner_org,
+                            traceback.format_exc())
+                error_summary = _('Something went wrong, your record '
+                                  'was not %s. Please contact support.' % semantic)
+    # type_ignore_reason: incomplete typing
+    elif ve.error_dict.get(
+            'info', {}).get('pgcode', '') == '23505':  # type: ignore
+        err = dict({
+            k: [_("This record already exists")]
+            for k in pk_fields
+        }, **err)
+    elif 'constraint_info' in ve.error_dict:
+        error_summary = _render_recombinant_constraint_errors(
+            lc, ve, chromo, constraint_type)
+    else:
+        log.warning('Failed to %s %s record for org %s:\n%s',
+                    action_type, resource_name, owner_org,
+                    traceback.format_exc())
+        error_summary = _('Something went wrong, your record '
+                          'was not %s. Please contact support.' % semantic)
+    return err, error_summary
+
+
 @recombinant.route('/recombinant/manage/<resource_name>/<owner_org>/create-record',
                    methods=['GET', 'POST'])
 def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
@@ -1579,48 +1663,9 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
                 records=[{k: None if k in err else v for (k, v) in data.items()}],
                 dry_run=bool(err))
         except ValidationError as ve:
-            if 'records' in ve.error_dict:
-                try:
-                    # type_ignore_reason: incomplete typing
-                    err = dict({
-                        k: list(format_trigger_error(v))
-                        for (k, v) in
-                        ve.error_dict['records'][0].items()  # type: ignore
-                    }, **err)
-                except AttributeError:
-                    # type_ignore_reason: incomplete typing
-                    if (
-                      'duplicate key value violates unique constraint' in
-                      ve.error_dict['records'][0]):  # type: ignore
-                        err = dict({
-                            k: [_("This record already exists")]
-                            for k in view_context.pk_fields
-                        }, **err)
-                    elif (
-                      'constraint_info' in ve.error_dict):
-                        error_summary = _render_recombinant_constraint_errors(
-                            lc, ve, view_context.chromo, 'upsert')
-                    else:
-                        log.warning('Failed to create %s record for org %s:\n%s',
-                                    resource_name, owner_org, traceback.format_exc())
-                        error_summary = _('Something went wrong, your record '
-                                          'was not created. Please contact support.')
-            # type_ignore_reason: incomplete typing
-            elif ve.error_dict.get(
-                    'info', {}).get('pgcode', '') == '23505':  # type: ignore
-                err = dict({
-                    k: [_("This record already exists")]
-                    for k in view_context.pk_fields
-                }, **err)
-            elif 'constraint_info' in ve.error_dict:
-                error_summary = _render_recombinant_constraint_errors(
-                    lc, ve, view_context.chromo, 'upsert')
-            else:
-                log.warning('Failed to create %s record for org %s:\n%s',
-                            resource_name, owner_org, traceback.format_exc())
-                error_summary = _('Something went wrong, your record '
-                                  'was not created. Please contact support.')
-
+            err, error_summary = _handle_single_record_validation_errors(
+                lc, ve, 'create', resource_name, owner_org,
+                view_context.chromo, view_context.pk_fields)
         if err or error_summary:
             return render('recombinant/create_record.html',
                           extra_vars=dict(template_vars,
@@ -1763,47 +1808,9 @@ def update_record(resource_name: str, owner_org: str, _id: str) -> Union[str, Re
                 records=[{k: None if k in err else v for (k, v) in data.items()}],
                 dry_run=bool(err))
         except ValidationError as ve:
-            if 'records' in ve.error_dict:
-                try:
-                    # type_ignore_reason: incomplete typing
-                    err = dict({
-                        k: list(format_trigger_error(v))
-                        for (k, v) in ve.error_dict['records'][0].items()  # type: ignore
-                    }, **err)
-                except AttributeError:
-                    # type_ignore_reason: incomplete typing
-                    if (
-                        'duplicate key value violates unique constraint' in
-                        ve.error_dict['records'][0]):  # type: ignore
-                        err = dict({
-                            k: [_("This record already exists")]
-                            for k in view_context.pk_fields
-                        }, **err)
-                    elif (
-                        'constraint_info' in ve.error_dict):
-                        error_summary = _render_recombinant_constraint_errors(
-                            lc, ve, view_context.chromo, 'upsert')
-                    else:
-                        log.warning('Failed to update %s record for org %s:\n%s',
-                                    resource_name, owner_org, traceback.format_exc())
-                        error_summary = _('Something went wrong, your record '
-                                          'was not updated. Please contact support.')
-            # type_ignore_reason: incomplete typing
-            elif ve.error_dict.get(
-                    'info', {}).get('pgcode', '') == '23505':  # type: ignore
-                err = dict({
-                    k: [_("This record already exists")]
-                    for k in view_context.pk_fields
-                }, **err)
-            elif 'constraint_info' in ve.error_dict:
-                error_summary = _render_recombinant_constraint_errors(
-                    lc, ve, view_context.chromo, 'upsert')
-            else:
-                log.warning('Failed to update %s record for org %s:\n%s',
-                            resource_name, owner_org, traceback.format_exc())
-                error_summary = _('Something went wrong, your record '
-                                  'was not updated. Please contact support.')
-
+            err, error_summary = _handle_single_record_validation_errors(
+                lc, ve, 'update', resource_name, owner_org,
+                view_context.chromo, view_context.pk_fields)
         if err or error_summary:
             return render('recombinant/update_record.html',
                           extra_vars=dict(template_vars,
@@ -1914,70 +1921,14 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
             return_dict['success'] = False
             return _finish(404, return_dict, content_type='json')
         except ValidationError as ve:
-            err = {}
-            error_summary = None
-            if 'records' in ve.error_dict:
-                try:
-                    # type_ignore_reason: incomplete typing
-                    err = dict({
-                        k: list(format_trigger_error(v))
-                        for (k, v) in
-                        ve.error_dict['records'][0].items()  # type: ignore
-                    }, **err)
-                except AttributeError:
-                    # type_ignore_reason: incomplete typing
-                    if (
-                      'duplicate key value violates unique constraint' in
-                      ve.error_dict['records'][0]):  # type: ignore
-                        err = dict({
-                            k: [_("This record already exists")]
-                            for k in pk_fields
-                        }, **err)
-                    elif (
-                      'constraint_info' in ve.error_dict):
-                        error_summary = _render_recombinant_constraint_errors(
-                            lc, ve, chromo, 'upsert')
-                    elif (
-                      'invalid input syntax for type integer' in
-                      # type_ignore_reason: incomplete typing
-                      ve.error_dict['records'][0]  # type: ignore
-                    ):
-                        # type_ignore_reason: incomplete typing
-                        if ':' in ve.error_dict['records'][0]:  # type: ignore
-                            error_summary = _('Invalid input syntax '
-                                              'for type integer: {}')\
-                                .format(
-                                    # type_ignore_reason: incomplete typing
-                                    ve.error_dict['records'][0].split(  # type: ignore
-                                        ':')[1].strip())
-                        else:
-                            error_summary = _('Invalid input syntax for type integer')
-                    else:
-                        log.warning('Failed to create %s record for org %s:\n%s',
-                                    resource_name, owner_org, traceback.format_exc())
-                        error_summary = _('Something went wrong, your record '
-                                          'was not created. Please contact support.')
-            # type_ignore_reason: incomplete typing
-            elif ve.error_dict.get(
-                    'info', {}).get('pgcode', '') == '23505':  # type: ignore
-                err = dict({
-                    k: [_("This record already exists")]
-                    for k in pk_fields
-                }, **err)
-            elif 'constraint_info' in ve.error_dict:
-                error_summary = _render_recombinant_constraint_errors(
-                    lc, ve, chromo, 'upsert')
-            else:
-                log.warning('Failed to create %s record for org %s:\n%s',
-                            resource_name, owner_org, traceback.format_exc())
-                error_summary = _('Something went wrong, your record '
-                                  'was not created. Please contact support.')
+            err, error_summary = _handle_single_record_validation_errors(
+                lc, ve, 'create', resource_name, owner_org, chromo, pk_fields)
             if 'error' not in return_dict:
                 return_dict['error'] = {}
             return_dict['error']['row_{}'.format(offset)] = {
                 '__type': 'Validation Error',
-                'message': error_summary,
-                'data': err}
+                'message': error_summary or None,
+                'data': err or {}}
             return_dict['success'] = False
             offset += 1
         except Exception as e:
