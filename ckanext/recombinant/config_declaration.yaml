@@ -18,3 +18,13 @@ groups:
         description: |
           Enables the custom DataTables editor for Recombinant type resources.
         validators: boolean_validator
+      - key: ckanext.recombinant._id.label
+        default: _id
+        description: |
+          The field label for the DataStore _id column.
+          Used when a Schema is using edit_using__id
+      - key: ckanext.recombinant._id.description
+        default: Unique record identifier
+        description: |
+          The field description for the DataStore _id column.
+          Used when a Schema is using edit_using__id

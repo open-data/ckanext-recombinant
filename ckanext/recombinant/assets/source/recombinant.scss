@@ -200,4 +200,8 @@ body{
       margin: 0;
     }
   }
+  input[type="submit"][name="save-later"]{
+    margin-left: 5px !important;
+    margin-right: 5px !important;
+  }
 }

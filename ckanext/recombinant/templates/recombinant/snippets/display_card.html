@@ -17,7 +17,7 @@ pk_fields       - List of strings of primary keys
       {%- do ns.pk_vals.append(record[f]) -%}
     {%- endfor -%}
     {%- set pk_vals = ns.pk_vals|join(',') -%}
-    <a href="{{ h.url_for('recombinant.preview_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk_vals) }}">
+    <a href="{{ h.url_for('recombinant.preview_record', resource_name=chromo.resource_name, owner_org=organization.name, _id=record['_id']) }}">
       {%- set title_display = record[chromo['display_card']['title_field']] -%}
       {%- if chromo['display_card']['title_field'] in choice_fields -%}
         {# most likely will not have a _text field as a card title, so can just support single choices #}
@@ -29,8 +29,8 @@ pk_fields       - List of strings of primary keys
       {%- endif -%}
       <h4 class="panel-title"><span class="record-heading-text" data-ds-id="{{- chromo['display_card']['title_field'] -}}">{{- title_display -}}</span></h4>
     </a>
-    <a href="{{ h.url_for('recombinant.update_record', resource_name=chromo.resource_name, owner_org=organization.name, pk=pk_vals, came_from='preview_table') }}" class="btn btn-default btn-small btn-sm"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
-    <a href="{{ h.url_for('recombinant.delete_single_record', resource_name=resource.name, owner_org=rcomb.owner_org, pk=pk_vals, came_from='preview_table') }}" class="btn btn-danger btn-small btn-sm"><i class="fa fa-trash" aria-hidden="true"></i>&nbsp;{{ _('Delete') }}</a>
+    <a href="{{ h.url_for('recombinant.update_record', resource_name=chromo.resource_name, owner_org=organization.name, _id=record['_id'], came_from='preview_table') }}" class="btn btn-default btn-small btn-sm"><i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;{{ _('Edit') }}</a>
+    <a href="{{ h.url_for('recombinant.delete_single_record', resource_name=resource.name, owner_org=rcomb.owner_org, _id=record['_id'], came_from='preview_table') }}" class="btn btn-danger btn-small btn-sm"><i class="fa fa-trash" aria-hidden="true"></i>&nbsp;{{ _('Delete') }}</a>
   </header>
   <div class="panel-body">
     {%- for f in chromo['display_card']['display_fields'] -%}

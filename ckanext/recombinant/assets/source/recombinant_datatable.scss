@@ -479,6 +479,13 @@ body #dtprv_wrapper{
       visibility: hidden !important;
     }
   }
+  td.expanders.expanders-hidden,
+  td.expanders.expanders-hidden::before,
+  td.expanders.expanders-hidden::after{
+    pointer-events: none !important;
+    color: #E1E4E7 !important;
+    opacity: 0.5 !important;
+  }
   .dt-scroll-head{
     th{
       &.expanders{
@@ -591,74 +598,186 @@ body #dtprv_wrapper{
       left: 0;
       background-color: white !important;
     }
+    /*
+     * _id col is 165px
+     * so all offsets in a data-_id-col="true" table must add it to the left calc
+     */
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-fixed,
     #dtprv-foot-main .pd-datatables-primary-key-fixed{
       left: 0;
       z-index: 4 !important;
       left: 36px;
     }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-_id{
+        left: 165px;
+      }
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-_id,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-_id{
+        left: calc(36px + 165px);
+      }
+    }
     .pd-datatables-primary-key-offset-xxs{
       left: 75px;
+    }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-xxs{
+        left: calc(75px + 165px);
+      }
     }
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-xxs,
     #dtprv-foot-main .pd-datatables-primary-key-offset-xxs{
       left: calc(75px + 36px);
     }
+    &[data-_id-col="true"]{
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-xxs,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-xxs{
+        left: calc(75px + 36px + 165px);
+      }
+    }
     .pd-datatables-primary-key-offset-xs{
       left: 100px;
+    }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-xs{
+        left: calc(100px + 165px);
+      }
     }
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-xs,
     #dtprv-foot-main .pd-datatables-primary-key-offset-xs{
       left: calc(100px + 36px);
     }
+    &[data-_id-col="true"]{
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-xs,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-xs{
+        left: calc(100px + 36px + 165px);
+      }
+    }
     .pd-datatables-primary-key-offset-sm{
       left: 135px;
+    }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-sm{
+        left: calc(135px + 165px);
+      }
     }
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-sm,
     #dtprv-foot-main .pd-datatables-primary-key-offset-sm{
       left: calc(135px + 36px);
     }
+    &[data-_id-col="true"]{
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-sm,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-sm{
+        left: calc(135px + 36px + 165px);
+      }
+    }
     .pd-datatables-primary-key-offset-md{
       left: 225px;
+    }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-md{
+        left: calc(225px + 165px);
+      }
     }
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-md,
     #dtprv-foot-main .pd-datatables-primary-key-offset-md{
       left: calc(225px + 36px);
     }
+    &[data-_id-col="true"]{
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-md,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-md{
+        left: calc(225px + 36px + 165px);
+      }
+    }
     .pd-datatables-primary-key-offset-sm_md{
       left: 360px;
+    }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-sm_md{
+        left: calc(360px + 165px);
+      }
     }
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-sm_md,
     #dtprv-foot-main .pd-datatables-primary-key-offset-sm_md{
       left: calc(360px + 36px);
     }
+    &[data-_id-col="true"]{
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-sm_md,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-sm_md{
+        left: calc(360px + 36px + 165px);
+      }
+    }
     .pd-datatables-primary-key-offset-md_lg{
       left: 525px;
+    }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-md_lg{
+        left: calc(525px + 165px);
+      }
     }
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-md_lg,
     #dtprv-foot-main .pd-datatables-primary-key-offset-md_lg{
       left: calc(525px + 36px);
     }
+    &[data-_id-col="true"]{
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-md_lg,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-md_lg{
+        left: calc(525px + 36px + 165px);
+      }
+    }
     .pd-datatables-primary-key-offset-lg{
       left: 300px;
+    }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-lg{
+        left: calc(300px + 165px);
+      }
     }
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-lg,
     #dtprv-foot-main .pd-datatables-primary-key-offset-lg{
       left: calc(300px + 36px);
     }
+    &[data-_id-col="true"]{
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-lg,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-lg{
+        left: calc(300px + 36px + 165px);
+      }
+    }
     .pd-datatables-primary-key-offset-xl{
       left: 400px;
+    }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-xl{
+        left: calc(400px + 165px);
+      }
     }
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-xl,
     #dtprv-foot-main .pd-datatables-primary-key-offset-xl{
       left: calc(400px + 36px);
     }
+    &[data-_id-col="true"]{
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-xl,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-xl{
+        left: calc(400px + 36px + 165px);
+      }
+    }
     .pd-datatables-primary-key-offset-xxl{
       left: 620px;
+    }
+    &[data-_id-col="true"]{
+      .pd-datatables-primary-key-offset-xxl{
+        left: calc(620px + 165px);
+      }
     }
     .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-xxl,
     #dtprv-foot-main .pd-datatables-primary-key-offset-xxl{
       left: calc(620px + 36px);
+    }
+    &[data-_id-col="true"]{
+      .dt-scroll-head th:not(:first-of-type).pd-datatables-primary-key-offset-xxl,
+      #dtprv-foot-main .pd-datatables-primary-key-offset-xxl{
+        left: calc(620px + 36px + 165px);
+      }
     }
   }
   &[data-edit-view="true"]{
@@ -688,7 +807,9 @@ body #dtprv_wrapper{
       display: none !important;
       visibility: hidden !important;
     }
-    th.checkboxes, td.checkboxes, th[data-editable-col="false"], td[data-editable-col="false"],
+    th.checkboxes, td.checkboxes,
+    th[data-editable-col="false"]:not(.pd-datatables-_id-col),
+    td[data-editable-col="false"]:not(.pd-datatables-_id-col),
     th.pd-datatables-non-editable-col, td.pd-datatables-non-editable-col{
       visibility: hidden !important;
       width: 0 !important;
@@ -734,6 +855,10 @@ body #dtprv_wrapper{
           color: #333333 !important;
           font-size: 14px;
           font-weight: 600;
+        }
+        &.pd-datatables-_id-col{
+          padding: 4px 8px !important;
+          background-color: #E1E4E7 !important;
         }
       }
     }
@@ -905,6 +1030,12 @@ body #dtprv_wrapper{
       min-width: 300px !important;
       max-width: 300px !important;
     }
+    td:not(.child).checkboxes,
+    th.checkboxes{
+      width: 75px !important;
+      min-width: 75px !important;
+      max-width: 75px !important;
+    }
   }
   #dtprv-foot-main{
     font-size: 13px !important;
@@ -934,6 +1065,8 @@ body #dtprv_wrapper{
       input{
         min-height: 37px !important;
         max-height: 37px !important;
+        display: block !important;
+        width: 100% !important;
         &[type="text"]{
           padding-left: 6px !important;
           padding-right: 6px !important;
@@ -993,6 +1126,12 @@ body #dtprv_wrapper{
     width: 135px !important;
     min-width: 135px !important;
     max-width: 135px !important;
+  }
+  td:not(.child).pd-datatables-_id-col,
+  th.pd-datatables-_id-col{
+    width: 165px !important;
+    min-width: 165px !important;
+    max-width: 165px !important;
   }
   td:not(.child).pd-datatables-col-md,
   th.pd-datatables-col-md{
