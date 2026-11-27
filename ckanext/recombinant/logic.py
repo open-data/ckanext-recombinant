@@ -393,6 +393,9 @@ def _update_triggers(lc: LocalCKAN, chromo: RecombinantChromoDict) -> List[str]:
     definitions: Dict[str, Any] = dict(chromo.get('trigger_strings', {}))
     trigger_names = []
 
+    if chromo.get('sequence_name'):
+        definitions['sequence_name'] = chromo['sequence_name']
+
     if chromo.get('sequence_modulo_offset'):
         definitions['sequence_modulo_offset'] = chromo['sequence_modulo_offset']
 
