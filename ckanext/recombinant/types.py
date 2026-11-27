@@ -109,6 +109,7 @@ class RecombinantChromoDict(TypedDict, total=False):
     fields: Required[List[RecombinantFieldDict]]
     datastore_primary_key: Required[List[str]]
     datastore_indexes: Required[Union[str, List[str]]]
+    sequence_name: str
     sequence_modulo_offset: int
     org_specific_fields: List[str]
     datastore_constraint_error_templates: Dict[str, str]

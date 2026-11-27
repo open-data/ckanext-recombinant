@@ -198,6 +198,7 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
     resource_definitions = {}
     published_resource_definitions = {}
     trigger_definitions = {}
+    sequence_name_definitions = {}
     sequence_modulo_offset_definitions = {}
     for url in urls:
         is_url = False
@@ -218,6 +219,18 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
                  url))
         genos[t['dataset_type']] = t
         dataset_definitions[t['dataset_type']] = url
+        if 'datastore_create_sequence' in t:
+            if t['datastore_create_sequence'] in sequence_name_definitions:
+                raise RecombinantException(
+                    'Recombinant datastore_create_sequence "%s" is already '
+                    'defined in %s. Cannot be redefined in %s.' %
+                    (t['datastore_create_sequence'],
+                        dataset_definitions[
+                            sequence_name_definitions[
+                                t['datastore_create_sequence']]],
+                        url))
+            sequence_name_definitions[
+                t['datastore_create_sequence']] = t['dataset_type']
         if 'sequence_modulo_offset' in t:
             if t['sequence_modulo_offset'] in sequence_modulo_offset_definitions:
                 raise RecombinantException(
@@ -259,6 +272,8 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
             chromo['dataset_type'] = t['dataset_type']
             if 'target_dataset' in t:
                 chromo['target_dataset'] = t['target_dataset']
+            if 'datastore_create_sequence' in t:
+                chromo['sequence_name'] = t['datastore_create_sequence']
             if 'sequence_modulo_offset' in t:
                 chromo['sequence_modulo_offset'] = t['sequence_modulo_offset']
             if is_url:

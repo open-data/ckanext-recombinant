@@ -391,7 +391,8 @@ def _build_styles(book: Workbook,
 
 def _apply_hyperlink_color(book: Workbook, style_name: str, color: str):
     if style_name in book.named_styles:
-        style_obj: NamedStyle = book._named_styles[style_name]
+        # type_ignore_reason: incomplete typing
+        style_obj: NamedStyle = book._named_styles[style_name]  # type: ignore
     else:
         style_obj: NamedStyle = NamedStyle(name=style_name)
     font: Font = style_obj.font

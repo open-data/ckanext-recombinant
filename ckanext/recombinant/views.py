@@ -512,7 +512,7 @@ def delete_single_record(resource_name: str, owner_org: str,
 
     h.flash_success(_("Deleted record {key}.").format(
         key=(_id_val if view_context.chromo['edit_using__id']
-        else ','.join(og_key_vals))))
+             else ','.join(og_key_vals))))
 
     return h.redirect_to('recombinant.preview_table',
                          resource_name=resource_name,
@@ -935,7 +935,8 @@ def _data_dictionary(dataset_type: str,
     return response
 
 
-@recombinant.route('/recombinant/org-dictionary/<string:org_name>_<string:dataset_type>')
+@recombinant.route(
+        '/recombinant/org-dictionary/<string:org_name>_<string:dataset_type>')
 @nocache_store
 def org_based_data_dictionary(org_name: str, dataset_type: str) -> Response:
     """
@@ -975,7 +976,7 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
                  org_name: Optional[str] = None) -> Response:
     try:
         geno = get_geno(dataset_type)
-    except RecombinantException as e:
+    except RecombinantException:
         return abort(404, _('Recombinant dataset_type not found'))
 
     schema = {}
@@ -1080,7 +1081,8 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
     return response
 
 
-@recombinant.route('/recombinant/org-schema/<string:org_name>_<string:dataset_type>.json')
+@recombinant.route(
+        '/recombinant/org-schema/<string:org_name>_<string:dataset_type>.json')
 @nocache_store
 def org_based_schema_json(org_name: str, dataset_type: str) -> Response:
     """
@@ -1545,14 +1547,16 @@ def _handle_single_record_validation_errors(
             # type_ignore_reason: incomplete typing
             if (
               'duplicate key value violates unique constraint' in
-              ve.error_dict['records'][0]):  # type: ignore
+              ve.error_dict['records'][0]  # type: ignore
+            ):
                 err = dict({
                     k: [_("This record already exists")]
                     for k in pk_fields
                 }, **err)
             elif (
-              'constraint_info' in ve.error_dict):
-              error_summary = _render_recombinant_constraint_errors(
+              'constraint_info' in ve.error_dict
+            ):
+                error_summary = _render_recombinant_constraint_errors(
                     lc, ve, chromo, constraint_type)
             elif (
               'invalid input syntax for type integer' in
