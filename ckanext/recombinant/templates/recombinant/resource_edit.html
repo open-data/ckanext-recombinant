@@ -219,7 +219,14 @@ filters             - Filters on page (req. for package/base_form_page.html)
           {% elif record_query %}
             <p><em>{{ _('Did not find any records with {pks} matching "{pk_vals}"').format(pks=','.join(pk_labels), pk_vals=record_query) }}</em></p>
           {% elif record_state %}
-            <p><em>{{ _('Did not find any "{state}" records').format(state=record_state) }}</em></p>
+            {% set state_field = h.recombinant_get_field(resource.name, 'record_state') %}
+            {% set ns = namespace(labels={'record_state': _('Unknown')}) %}
+            {%- for k, c in state_field.choices.items() -%}
+              {%- if record_state and record_state == k -%}
+                {% do ns.labels.update({'record_state': h.recombinant_language_text(c)}) %}
+              {%- endif -%}
+            {%- endfor -%}
+            <p><em>{{ _('Did not find any "{state}" records').format(state=ns.labels.record_state) }}</em></p>
           {% else %}
             <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
           {% endif %}

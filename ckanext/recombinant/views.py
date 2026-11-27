@@ -1526,12 +1526,12 @@ def _handle_single_record_validation_errors(
     """
     err = {}
     error_summary = ''
-    semantic = 'updated'
+    semantic = _('updated')
     constraint_type = 'upsert'
     if action_type == 'create':
-        semantic = 'created'
+        semantic = _('created')
     if action_type == 'delete':
-        semantic = 'deleted'
+        semantic = _('deleted')
         constraint_type = 'delete'
     if 'records' in ve.error_dict:
         try:
