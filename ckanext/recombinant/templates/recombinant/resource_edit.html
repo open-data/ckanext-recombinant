@@ -278,17 +278,21 @@ filters             - Filters on page (req. for package/base_form_page.html)
         {% do ns.record_count.update({'total': r.get('datastore_rows', 0)}) %}
       {% endif %}
     {% endfor %}
-    {% if not chromo.get('display_card') and resource and 'error' not in resource and ns.record_count.total > 0 %}
-      {% snippet 'snippets/' ~ dt_settings.dt_snippet,
-                 resource_name=resource.name,
-                 resource_id=resource.id,
-                 owner_org=rcomb.owner_org,
-                 primary_keys=dt_settings.primary_keys,
-                 foreign_keys=dt_settings.foreign_keys,
-                 edit_keys=dt_settings.edit_keys,
-                 _id_field=dt_settings._id_field,
-                 dataset_type=dataset_type,
-                 ds_fields=dt_settings.ds_fields %}
+    {% if not chromo.get('display_card') and resource and 'error' not in resource %}
+      {%- if ns.record_count.total > 0 -%}
+        {% snippet 'snippets/' ~ dt_settings.dt_snippet,
+                  resource_name=resource.name,
+                  resource_id=resource.id,
+                  owner_org=rcomb.owner_org,
+                  primary_keys=dt_settings.primary_keys,
+                  foreign_keys=dt_settings.foreign_keys,
+                  edit_keys=dt_settings.edit_keys,
+                  _id_field=dt_settings._id_field,
+                  dataset_type=dataset_type,
+                  ds_fields=dt_settings.ds_fields %}
+      {%- else -%}
+        <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
+      {%- endif -%}
     {% endif %}
   {% endblock record_table %}
 {% endblock %}

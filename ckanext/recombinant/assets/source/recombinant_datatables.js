@@ -1109,6 +1109,7 @@ function load_pd_datatable(CKAN_MODULE, HAS_TRANSLATIONS){
     $('#dtprv_wrapper').attr('data-editable', isEditable);
     $('#dtprv_wrapper').attr('data-compact-view', isCompactView);
     $('#dtprv_wrapper').attr('data-edit-view', isEditMode);
+    $('#dtprv_wrapper').attr('data-_id-col', editUsingID);
     $('#dtprv_wrapper').find('tr').children('th:first-of-type').css(
       {'width': 'auto', 'min-width': 'auto', 'max-width': 'auto', 'padding': '8px',  'visibility': 'visible'});
     $('#dtprv_wrapper').find('tr').children('td:first-of-type').css(
