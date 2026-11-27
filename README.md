@@ -61,6 +61,46 @@ recombinant.definitions = file:///.../type1.yaml ...
 # containing the ckanext.atisummaries module
 ```
 
+## Localization
+
+To update strings in the translation files:
+
+```bash
+python setup.py extract_messages
+```
+
+Extract messages will gather `gettext` calls in Python, JS, and Jinja2 files.
+
+To update the English and French catalog files:
+
+```bash
+python setup.py update_catalog
+```
+
+This will update both English and French PO files. You will need to confirm that there are NO `fuzzy` translations in either of the PO files.
+
+After updating the PO files and ensuring that there are no fuzzies, you may commit the two PO files along with the POT file.
+
+### Compiling localization strings
+
+Each time you install or update this extension you need to install the
+updated translations by running:
+
+```bash
+python setup.py compile_catalog
+```
+
+## WebAssets
+
+CKAN uses python webassets to compile and serve front-end assets like CSS stylesheets and JS scripts. Though webassets offers filters for Sass and JS Minify, it is better practice to not have Node build utilities on production servers. Thus we compile the assets locally via Node and commit to the source GitHub repository (though this is also not best practice, it is required due to deployment constraints).
+
+If you change webassets, you will need to build them:
+
+```
+npm install -D
+npm run build
+```
+
 ## Definitions
 
 ### Table Definitions
