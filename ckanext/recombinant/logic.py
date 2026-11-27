@@ -231,7 +231,8 @@ def _action_find_dataset(context: Context, data_dict: DataDict) -> Tuple[
             dataset_type, owner_org.name,
             'AND id:{0}'.format(dataset_id) if dataset_id else ''),
         include_private=True,
-        rows=2)
+        rows=2,
+        extras={'__RECOMBINANT_CONTEXT__': True})
     return lc, geno, result['results']
 
 
@@ -392,6 +393,9 @@ def _update_triggers(lc: LocalCKAN, chromo: RecombinantChromoDict) -> List[str]:
     definitions: Dict[str, Any] = dict(chromo.get('trigger_strings', {}))
     trigger_names = []
 
+    if chromo.get('sequence_modulo_offset'):
+        definitions['sequence_modulo_offset'] = chromo['sequence_modulo_offset']
+
     for f in chromo['fields']:
         if 'choices' in f:
             if f['datastore_id'] in definitions:
@@ -433,7 +437,8 @@ def _update_triggers(lc: LocalCKAN, chromo: RecombinantChromoDict) -> List[str]:
 def _pg_value(value: Any) -> str:
     if isinstance(value, string_types):
         return literal_string(str(value))
-
+    if isinstance(value, int):
+        return str(value)
     return 'ARRAY[' + ','.join(literal_string(str(c)) for c in value) + ']'
 
 

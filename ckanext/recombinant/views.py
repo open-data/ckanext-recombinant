@@ -67,8 +67,7 @@ from ckanext.recombinant.write_excel import (
     append_data
 )
 from ckanext.recombinant.tables import get_chromo, get_geno
-from ckanext.recombinant.helpers import (
-    recombinant_primary_key_fields, recombinant_choice_fields)
+from ckanext.recombinant.helpers import recombinant_choice_fields, _get_id_field_dict
 
 from io import BytesIO
 
@@ -263,6 +262,9 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
     Bulk delete records via Delete tab UI.
     Separated by newlines in a textare form field.
 
+    NOTE: user input is done by primary keys (e.g. Year,Month)
+          the confirm delete POSTs the _id values of the matched records (e.g. 25)
+
     Old route: /recombinant/delete/<id>/<resource_id>
     """
     if not g.user:
@@ -288,47 +290,64 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
                              resource_name=resource_name,
                              owner_org=owner_org)
 
+    pk_field_dicts = [
+        f for f in view_context.chromo['fields']
+        if f['datastore_id'] in view_context.chromo['datastore_primary_key']
+    ]
+
     # type_ignore_reason: [] default is allowed
-    def delete_error(err: str, _records: List[str] = []) -> str:  # type: ignore
+    def delete_error(err: str, _ok_records: List[str] = [],  # type: ignore
+                     _records: List[str] = []) -> str:  # type: ignore
         return render('recombinant/confirm_delete.html',
-                      extra_vars={'recomb': view_context.rcomb,
+                      extra_vars={'rcomb': view_context.rcomb,
+                                  'chromo': view_context.chromo,
                                   'resource': view_context.resource,
+                                  '_id_field': _get_id_field_dict(),
+                                  'pk_field_dicts': pk_field_dicts,
                                   'errors': [err],
                                   'num': len(_records),
-                                  'bulk_delete': '\n'.join(
+                                  'to_delete': _ok_records,
+                                  'bulk_delete_ids': '\n'.join(
                                       _records
                                       # extra blank is needed to prevent field
                                       # from being completely empty
                                       + ([''] if '' in _records else []))})
 
+    delete_by__id = False
     form_text = request.form.get('bulk-delete', '')
     if not form_text:
-        # we can just silently refresh
-        return h.redirect_to('recombinant.preview_table',
-                             resource_name=resource_name,
-                             owner_org=owner_org)
+        form_text = request.form.get('bulk-delete-ids', '')
+        if form_text:
+            delete_by__id = True
+        else:
+            # we can just silently refresh
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=owner_org)
 
+    pk_fields = ['_id'] if delete_by__id else view_context.pk_fields
     filters = {}
     ok_records = []
+    _ids_to_delete = []
     ok_filters = []
-    records = iter(form_text.split('\n'))
-    for r in records:
-        r = r.rstrip('\r')
+    pk_text = iter(form_text.split('\n'))
+    for pk_string in pk_text:
+        pk_string = pk_string.rstrip('\r')
 
         def record_fail(err: str) -> str:
             # move bad record to the top of the pile
             filters['bulk-delete'] = '\n'.join(
-                [r] + list(records) + ok_records)
-            return delete_error(err, ok_records)
+                [pk_string] + list(pk_text) + ok_records)
+            return delete_error(err, ok_records, _ids_to_delete)
 
-        split_on = '\t' if '\t' in r else ','
-        fields = [f for f in r.split(split_on)]
-        if len(fields) != len(view_context.pk_fields):
+        split_on = '\t' if '\t' in pk_string else ','
+        fields = [f for f in pk_string.split(split_on)]
+        if len(fields) != len(pk_fields):
             return record_fail(_('Wrong number of fields, expected {num}').format(
-                num=len(view_context.pk_fields)))
+                num=len(pk_fields)))
 
         filters.clear()
-        for f, pkf in zip(fields, view_context.pk_fields):
+        for f, pkf in zip(fields, pk_fields):
             filters[pkf] = f
         try:
             result = lc.action.datastore_search(
@@ -344,9 +363,10 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
         if len(found) > 1:
             return record_fail(_('Multiple matching records found'))
 
-        if r not in ok_records:
-            ok_records.append(r)
+        if pk_string not in ok_records:
+            ok_records.append(pk_string)
             ok_filters.append(dict(filters))
+            _ids_to_delete.append(str(found[0]['_id']))
 
     if 'cancel' in request.form:
         return h.redirect_to('recombinant.preview_table',
@@ -356,13 +376,17 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
     if 'confirm' not in request.form or request.method == 'GET':  # type: ignore
         return render('recombinant/confirm_delete.html',
                       extra_vars={'rcomb': view_context.rcomb,
+                                  'chromo': view_context.chromo,
                                   'resource': view_context.resource,
+                                  '_id_field': _get_id_field_dict(),
+                                  'pk_field_dicts': pk_field_dicts,
                                   'num': len(ok_records),
-                                  'bulk_delete': '\n'.join(
-                                      ok_records
+                                  'to_delete': ok_records,
+                                  'bulk_delete_ids': '\n'.join(
+                                      _ids_to_delete
                                       # extra blank is needed to prevent field
                                       # from being completely empty
-                                      + ([''] if '' in ok_records else []))})
+                                      + ([''] if '' in _ids_to_delete else []))})
     if request.method == 'POST':
         for f in ok_filters:
             try:
@@ -385,12 +409,14 @@ def delete_records(resource_name: str, owner_org: str) -> Union[str, Response]:
 
 
 @recombinant.route(
-    '/recombinant/manage/<resource_name>/<owner_org>/delete-single-record/<pk>',
+    '/recombinant/manage/<resource_name>/<owner_org>/delete-single-record/<_id>',
     methods=['GET', 'POST'])
 def delete_single_record(resource_name: str, owner_org: str,
-                         pk: str) -> Union[str, Response]:
+                         _id: str) -> Union[str, Response]:
     """
     Delete a single record for a Recombinant resource.
+
+    NOTE: delete by record _id
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -408,7 +434,7 @@ def delete_single_record(resource_name: str, owner_org: str,
                             'to update resource {1}').format(
                                 str(g.user), view_context.resource['id']))
 
-    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
+    _id_val = _url_part_unescape(_id)
     came_from = request.form.get('came_from') if request.method == 'POST' \
         else request.args.get('came_from')
     if came_from not in ['preview_record', 'preview_table']:
@@ -419,50 +445,74 @@ def delete_single_record(resource_name: str, owner_org: str,
             return h.redirect_to('recombinant.preview_record',
                                  resource_name=resource_name,
                                  owner_org=owner_org,
-                                 pk=pk)
+                                 _id=_id)
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=owner_org)
+
+    pk_field_dicts = [
+        f for f in view_context.chromo['fields']
+        if f['datastore_id'] in view_context.chromo['datastore_primary_key']
+    ]
+
+    filters = {'_id': _id_val}
+
     if request.method != 'POST' or 'confirm' not in request.form:
+        # need primary keys to delete for the record
+        result = lc.action.datastore_search(
+            resource_id=view_context.resource['id'],
+            filters=filters,
+            limit=2)
+        if not result or not result['records']:
+            return abort(404, _('No matching records found "%s"') %
+                         _id_val)
+        found = result['records']
+        if len(found) > 1:
+            return abort(404, _('Multiple matching records found for "%s"') %
+                         _id_val)
+        _id_to_delete = found[0]['_id']
+        primary_key_vals = [
+            v for k, v in found[0].items() if k in view_context.pk_fields
+        ]
         return render('recombinant/confirm_single_delete.html',
                       extra_vars={
                           'rcomb': view_context.rcomb,
+                          'chromo': view_context.chromo,
                           'resource': view_context.resource,
+                          '_id_field': _get_id_field_dict(),
+                          'pk_field_dicts': pk_field_dicts,
                           'num': 1,
-                          'pk': pk,
+                          '_id': _id,
+                          '_id_to_delete': _id_to_delete,
                           'pk_list': primary_key_vals,
                           'came_from': came_from})
 
-    filters = {}
-    try:
-        for i, k in enumerate(view_context.pk_fields):
-            filters[k] = primary_key_vals[i]
-    except IndexError:
-        abort(404, _('Record %s not found for Organization %s') %
-              (pk, owner_org))
-
+    og_pk = request.form.get('original-pk', _id)
+    og_key_vals = [_url_part_unescape(p) for p in og_pk.split(',')]
     try:
         lc.action.datastore_records_delete(
             resource_id=view_context.resource['id'], filters=filters)
     except NotFound:
         h.flash_error(_('Not found') + ' ' + str(filters))
-    except ValidationError as e:
-        if 'constraint_info' in e.error_dict:
-            error_message = _render_recombinant_constraint_errors(
-                lc, e, view_context.chromo, 'delete')
-            h.flash_error(error_message)
+    except ValidationError as ve:
+        _err, error_summary = _handle_single_record_validation_errors(
+            lc, ve, 'delete', resource_name, owner_org,
+            view_context.chromo, view_context.pk_fields)
+        if error_summary:
+            h.flash_error(error_summary)
             if came_from == 'preview_record':
                 return h.redirect_to('recombinant.preview_record',
                                      resource_name=resource_name,
                                      owner_org=owner_org,
-                                     pk=pk)
+                                     _id=_id)
             return h.redirect_to('recombinant.preview_table',
                                  resource_name=resource_name,
                                  owner_org=owner_org)
         raise
 
     h.flash_success(_("Deleted record {key}.").format(
-        key=','.join(primary_key_vals)))
+        key=(_id_val if view_context.chromo['edit_using__id']
+        else ','.join(og_key_vals))))
 
     return h.redirect_to('recombinant.preview_table',
                          resource_name=resource_name,
@@ -477,6 +527,9 @@ def delete_selected_records(resource_name: str,
     """
     Delete selected records for a Recombinant resource,
     selectable from the DataTables UI.
+
+    NOTE: user input is done by primary keys (e.g. Year,Month)
+          the confirm delete POSTs the _id values of the matched records (e.g. 25)
 
     Old route: /recombinant/delete-selected-records/<resource_id>
     """
@@ -496,25 +549,77 @@ def delete_selected_records(resource_name: str,
                             'to update resource {1}').format(
                                 str(g.user), view_context.resource['id']))
 
-    records = request.form.getlist('select-delete')
-
     if 'cancel' in request.form:
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
                              owner_org=owner_org)
+
+    delete_by__id = False
+    pk_text = request.form.getlist('select-delete')
+    if not pk_text:
+        pk_text = request.form.getlist('select-delete-ids')
+        if pk_text:
+            delete_by__id = True
+        else:
+            # we can just silently refresh
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=owner_org)
+
+    pk_field_dicts = [
+        f for f in view_context.chromo['fields']
+        if f['datastore_id'] in view_context.chromo['datastore_primary_key']
+    ]
+    pk_fields = ['_id'] if delete_by__id else view_context.pk_fields
+    if delete_by__id:
+        pk_text = ''.join(pk_text).split(';')
+
     if request.method != 'POST' or 'confirm' not in request.form:
+        _ids_to_delete = []
+        pks_to_delete = []
+        has_errors = False
+        for pk_string in pk_text:
+            filter = dict(zip(pk_fields, pk_string.split(',')))
+            if filter:
+                result = None
+                try:
+                    result = lc.action.datastore_search(
+                        resource_id=view_context.resource['id'],
+                        filters=filter,
+                        limit=2)
+                except NotFound:
+                    h.flash_error(_('Not found') + ' ' + str(filter))
+                    has_errors = True
+                found = result['records'] if result else None
+                if not found:
+                    h.flash_error(_('No matching records found "%s"') %
+                                  '", "'.join(pk_string))
+                    has_errors = True
+                if found and len(found) > 1:
+                    h.flash_error(_('Multiple matching records found for "%s"') %
+                                  '", "'.join(pk_string))
+                    has_errors = True
+                if found and pk_string not in pks_to_delete:
+                    pks_to_delete.append(pk_string)
+                    _ids_to_delete.append(str(found[0]['_id']))
+        if has_errors:
+            return h.redirect_to('recombinant.preview_table',
+                                 resource_name=resource_name,
+                                 owner_org=owner_org)
         return render('recombinant/confirm_select_delete.html',
                       extra_vars={
                           'rcomb': view_context.rcomb,
+                          'chromo': view_context.chromo,
                           'resource': view_context.resource,
-                          'num': len(records),
-                          'select_delete': ';'.join(records)})
-
-    records = ''.join(records).split(';')
+                          '_id_field': _get_id_field_dict(),
+                          'pk_field_dicts': pk_field_dicts,
+                          'num': len(pk_text),
+                          'to_delete': pks_to_delete,
+                          'select_delete_ids': ';'.join(_ids_to_delete)})
 
     records_deleted = 0
-    for r in records:
-        filter = dict(zip(view_context.pk_fields, r.split(',')))
+    for pk_string in pk_text:
+        filter = dict(zip(pk_fields, pk_string.split(',')))
         if filter:
             try:
                 lc.action.datastore_records_delete(
@@ -693,18 +798,22 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
         else:
             return abort(404, _("Resource not found"))
 
-        pk_fields = recombinant_primary_key_fields(resource['name'])
-        primary_keys = request.form.getlist('bulk-template')
         chromo = get_chromo(resource['name'])
+        primary_keys = request.form.getlist('bulk-template')
         record_data = []
-
-        edit_using__id = bool(chromo.get('edit_using__id'))
+        pk_field_dicts = []
+        edit_using__id = chromo['edit_using__id']
         if edit_using__id:
-            pk_fields = [{'datastore_id': '_id'}]
+            pk_field_dicts = [_get_id_field_dict()]
+        else:
+            pk_field_dicts = [
+                f for f in chromo['fields']
+                if f['datastore_id'] in chromo['datastore_primary_key']
+            ]
 
         for keys in primary_keys:
             temp = keys.split(",")
-            for f, pkf in zip(temp, pk_fields):
+            for f, pkf in zip(temp, pk_field_dicts):
                 filters[pkf['datastore_id']] = f
             try:
                 result = lc.action.datastore_search(resource_id=resource['id'],
@@ -716,7 +825,7 @@ def template(dataset_type: str, lang: str, owner_org: str) -> Union[Response, st
 
         try:
             book = excel_template(
-                dataset_type, org, edit_using__id, len(record_data))
+                dataset_type, org, edit_using__id, len(record_data), resource_name)
         except RecombinantException as e:
             return abort(400, _('Unable to download template.\n%s') % e)
 
@@ -826,7 +935,7 @@ def _data_dictionary(dataset_type: str,
     return response
 
 
-@recombinant.route('/recombinant/dictionary/<org_name>_<dataset_type>')
+@recombinant.route('/recombinant/org-dictionary/<string:org_name>_<string:dataset_type>')
 @nocache_store
 def org_based_data_dictionary(org_name: str, dataset_type: str) -> Response:
     """
@@ -838,7 +947,7 @@ def org_based_data_dictionary(org_name: str, dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False, org_name=org_name)
 
 
-@recombinant.route('/recombinant/dictionary/<dataset_type>')
+@recombinant.route('/recombinant/dictionary/<string:dataset_type>')
 @nocache_store
 def data_dictionary(dataset_type: str) -> Response:
     """
@@ -850,7 +959,7 @@ def data_dictionary(dataset_type: str) -> Response:
     return _data_dictionary(dataset_type, published_resource=False)
 
 
-@recombinant.route('/recombinant/published-dictionary/<dataset_type>')
+@recombinant.route('/recombinant/published-dictionary/<string:dataset_type>')
 @nocache_store
 def published_data_dictionary(dataset_type: str) -> Response:
     """
@@ -866,7 +975,7 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
                  org_name: Optional[str] = None) -> Response:
     try:
         geno = get_geno(dataset_type)
-    except RecombinantException:
+    except RecombinantException as e:
         return abort(404, _('Recombinant dataset_type not found'))
 
     schema = {}
@@ -971,7 +1080,7 @@ def _schema_json(dataset_type: str, published_resource: bool = False,
     return response
 
 
-@recombinant.route('/recombinant/schema/<org_name>_<dataset_type>.json')
+@recombinant.route('/recombinant/org-schema/<string:org_name>_<string:dataset_type>.json')
 @nocache_store
 def org_based_schema_json(org_name: str, dataset_type: str) -> Response:
     """
@@ -983,7 +1092,7 @@ def org_based_schema_json(org_name: str, dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False, org_name=org_name)
 
 
-@recombinant.route('/recombinant/schema/<dataset_type>.json')
+@recombinant.route('/recombinant/schema/<string:dataset_type>.json')
 @nocache_store
 def schema_json(dataset_type: str) -> Response:
     """
@@ -995,7 +1104,7 @@ def schema_json(dataset_type: str) -> Response:
     return _schema_json(dataset_type, published_resource=False)
 
 
-@recombinant.route('/recombinant/published-schema/<dataset_type>.json')
+@recombinant.route('/recombinant/published-schema/<string:dataset_type>.json')
 @nocache_store
 def published_schema_json(dataset_type: str) -> Response:
     """
@@ -1198,9 +1307,13 @@ def preview_table(resource_name: str,
     record_query = None
     record_query_error = None
     pk_labels = []
-    pk_field_dicts = recombinant_primary_key_fields(resource_name)
+    pk_field_dicts = [
+        f for f in view_context.chromo['fields']
+        if f['datastore_id'] in view_context.chromo['datastore_primary_key']
+    ] if view_context.chromo else []
     dt_pkids = []
     dt_fields = []
+    dt_edit_keys = []
     dt_fkids = {}
     # TODO: DEPRECATED: REMOVE AFTER FULL RECOMBINANT DATATABLES QA
     dt_template = 'recombinant_datatable_depr.html'
@@ -1244,6 +1357,9 @@ def preview_table(resource_name: str,
         pk_priority = 0
         activity_priority = 1
         fids = []
+        if view_context.chromo['edit_using__id']:
+            dt_fields.append(_get_id_field_dict())
+            fids.append('_id')
         for f in view_context.chromo['fields']:
             if f.get('published_resource_computed_field'):
                 continue
@@ -1264,6 +1380,9 @@ def preview_table(resource_name: str,
             fids.append(f['datastore_id'])
         dt_pkids = [fids.index(k) for k in aslist(
             view_context.chromo['datastore_primary_key'])]
+        dt_edit_keys = dt_pkids
+        if view_context.chromo['edit_using__id']:
+            dt_edit_keys = [0]
         try:
             ds_info = get_action('datastore_info')(
                 cast(Context, {'ignore_auth': True}),
@@ -1312,24 +1431,30 @@ def preview_table(resource_name: str,
                                   record_query_error=record_query_error,
                                   record_state=record_state,
                                   pk_labels=pk_labels,
+                                  pk_field_dicts=pk_field_dicts,
+                                  _id_field=_get_id_field_dict(),
                                   errors=None,
                                   delete_errors=None,
                                   filters=None,
                                   dt_settings={
                                       'primary_keys': dt_pkids,
                                       'foreign_keys': dt_fkids,
+                                      'edit_keys': dt_edit_keys,
                                       'ds_fields': dt_fields,
                                       'dt_snippet':  dt_template,
+                                      '_id_field': _get_id_field_dict(),
                                   }))
 
 
-@recombinant.route('/recombinant/<resource_name>/<owner_org>/<pk>',
+@recombinant.route('/recombinant/<resource_name>/<owner_org>/<_id>',
                    methods=['GET'])
 def preview_record(resource_name: str,
                    owner_org: str,
-                   pk: str) -> Union[str, Response]:
+                   _id: str) -> Union[str, Response]:
     """
     Preview a single record.
+
+    NOTE: always preview by record _id
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -1345,7 +1470,7 @@ def preview_record(resource_name: str,
         return h.redirect_to('recombinant.preview_record',
                              resource_name=resource_name,
                              owner_org=view_context.organization['name'],
-                             pk=pk)
+                             _id=_id)
 
     if (
       not h.check_access('datastore_search',
@@ -1364,23 +1489,16 @@ def preview_record(resource_name: str,
         'organization': view_context.organization,
     }
 
-    primary_key_vals = [_url_part_unescape(p) for p in pk.split(',')]
-
+    _id_val = _url_part_unescape(_id)
+    filters = {'_id': _id_val}
     record = None
-    filters = {}
-    try:
-        for i, k in enumerate(view_context.pk_fields):
-            filters[k] = primary_key_vals[i]
-    except IndexError:
-        abort(404, _('Record %s not found for Organization %s') %
-              (pk, owner_org))
 
     try:
         result = lc.action.datastore_search(
             resource_id=view_context.resource['id'], filters=filters, limit=1)
         if len(result['records']) == 0:
             return abort(404, _('Record %s not found for Organization %s') %
-                         (pk, owner_org))
+                         (_id_val))
         record = result['records'][0]
     except NotAuthorized:
         return abort(403, _('Unauthorized to read resource %s') %
@@ -1388,8 +1506,92 @@ def preview_record(resource_name: str,
 
     return render('recombinant/record_preview.html',
                   extra_vars=dict(template_vars,
-                                  pk=pk,
+                                  _id=_id,
+                                  _id_field=_get_id_field_dict(),
                                   record=record))
+
+
+def _handle_single_record_validation_errors(
+        lc: LocalCKAN,
+        ve: ValidationError, action_type: str,
+        resource_name: str, owner_org: str,
+        chromo: RecombinantChromoDict,
+        pk_fields: List[str]) -> Tuple[Dict[str, Any], str]:
+    """
+    Handles raised ValidationErrors from single record view routes:
+        - create_record
+        - update_record
+        - delete_single_record
+        - upsert_data (executes record-by-record)
+    """
+    err = {}
+    error_summary = ''
+    semantic = 'updated'
+    constraint_type = 'upsert'
+    if action_type == 'create':
+        semantic = 'created'
+    if action_type == 'delete':
+        semantic = 'deleted'
+        constraint_type = 'delete'
+    if 'records' in ve.error_dict:
+        try:
+            # type_ignore_reason: incomplete typing
+            err = dict({
+                k: list(format_trigger_error(v))
+                for (k, v) in
+                ve.error_dict['records'][0].items()  # type: ignore
+            }, **err)
+        except AttributeError:
+            # type_ignore_reason: incomplete typing
+            if (
+              'duplicate key value violates unique constraint' in
+              ve.error_dict['records'][0]):  # type: ignore
+                err = dict({
+                    k: [_("This record already exists")]
+                    for k in pk_fields
+                }, **err)
+            elif (
+              'constraint_info' in ve.error_dict):
+              error_summary = _render_recombinant_constraint_errors(
+                    lc, ve, chromo, constraint_type)
+            elif (
+              'invalid input syntax for type integer' in
+              # type_ignore_reason: incomplete typing
+              ve.error_dict['records'][0]  # type: ignore
+            ):
+                # type_ignore_reason: incomplete typing
+                if ':' in ve.error_dict['records'][0]:  # type: ignore
+                    error_summary = _('Invalid input syntax '
+                                      'for type integer: {}')\
+                        .format(
+                            # type_ignore_reason: incomplete typing
+                            ve.error_dict['records'][0].split(  # type: ignore
+                                ':')[1].strip())
+                else:
+                    error_summary = _('Invalid input syntax for type integer')
+            else:
+                log.warning('Failed to %s %s record for org %s:\n%s',
+                            action_type, resource_name, owner_org,
+                            traceback.format_exc())
+                error_summary = _('Something went wrong, your record '
+                                  'was not %s. Please contact support.' % semantic)
+    # type_ignore_reason: incomplete typing
+    elif ve.error_dict.get(
+            'info', {}).get('pgcode', '') == '23505':  # type: ignore
+        err = dict({
+            k: [_("This record already exists")]
+            for k in pk_fields
+        }, **err)
+    elif 'constraint_info' in ve.error_dict:
+        error_summary = _render_recombinant_constraint_errors(
+            lc, ve, chromo, constraint_type)
+    else:
+        log.warning('Failed to %s %s record for org %s:\n%s',
+                    action_type, resource_name, owner_org,
+                    traceback.format_exc())
+        error_summary = _('Something went wrong, your record '
+                          'was not %s. Please contact support.' % semantic)
+    return err, error_summary
 
 
 @recombinant.route('/recombinant/manage/<resource_name>/<owner_org>/create-record',
@@ -1461,45 +1663,9 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
                 records=[{k: None if k in err else v for (k, v) in data.items()}],
                 dry_run=bool(err))
         except ValidationError as ve:
-            if 'records' in ve.error_dict:
-                try:
-                    # type_ignore_reason: incomplete typing
-                    err = dict({
-                        k: list(format_trigger_error(v))
-                        for (k, v) in
-                        ve.error_dict['records'][0].items()  # type: ignore
-                    }, **err)
-                except AttributeError:
-                    # type_ignore_reason: incomplete typing
-                    if (
-                      'duplicate key value violates unique constraint' in
-                      ve.error_dict['records'][0]):  # type: ignore
-                        err = dict({
-                            k: [_("This record already exists")]
-                            for k in view_context.pk_fields
-                        }, **err)
-                    elif (
-                      'constraint_info' in ve.error_dict):
-                        error_summary = _render_recombinant_constraint_errors(
-                            lc, ve, view_context.chromo, 'upsert')
-                    else:
-                        log.warning('Failed to create %s record for org %s:\n%s',
-                                    resource_name, owner_org, traceback.format_exc())
-                        error_summary = _('Something went wrong, your record '
-                                          'was not created. Please contact support.')
-            # type_ignore_reason: incomplete typing
-            elif ve.error_dict.get(
-                    'info', {}).get('pgcode', '') == '23505':  # type: ignore
-                err = dict({
-                    k: [_("This record already exists")]
-                    for k in view_context.pk_fields
-                }, **err)
-            else:
-                log.warning('Failed to create %s record for org %s:\n%s',
-                            resource_name, owner_org, traceback.format_exc())
-                error_summary = _('Something went wrong, your record '
-                                  'was not created. Please contact support.')
-
+            err, error_summary = _handle_single_record_validation_errors(
+                lc, ve, 'create', resource_name, owner_org,
+                view_context.chromo, view_context.pk_fields)
         if err or error_summary:
             return render('recombinant/create_record.html',
                           extra_vars=dict(template_vars,
@@ -1527,13 +1693,15 @@ def create_record(resource_name: str, owner_org: str) -> Union[str, Response]:
 
 
 @recombinant.route(
-    '/recombinant/manage/<resource_name>/<owner_org>/update-record/<pk>',
+    '/recombinant/manage/<resource_name>/<owner_org>/update-record/<_id>',
     methods=['GET', 'POST'])
-def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Response]:
+def update_record(resource_name: str, owner_org: str, _id: str) -> Union[str, Response]:
     """
     Update a single record via a webform.
 
     Old route: /update-pd-record/<owner_org>/<resource_name>/<pk>
+
+    NOTE: always edit by the record _id
     """
     if not g.user:
         return h.redirect_to('user.login')
@@ -1566,17 +1734,17 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
         'organization': view_context.organization,
     }
 
-    pk_list = [_url_part_unescape(p) for p in pk.split(',')]
     came_from = request.form.get('came_from') if request.method == 'POST' \
         else request.args.get('came_from')
     if came_from not in ['preview_record', 'preview_table']:
         came_from = 'preview_table'  # default to preview_table view
 
-    pk_filter = dict(zip(view_context.pk_fields, pk_list))
+    _id_val = _url_part_unescape(_id)
+    filters = {'_id': _id_val}
 
     records = lc.action.datastore_search(
         resource_id=view_context.resource['id'],
-        filters=pk_filter)['records']
+        filters=filters)['records']
     if len(records) == 0:
         abort(404, _('Not found'))
     if len(records) > 1:
@@ -1584,6 +1752,8 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
     record = records[0]
 
     data = {}
+    if view_context.chromo.get('edit_using__id'):
+        data['_id'] = record['_id']  # cannot change _id value
     for f in view_context.chromo['fields']:
         if (
           not f.get('import_template_include', True) or
@@ -1600,32 +1770,36 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
             data[f['datastore_id']] = val
 
     if request.method == 'POST':
+        pk_fields = ['_id'] if view_context.chromo['edit_using__id'] \
+            else view_context.pk_fields
         post_data = parse_params(request.form,
-                                 ignore_keys=['save'] + view_context.pk_fields)
+                                 ignore_keys=['save'] + pk_fields)
 
         if 'cancel' in post_data:
             if came_from == 'preview_record':
                 return h.redirect_to('recombinant.preview_record',
                                      resource_name=resource_name,
                                      owner_org=view_context.rcomb['owner_org'],
-                                     pk=pk)
+                                     _id=_id)
             return h.redirect_to('recombinant.preview_table',
                                  resource_name=resource_name,
                                  owner_org=view_context.rcomb['owner_org'])
 
+        post_data['_id'] = record['_id']  # cannot change _id value
         data, err = _clean_check_type_errors(
             post_data,
             view_context.chromo['fields'],
-            view_context.pk_fields,
+            pk_fields,
             view_context.choice_fields)
         error_summary = None
         # can't change pk fields
         for f_id in data:
-            if f_id in view_context.pk_fields:
+            if f_id in pk_fields:
                 data[f_id] = record[f_id]
 
         # normalize newlines to \n
         data = _normalize_record_newlines(data)
+        data['_id'] = record['_id']  # cannot change _id value
 
         try:
             lc.action.datastore_upsert(
@@ -1634,36 +1808,31 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
                 records=[{k: None if k in err else v for (k, v) in data.items()}],
                 dry_run=bool(err))
         except ValidationError as ve:
-            try:
-                # type_ignore_reason: incomplete typing
-                err = dict({
-                    k: list(format_trigger_error(v))
-                    for (k, v) in ve.error_dict['records'][0].items()  # type: ignore
-                }, **err)
-            except AttributeError:
-                log.warning('Failed to update %s record for org %s:\n%s',
-                            resource_name, owner_org, traceback.format_exc())
-                error_summary = _('Something went wrong, your record '
-                                  'was not updated. Please contact support.')
-
+            err, error_summary = _handle_single_record_validation_errors(
+                lc, ve, 'update', resource_name, owner_org,
+                view_context.chromo, view_context.pk_fields)
         if err or error_summary:
             return render('recombinant/update_record.html',
                           extra_vars=dict(template_vars,
                                           data=data,
-                                          pk=pk,
+                                          _id=_id,
+                                          _id_field=_get_id_field_dict(),
                                           # prevent rendering error on parent template
                                           pkg_dict={},
                                           errors=err,
                                           error_summary=error_summary,
                                           came_from=came_from))
 
-        h.flash_notice(_('Record %s updated') % ','.join(pk_list))
+        pk_list = [data[k] for k in view_context.pk_fields]
+        h.flash_notice(_('Record %s updated') % (_id_val
+                       if view_context.chromo['edit_using__id']
+                       else ','.join(pk_list)))
 
         if came_from == 'preview_record':
             return h.redirect_to('recombinant.preview_record',
                                  resource_name=resource_name,
                                  owner_org=view_context.rcomb['owner_org'],
-                                 pk=pk)
+                                 _id=_id)
 
         return h.redirect_to('recombinant.preview_table',
                              resource_name=resource_name,
@@ -1672,7 +1841,8 @@ def update_record(resource_name: str, owner_org: str, pk: str) -> Union[str, Res
     return render('recombinant/update_record.html',
                   extra_vars=dict(template_vars,
                                   data=data,
-                                  pk=pk,
+                                  _id=_id,
+                                  _id_field=_get_id_field_dict(),
                                   # prevent rendering error on parent template
                                   pkg_dict={},
                                   errors={},
@@ -1712,7 +1882,7 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
     offset = 0
     records = data_dict.get('records', [])
     resource_id = data_dict.get('resource_id')
-    dry_run = data_dict.get('dry_run')
+    dry_run = asbool(data_dict.get('dry_run', True))
     method = data_dict.get('method')
     # NOTE: upserting each record one-by-one is crazy slower,
     #       but it is the only way to get all of the errors back in one object.
@@ -1725,10 +1895,18 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
                     'method': method,
                     'resource_id': resource_id,
                     'dry_run': dry_run,
-                    'records': [record]
-                })
+                    'records': [record]})
             if 'result' not in return_dict:
                 return_dict['result'] = {}
+            if (
+              not dry_run and '_id' not in data['records'][0]
+              and chromo['edit_using__id']
+            ):
+                # _id not in result dict for new records
+                data = get_action('datastore_search')(
+                    context, {
+                        'filters': dict((k, data['records'][0][k]) for k in pk_fields),
+                        'resource_id': resource_id})
             return_dict['result']['row_{}'.format(offset)] = data
             return_dict['success'] = True
             offset += 1
@@ -1743,52 +1921,14 @@ def upsert_data(resource_name: str, owner_org: str) -> Union[str, Response]:
             return_dict['success'] = False
             return _finish(404, return_dict, content_type='json')
         except ValidationError as ve:
-            err = {}
-            error_summary = None
-            if 'records' in ve.error_dict:
-                try:
-                    # type_ignore_reason: incomplete typing
-                    err = dict({
-                        k: list(format_trigger_error(v))
-                        for (k, v) in
-                        ve.error_dict['records'][0].items()  # type: ignore
-                    }, **err)
-                except AttributeError:
-                    # type_ignore_reason: incomplete typing
-                    if (
-                      'duplicate key value violates unique constraint' in
-                      ve.error_dict['records'][0]):  # type: ignore
-                        err = dict({
-                            k: [_("This record already exists")]
-                            for k in pk_fields
-                        }, **err)
-                    elif (
-                      'constraint_info' in ve.error_dict):
-                        error_summary = _render_recombinant_constraint_errors(
-                            lc, ve, chromo, 'upsert')
-                    else:
-                        log.warning('Failed to create %s record for org %s:\n%s',
-                                    resource_name, owner_org, traceback.format_exc())
-                        error_summary = _('Something went wrong, your record '
-                                          'was not created. Please contact support.')
-            # type_ignore_reason: incomplete typing
-            elif ve.error_dict.get(
-                    'info', {}).get('pgcode', '') == '23505':  # type: ignore
-                err = dict({
-                    k: [_("This record already exists")]
-                    for k in pk_fields
-                }, **err)
-            else:
-                log.warning('Failed to create %s record for org %s:\n%s',
-                            resource_name, owner_org, traceback.format_exc())
-                error_summary = _('Something went wrong, your record '
-                                  'was not created. Please contact support.')
+            err, error_summary = _handle_single_record_validation_errors(
+                lc, ve, 'create', resource_name, owner_org, chromo, pk_fields)
             if 'error' not in return_dict:
                 return_dict['error'] = {}
             return_dict['error']['row_{}'.format(offset)] = {
                 '__type': 'Validation Error',
-                'message': error_summary,
-                'data': err}
+                'message': error_summary or None,
+                'data': err or {}}
             return_dict['success'] = False
             offset += 1
         except Exception as e:
@@ -2264,6 +2404,8 @@ def datatable(resource_name: str, resource_id: str) -> Union[str, Response]:
     can_edit = h.check_access('resource_update', {'id': resource_id})
     cols = []
     fids = []
+    if chromo.get('edit_using__id'):
+        fids.append('_id')
     for f in chromo['fields']:
         if f.get('published_resource_computed_field', False):
             continue
@@ -2320,11 +2462,13 @@ def datatable(resource_name: str, resource_id: str) -> Union[str, Response]:
         aadata = [
             [''] +  # Expand column
             ['<input type="checkbox">'] +  # Select column
+            [''] +  # special _id col
             ['' for _col in cols] for _row in range(default_fill)]
     else:
         aadata = [
             [''] +  # Expand column
             ['<input type="checkbox">'] +  # Select column
+            [row.get('_id', '')] +  # special _id col
             [row.get(col, '') for col in cols] for row in response['records']]
 
     return json.dumps({
@@ -2372,6 +2516,9 @@ def datatable_depr(resource_name: str, resource_id: str) -> Union[str, Response]
     can_edit = h.check_access('resource_update', {'id': resource_id})
     cols = []
     fids = []
+    if chromo.get('edit_using__id'):
+        cols.append('_id')
+        fids.append('_id')
     for f in chromo['fields']:
         if f.get('published_resource_computed_field', False):
             continue
@@ -2419,7 +2566,9 @@ def datatable_depr(resource_name: str, resource_id: str) -> Union[str, Response]
                         'recombinant.update_record',
                         owner_org=pkg['organization']['name'],
                         resource_name=resource_name,
-                        pk=','.join(_url_part_escape(row[i+1]) for i in pkids)
+                        pk=_url_part_escape(row[1]) if
+                        chromo.get('edit_using__id') else
+                        ','.join(_url_part_escape(row[i+1]) for i in pkids)
                     )
                 )
             )

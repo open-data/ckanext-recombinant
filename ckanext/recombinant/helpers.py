@@ -4,7 +4,7 @@ from markupsafe import Markup
 import sqlalchemy as sa
 from datetime import datetime
 
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List, Union, cast
 from ckanext.recombinant.types import (
     RecombinantChromoDict,
     RecombinantGenoDict,
@@ -92,17 +92,6 @@ def recombinant_get_geno(dataset_type: str) -> Optional[RecombinantGenoDict]:
 
 def recombinant_get_types() -> List[str]:
     return get_dataset_types()
-
-
-def recombinant_primary_key_fields(resource_name: str) -> List[RecombinantFieldDict]:
-    try:
-        chromo = get_chromo(resource_name)
-    except RecombinantException:
-        return []
-    return [
-        f for f in chromo['fields']
-        if f['datastore_id'] in chromo['datastore_primary_key']
-        ]
 
 
 def recombinant_example(resource_name: str,
@@ -299,3 +288,27 @@ def enable_datatable_editor() -> bool:
     Return if the Recombinant DataTable Editor should be used or not.
     """
     return config['ckanext.recombinant.enable_datatable_editor']
+
+
+# type_ignore_reason: underscored func
+def _get_id_field_dict() -> RecombinantFieldDict:  # type: ignore
+    """
+    Get a field dictionary for the _id datastore field.
+
+    NOTE: need various keys for mocked frameworks:
+            - recombinant field
+            - datastore_info
+            - datatables JS column
+    """
+    _id_label = config['ckanext.recombinant._id.label']
+    _id_description = config['ckanext.recombinant._id.description']
+    return cast(RecombinantFieldDict, {
+        'datastore_id': '_id',
+        'id': '_id',
+        'name': '_id',
+        'type': 'int',
+        'datastore_type': 'int',
+        'label': _id_label,
+        'description': _id_description,
+        'priority': 0,
+    })

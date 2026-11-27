@@ -3,6 +3,7 @@ import os
 import uuid
 from urllib.request import urlopen
 from urllib.error import URLError
+from logging import getLogger
 
 from typing import Optional, Union, Any, Dict, List, Tuple
 from ckan.types import (
@@ -41,6 +42,8 @@ from ckanext.recombinant import (
 from ckanext.recombinant.errors import RecombinantException
 
 from ckanext.datastore.interfaces import IDataDictionaryForm
+
+log = getLogger(__name__)
 
 
 @p.toolkit.blanket.config_declarations
@@ -113,8 +116,6 @@ class RecombinantPlugin(p.SingletonPlugin, DefaultDatasetForm, DefaultTranslatio
     def get_helpers(self) -> Dict[str, Callable[..., Any]]:
         return {
             'recombinant_language_text': helpers.recombinant_language_text,
-            'recombinant_primary_key_fields':
-                helpers.recombinant_primary_key_fields,
             'recombinant_get_chromo': helpers.recombinant_get_chromo,
             'recombinant_get_geno': helpers.recombinant_get_geno,
             'recombinant_get_types': helpers.recombinant_get_types,
@@ -197,6 +198,7 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
     resource_definitions = {}
     published_resource_definitions = {}
     trigger_definitions = {}
+    sequence_modulo_offset_definitions = {}
     for url in urls:
         is_url = False
         t, p = _load_tables_module_path(url)
@@ -216,6 +218,24 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
                  url))
         genos[t['dataset_type']] = t
         dataset_definitions[t['dataset_type']] = url
+        if 'sequence_modulo_offset' in t:
+            if t['sequence_modulo_offset'] in sequence_modulo_offset_definitions:
+                raise RecombinantException(
+                    'Recombinant sequence_modulo_offset "%s" is already '
+                    'defined in %s. Cannot be redefined in %s.' %
+                    (t['sequence_modulo_offset'],
+                     dataset_definitions[
+                         sequence_modulo_offset_definitions[
+                             t['sequence_modulo_offset']]],
+                     url))
+            sequence_modulo_offset_definitions[
+                t['sequence_modulo_offset']] = t['dataset_type']
+        elif 'datastore_create_sequence' in t:
+            log.warning(
+                'Recombinant dataset_type "%s" has defined datastore_create_sequence '
+                '"%s", but has not defined a sequence_modulo_offset. It is '
+                'recommended to define a unqiue sequence_modulo_offset.' %
+                (t['dataset_type'], t['datastore_create_sequence']))
 
         for chromo in t['resources']:
             if chromo['resource_name'] in resource_definitions:
@@ -239,6 +259,8 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
             chromo['dataset_type'] = t['dataset_type']
             if 'target_dataset' in t:
                 chromo['target_dataset'] = t['target_dataset']
+            if 'sequence_modulo_offset' in t:
+                chromo['sequence_modulo_offset'] = t['sequence_modulo_offset']
             if is_url:
                 chromo['_url_path'] = url.rsplit('/', 1)[0]
             else:  # used for choices_file paths
@@ -248,6 +270,7 @@ def _load_table_definitions(urls: List[str]) -> Tuple[
             chromo['excel_template'] = chromo.get('excel_template', True)
             chromo['create_form'] = chromo.get('create_form', False)
             chromo['edit_form'] = chromo.get('edit_form', False)
+            chromo['edit_using__id'] = chromo.get('edit_using__id', False)
             chromo['stately_records'] = False
             for f in chromo['fields']:
                 if f['datastore_id'] != 'record_state':

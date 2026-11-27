@@ -15,6 +15,8 @@ record_query        - The string query for record queries (if chromo['display_ca
 record_query_error  - The string error for a record query (if chromo['display_card'])
 record_state        - The current record state for previewing (if chromo['display_card'] and chromo['stately_records'])
 pk_labels           - List of primary key labels
+pk_field_dicts      - List of primary key field Dicts
+_id_field           - Dict of the _id field
 errors              - Error on page (req. for package/base_form_page.html)
 delete_errors       - Error on page (req. for package/base_form_page.html)
 filters             - Filters on page (req. for package/base_form_page.html)
@@ -126,7 +128,7 @@ filters             - Filters on page (req. for package/base_form_page.html)
                 <summary><span class="glyphicon glyphicon-remove"></span>
                   {{ _("Delete") }}</summary>
                 {% snippet "recombinant/snippets/delete.html",
-                  rcomb=rcomb, resource=resource, errors=delete_errors, filters=filters %}
+                  rcomb=rcomb, chromo=chromo, resource=resource, pk_field_dicts=pk_field_dicts, _id_field=_id_field, errors=delete_errors, filters=filters %}
               </details>
             {% endif %}
             <details id="reference">
@@ -134,7 +136,7 @@ filters             - Filters on page (req. for package/base_form_page.html)
                 {{ _("Reference") }}
               </summary>
               {% snippet "recombinant/snippets/data_dictionary.html",
-                chromo=chromo, all_expanded=true, is_published_resource=false, organization=organization, organization_display_name=organization_display_name %}
+                chromo=chromo, all_expanded=true, is_published_resource=false, organization=organization, organization_display_name=organization_display_name, _id_field=_id_field %}
             </details>
             <details id="api">
               <summary><span class="glyphicon glyphicon-wrench"></span>
@@ -216,6 +218,8 @@ filters             - Filters on page (req. for package/base_form_page.html)
             <p><i class="fa fa-warning" aria-hidden="true"></i>&nbsp;&nbsp;<em>{{ record_query_error }}</em></p>
           {% elif record_query %}
             <p><em>{{ _('Did not find any records with {pks} matching "{pk_vals}"').format(pks=','.join(pk_labels), pk_vals=record_query) }}</em></p>
+          {% elif record_state %}
+            <p><em>{{ _('Did not find any "{state}" records').format(state=record_state) }}</em></p>
           {% else %}
             <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
           {% endif %}
@@ -268,15 +272,27 @@ filters             - Filters on page (req. for package/base_form_page.html)
 {% block primary %}
   {{ super() }}
   {% block record_table %}
+    {% set ns = namespace(record_count={'total': 0}) %}
+    {% for r in rcomb.resources %}
+      {% if r.name == resource.name %}
+        {% do ns.record_count.update({'total': r.get('datastore_rows', 0)}) %}
+      {% endif %}
+    {% endfor %}
     {% if not chromo.get('display_card') and resource and 'error' not in resource %}
-      {% snippet 'snippets/' ~ dt_settings.dt_snippet,
-                 resource_name=resource.name,
-                 resource_id=resource.id,
-                 owner_org=rcomb.owner_org,
-                 primary_keys=dt_settings.primary_keys,
-                 foreign_keys=dt_settings.foreign_keys,
-                 dataset_type=ds_fields,
-                 ds_fields=dt_settings.ds_fields %}
+      {%- if ns.record_count.total > 0 -%}
+        {% snippet 'snippets/' ~ dt_settings.dt_snippet,
+                  resource_name=resource.name,
+                  resource_id=resource.id,
+                  owner_org=rcomb.owner_org,
+                  primary_keys=dt_settings.primary_keys,
+                  foreign_keys=dt_settings.foreign_keys,
+                  edit_keys=dt_settings.edit_keys,
+                  _id_field=dt_settings._id_field,
+                  dataset_type=dataset_type,
+                  ds_fields=dt_settings.ds_fields %}
+      {%- else -%}
+        <p><em>{{ _('There are currently no records. Click "Create Single Record" to start.') }}</em></p>
+      {%- endif -%}
     {% endif %}
   {% endblock record_table %}
 {% endblock %}
